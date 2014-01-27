@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 2.3  (Linux)">
+	<META NAME="AUTHOR" CONTENT="cyril pernet">
+	<META NAME="CREATED" CONTENT="20100415;15142700">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGED" CONTENT="20100829;11184300">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 8.5in 11in; margin: 0.79in }
+		P { margin-bottom: 0.08in }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><img src="limo_gui.png" width="893" height="661"><BR CLEAR=LEFT>From
+the general user interface you can:</P>
+<P STYLE="margin-bottom: 0in">1 – start the analysis of single
+subjects (subject analysis)</P>
+<P STYLE="margin-bottom: 0in">2 – start the analysis for one or
+several groups of subjects (random effects)</P>
+<P STYLE="margin-bottom: 0in">3 – perform annex operations like creating expected sets of electrode, creating optimized electrode vector, use the batch mode to
+process data of many subjects automatically, etc using LIMO tools</P>
+<P STYLE="margin-bottom: 0in">4 – view results and further analyse
+  data (results)</P>
+<P STYLE="margin-bottom: 0in"><BR>
+<U><B>Subject analysis</B></U></P>
+<P STYLE="margin-bottom: 0in"><B>Data import</B> allows you to read
+and import .set, i.e. data preprocessed in EEGLAB. You will also need
+some text files (.txt) or mat files (.mat) that you prepared to
+describe (in time) the occurrence of the different experimental
+conditions. Usually, you would have saved the 'triggers' of your EEG
+experiment with your .set, thus you could read and save this to be
+used in LIMO EEG.</P>
+<P STYLE="margin-bottom: 0in"><B>Analyse </B>– at the end of the
+data import a LIMO.mat file is created containing your design matrix
+– if you did not analyse the data then, you can load the design and
+run the analysis via this button.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+<U><B>Random Effects</B></U></P>
+<P STYLE="margin-bottom: 0in">EEG data have to be processed for each
+subjects first (subject analysis) and parameters estimates from this
+1<SUP>st</SUP> analysis are used at this 2<SUP>nd</SUP> level.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+  <B>Random effects</B> calls an
+interface for group analyses: robust means, t-tests, ANOVA etc ...</P>
+<P STYLE="margin-bottom: 0in"><B>LIMO Tools
+  </B><SPAN STYLE="font-weight: medium">calls a GUI to create various
+files useful for random effect analyses.</SPAN></P>
+<P STYLE="margin-bottom: 0in"><BR>
+<U><B>Results</B></U></P>
+<P STYLE="margin-bottom: 0in">In this section, results from both
+single subjects and group analysis can be visualized in various
+formats. Statistical results for the group can be explored using
+different correction for multiple testing techniques. It is also
+possible to further explore differences between conditions using the
+contrast manager (for pair-wise comparisons in a ANOVA for instance)</P>
+<P STYLE="margin-bottom: 0in"><B>View Results</B> loads the GUI to
+plot results under various formats</P>
+<P STYLE="margin-bottom: 0in"><B>Contrast manager</B> (also available
+in limo_results) calls a GUI to perform additional analyses for
+ANOVAs.</P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><img src="limo_contrast_manager.png" width="977" height="723"></P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P>Once you click on Contrast Manager, you have to select a LIMO.mat
+  file. The design matrix shows up on the left. </P>
+<P> Input a new contrast in the 'New Contrast' box and press enter. Any new contrast that
+  you type in will appear in the box below the design matrix to help
+  you visualize which columns you contrast. In the Matlab command
+  window messages are also returned indicating e.g. if your contrast is
+  incorrect or not. Click on the 'diagonalize' box for F contrasts. Click Done to evaluate the contrast. If boostrapped data under H0 were computed, if will also ask if you want to run the contrast under H0.</P>
+<p>&nbsp;</p>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>

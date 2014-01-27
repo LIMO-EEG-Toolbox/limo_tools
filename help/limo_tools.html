@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 2.3  (Linux)">
+	<META NAME="AUTHOR" CONTENT="cyril pernet">
+	<META NAME="CREATED" CONTENT="20100415;15142700">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGED" CONTENT="20100829;11552700">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 8.5in 11in; margin: 0.79in }
+		P { margin-bottom: 0.08in }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><img src="limo_tools.png" width="608" height="1003"><BR CLEAR=LEFT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><U><B>Create multiple EEG files using
+the design matrix</B></U></P>
+<P STYLE="margin-bottom: 0in"> Allows exporting the various conditions (trials) coded in the design
+matrix into single files.</P>
+<P STYLE="margin-bottom: 0in; font-weight: medium; text-decoration: none">&nbsp;</P>
+<P STYLE="margin-bottom: 0in; font-weight: medium; text-decoration: none"><U><B>Update LIMO paths</B></U></P>
+<P STYLE="margin-bottom: 0in; font-weight: medium; text-decoration: none">
+  LIMO.mat files created during any analyses also keep track of where
+  your data are stored. If you move the files to another location,
+use this tool to update the paths.</P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><U><B>Create an expected chanloc file</B></U></P>
+<P STYLE="margin-bottom: 0in">
+In order to analyze data across subject we need to create a common
+space – this is achieved by reading the channel description of your
+subjects and creating a file that uses electrodes that are in common.</P>
+<P STYLE="margin-bottom: 0in"><em>See LIMO_Clustering.pdf (in the help directory) for further information in clustering and the what the neighboorhood matrix should look like.</em></P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><U><B>Make an electrode optimized
+vector</B></U></P>
+<P STYLE="margin-bottom: 0in">This allows to create a vector that
+  contain the description of the electrodes to use subject-wise, i.e.
+  data are analyzed for one electrode only but this electrode can be
+  different for each subject. This also create a map plotting the
+location and frequency of the electrodes choosen.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+  <U><B>Batch 1st level analyses</B></U></P>
+<P STYLE="margin-bottom: 0in">Importing data subject per subject, and loading variables is time consuming. Instead you can use this batch to run the analysis automatically across all subjects. Make sure you have a directory per subject containing the .set and the variables you want to use (categorical and/or continuous). |To make things even faster use the same names for the categorical and continuous variables. When loading the batch, few questions pop up to process the 1st subject, if succesfull and you answer that the same defaults parameter applies, it will then loop through all subjects load the data and variables and run the analysis.</P>
+<P STYLE="margin-bottom: 0in">The batch can also be use to automate contrast analyses.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>

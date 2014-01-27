@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 2.3  (Linux)">
+	<META NAME="AUTHOR" CONTENT="cyril pernet">
+	<META NAME="CREATED" CONTENT="20100415;15142700">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGED" CONTENT="20100829;11454500">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 8.5in 11in; margin: 0.79in }
+		P { margin-bottom: 0.08in }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR CLEAR=LEFT><BR>
+<img src="limo_random_effect.png" width="921" height="963"></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">Before doing any stats across subjects,
+one needs a common reference space. This is achieved by using a
+common channel location description – this file has to be loaded
+via <B>Load Channel Loc</B> and can be created via <em>LIMO Tools.</em></P>
+<P STYLE="margin-bottom: 0in"><U><B>Basic stats</B></U></P>
+<P STYLE="margin-bottom: 0in">The <B>central tendency and CI button</B>
+allows performing 'averages' of data (either single trials for a
+subject or parameters across groups). This is called central tendency
+because you can choose to use standard means (or weighted if available) but also trimmed means,
+median or Harell Davis estimators. In each case a robust confidence
+interval is provided (see <em>limo_central_tendency_and_ci</em>).</P>
+<P STYLE="margin-bottom: 0in"><strong>Plot </strong><B>central tendency and CI button</B> allows plotting as many data as you want, one electrode at a time - for instance X different conditions or electrodes or different estimators of the same condition</P>
+<P STYLE="margin-bottom: 0in"><strong>Make and plot a difference</strong> allows computing the difference between two data set and plot this difference with bootstrapped confidence intervals (not corrected for multiple comparisons - see <em>limo_plot_difference</em>).</P>
+<P STYLE="margin-bottom: 0in"><B>Parameter plots</B>: also to do
+standard box plots or correlation analyses (see <em>limo_plots</em>).</P>
+<P STYLE="margin-bottom: 0in"><em>More information on basic stats can be obtained in the LIMO BASIC STATS power point (in the help directory)</em></P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><U><B>Bootstrap</B></U></P>
+<P STYLE="margin-bottom: 0in">This is where you specify the number of
+  bootstrap to perform (1000 by default). By bootstrapping the data under H0, we can estimate the distribution of maximum statistics (T, F, cluster mass) across the whole data space and thus correct for multiple comparisons. Type 0 if you don't want to
+  compute any bootstrap – note that multiple comparisons correction
+will not be available. </P>
+<P STYLE="margin-bottom: 0in"><strong>Compute tfce</strong>, if bootsrap is computed it is then possible the apply the Threshol,d Free Cluster Enhancement procedure (see <em>limo_tfce</em>)</P>
+<P STYLE="margin-bottom: 0in"><em>For an overview of multiple comparisons correction procedures see LIMO_Clustering.pdf (in the help directory)</em></P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><B><u>Tests</u></B></P>
+<P STYLE="margin-bottom: 0in">From this section chose the statistical
+test you wish to perform. This can be applied on the beta.mat or  
+the con.mat files. Note that you can either select by hand each file or select a single .txt file that contains the full names (i.e. path/file name/extension) of the Betas or con files. Such text file could look like this:</P>
+<P STYLE="margin-bottom: 0in">E:\My_Documents\MATLAB\eeglab12_0_2_1b\plugins\limo_eeg\tutorials\limo_data_set\Continuous_design\S1\Betas.mat<br>
+  E:\My_Documents\MATLAB\eeglab12_0_2_1b\plugins\limo_eeg\tutorials\limo_data_set\Continuous_design\S2\Betas.mat<br>
+  E:\My_Documents\MATLAB\eeglab12_0_2_1b\plugins\limo_eeg\tutorials\limo_data_set\Continuous_design\S3\Betas.mat<br>
+  ...
+</P>
+<P STYLE="margin-bottom: 0in"><strong>One sample t-test</strong>:  is the (trimmed) mean of the sample different from 0 (see <em>limo_trimci</em>)</P>
+<P STYLE="margin-bottom: 0in"><strong>Two-samples t-tests</strong>: are the (trimmed) means between 2 groups of subjects different (see <em>limo_yuen_ttest</em>)</P>
+<P STYLE="margin-bottom: 0in"><strong>Paired t-tests</strong>: are the (trimmed) means between 2 conditions from the same subjects different (see <em>limo_yuend_ttest</em>)</P>
+<P STYLE="margin-bottom: 0in"><strong>Regression</strong>: is there a linear relashionship between the (weighted) EEG parameters and one or several variables (see <em>limo_glm1</em> - note Iterative Reweighted Least Squares are used to weight subjects parameters according to how far they are from the rest of the data).</P>
+<P STYLE="margin-bottom: 0in"><strong>ANOVA/ANCOVA</strong>: are the (weighted) means different between groups. A covariate can also be added to control for their effect between groups (see <em>limo_glm1</em> - note Iterative Reweighted Least Squares are used to weight subjects parameters according to how far they are from the rest of the data). Are the (trimmed) means different between conditions from the same subjects (see <em>limo_robust_rep_anova</em>). Note that for repeated measure ANOVA, only 1 independent factor can be entered (e.g. 3 groups of subjects but not 3 groups and 2 groups within those) and no covariate is permitted.</P>
+<P STYLE="margin-bottom: 0in">When prompted, enter the number of groups (N-ways ANOVA) or factors (repeated measures ANOVA) as a vector like [3 2] for a 3 by 2 ANOVA. In this case you would have 3 groups/conditions and within each of these groups/conditions 2 subgroups/subconditions. The design matrix will then contain 2 factors: the 1st factors with 3 levels and 2nd factor with 2 levels. An interaction term will also be created correspond to the 6 subgroups (3*2). When asked to select data, this is these subgroups that need to be entered. When prompted for data this would corresponds in this example to</P>
+<P STYLE="margin-bottom: 0in">condition 1 =  data from factor 1 / group 1 and factor 2 / group 1</P>
+<P STYLE="margin-bottom: 0in">condition 1 2 = data from factor 1 / group 1 and factor 2 / group 2</P>
+<P STYLE="margin-bottom: 0in">condition 1 3 = data from  factor 1 / group 2 and factor 2 / group 1</P>
+<P STYLE="margin-bottom: 0in">condition 1 4 =  data from factor 1 / group 2 and factor 2 / group 2</P>
+<P STYLE="margin-bottom: 0in">condition 1 5 = data from factor 1 / group 3 and factor 2 / group 1</P>
+<P STYLE="margin-bottom: 0in">condition 1 6 = data from  factor 1 / group 3 and factor 2 / group 2</P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><em>More information on the various tests  can be obtained in LIMO_mass_univariate.pdf  (in the help directory)</em></P>
+<P STYLE="margin-bottom: 0in">&nbsp;</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>
