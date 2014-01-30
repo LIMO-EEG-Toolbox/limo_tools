@@ -201,110 +201,120 @@ if LIMO.Level == 1
                         save LIMO LIMO
                     end
                     
-                    % imagesc
-                    ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-                    if LIMO.analysis_flag  == 1
-                        timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
-                        ratio =  timevect(2)-timevect(1); % (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
-                        if LIMO.data.start < 0
-                            frame_zeros = find(timevect == 0);
-                            if isempty(frame_zeros)
-                                frame_zeros = round(abs(LIMO.data.start*1000) / ratio)+1;
-                            end
-                        else
-                            frame_zeros = 1;
-                        end
-                        scale = toplot.*mask; scale(scale==0)=NaN;
-                        imagesc(timevect,1:size(toplot,1),scale);
-                        
-                    elseif LIMO.analysis_flag  == 2 || LIMO.analysis_flag  == 3
-                        freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
-                        scale = toplot.*mask; scale(scale==0)=NaN;
-                        imagesc(freqvect,1:size(toplot,1),scale);
-                    end
                     
-                    v = max(toplot(:)); [e,f]=find(toplot==v);
-                    try
-                        caxis([min(min(scale)), max(max(scale))]);
-                    catch caxiserror
-                    end
-                    color_images_(scale,LIMO);
-                    title(mytitle,'Fontsize',16)
-                    
-                    if length(e)>1 % happen if we have multiple times the exact same max values
-                        e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
-                    end
-                    
-                    % ERP plot at best electrode
-                    ax(3) = subplot(3,3,9);
-                    
-                    if LIMO.analysis_flag  == 1
-                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
-                        plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
-                    elseif LIMO.analysis_flag  == 2
-                        mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
-                        plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
-                    end
-                    title(mytitle2,'FontSize',12)
-                    
-                    % topoplot at max time
-                    ax(2) = subplot(3,3,6);
-                    chans = LIMO.data.chanlocs;
-                    topoplot(toplot(:,f),chans,'maplimits','maxmin');
-                    if LIMO.analysis_flag == 1
-                        title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
-                        set(gca,'XTickLabel', timevect);
-                    elseif LIMO.analysis_flag == 2
-                        title(['topoplot @' num2str(round(timevect(f))) 'Hz'],'FontSize',12);
-                        set(gca,'XTickLabel', LIMO.data.freq_list);
-                    end;
-                    
-                    % update with mouse clicks
-                    if flag == 1
-                        update = 0;
-                        while update ==0
-                            try
-                                [x,y,button]=ginput(1);
-                            catch
-                                update =1; break
-                            end
-                            if button > 1
-                                update = 1;
-                            end
-                            clickedAx = gca;
-                            if clickedAx ~=ax(1)
-                                disp('right click to exit')
+                    if LIMO.analysis_flag  ~= 3 % 2D maps
+                        % imagesc
+                        ax(1) = subplot(3,3,[1 2 4 5 7 8]);
+                        if LIMO.analysis_flag  == 1
+                            timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
+                            ratio =  timevect(2)-timevect(1); % (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
+                            if LIMO.data.start < 0
+                                frame_zeros = find(timevect == 0);
+                                if isempty(frame_zeros)
+                                    frame_zeros = round(abs(LIMO.data.start*1000) / ratio)+1;
+                                end
                             else
-                                frame = frame_zeros + round(x / ratio);
-                                
-                                % ERP plot at best electrode and topoplot
-                                % at max time or freq
-                                y = round(y);
-                                if LIMO.analysis_flag  == 1;  % If time analysis
-                                    mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
-                                    subplot(3,3,9,'replace');
-                                    plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
-                                    subplot(3,3,6,'replace');
-                                    topoplot(toplot(:,frame),LIMO.data.chanlocs);
-                                    title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
-                                    
-                                elseif LIMO.analysis_flag  == 2  % If freq analysis
-                                    mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
-                                    subplot(3,3,9,'replace');
-                                    plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
-                                    subplot(3,3,6,'replace');
-                                    topoplot(toplot(:,frame),LIMO.data.chanlocs);
-                                    title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
-                                    
-                                end
+                                frame_zeros = 1;
+                            end
+                            scale = toplot.*mask; scale(scale==0)=NaN;
+                            imagesc(timevect,1:size(toplot,1),scale);
+                            
+                        elseif LIMO.analysis_flag  == 2 
+                            freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                            frame_zeros = 1; ratio =  freqvect(2)-freqvect(1);
+                            scale = toplot.*mask; scale(scale==0)=NaN;
+                            imagesc(freqvect,1:size(toplot,1),scale);
+                        end
+                        
+                        v = max(toplot(:)); [e,f]=find(toplot==v);
+                        try
+                            caxis([min(min(scale)), max(max(scale))]);
+                        catch caxiserror
+                        end
+                        color_images_(scale,LIMO);
+                        title(mytitle,'Fontsize',16)
+                        
+                        if length(e)>1 % happen if we have multiple times the exact same max values
+                            e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
+                        end
+                        
+                        % ERP plot at best electrode
+                        ax(3) = subplot(3,3,9);
+                        
+                        if LIMO.analysis_flag  == 1
+                            mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
+                        elseif LIMO.analysis_flag  == 2
+                            mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
+                        end
+                        title(mytitle2,'FontSize',12)
+                        
+                        % topoplot at max time
+                        ax(2) = subplot(3,3,6);
+                        chans = LIMO.data.chanlocs;
+                        topoplot(toplot(:,f),chans,'maplimits','maxmin');
+                        if LIMO.analysis_flag == 1
+                            title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
+                            set(gca,'XTickLabel', timevect);
+                        elseif LIMO.analysis_flag == 2
+                            title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
+                            set(gca,'XTickLabel', LIMO.data.freq_list);
+                        end;
+                        
+                        % update with mouse clicks
+                        if flag == 1
+                            update = 0;
+                            while update ==0
                                 try
-                                    mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.expected_chanlocs(y).labels,LIMO.data.expected_chanlocs(y).urchan);
-                                catch ME
-                                    mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,LIMO.data.chanlocs(y).urchan);
+                                    [x,y,button]=ginput(1);
+                                catch
+                                    update =1; break
                                 end
-                                title(mytitle2,'FontSize',12)
+                                if button > 1
+                                    update = 1;
+                                end
+                                clickedAx = gca;
+                                if clickedAx ~=ax(1)
+                                    disp('right click to exit')
+                                else
+                                    frame = frame_zeros + round(x / ratio);
+                                    % ERP plot at best electrode and topoplot
+                                    % at max time or freq
+                                    y = round(y);
+                                    if LIMO.analysis_flag  == 1;  % If time analysis
+                                        subplot(3,3,6,'replace');
+                                        topoplot(toplot(:,frame),LIMO.data.chanlocs);
+                                        title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+
+                                        subplot(3,3,9,'replace');
+                                        plot(timevect,toplot(y,:),'LineWidth',3); grid on; axis tight
+                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                                        title(mytitle2,'FontSize',12); 
+                                        
+                                    elseif LIMO.analysis_flag  == 2  % If freq analysis
+                                        subplot(3,3,6,'replace');
+                                        topoplot(toplot(:,frame),LIMO.data.chanlocs);
+                                        title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
+
+                                        subplot(3,3,9,'replace');
+                                        plot(freqvect,toplot(y,:),'LineWidth',3); grid on; axis tight
+                                        mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,LIMO.data.chanlocs(y).urchan);
+                                        title(mytitle2,'FontSize',12); 
+                                        
+                                    end
+                                    try
+                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.expected_chanlocs(y).labels,LIMO.data.expected_chanlocs(y).urchan);
+                                    catch ME
+                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,LIMO.data.chanlocs(y).urchan);
+                                    end
+                                    title(mytitle2,'FontSize',12)
+                                end
                             end
                         end
+                        
+                    else % LIMO.analysis_flag  == 3 - 3D maps
+                        limo_time_freq_display(toplot,timevect,freqvect,mytitle);
                     end
                 end
                 
@@ -741,7 +751,7 @@ if LIMO.Level == 1
                     ylabel('Amplitude in {\mu}V','FontSize',16)
                 elseif LIMO.analysis_flag  == 2
                     xlabel('Freq in Hz','FontSize',16)
-                    ylabel('Power spectra density');
+                    ylabel('Power spectral density','FontSize',16);
                 end
                 
                 LIMO.cache.ERPplot = average;

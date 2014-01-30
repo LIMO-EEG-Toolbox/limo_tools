@@ -178,10 +178,10 @@ switch varargin{1}
                 
                 % Save all tf data as 4D elec x freqs x times x trials
                 save LIMO LIMO;
-                Yhat = limo_tf_4d_reshape(Yhat); save Yhat Yhat;
-                Res = limo_tf_4d_reshape(Res); save Res Res;
-                Betas = limo_tf_4d_reshape(Betas); save Betas Betas;
-                R2 = limo_tf_4d_reshape(R2); save R2 R2;
+                Yhat = limo_tf_4d_reshape(Yhat); save Yhat Yhat -v7.3;
+                Res = limo_tf_4d_reshape(Res); save Res Res -v7.3;
+                Betas = limo_tf_4d_reshape(Betas); save Betas Betas -v7.3;
+                R2 = limo_tf_4d_reshape(R2); save R2 R2 -v7.3;
                 clear Yhat Res Betas R2
                 
                 if prod(LIMO.design.nb_conditions) ~=0

@@ -102,7 +102,7 @@ if FilterIndex ~= 0
     cd(PathName)
     
     try
-        disp('Trying to load TF EEGLAB dataset. Please wait ...');
+        disp('loading TF EEGLAB dataset. Please wait ...');
         EEG=pop_loadset(FileName);
         handles.data_dir = PathName;
         handles.data     = FileName;
@@ -111,12 +111,11 @@ if FilterIndex ~= 0
         handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
         handles.dir      = PathName; % update by default the working dir where the data are
-        
-        fprintf('Data set %s loaded',FileName); disp(' ')
+        fprintf('Data set %s loaded \n',FileName); 
         
         if isfield(EEG.etc,'tf_path') == 1
             handles.tf_dir   = EEG.etc.tf_path;
-        else helpdlg('Please ensure this is a time-frequency dataset. See LIMO tf help.');
+        else helpdlg('Please ensure this is a time-frequency dataset. Related information should be stored in EEG.etc - see help.');
         end
         
     catch
@@ -182,7 +181,7 @@ else
     % Find a possible frequency bin close to the requested one
     [a1 ind] = min(abs(EEG.etc.tf_times-ending));
     closest_ending = EEG.etc.tf_times(ind);
-    if hight ~= closest_ending
+    if ending ~= closest_ending
         helpdlg(['The closest time bin in this data is:',num2str(closest_ending),'ms -- and this is now selected']);
     end
     handles.end   = closest_ending;
@@ -477,7 +476,7 @@ catch
     warndlg2('The data associated to the .set were not found','missing data')
     [f,p,ind] = uigetfile('*.mat','pick up your time frequency data');
     if ind == 0
-        error('datafile not selected - LIMO EEG aborded')
+        errordlg2('datafile not selected - LIMO EEG aborded')
     end
     LIMO.data.tf_data_filepath = [p f];
 end
@@ -494,28 +493,28 @@ LIMO.Analysis                 = 'Time-Frequency';
 LIMO.analysis_flag            = 3;
 
 % set defaults - take from 1:numel if trim not set
-if handles.trim_lowf == 0
+if isempty(handles.trim_lowf)
     LIMO.data.trim_low_f = 1;
 else
     LIMO.data.trim_low_f = handles.trim_lowf;
 end
 
-if handles.trim_highf == 0
+if isempty(handles.trim_highf)
     LIMO.data.trim_high_f = numel(EEG.etc.tf_freqs);
 else
     LIMO.data.trim_high_f = handles.trim_highf;
 end
 
-if handles.trim1 == 0
+if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
 else
     LIMO.data.trim1 = handles.trim1;
 end
 
-if handles.trim2 == 0
+if isempty(handles.trim2)
     LIMO.data.trim2 = numel(EEG.etc.tf_times);
 else
-    LIMO.data.trim2 = handles.trim_hight;
+    LIMO.data.trim2 = handles.trim2;
 end
 
 if isempty(handles.dir)

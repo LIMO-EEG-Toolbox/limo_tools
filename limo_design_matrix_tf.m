@@ -60,6 +60,7 @@ if nargin==3
     full_factorial = varargin{2}.design.fullfactorial;
     chanlocs = varargin{2}.data.chanlocs;
     type_of_analysis = varargin{2}.design.type_of_analysis;
+    size3D = varargin{2}.data.size3D;
     flag = varargin{3};
     try
         expected_chanlocs = varargin{2}.data.expected_chanlocs;
@@ -412,18 +413,21 @@ end
 
 % Reorder this Yr to save this as 4D
 Yr=limo_tf_4d_reshape(Yr);
-save Yr Yr ;
+save Yr Yr -v7.3;
 
 % no matter the analysis we have Beta, Yhat, Res
-Yhat = zeros(LIMO.data.size3D); save Yhat Yhat; clear Yhat
-Res = zeros(LIMO.data.size3D); save Res Res; clear Res
-Betas = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),size(X,2)); save Betas Betas; clear Betas
-% note - overwritten in limo_eeg_tf, saved here for size-check
+Yhat = zeros(size3D); 
+Res = zeros(size3D); 
+Betas = zeros(size3D(1),size3D(2),size(X,2)); 
 
+% note - overwritten in limo_eeg_tf, saved here for size-check
+save Yhat Yhat -v7.3; clear Yhat
+save Res Res -v7.3; clear Res
+save Betas Betas -v7.3; clear Betas
 
 % only for univariate analyses
 if strcmp(type_of_analysis,'Mass-univariate')
-    R2 = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),3); save R2 R2;
+    R2 = zeros(size3D(1),size3D(2),3); save R2 R2 -v7.3;
 end
 clear Yr R2
 

@@ -193,7 +193,7 @@ switch varargin{1}
         elseif LIMO.analysis_flag == 3 % Time-Frequency power values
             clear EEG; disp('Time-Frequency implementation - loading tf data...');
             Y=load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
-            Y=Y.limo_tf(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim_low_t:LIMO.data.trim_high_t,:);
+            Y=Y.limo_tf(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
             LIMO.data.size4D=size(Y);
             LIMO.data.freq_list=repmat(LIMO.data.tf_freqs,[1 numel(LIMO.data.tf_times)]);
             LIMO.data.size3D= [LIMO.data.size4D(1) numel(LIMO.data.tf_freqs)*numel(LIMO.data.tf_times) LIMO.data.size4D(4)];
@@ -420,12 +420,13 @@ switch varargin{1}
                 end
                 
                 % save data on the disk and clean out
+                disp('saving data to disk')
                 LIMO.design.X       = X;
                 LIMO.design.weights = W;
                 LIMO.design.status = 'done';
-                save LIMO LIMO; save Yhat Yhat;
-                save Res Res; save Betas Betas;
-                save R2 R2; clear Yhat Res Betas R2
+                save LIMO LIMO; save Yhat Yhat -v7.3;
+                save Res Res; save Betas Betas -v7.3;
+                save R2 R2 -v7.3; clear Yhat Res Betas R2
                 
                 if prod(LIMO.design.nb_conditions) ~=0
                     for i=1:length(LIMO.design.nb_conditions)
@@ -634,92 +635,95 @@ switch varargin{1}
                 end
             end
             
+            
             % TFCE if requested
             % --------------
-            load Yr; 
-            if LIMO.design.tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') && size(Yr,1) > 1 && LIMO.design.bootstrap ~=0
-                clear Yr;
-                if exist('TFCE','dir')
-                    if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
-                        return
-                    end
-                end
-                
-                fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-                mkdir TFCE;
-                
-                % R2
-                load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
-                tfce_score = limo_tfce(squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
-                save('tfce_R2','tfce_score'); clear R2; cd ..;
-                
-                cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
-                tfce_H0_score = limo_tfce(squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
-                
-                % conditions
-                if prod(LIMO.design.nb_conditions) ~=0
-                    for i=1:length(LIMO.design.nb_conditions)
-                        name = sprintf('Condition_effect_%g.mat',i); load(name);
-                        cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
-                        tfce_score = limo_tfce(squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                        clear Condition_effect tfce_score; cd ..
+            if LIMO.design.tfce == 1
+                load Yr;
+                if isfield(LIMO.data,'neighbouring_matrix') && size(Yr,1) > 1 && LIMO.design.bootstrap ~=0
+                    clear Yr;
+                    if exist('TFCE','dir')
+                        if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
+                            return
+                        end
                     end
                     
-                    cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
-                    for i=1:length(LIMO.design.nb_conditions)
-                        name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
-                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                        clear H0_Condition_effect tfce_H0_score;
-                    end
-                    cd ..
-                end
-                
-                % interactions
-                if LIMO.design.fullfactorial == 1
-                    for i=1:length(LIMO.design.fullfactorial)
-                        name = sprintf('Interaction_effect_%g.mat',i); load(name);
-                        cd('TFCE'); fprintf('Creating Interaction %g TFCE scores \n',i)
-                        tfce_score = limo_tfce(squeeze(Interaction_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                        clear Interaction_effect tfce_score; cd ..
+                    fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                    mkdir TFCE;
+                    
+                    % R2
+                    load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
+                    tfce_score = limo_tfce(squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
+                    save('tfce_R2','tfce_score'); clear R2; cd ..;
+                    
+                    cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
+                    tfce_H0_score = limo_tfce(squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                    save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
+                    
+                    % conditions
+                    if prod(LIMO.design.nb_conditions) ~=0
+                        for i=1:length(LIMO.design.nb_conditions)
+                            name = sprintf('Condition_effect_%g.mat',i); load(name);
+                            cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
+                            tfce_score = limo_tfce(squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                            clear Condition_effect tfce_score; cd ..
+                        end
+                        
+                        cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
+                        for i=1:length(LIMO.design.nb_conditions)
+                            name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
+                            tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                            clear H0_Condition_effect tfce_H0_score;
+                        end
+                        cd ..
                     end
                     
-                    cd('H0'); fprintf('Creating H0 Interaction(s) TFCE scores \n');
-                    for i=1:length(LIMO.design.fullfactorial)
-                        name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
-                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                        clear H0_Interaction_effect tfce_H0_score;
-                    end
-                    cd ..
-                end
-                
-                % covariates / continuous regressors
-                if LIMO.design.nb_continuous ~=0
-                    for i=1:LIMO.design.nb_continuous
-                        name = sprintf('Covariate_effect_%g.mat',i); load(name);
-                        cd('TFCE'); fprintf('Creating Covariate %g TFCE scores \n',i);
-                        tfce_score = limo_tfce(squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                        clear Covariate_effect tfce_score; cd ..
+                    % interactions
+                    if LIMO.design.fullfactorial == 1
+                        for i=1:length(LIMO.design.fullfactorial)
+                            name = sprintf('Interaction_effect_%g.mat',i); load(name);
+                            cd('TFCE'); fprintf('Creating Interaction %g TFCE scores \n',i)
+                            tfce_score = limo_tfce(squeeze(Interaction_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                            clear Interaction_effect tfce_score; cd ..
+                        end
+                        
+                        cd('H0'); fprintf('Creating H0 Interaction(s) TFCE scores \n');
+                        for i=1:length(LIMO.design.fullfactorial)
+                            name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
+                            tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                            clear H0_Interaction_effect tfce_H0_score;
+                        end
+                        cd ..
                     end
                     
-                    cd('H0'); fprintf('Creating H0 Covariate(s) TFCE scores \n');
-                    for i=1:LIMO.design.nb_continuous
-                        name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
-                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                        clear H0_Covariate_effect tfce_H0_score
+                    % covariates / continuous regressors
+                    if LIMO.design.nb_continuous ~=0
+                        for i=1:LIMO.design.nb_continuous
+                            name = sprintf('Covariate_effect_%g.mat',i); load(name);
+                            cd('TFCE'); fprintf('Creating Covariate %g TFCE scores \n',i);
+                            tfce_score = limo_tfce(squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                            clear Covariate_effect tfce_score; cd ..
+                        end
+                        
+                        cd('H0'); fprintf('Creating H0 Covariate(s) TFCE scores \n');
+                        for i=1:LIMO.design.nb_continuous
+                            name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
+                            tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                            clear H0_Covariate_effect tfce_H0_score
+                        end
+                        cd ..
                     end
-                    cd ..
+                elseif ~isfield(LIMO.data,'neighbouring_matrix')
+                    disp('No TFCE performed, neighbourhood matrix missing')
+                elseif  size(Yr,1) == 1
+                    disp('No TFCE performed, only 1 electrode')
                 end
-            elseif ~isfield(LIMO.data,'neighbouring_matrix')
-                disp('No TFCE performed, neighbourhood matrix missing')
-            elseif  size(Yr,1) == 1 
-                disp('No TFCE performed, only 1 electrode')
             end
             
             
