@@ -1,3 +1,4 @@
+
 function varargout = limo_import_tf(varargin)
 
 % import function for getting timefreq data into limo
@@ -98,7 +99,6 @@ global EEG
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data with TF data');
 if FilterIndex ~= 0
-    current_dir = pwd;
     cd(PathName)
     
     try
@@ -110,12 +110,13 @@ if FilterIndex ~= 0
         handles.start    = EEG.xmin;  % For tf, we grab relevent numbers thru other means
         handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
-        handles.dir      = PathName; % update by default the working dir where the data are
-        fprintf('Data set %s loaded \n',FileName); 
         
         if isfield(EEG.etc,'tf_path') == 1
-            handles.tf_dir   = EEG.etc.tf_path;
-        else helpdlg('Please ensure this is a time-frequency dataset. Related information should be stored in EEG.etc - see help.');
+           handles.tf_dir   = EEG.etc.tf_path;
+           cd(handles.dir)
+           fprintf('Data set %s loaded \n',FileName); 
+        else
+            helpdlg('Can''t load the data. Ensure that time-frequency information is stored in EEG.etc - see help.');
         end
         
     catch
@@ -149,7 +150,7 @@ else
     [a1 ind] = min(abs(EEG.etc.tf_times-start));
     closest_start = EEG.etc.tf_times(ind);
     if start ~= closest_start
-        helpdlg(['The closest time bin in this data is:',num2str(closest_start),'ms -- and this is now selected']);
+        helpdlg(['this will be adjusted to sampling rate, start at:',num2str(closest_start),'ms']);
     end
     handles.start   = closest_start;
     handles.trim1   = ind; % gives the 1st column to start the analysis
@@ -182,7 +183,7 @@ else
     [a1 ind] = min(abs(EEG.etc.tf_times-ending));
     closest_ending = EEG.etc.tf_times(ind);
     if ending ~= closest_ending
-        helpdlg(['The closest time bin in this data is:',num2str(closest_ending),'ms -- and this is now selected']);
+        helpdlg(['this will be adjusted to sampling rate, end at:',num2str(closest_ending),'ms']);
     end
     handles.end   = closest_ending;
     handles.trim2 = ind; % gives the 1st column to start the analysis
@@ -213,7 +214,7 @@ else
     [a1 ind] = min(abs(EEG.etc.tf_freqs-lowf));
     closest_lowf = EEG.etc.tf_freqs(ind);
     if lowf ~= closest_lowf
-        helpdlg(['The closest frequency bin in this data is:',num2str(closest_lowf),'Hz -- and this is now selected']);
+        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
     end
     handles.lowf    = closest_lowf;
     handles.trim_lowf    = ind; % gives the 1st column to start the analysis
@@ -243,7 +244,7 @@ else
     [a1 ind] = min(abs(EEG.etc.tf_freqs-highf));
     closest_highf = EEG.etc.tf_freqs(ind);
     if highf ~= closest_highf
-        helpdlg(['The closest frequency bin in this data is:',num2str(closest_highf),'Hz -- and this is now selected']);
+        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
     end
     handles.highf    = closest_highf;
     handles.trim_highf    = ind; % gives the 1st column to start the analysis
@@ -430,7 +431,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Directory_Callback(hObject, eventdata, handles)
 
-PathName=uigetdir(pwd,'select LIMO working directory');
+PathName=uigetdir(handles.dir,'select LIMO working directory');
 if PathName ~= 0
     cd(PathName); 
     handles.dir = PathName;
@@ -490,7 +491,6 @@ LIMO.design.bootstrap         = handles.bootstrap;
 LIMO.design.tfce              = handles.tfce;  
 LIMO.Level                    = 1;
 LIMO.Analysis                 = 'Time-Frequency';
-LIMO.analysis_flag            = 3;
 
 % set defaults - take from 1:numel if trim not set
 if isempty(handles.trim_lowf)

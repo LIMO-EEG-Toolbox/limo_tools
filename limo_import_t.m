@@ -73,7 +73,6 @@ handles.tfce                = 0;
 guidata(hObject, handles);
 uiwait(handles.figure1);
 
-
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_import_t_OutputFcn(hObject, eventdata, handles) 
 varargout{1} = 'LIMO import terminated';
@@ -92,10 +91,10 @@ global EEG
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
 if FilterIndex ~= 0
-    current_dir = pwd;
     cd(PathName)
     
-    try
+    try  
+        disp('loading EEGLAB dataset. Please wait ...');
         EEG=pop_loadset(FileName);
         handles.data_dir = PathName;
         handles.data     = FileName;
@@ -103,8 +102,8 @@ if FilterIndex ~= 0
         handles.start    = EEG.xmin;
         handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
-        handles.dir      = PathName; % update by default the working dir where the data are
-        fprintf('Data set %s loaded',FileName); disp(' ')
+        cd(handles.dir) 
+        fprintf('Data set %s loaded \n',FileName);
     catch
         errordlg('pop_loadset eeglab function not found','error');
     end
@@ -122,32 +121,30 @@ end
 
 
 function Starting_point_Callback(hObject, eventdata, handles)
-global EEG 
+global EEG  
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
-    v = EEG.xmin*1000; % change to ms
+    v = EEG.xmin;
 else
     if v == 0
         v = EEG.times(max(find(EEG.times<0))+1);
-        disp('start at ~0 sec')
-    else
-        v = v*1000; % change to ms
-        difference = rem(v,(1/EEG.srate*1000));
-        if difference ~=0
-            v = v+difference;
-            [value,position]=min(abs(EEG.times - v));
-            v = EEG.times(position);
-            warndlg(sprintf('adjusting to sampling rate start at %g ms',v),'adjusting stating point');
+        if v~=0
+            disp('start at ~0 sec')
         end
+    else
+        [value,position]=min(abs(EEG.times - v));
+        if v ~= EEG.times(position)
+            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEG.times(position)),'adjusting stating point');
+        end
+        v = EEG.times(position);
     end
 end
 
-start = v/1000;  % back in sec
-if start < EEG.xmin
+if (v/1000) < EEG.xmin
     errordlg('error in the starting point input')
 else
-    handles.start    = start;
+    handles.start    = v/1000; % in sec
     handles.trim1    = find(EEG.times == v); % gives the 1st column to start the analysis
 end
 
@@ -169,28 +166,26 @@ global EEG
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
-    v = EEG.xmax*1000; % change to ms
+    v = EEG.xmax; 
 else
     if v == 0
         v = EEG.times(max(find(EEG.times<0))+1);
-        disp('ends at ~0 sec')
-    else
-         v = v*1000; % change to ms
-        difference = rem(v,(1/EEG.srate*1000));
-        if difference ~=0
-            v = v+difference;
-            [value,position]=min(abs(EEG.times - v));
-            v = EEG.times(position);
-            warndlg(sprintf('adjusting to sampling rate stop at %g ms',v),'adjusting stating point');
+        if v~=0
+            disp('ends at ~0 sec')
         end
+    else
+        [value,position]=min(abs(EEG.times - v));
+        if v ~= EEG.times(position)
+            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEG.times(position)),'adjusting stating point');
+        end
+        v = EEG.times(position);
     end
 end
 
-ending = v/1000;  % back in sec
-if ending > EEG.xmax
+if (v/1000) > EEG.xmax
     errordlg('error in the ending point input')
 else
-    handles.end     = ending;
+    handles.end     = v/1000; % in sec
     handles.trim2   = find(EEG.times == v); % gives the last column to end the analysis
 end
 
@@ -378,7 +373,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Directory_Callback(hObject, eventdata, handles)
 
-PathName=uigetdir(pwd,'select LIMO working directory');
+PathName=uigetdir(handles.dir ,'select LIMO working directory');
 if PathName ~= 0
     cd(PathName); 
     handles.dir = PathName;
@@ -407,22 +402,19 @@ global EEG LIMO
 LIMO.data.data_dir            = handles.data_dir;
 LIMO.data.data                = handles.data;
 LIMO.data.chanlocs            = handles.chanlocs;
-LIMO.data.start               = handles.start;
-LIMO.data.end                 = handles.end ;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont;  
-
+LIMO.data.start               = handles.start;
+LIMO.data.end                 = handles.end ;
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
 LIMO.design.method            = 'OLS';
 LIMO.design.type_of_analysis  = handles.type_of_analysis;  
 LIMO.design.bootstrap         = handles.bootstrap;  
 LIMO.design.tfce              = handles.tfce;  
-
 LIMO.Level                    = 1;
 LIMO.Analysis                 = 'Time';
-LIMO.analysis_flag            = 1;
 
 % set defaults
 if isempty(handles.trim1)

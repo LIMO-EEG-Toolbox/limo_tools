@@ -54,27 +54,14 @@ varargout{1} = 'LIMO terminated';
 % --- Executes on selection change in import_menu.
 function import_menu_Callback(hObject, eventdata, handles)
 handles.import = get(hObject,'Value');
-if handles.import == 1 || handles.import == 2
-    uiresume
-    guidata(hObject, handles);
-    delete(handles.figure1)
-    limo_eeg(2,handles.import);
-elseif handles.import == 3
-    uiresume
-    guidata(hObject, handles);
-    delete(handles.figure1)
-    disp('no implemented yet') ; % limo_eeg_tf(2);
-end
+uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_eeg(2,handles.import);
 
 
 % --- Executes during object creation, after setting all properties.
 function import_menu_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to import_menu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end

@@ -55,15 +55,15 @@ handles.data                = [];
 handles.chanlocs            = [];
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'OLS';
-handles.start               = [];
 handles.rate                = [];
+handles.start               = 0;
+handles.end                 = 0;
+handles.freqlist            = [];
 handles.trim_lowf           = [];
 handles.trim_highf          = [];
 handles.Cat                 = [];
 handles.Cont                = [];
 handles.bootstrap           = 0;
-handles.lowf                = 0;
-handles.highf               = 0;
 handles.dir                 = [];
 handles.zscore              = 1;
 handles.fullfactorial       = 0;
@@ -93,19 +93,29 @@ global EEG
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
 if FilterIndex ~= 0
-    current_dir = pwd;
     cd(PathName)
     
     try
+        disp('loading EEGLAB dataset. Please wait ...');
         EEG=pop_loadset(FileName);
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
-        handles.start    = EEG.xmin;
-        handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
-        handles.dir      = PathName; % update by default the working dir where the data are
-        fprintf('Data set %s loaded',FileName); disp(' ')
+        
+        if isfield(EEG.etc,'limo_psd') == 1 % data are there
+            try
+            handles.start    = EEG.etc.limo_psd_freqlist(1);
+            handles.end      = EEG.etc.limo_psd_freqlist(end);
+            handles.freqlist = EEG.etc.limo_psd_freqlist;
+            catch list_issue
+                errordlg('Can''t find the field EEG.etc.limo_psd_freqlist - see help.');
+            end
+            cd(handles.dir); fprintf('Data set %s loaded \n',FileName);
+        else
+            errordlg('Can''t find the field EEG.etc.limo_psd - see help.');
+        end
+    
     catch
         errordlg('pop_loadset eeglab function not found','error');
     end
@@ -133,8 +143,9 @@ else
     % Find a possible frequency bin close to the requested one
     [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-lowf));
     closest_lowf = EEG.etc.limo_psd_freqlist(ind);
-    helpdlg(['The closest frequency bin in this data is:',num2str(closest_lowf),'Hz -- and this is now selected']);   
-    handles.lowf    = closest_lowf;
+    helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);   
+    
+    handles.start        = closest_lowf;
     handles.trim_lowf    = ind; % gives the 1st column to start the analysis
 end
 
@@ -161,8 +172,9 @@ else
     % Find a possible frequency bin close to the requested one
     [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-highf));
     closest_highf = EEG.etc.limo_psd_freqlist(ind);
-    helpdlg(['The closest frequency bin in this data is:',num2str(closest_highf),'Hz -- and this is now selected']);
-    handles.highf    = closest_highf;
+    helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
+    
+    handles.end           = closest_highf;
     handles.trim_highf    = ind; % gives the 1st column to start the analysis
 end
 guidata(hObject, handles);
@@ -349,7 +361,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Directory_Callback(hObject, eventdata, handles)
 
-PathName=uigetdir(pwd,'select LIMO working directory');
+PathName=uigetdir(handles.dir ,'select LIMO working directory');
 if PathName ~= 0
     cd(PathName); 
     handles.dir = PathName;
@@ -381,6 +393,9 @@ LIMO.data.chanlocs            = handles.chanlocs;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont;  
+LIMO.data.start               = handles.start;
+LIMO.data.end                 = handles.end ;
+LIMO.data.freqlist            = handles.freqlist;
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
 LIMO.design.method            = 'OLS';
@@ -389,17 +404,15 @@ LIMO.design.bootstrap         = handles.bootstrap;
 LIMO.design.tfce              = handles.tfce;  
 LIMO.Level                    = 1;
 LIMO.Analysis                 = 'Frequency';
-LIMO.analysis_flag            = 2;
-LIMO.freq_list                = EEG.etc.limo_psd_freqlist; % substitute for LIMO.data.start and LIMO.data.end 
 
 % set defaults
-if handles.trim_lowf == 0
+if isempty(handles.trim_lowf)
     LIMO.data.trim1 = 1;
 else
-    LIMO.data.trim1 = handles.trim_lowf ;
+    LIMO.data.trim1 = handles.trim_lowf;
 end
 
-if handles.trim_highf == 0
+if isempty(handles.trim_highf)
     LIMO.data.trim2 = numel(EEG.etc.limo_psd_freqlist);
 else
     LIMO.data.trim2 = handles.trim_highf ;
@@ -432,7 +445,3 @@ uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
-
-
-
-

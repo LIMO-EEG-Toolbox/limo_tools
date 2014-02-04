@@ -126,6 +126,7 @@ end
 % compute for each bootstrap
 % ---------------------------
 for B = 1:nboot
+    % fprintf('boot n %g\n',B)
     
     % create data under H0
     if nb_continuous == 0

@@ -114,7 +114,7 @@ if LIMO.Level == 1
                     end
                     
                     if strcmp(FileName,'R2.mat')
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(R2(:,:,:,1)); % plot R2 values instead of F
                         else
                             toplot = squeeze(R2(:,:,1));
@@ -123,7 +123,7 @@ if LIMO.Level == 1
                         clear R2
                         
                     elseif strncmp(FileName,'Condition_effect',16)
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(Condition_effect(:,:,:,1)); % plot F values
                         else
                             toplot = squeeze(Condition_effect(:,:,1));
@@ -132,7 +132,7 @@ if LIMO.Level == 1
                         clear Condition_effect
                         
                     elseif strncmp(FileName,'Covariate_effect',16)
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(Covariate_effect(:,:,:,1)); % plot F values
                         else
                             toplot = squeeze(Covariate_effect(:,:,1));
@@ -141,7 +141,7 @@ if LIMO.Level == 1
                         clear Covariate_effect
                         
                     elseif strncmp(FileName,'Interaction_effect',18)
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(Interaction_effect(:,:,:,1)); % plot F values
                         else
                             toplot = squeeze(Interaction_effect(:,:,1));
@@ -150,7 +150,7 @@ if LIMO.Level == 1
                         clear Interaction_effect
                         
                     elseif strncmp(FileName,'semi_partial_coef',17)
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(semi_partial_coef(:,:,:,1)); % plot the coef rather than F
                         else
                             toplot = squeeze(semi_partial_coef(:,:,1)); % plot the coef rather than F
@@ -159,7 +159,7 @@ if LIMO.Level == 1
                         clear semi_partial_coef
                         
                     elseif strcmp(FileName(1:4),'con_')
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(con(:,:,:,4)); % plot T values
                         else
                             toplot = squeeze(con(:,:,4));
@@ -168,7 +168,7 @@ if LIMO.Level == 1
                         clear con
                         
                     elseif strcmp(FileName(1:4),'ess_')
-                        if LIMO.analysis_flag  == 3
+                        if strcmp(LIMO.Analysis,'Time-Frequency') 
                             toplot = squeeze(ess(:,:,:,end-1)); % plot F values
                         else
                             toplot = squeeze(ess(:,:,end-1));
@@ -202,10 +202,10 @@ if LIMO.Level == 1
                     end
                     
                     
-                    if LIMO.analysis_flag  ~= 3 % 2D maps
+                    if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency') 
                         % imagesc
                         ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-                        if LIMO.analysis_flag  == 1
+                        if strcmp(LIMO.Analysis,'Time') 
                             timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
                             ratio =  timevect(2)-timevect(1); % (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
                             if LIMO.data.start < 0
@@ -219,8 +219,8 @@ if LIMO.Level == 1
                             scale = toplot.*mask; scale(scale==0)=NaN;
                             imagesc(timevect,1:size(toplot,1),scale);
                             
-                        elseif LIMO.analysis_flag  == 2 
-                            freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                        elseif strcmp(LIMO.Analysis,'Frequency') 
+                            freqvect=linspace((1),LIMO.data.freqlist(end),size(toplot,2));
                             frame_zeros = 1; ratio =  freqvect(2)-freqvect(1);
                             scale = toplot.*mask; scale(scale==0)=NaN;
                             imagesc(freqvect,1:size(toplot,1),scale);
@@ -241,10 +241,10 @@ if LIMO.Level == 1
                         % ERP plot at best electrode
                         ax(3) = subplot(3,3,9);
                         
-                        if LIMO.analysis_flag  == 1
+                        if strcmp(LIMO.Analysis,'Time') 
                             mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
                             plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
-                        elseif LIMO.analysis_flag  == 2
+                        elseif strcmp(LIMO.Analysis,'Frequency') 
                             mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
                             plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
                         end
@@ -254,12 +254,12 @@ if LIMO.Level == 1
                         ax(2) = subplot(3,3,6);
                         chans = LIMO.data.chanlocs;
                         topoplot(toplot(:,f),chans,'maplimits','maxmin');
-                        if LIMO.analysis_flag == 1
+                        if strcmp(LIMO.Analysis,'Time') 
                             title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
                             set(gca,'XTickLabel', timevect);
-                        elseif LIMO.analysis_flag == 2
+                        elseif strcmp(LIMO.Analysis,'Frequency') 
                             title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
-                            set(gca,'XTickLabel', LIMO.data.freq_list);
+                            set(gca,'XTickLabel', LIMO.data.freqlist);
                         end;
                         
                         % update with mouse clicks
@@ -282,7 +282,7 @@ if LIMO.Level == 1
                                     % ERP plot at best electrode and topoplot
                                     % at max time or freq
                                     y = round(y);
-                                    if LIMO.analysis_flag  == 1;  % If time analysis
+                                    if strcmp(LIMO.Analysis,'Time') ;  
                                         subplot(3,3,6,'replace');
                                         topoplot(toplot(:,frame),LIMO.data.chanlocs);
                                         title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
@@ -292,7 +292,7 @@ if LIMO.Level == 1
                                         mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
                                         title(mytitle2,'FontSize',12); 
                                         
-                                    elseif LIMO.analysis_flag  == 2  % If freq analysis
+                                    elseif strcmp(LIMO.Analysis,'Frequency') 
                                         subplot(3,3,6,'replace');
                                         topoplot(toplot(:,frame),LIMO.data.chanlocs);
                                         title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
@@ -313,7 +313,7 @@ if LIMO.Level == 1
                             end
                         end
                         
-                    else % LIMO.analysis_flag  == 3 - 3D maps
+                    else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
                         limo_time_freq_display(toplot,timevect,freqvect,mytitle);
                     end
                 end
@@ -471,9 +471,9 @@ if LIMO.Level == 1
                 EEG.xmax = LIMO.data.end;
                 EEG.times = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
             else
-                EEG.xmin = LIMO.data.freq_list(1);
-                EEG.xmax = LIMO.data.freq_list(end);
-                EEG.times = LIMO.data.freq_list;
+                EEG.xmin = LIMO.data.freqlist(1);
+                EEG.xmax = LIMO.data.freqlist(end);
+                EEG.times = LIMO.data.freqlist;
             end
             
             
@@ -576,10 +576,10 @@ if LIMO.Level == 1
             if LIMO.analysis_flag  == 1
                 timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
             elseif LIMO.analysis_flag  == 2
-                freqvect=LIMO.data.freq_list;
-            elseif LIMO.analysis_flag  == 3
+                freqvect=LIMO.data.freqlist;
+            elseif strcmp(LIMO.Analysis,'Time-Frequency') 
                 timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
-                freqvect = LIMO.data.freq_list;
+                freqvect = LIMO.data.freqlist;
             end
             
             % down to business
@@ -763,11 +763,11 @@ if LIMO.Level == 1
                     if i > 1; figure;set(gcf,'Color','w'); end
                     index = find(~isnan(squeeze(continuous(i,1,:))));
                     
-                    if LIMO.analysis_flag  == 1
+                    if strcmp(LIMO.Analysis,'Time') 
                         surf(index,timevect,squeeze(continuous(i,:,index)));shading interp
                         ylabel('Time in ms','FontSize',16)
                         zlabel('Amplitude in {\mu}V','FontSize',16)
-                    elseif LIMO.analysis_flag  == 2
+                    elseif strcmp(LIMO.Analysis,'Frequency') 
                         surf(index,freqvect,squeeze(continuous(i,:,index)));shading interp
                         ylabel('Frequency in Hz','FontSize',16)
                         zlabel('Spectral power in {\mu}V^2/Hz','FontSize',16)
@@ -949,7 +949,7 @@ elseif LIMO.Level == 2
                 end
                 
                 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-                if LIMO.analysis_flag  == 1
+                if strcmp(LIMO.Analysis,'Time') 
                     timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
                     ratio = (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
                     if LIMO.data.start < 0
@@ -957,8 +957,8 @@ elseif LIMO.Level == 2
                     end
                     imagesc(timevect,1:size(toplot,1),scale);
                     
-                elseif LIMO.analysis_flag  == 2 || LIMO.analysis_flag  == 3
-                    freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                else
+                    freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     imagesc(freqvect,1:size(M,1),scale);
                 end
                 title(mytitle,'FontSize',16);
@@ -1068,9 +1068,9 @@ elseif LIMO.Level == 2
                         EEG.xmax = LIMO.data.end;
                         EEG.times =  (LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000); % in sec;
                     else
-                        EEG.xmin = LIMO.data.freq_list(1);
-                        EEG.xmax = LIMO.data.freq_list(end);
-                        EEG.times = LIMO.data.freq_list;
+                        EEG.xmin = LIMO.data.freqlist(1);
+                        EEG.xmax = LIMO.data.freqlist(end);
+                        EEG.times = LIMO.data.freqlist;
                     end
                     pop_topoplot(EEG);
                     assignin('base','Plotted_data',EEG.data)
@@ -1133,7 +1133,7 @@ elseif LIMO.Level == 2
                     xlabel('Time in ms','FontSize',14)
                     ylabel('Amplitude (A.U.)','FontSize',14)
                 else
-                    freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                    freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     plot(timevect,squeeze(trimci(:,:,2)),'LineWidth',3);
                     xlabel('Frequency in Hz','FontSize',14)
                     ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -1317,7 +1317,7 @@ elseif LIMO.Level == 2
                             xlabel('Time in ms','FontSize',14)
                             ylabel('Amplitude (A.U.)','FontSize',14)
                         else
-                            freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                            freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                             plot(freqvect,squeeze(average(i,:)),'LineWidth',1.5); hold on
                             xlabel('Frequency in Hz','FontSize',14)
                             ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -1408,7 +1408,7 @@ elseif LIMO.Level == 2
                             ylabel('Time in ms','FontSize',16)
                             zlabel('Amplitude (A.U.)','FontSize',16)
                         else
-                            freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                            freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                             surf(index,freqvect,squeeze(continuous(i,:,index)));shading interp
                             ylabel('Frequency in Hz','FontSize',16)
                             zlabel('Spectral Power (A.U.)','FontSize',16)
@@ -1507,7 +1507,7 @@ elseif LIMO.Level == 2
                         plot(timevect,avg,'LineWidth',3);
                         fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
                     elseif LIMO.analysis_flag == 2
-                        freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                        freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                         plot(freqvect,avg,'LineWidth',3);
                         fillhandle = patch([freqvect fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
                     end
@@ -1629,7 +1629,7 @@ elseif LIMO.Level == 2
                         plot(timevect,Effect,'LineWidth',3);
                         fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
                     elseif LIMO.analysis_flag == 2
-                        freqvect=linspace(LIMO.data.freq_list(1),LIMO.data.freq_list(end),size(toplot,2));
+                        freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                         plot(freqvect,Effect,'LineWidth',3);
                         fillhandle = patch([freqvectt fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
                     end
@@ -1857,9 +1857,9 @@ catch ME
 end
 
 ylabel('Electrodes','FontSize',14);
-if LIMO.analysis_flag  == 1
+if strcmp(LIMO.Analysis,'Time') 
     xlabel('Time in ms','FontSize',16)
-elseif LIMO.analysis_flag  == 2
+elseif strcmp(LIMO.Analysis,'Frequency') 
     xlabel('Frequency in Hz','FontSize',16)
 end
 

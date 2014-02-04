@@ -1383,7 +1383,7 @@ if MCC == 2
         for boot=1:nboot
             boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
         end
-        [mask, cluster_p, L, NUM, maxclustersum_th] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p)
+        [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
 
     elseif size(bootM,1)==1 % one electrode
         th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);

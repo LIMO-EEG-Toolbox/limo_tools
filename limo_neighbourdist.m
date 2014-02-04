@@ -14,7 +14,7 @@ function channeighbstructmat = limo_neighbourdist(EEG)
 %
 % See also LIMO_FT_NEIGHBOURSELECTION
 %
-% Guillaume Rousselt v1 11 July 2010
+% Guillaume Rousselet v1 11 July 2010
 % adapted from code by Arnaud Delorme
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
@@ -25,5 +25,3 @@ tmpcfg.layout        = lay;
 neighbourdist = eval(cell2mat(inputdlg('enter neighbourhood distance','neighbourhood distance'))); % 0.37 for biosemi 128;
 tmpcfg.neighbourdist = neighbourdist;
 [neighbours,channeighbstructmat] = limo_ft_neighbourselection(tmpcfg, []); % fieldtrip function
-
-end
