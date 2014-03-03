@@ -60,7 +60,7 @@ if nargin==3
     full_factorial = varargin{2}.design.fullfactorial;
     chanlocs = varargin{2}.data.chanlocs;
     type_of_analysis = varargin{2}.design.type_of_analysis;
-    size3D = varargin{2}.data.size3D;
+    size4D = varargin{2}.data.size4D;
     flag = varargin{3};
     try
         expected_chanlocs = varargin{2}.data.expected_chanlocs;
@@ -411,27 +411,50 @@ if ~isempty(expected_chanlocs)
     Yr = limo_match_elec(chanlocs,expected_chanlocs,1,size(Yr,2),Yr);
 end
 
-% Reorder this Yr to save this as 4D
-Yr=limo_tf_4d_reshape(Yr);
-save Yr Yr -v7.3;
-
-% no matter the analysis we have Beta, Yhat, Res
-Yhat = zeros(size3D); 
-Res = zeros(size3D); 
-Betas = zeros(size3D(1),size3D(2),size(X,2)); 
-
-% note - overwritten in limo_eeg_tf, saved here for size-check
-save Yhat Yhat -v7.3; clear Yhat
-save Res Res -v7.3; clear Res
-save Betas Betas -v7.3; clear Betas
-
-% only for univariate analyses
-if strcmp(type_of_analysis,'Mass-univariate')
-    R2 = zeros(size3D(1),size3D(2),3); save R2 R2 -v7.3;
+% create and hold in memory all matrices to be - allows a crude check a
+% memory abilities - (in the next version - catch the error to run slowly
+% looping per frequency rathen than holding large matrices)
+try
+    
+    % no matter the analysis we have Beta, Yhat, Res
+    Yhat = zeros(size4D);
+    Res = zeros(size4D);
+    Betas = zeros(size4D(1),size4D(2),size4D(3),size(X,2));
+    
+    % only for univariate analyses
+    if strcmp(type_of_analysis,'Mass-univariate')
+        R2 = zeros(size4D(1),size4D(2),size4D(3),3); save R2 R2 -v7.3;
+    end
+    
+    if nb_conditions ~=0
+        tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(nb_conditions),2);
+    end
+    
+    if nb_interactions ~=0
+        tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(nb_interactions),2);
+    end
+    
+    if nb_continuous ~=0
+        tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
+    end
+    
+    % note - overwritten in limo_eeg_tf
+    disp('saving 4D files to disk, be patient ...')
+    Yr=limo_tf_4d_reshape(Yr);
+    save Yr Yr -v7.3; clear Yr
+    save Yhat Yhat -v7.3; clear Yhat
+    save Res Res -v7.3; clear Res
+    save Betas Betas -v7.3; clear Betas
+    if strcmp(type_of_analysis,'Mass-univariate'); clear R2; end
+    if nb_conditions ~=0; clear tmp_Condition_effect; end
+    if nb_interactions ~=0; clear tmp_Interaction_effect; end
+    if nb_continuous ~=0; clear tmp_Covariate_effect; end
+    
+catch FileError
+    sprintf(FileError.message)
+    error('error while memory mapping futur results - it is likely you don''t have enough RAM')
 end
-clear Yr R2
-
-
+    
 % ------
 % figure
 if flag == 1

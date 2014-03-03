@@ -6,7 +6,8 @@ function varargout = limo_import_tf(varargin)
 % information needed to process the data
 % Based on Cyril's limo_import_t
 % Andrew X Stewart, January 2014
-%
+% Fixed folder locations, time/freq components in .data
+% updated data format Cyril v2. Feb 2014
 % -----------------------------
 %  Copyright (C) LIMO Team 2013
 
@@ -112,7 +113,12 @@ if FilterIndex ~= 0
         handles.rate     = EEG.srate;
         
         if isfield(EEG.etc,'tf_path') == 1
-           handles.tf_dir   = EEG.etc.tf_path;
+           [filepath,tf_filename,ext]=fileparts(EEG.etc.tf_path);
+           if exist([tf_filename ext],'file') == 2
+               handles.tf_dir   = [pwd filesep tf_filename ext];
+           else
+               handles.tf_dir   = [handles.dir filesep EEG.etc.tf_path];
+           end
            cd(handles.dir)
            fprintf('Data set %s loaded \n',FileName); 
         else
@@ -467,21 +473,17 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont; 
 LIMO.data.tf_freqs            = EEG.etc.tf_freqs;
 LIMO.data.tf_times            = EEG.etc.tf_times;
-try
-    [p,f,e]=fileparts(EEG.etc.tf_path);
-    cd(p); check = dir(f);
-    if ~isempty(check)
-      LIMO.data.tf_data_filepath    = EEG.etc.tf_path;
-    end
-catch
+
+if exist(handles.tf_dir,'file') == 2;
+    LIMO.data.tf_data_filepath    = EEG.etc.tf_path;
+else
     warndlg2('The data associated to the .set were not found','missing data')
     [f,p,ind] = uigetfile('*.mat','pick up your time frequency data');
     if ind == 0
-        errordlg2('datafile not selected - LIMO EEG aborded')
+        errordlg2('datafile not selected - LIMO EEG aborded'); return
     end
     LIMO.data.tf_data_filepath = [p f];
 end
-
 
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;

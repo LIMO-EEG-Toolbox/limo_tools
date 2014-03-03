@@ -398,7 +398,8 @@ cd (handles.dir)
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
 global EEG LIMO 
-  
+
+% LIMO.data
 LIMO.data.data_dir            = handles.data_dir;
 LIMO.data.data                = handles.data;
 LIMO.data.chanlocs            = handles.chanlocs;
@@ -407,16 +408,6 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont;  
 LIMO.data.start               = handles.start;
 LIMO.data.end                 = handles.end ;
-LIMO.design.fullfactorial     = handles.fullfactorial;
-LIMO.design.zscore            = handles.zscore;
-LIMO.design.method            = 'OLS';
-LIMO.design.type_of_analysis  = handles.type_of_analysis;  
-LIMO.design.bootstrap         = handles.bootstrap;  
-LIMO.design.tfce              = handles.tfce;  
-LIMO.Level                    = 1;
-LIMO.Analysis                 = 'Time';
-
-% set defaults
 if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
 else
@@ -429,12 +420,24 @@ else
     LIMO.data.trim2 = handles.trim2;
 end
 
+% LIMO.design
+LIMO.design.fullfactorial     = handles.fullfactorial;
+LIMO.design.zscore            = handles.zscore;
+LIMO.design.method            = handles.method;
+LIMO.design.type_of_analysis  = handles.type_of_analysis;  
+LIMO.design.bootstrap         = handles.bootstrap;  
+LIMO.design.tfce              = handles.tfce;  
+
+% LIMO
+LIMO.Level                    = 1;
+LIMO.Analysis                 = 'Time';
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;
 else
     LIMO.dir = handles.dir;
 end
 
+% exit
 test = isempty(handles.Cat) + isempty(handles.Cont);
 if test == 2
     errordlg('no regressors were loaded','error')

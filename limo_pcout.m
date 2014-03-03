@@ -29,6 +29,9 @@ if isempty(x)
     error('WLS cannot be computed, for at least 1 condition, all trials have the same values')
 end
 [n,p] = size(x);
+if n<p
+    error('you need more observations than variables')
+end
 
 % 1st Phase: Detect location outliers
 

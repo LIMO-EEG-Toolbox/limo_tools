@@ -62,7 +62,7 @@ tune = 4.685;
 res = Y - X*b;
 resadj = res .* repmat(adjfactor, 1, size(Y,2));
 
-%re - Robust Estimator
+% re - Robust Estimator
 % 0.6745 is the 0.75- quantile of the standard normal distribution
 % (makes the estimate unbiased)
 re = median(abs(resadj)) ./ 0.6745;

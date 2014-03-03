@@ -187,7 +187,6 @@ if LIMO.Level == 1
                 % do the figure
                 % ---------------
                 if ~isempty(toplot)
-                    figure; set(gcf,'Color','w');
                     
                     % cache the results for next time
                     if update_cache == 1
@@ -203,6 +202,8 @@ if LIMO.Level == 1
                     
                     
                     if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency') 
+                        figure; set(gcf,'Color','w','InvertHardCopy','off');
+
                         % imagesc
                         ax(1) = subplot(3,3,[1 2 4 5 7 8]);
                         if strcmp(LIMO.Analysis,'Time') 
@@ -260,7 +261,7 @@ if LIMO.Level == 1
                         elseif strcmp(LIMO.Analysis,'Frequency') 
                             title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
                             set(gca,'XTickLabel', LIMO.data.freqlist);
-                        end;
+                        end
                         
                         % update with mouse clicks
                         if flag == 1
@@ -314,7 +315,8 @@ if LIMO.Level == 1
                         end
                         
                     else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
-                        limo_time_freq_display(toplot,timevect,freqvect,mytitle);
+                        scale = toplot.*mask; scale(scale==0)=NaN;
+                        limo_display_results_tf(LIMO,scale,mytitle);
                     end
                 end
                 
@@ -466,16 +468,15 @@ if LIMO.Level == 1
             EEG.nbchan = size(EEG.data,1);
             EEG.trials = 1;
             EEG.chanlocs = LIMO.data.chanlocs;
-            if LIMO.analysis_flag == 1
+            if strcmp(LIMO.Analysis,'Time')
                 EEG.xmin = LIMO.data.start;
                 EEG.xmax = LIMO.data.end;
                 EEG.times = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
-            else
+            else strcmp(LIMO.Analysis,'Frequency')
                 EEG.xmin = LIMO.data.freqlist(1);
                 EEG.xmax = LIMO.data.freqlist(end);
                 EEG.times = LIMO.data.freqlist;
             end
-            
             
             if strcmp(FileName,'R2.mat')
                 EEG.data = squeeze(R2(:,:,2));

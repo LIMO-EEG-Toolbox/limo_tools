@@ -192,11 +192,11 @@ switch varargin{1}
             LIMO.data.size4D=size(Y);
             LIMO.data.freq_list=repmat(LIMO.data.tf_freqs,[1 numel(LIMO.data.tf_times)]);
             LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
-            save LIMO LIMO
         end
         
         clear ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY
-        cd (LIMO.dir)
+        cd (LIMO.dir) ; save LIMO LIMO
+
 
         % make the design matrix
         disp('computing design matrix');
@@ -298,37 +298,36 @@ switch varargin{1}
         if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
             
             % --------- load files created by limo_design_matrix ------------------
-            load Yr; load Yhat; load Res; load R2; load Betas;
-            
-           
-            % ------------- prepare weight matrix  -------------------------------------
-            if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
-                W = ones(size(Yr,1),size(Yr,3));
-            elseif strcmp(LIMO.design.method,'IRLS')
-                W = zeros(size(Yr));
-            end
-            
-            % ------------ prepare condition/covariates -------------------
-            if LIMO.design.nb_conditions ~=0
-                tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
-            end
-            
-            if LIMO.design.nb_interactions ~=0
-                tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_interactions),2);
-            end
-            
-            if LIMO.design.nb_continuous ~=0
-                tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),LIMO.design.nb_continuous,2);
-            end
-            
-            % -------------- loop the analysis electrode per electrode
-            if size(Yr,1) == 1
-                array = 1;
-            else
-                array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
-            end
-            
             if strcmp(LIMO.design.status,'to do')
+                load Yr; load Yhat; load Res; load R2; load Betas;
+                
+                % ------------- prepare weight matrix  -------------------------------------
+                if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                    W = ones(size(Yr,1),size(Yr,3));
+                elseif strcmp(LIMO.design.method,'IRLS')
+                    W = zeros(size(Yr));
+                end
+                
+                % ------------ prepare condition/covariates -------------------
+                if LIMO.design.nb_conditions ~=0
+                    tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
+                end
+                
+                if LIMO.design.nb_interactions ~=0
+                    tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_interactions),2);
+                end
+                
+                if LIMO.design.nb_continuous ~=0
+                    tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),LIMO.design.nb_continuous,2);
+                end
+                
+                % -------------- loop the analysis electrode per electrode
+                if size(Yr,1) == 1
+                    array = 1;
+                else
+                    array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+                end
+                
                 update = 1;
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
@@ -345,7 +344,7 @@ switch varargin{1}
                         end
                     else % level 1 we should not have any NaNs
                         index = [1:size(Yr,3)];
-                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO); 
+                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO);
                     end
                     
                     % update the LIMO.mat (do it only once)
@@ -470,22 +469,32 @@ switch varargin{1}
                 clear file electrode filename model reg dir i W
             end
             
+            
             % as above for bootstrap under H0
             % -------------------------------
             boot_go = 0;
             if LIMO.design.bootstrap ~=0
-                if exist('H0','dir')
-                    if strcmp(questdlg('H0 directory detected, overwrite?','data check','Yes','No','No'),'No');
-                        if LIMO.design.tfce == 1
-                            errordlg2('bootstrap skipped - attempting to continue with tfce');
-                        else
+                % avoid overwriting / recomputing H0 if done
+                % (limo_eeg(4) called via the results interface)
+                if ~exist('H0','dir')
+                    boot_go = 1;
+                end
+                
+                if ~isfield(LIMO.data,'neighbouring_matrix')
+                    answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
+                    if strcmp(answer,'Load')
+                        [file,path,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+                        if whatsup == 0
+                            disp('selection aborded');
                             return
+                        else
+                            cd(path); load(file); cd(LIMO.dir);
                         end
                     else
-                        boot_go = 1;
+                        channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
                     end
-                else
-                     boot_go = 1;
+                    LIMO.data.neighbouring_matrix = channeighbstructmat;
+                    save LIMO LIMO
                 end
             end
             
@@ -632,9 +641,9 @@ switch varargin{1}
             % TFCE if requested
             % --------------
             if LIMO.design.tfce == 1
-                load Yr;
-                if isfield(LIMO.data,'neighbouring_matrix') 1 && LIMO.design.bootstrap ~=0
-                    clear Yr;
+                % load Yr;
+                if isfield(LIMO.data,'neighbouring_matrix') && LIMO.design.bootstrap ~=0
+                    % clear Yr;
                     if exist('TFCE','dir')
                         if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
                             return
@@ -650,14 +659,14 @@ switch varargin{1}
                         tfce_score(1,:) = limo_tfce(1, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
                     else
                         tfce_score = limo_tfce(2, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
-                    end                        
+                    end
                     save('tfce_R2','tfce_score'); clear R2; cd ..;
                     
                     cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
                     if size(H0_R2,1) == 1
                         tfce_H0_score(1,:,:) = limo_tfce(1, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
                     else
-                        tfce_H0_score = limo_tfce(2, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);                        
+                        tfce_H0_score = limo_tfce(2, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
                     end
                     save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
                     

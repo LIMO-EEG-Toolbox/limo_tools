@@ -7,8 +7,8 @@ function maxclustersum = limo_getclustersum(f,p,channeighbstructmat,minnbchan,al
 %
 % INPUTS:
 %
-% f = 2D matrix of F values - so if using T values, enter T.^2
-% p = 2D matrix of P values
+% f = 2D/3D matrix of F values - so if using T values, enter T.^2
+% p = 2D/3D matrix of P values
 % channeighbstructmat = output of limo_ft_neighbourselection
 % minnbchan = minimum number of channels, default = 2, see
 %   LIMO_FT_FINDCLUSTER for details
@@ -20,11 +20,10 @@ function maxclustersum = limo_getclustersum(f,p,channeighbstructmat,minnbchan,al
 %   values
 %
 % See also LIMO_CLUSTER_TEST LIMO_FT_FINDCLUSTER
-
+% v1: GAR, University of Glasgow, June 2010
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
-% v1: GAR, University of Glasgow, June 2010
 
 if nargin<5;alpha=.05;end
 if nargin<4;minnbchan=2;end

@@ -36,14 +36,12 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % maxclustersum_th = max cluster sum (1-alpha) bootstrap threshold
 %
 % See also LIMO_GETCLUSTER_TEST LIMO_GETCLUSTERSUM
-
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
-
 % v1: GAR, University of Glasgow, June 2010
 % optional L & NUM outputs: GAR, Feb 2012
 % optional pval & maxclustersum_th outputs: GAR, Feb 2012
 % changed pval to be a map with NaN or the cluster p value CP May 2013
+% -----------------------------
+%  Copyright (C) LIMO Team 2010
 
 if nargin<5;alpha=.05;end
 if nargin<4;minnbchan=2;end

@@ -1,11 +1,12 @@
 function reshaped = limo_tf_4d_reshape(reshape_in)
 
 % Simple function to 'stack' loaded elec-freqs-times-N 4D
-% time-frequency (ERSP) data into a 3D matrix
+% time-frequency (ERSP) data into a 3D matrix or reverse this process
+% This is done explicitly within simple loops. 
 %
-% This is done explicitly within simple loops to be clear to read.
-% Could be vectorised and/or use reshape(), but that makes it easier to get
-% lost in dimensions.
+% FORMAT: reshaped = limo_tf_4d_reshape(reshape_in)
+% INPUT: reshape_in is a 4D (channel*freq*time*N) or 3D (channel*[freq*time]*N) matrix
+% OUTPUT: is a reshaped 4D-->3D or 3D-->4D matrix
 %
 % Andrew X Stewart, nov13
 % Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
