@@ -581,8 +581,8 @@ switch varargin{1}
                                     tmp_H0_Covariates(electrode,:,1,2,B) = model.continuous.p{B};
                                 else
                                     for i=1:LIMO.design.nb_continuous
-                                        tmp_H0_Covariates(electrode,:,i,1,B) = model.continuous.F{B}(i,:);
-                                        tmp_H0_Covariates(electrode,:,i,2,B) = model.continuous.p{B}(i,:);
+                                        tmp_H0_Covariates(electrode,:,i,1,B) = model.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(electrode,:,i,2,B) = model.continuous.p{B}(:,i);
                                     end
                                 end
                             end
@@ -619,7 +619,7 @@ switch varargin{1}
                     end
                     
                     if LIMO.design.nb_continuous ~=0
-                        for i=1:length(LIMO.design.nb_continuous)
+                        for i=1:LIMO.design.nb_continuous
                             name = sprintf('H0_Covariate_effect_%g',i);
                             H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,i,:,:));
                             save(name,'H0_Covariate_effect','-v7.3');
