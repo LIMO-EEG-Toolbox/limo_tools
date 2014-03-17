@@ -42,7 +42,12 @@ function model = limo_glm1(varargin)
 % provided there is no interactions - for interactions this is not possible
 % and no correction is provided - a design created by limo_design_matrix
 % would have sampled trials to make sure the number of trials is identical
-% across interaction terms.
+% across interaction terms. For time*frequency analyses, limo_eeg_tf send a
+% vector of length freq*time that is unwrap after running limo_glm1 -
+% however, weights cannot be computed that way and thus one calls LIMO.Analysis
+% to unwrap and then rewarp to get the right weights and betas -- this
+% implies that to the run 'by hand' limo_glm1 for time freqency with WLS,
+% you need to run per freq bin.
 %
 % References
 % Christensen, R. 2002. Plane answers to complex questions. 3rd Ed. Springer-Verlag
@@ -113,7 +118,11 @@ if nb_factors == 1   %  1-way ANOVA
         W = ones(size(Y,1),1);
         Betas = pinv(X)*Y;
     elseif strcmp(method,'WLS')
-        [Betas,W] = limo_WLS(X,Y);
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            
+        else
+            [Betas,W] = limo_WLS(X,Y);
+        end
     elseif strcmp(method,'IRLS')
         [Betas,W] = limo_IRLS(X,Y);
     end
