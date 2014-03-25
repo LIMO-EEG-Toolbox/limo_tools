@@ -211,12 +211,16 @@ switch type
                         tmp_data = squeeze(data(:,boot));
                         
                         % define increment size
-                        data_range = range(tmp_data(:));
-                        precision = round(data_range / dh);
-                        if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                            increment = data_range / 200;
+                        data_range = range(data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                                increment = data_range / 200;
+                            else
+                                increment = data_range / precision;
+                            end
                         else
-                            increment = data_range / precision;
+                            increment = data_range *dh;
                         end
                         
                         pos_data = (tmp_data > 0).*tmp_data;
@@ -281,12 +285,16 @@ switch type
                 % ------- tfce real data -----------
                 
                 % define increment size forced by dh
-                data_range  = range(data(:));
-                precision = round(data_range / dh);
-                if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                    increment = data_range / 200;
+                data_range = range(data(:));
+                if data_range > 1
+                    precision = round(data_range / dh);
+                    if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                        increment = data_range / 200;
+                    else
+                        increment = data_range / precision;
+                    end
                 else
-                    increment = data_range / precision;
+                    increment = data_range *dh;
                 end
                 
                 % check negative values if so do negate and add scores
@@ -378,12 +386,16 @@ switch type
                         waitbar(boot/b);
                         tmp_data = squeeze(data(:,:,boot));
                         % define increment size
-                        data_range  = range(tmp_data(:));
-                        precision = round(data_range / dh);
-                        if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                            increment = data_range / 200;
+                        data_range = range(data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                                increment = data_range / 200;
+                            else
+                                increment = data_range / precision;
+                            end
                         else
-                            increment = data_range / precision;
+                            increment = data_range *dh;
                         end
                         
                         index = 1; tfce = NaN(x,y,length(min(tmp_data(:)):increment:max(tmp_data(:))));
@@ -413,12 +425,16 @@ switch type
                         tmp_data = squeeze(data(:,:,boot));
                         
                         % define increment size
-                        data_range  = range(tmp_data(:));
-                        precision = round(data_range / dh);
-                        if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                            increment = data_range / 200;
+                        data_range = range(data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                                increment = data_range / 200;
+                            else
+                                increment = data_range / precision;
+                            end
                         else
-                            increment = data_range / precision;
+                            increment = data_range *dh;
                         end
                         
                         pos_data = (tmp_data > 0).*tmp_data;
@@ -482,11 +498,15 @@ switch type
                 
                 % define increment size forced by dh
                 data_range = range(data(:));
-                precision = round(data_range / dh);
-                if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                    increment = data_range / 200;
+                if data_range > 1
+                    precision = round(data_range / dh);
+                    if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                        increment = data_range / 200;
+                    else
+                        increment = data_range / precision;
+                    end
                 else
-                    increment = data_range / precision;
+                    increment = data_range *dh;
                 end
                 
                 % check negative values if so do negate and add scores
@@ -590,12 +610,16 @@ switch type
                         waitbar(boot/b);
                         tmp_data = squeeze(data(:,:,:,boot));
                         % define increment size
-                        data_range = range(tmp_data(:));
-                        precision = round(data_range / dh);
-                        if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                            increment = data_range / 200;
+                        data_range = range(data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                                increment = data_range / 200;
+                            else
+                                increment = data_range / precision;
+                            end
                         else
-                            increment = data_range / precision;
+                            increment = data_range *dh;
                         end
                         
                         index = 1; tfce = NaN(x,y,z,length(min(tmp_data(:)):increment:max(tmp_data(:))));
@@ -629,12 +653,16 @@ switch type
                         tmp_data = squeeze(data(:,:,:,boot));
                         
                         % define increment size
-                        data_range = range(tmp_data(:));
-                        precision = round(data_range / dh);
-                        if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
-                            increment = data_range / 200;
+                        data_range = range(data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                                increment = data_range / 200;
+                            else
+                                increment = data_range / precision;
+                            end
                         else
-                            increment = data_range / precision;
+                            increment = data_range *dh;
                         end
                         
                         pos_data = (tmp_data > 0).*tmp_data;
