@@ -1,4 +1,4 @@
-function [M, mask, mytitle] = limo_stat_values2(varargin)
+function [M, mask, mytitle] = limo_mstat_values(varargin)
 
 % find corrected p values and mask from data under H0
 % this file is more multivariate statistics only

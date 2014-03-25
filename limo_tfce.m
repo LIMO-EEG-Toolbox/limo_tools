@@ -46,13 +46,6 @@ end
 type = varargin{1};
 data = varargin{2};
 channeighbstructmat = varargin{3};
-
-[x,y,z,b]=size(data);
-if b == 1
-    subtype = 1;
-else
-    subtype = 2;
-end
 clear varargin
 
 %% start tcfe
@@ -60,8 +53,16 @@ clear varargin
 switch type
     
     % ---------------------------------------------------------------------
-    case{1}  % 1D data
+    case{1}  % 1D data -- needs to be updated (doesn't work)
         % ---------------------------------------------------------------------
+        
+        if isvector(data) 
+            [~,x]=size(data);
+            subtype = 1;
+        else
+            [x,b]=size(data);
+            subtype = 2;
+        end
         
         switch subtype
             
@@ -88,23 +89,23 @@ switch type
                     % map but with extent of cluster rather than number of the cluster)
                     % then tfce score for that height
                     index = 1;
-                    tfce = NaN(x,length(min(data(:)):increment:max(data(:))));
+                    tfce = NaN(1,x,length(min(data(:)):increment:max(data(:))));
                     f = waitbar(0,'Thresholding levels','name','TFCE');
                     nsteps = length(min(data(:)):increment:max(data(:)));
                     for h=min(data(:)):increment:max(data(:))
                         waitbar(index/nsteps);
                         [clustered_map, num] = bwlabel((data > h));
-                        extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                        extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                        tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
                     % compute final score
-                    tfce_score = nansum(tfce,2);
+                    tfce_score = nansum(tfce,3);
                     close(f)
                     
                 else
@@ -120,44 +121,44 @@ switch type
                     % then tfce score for that height
                     l = length(min(pos_data(:)):increment:max(pos_data(:)));
                     pos_increment = (max(pos_data(:)) - min(pos_data(:))) / l;
-                    pos_tfce = NaN(x,l); index = 1;
+                    pos_tfce = NaN(1,x,l); index = 1;
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         waitbar(index/nsteps);
                         [clustered_map, num] = bwlabel((pos_data > h));
-                        extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                        extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        pos_tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                        pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
                     hindex = index-1;
                     l = length(min(neg_data(:)):increment:max(neg_data(:)))-1;
                     neg_increment = (max(neg_data(:)) - min(neg_data(:))) / l;
-                    neg_tfce = NaN(x,l); index = 1;
+                    neg_tfce = NaN(1,x,l); index = 1;
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         waitbar((hindex+index)/nsteps);
                         [clustered_map, num] = bwlabel((neg_data > h));
-                        extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                        extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        neg_tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                        neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
                     % compute final score
-                    tfce_score = nansum(pos_tfce,2)+nansum(neg_tfce,2);
+                    tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     close(f)
                 end
                 
                 
             case{2}
                 % ------- tfce bootstrapped data under H0 --------------
-                tfce_score = NaN(x,b);
+                tfce_score = NaN(1,x,b);
                 
                 % check negative values if so do negate and add scores
                 if min(data(:)) > 0
@@ -182,20 +183,21 @@ switch type
                             increment = data_range *dh;
                         end
                         
-                        index = 1; tfce = NaN(x,length(min(tmp_data(:)):increment:max(tmp_data(:))));
+                        index = 1; 
+                        tfce = NaN(1,x,length(min(tmp_data(:)):increment:max(tmp_data(:))));
                         % fprintf('estimating tfce under H0 boot %g \n',boot)
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             [clustered_map, num] = bwlabel((tmp_data > h));
-                            extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                            tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
-                        tfce_score(:,boot) = nansum(tfce,2);
+                        tfce_score(1,:,boot) = nansum(tfce,3);
                     end
                     close(f)
                     
@@ -225,43 +227,52 @@ switch type
                         % then tfce score for that height
                         l = length(min(pos_data(:)):increment:max(pos_data(:)));
                         pos_increment = (max(pos_data(:)) - min(pos_data(:))) / l;
-                        pos_tfce = NaN(x,l); index = 1;
+                        pos_tfce = NaN(1,x,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             [clustered_map, num] = bwlabel((pos_data > h));
-                            extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            pos_tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                            pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
                         l = length(min(neg_data(:)):increment:max(neg_data(:)))-1;
                         neg_increment = (max(neg_data(:)) - min(neg_data(:))) / l;
-                        neg_tfce = NaN(x,l); index = 1;
+                        neg_tfce = NaN(1,x,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             [clustered_map, num] = bwlabel((neg_data > h));
-                            extent_map = zeros(x,1); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            neg_tfce(:,index) = (extent_map.^E).*h^H.*increment;
+                            neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
                         % compute final score
-                        tfce_score(:,boot) = nansum(pos_tfce,2)+nansum(neg_tfce,2);
+                        tfce_score(1,:,boot) = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     end
                     close(f)
                 end
                 
         end
         
+        
         % ---------------------------------------------------------------------
     case{2} % 2D data
         % ---------------------------------------------------------------------
+        
+        
+        [x,y,b]=size(data);
+        if b == 1
+            subtype = 1;
+        else
+            subtype = 2;
+        end
         
         switch subtype
             
@@ -296,7 +307,7 @@ switch type
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx); % not a 'true' sum since there is no overlap
                         end
-                        tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                        tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -326,7 +337,7 @@ switch type
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        pos_tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                        pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -342,7 +353,7 @@ switch type
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        neg_tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                        neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -385,7 +396,7 @@ switch type
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                            tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         tfce_score(:,:,boot) = nansum(tfce,3);
@@ -426,7 +437,7 @@ switch type
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            pos_tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                            pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
@@ -440,7 +451,7 @@ switch type
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            neg_tfce(:,:,index) = (extent_map.^E).*h^H.*dh;
+                            neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
@@ -452,9 +463,17 @@ switch type
                 
         end
         
+        
         % ---------------------------------------------------------------------
     case{3} % 3D data
         % ---------------------------------------------------------------------
+        
+        [x,y,z,b]=size(data);
+        if b == 1
+            subtype = 1;
+        else
+            subtype = 2;
+        end
         
         switch subtype
             
@@ -483,16 +502,16 @@ switch type
                     for h=min(data(:)):increment:max(data(:))
                         waitbar(index/nsteps);
                         try
-                            [clustered_map,num] = bwlabel((data > h));
-                        catch
                             [clustered_map, num] = limo_ft_findcluster((data > h), channeighbstructmat,2);
+                        catch
+                            [clustered_map,num] = bwlabel((data > h)); % this allow continuous mapping
                         end
                         extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        tfce(:,:,:,index) = (extent_map.^E).*h^H.*dh;
+                        tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -517,16 +536,16 @@ switch type
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         waitbar(index/nsteps);
                         try
-                            [clustered_map,num] = bwlabel((pos_data > h));
-                        catch
                             [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                        catch
+                            [clustered_map,num] = bwlabel((pos_data > h));
                         end
                         extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        pos_tfce(:,:,z,index) = (extent_map.^E).*h^H.*dh;
+                        pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -537,16 +556,16 @@ switch type
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         waitbar((hindex+index)/nsteps);
                         try
-                            [clustered_map,num] = bwlabel((neg_data > h));
-                        catch
                             [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                        catch
+                            [clustered_map,num] = bwlabel((neg_data > h));
                         end
                         extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = extent_map(idx) + sum(idx);
                         end
-                        neg_tfce(:,:,z,index) = (extent_map.^E).*h^H.*dh;
+                        neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
                     
@@ -584,16 +603,16 @@ switch type
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             try
-                                [clustered_map,num] = bwlabel((tmp_data > h));
-                            catch
                                 [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((tmp_data > h));
                             end
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            tfce(:,:,:,index) = (extent_map.^E).*h^H.*dh;
+                            tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         tfce_score(:,:,:,boot) = nansum(tfce,4);
@@ -629,16 +648,16 @@ switch type
                         pos_tfce = NaN(x,y,z,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             try
-                                [clustered_map,num] = bwlabel((pos_data > h));
-                            catch
                                 [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((pos_data > h));
                             end
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*dh;
+                            pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
@@ -647,16 +666,16 @@ switch type
                         neg_tfce = NaN(x,y,z,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             try
-                                [clustered_map,num] = bwlabel((neg_data > h));
-                            catch
                                 [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((neg_data > h));
                             end
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = extent_map(idx) + sum(idx);
                             end
-                            neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*dh;
+                            neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
                         
