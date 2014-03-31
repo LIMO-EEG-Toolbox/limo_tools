@@ -32,21 +32,13 @@ if nargin<4;minnbchan=2;end
 % figure;imagesc(posclusterslabelmat)
 
 if nposclusters~=0
-    
     tmp=zeros(1,nposclusters);
-    
     for C = 1:nposclusters % compute sum for each cluster
-        
         tmp(C) = sum( f(posclusterslabelmat==C) );
-        
     end
-
     maxclustersum = max(tmp(:)); % save max across clusters
-
 else
-
     maxclustersum = 0;
-
 end
 
 end

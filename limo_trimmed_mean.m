@@ -26,7 +26,11 @@ function TM = limo_trimmed_mean(varargin)
 %% checkings
 
 data = varargin{1};
-percent = varargin{2};
+percent = 20/100;
+if nargin > 1
+    percent = varargin{2};
+end
+
 if nargin == 3
     option = 1;
     alpha = varargin{3};

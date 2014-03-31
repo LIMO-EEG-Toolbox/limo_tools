@@ -177,7 +177,8 @@ switch type
                 % create a boot one_sample file to store data under H0 and H1
                 H0_one_sample = NaN(size(data,1), size(data,2),2,nboot); % stores T and p values for each boot under H0
                 % create centered data to estimate H0
-                centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
+                centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
+                % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
                 % get boot table
                 disp('making boot table ...')
                 boot_table = limo_create_boot_table(data,nboot);
@@ -263,8 +264,10 @@ switch type
                 % create a boot one_sample file to store data under H0 
                 H0_two_samples = NaN(size(data1,1), size(data1,2), 2, nboot); % stores T and p values for each boot
                 % create centered data to estimate H0
-                data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
-                data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
+                data1_centered = data1 - repmat(limo_trimmed_mean(data1,3),[1 1 size(data1,3)]);
+                data2_centered = data2 - repmat(limo_trimmed_mean(data2,3),[1 1 size(data2,3)]);
+                % data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
+                % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 % get boot table
                 disp('making boot tables ...')
                 boot_table1 = limo_create_boot_table(data1,nboot);
@@ -353,8 +356,10 @@ switch type
                 % create a boot one_sample file to store data under H0 
                 H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, nboot); % stores T and p values for each boot
                 % create centered data to estimate H0
-                data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
-                data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
+                data1_centered = data1 - repmat(limo_trimmed_mean(data1,3),[1 1 size(data1,3)]);
+                data2_centered = data2 - repmat(limo_trimmed_mean(data2,3),[1 1 size(data2,3)]);
+                % data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
+                % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 % get boot table
                 disp('making boot tables ...')
                 boot_table = limo_create_boot_table(data1,nboot);
@@ -392,9 +397,9 @@ switch type
         clear paired_samples
         disp('paired t-test done')
         
-        %--------------------------------------------------------------------------
-        %                    Regression  // percentile bootstrap under H0 and H1
-        %--------------------------------------------------------------------------
+        %------------------------------------------------------------------
+        %                    Regression  // percentile bootstrap under H0 
+        %------------------------------------------------------------------
     case {4}
         
         data                = varargin{2}; 

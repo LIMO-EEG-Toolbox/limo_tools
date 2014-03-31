@@ -40,6 +40,7 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % optional L & NUM outputs: GAR, Feb 2012
 % optional pval & maxclustersum_th outputs: GAR, Feb 2012
 % changed pval to be a map with NaN or the cluster p value CP May 2013
+% added a warping of NaN Mars 2014 CP
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
@@ -50,22 +51,23 @@ if nargin<4;minnbchan=2;end
 
 nboot = length(boot_maxclustersum);
 sort_clustermax = sort(boot_maxclustersum);
+n = sum(isnan(sort_clustermax)); 
+% NaN present if there was no clusters under H0 - just warp around
+% should not happen if using limo_getclustersum as it returns 0 in that case
+if n~=0 
+    sort_clustermax(isnan(sort_clustermax))=[];
+    sort_clustermax = [NaN(n,1); sort_clustermax];
+end
 maxclustersum_th = sort_clustermax( round((1-alpha)*nboot) );
 
 mask = zeros(size(ori_f));
-
 if nposclusters~=0
-    
     for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
-
         if sum(ori_f(posclusterslabelmat==C)) >= maxclustersum_th;
             mask(posclusterslabelmat==C)=1; % flag clusters above threshold
         end
-
     end
-
 end
-
 mask = logical(mask); % figure; imagesc(mask)
 
 if nargout>1 % get L NUM pval
