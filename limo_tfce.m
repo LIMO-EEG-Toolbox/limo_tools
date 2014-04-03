@@ -14,12 +14,14 @@ function tfce_score = limo_tfce(varargin)
 % OUPUT tfce_score is a map of scores
 %
 % Ref
-% Pernet, C., Nichols, T.E., Latinus, M. & Rousselet, G.A.
-% Cluster-based computational methods for mass univariate analysis of
-% event-related brain potentials/fields. - in prep
+% Pernet, C., Latinus, M., Nichols, T.E., & Rousselet, G.A.
+% Cluster-based computational methods for mass univariate analyses
+% of event-related brain potentials/fields: a simulation study
+% Journal Of Neuroscience Method - submitted
 %
-% Cyril Pernet v2 27-01-2014
-% -----------------------------
+% Cyril Pernet v3 03-04-2014
+% fixed indices / got the loop faster / 
+% --------------------------------------
 % Copyright (C) LIMO Team 2010
 
 
@@ -98,7 +100,7 @@ switch type
                         extent_map = zeros(1,x); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -125,10 +127,10 @@ switch type
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         waitbar(index/nsteps);
                         [clustered_map, num] = bwlabel((pos_data > h));
-                        extent_map = zeros(1,x); % same as cluster map but contains extent value instead
+                        extent_map = zeros(1,x); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -141,10 +143,10 @@ switch type
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         waitbar((hindex+index)/nsteps);
                         [clustered_map, num] = bwlabel((neg_data > h));
-                        extent_map = zeros(1,x); % same as cluster map but contains extent value instead
+                        extent_map = zeros(1,x); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -174,7 +176,7 @@ switch type
                         data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -189,10 +191,10 @@ switch type
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             [clustered_map, num] = bwlabel((tmp_data > h));
-                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -211,10 +213,10 @@ switch type
                         tmp_data = squeeze(data(:,boot));
                         
                         % define increment size
-                        data_range = range(data(:));
+                        data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -234,10 +236,10 @@ switch type
                         pos_tfce = NaN(1,x,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             [clustered_map, num] = bwlabel((pos_data > h));
-                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -248,10 +250,10 @@ switch type
                         neg_tfce = NaN(1,x,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             [clustered_map, num] = bwlabel((neg_data > h));
-                            extent_map = zeros(1,x); % same as cluster map but contains extent value instead
+                            extent_map = zeros(1,x); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -288,7 +290,7 @@ switch type
                 data_range = range(data(:));
                 if data_range > 1
                     precision = round(data_range / dh);
-                    if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                    if precision > 200 
                         increment = data_range / 200;
                     else
                         increment = data_range / precision;
@@ -313,7 +315,7 @@ switch type
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx); % not a 'true' sum since there is no overlap
+                            extent_map(idx) = sum(idx); 
                         end
                         tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -340,10 +342,10 @@ switch type
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         waitbar(index/nsteps);
                         [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
-                        extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                        extent_map = zeros(x,y); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -356,10 +358,10 @@ switch type
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         waitbar((hindex+index)/nsteps);
                         [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
-                        extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                        extent_map = zeros(x,y); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -386,10 +388,10 @@ switch type
                         waitbar(boot/b);
                         tmp_data = squeeze(data(:,:,boot));
                         % define increment size
-                        data_range = range(data(:));
+                        data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -403,10 +405,10 @@ switch type
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -425,10 +427,10 @@ switch type
                         tmp_data = squeeze(data(:,:,boot));
                         
                         % define increment size
-                        data_range = range(data(:));
+                        data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -448,10 +450,10 @@ switch type
                         pos_tfce = NaN(x,y,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -462,10 +464,10 @@ switch type
                         neg_tfce = NaN(x,y,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -500,7 +502,7 @@ switch type
                 data_range = range(data(:));
                 if data_range > 1
                     precision = round(data_range / dh);
-                    if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                    if precision > 200 
                         increment = data_range / 200;
                     else
                         increment = data_range / precision;
@@ -526,10 +528,10 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((data > h)); % this allow continuous mapping
                         end
-                        extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                        extent_map = zeros(x,y,z); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -560,10 +562,10 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((pos_data > h));
                         end
-                        extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                        extent_map = zeros(x,y,z); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -580,10 +582,10 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((neg_data > h));
                         end
-                        extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                        extent_map = zeros(x,y,z); 
                         for i=1:num
                             idx = clustered_map(:) == i;
-                            extent_map(idx) = extent_map(idx) + sum(idx);
+                            extent_map(idx) = sum(idx);
                         end
                         neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -610,10 +612,10 @@ switch type
                         waitbar(boot/b);
                         tmp_data = squeeze(data(:,:,:,boot));
                         % define increment size
-                        data_range = range(data(:));
+                        data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -631,10 +633,10 @@ switch type
                             catch
                                 [clustered_map,num] = bwlabel((tmp_data > h));
                             end
-                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -653,10 +655,10 @@ switch type
                         tmp_data = squeeze(data(:,:,:,boot));
                         
                         % define increment size
-                        data_range = range(data(:));
+                        data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 % arbitrary decision to limit precision to 200th of the data range - needed as sometime under H0 one value can be very wrong
+                            if precision > 200 
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -680,10 +682,10 @@ switch type
                             catch
                                 [clustered_map,num] = bwlabel((pos_data > h));
                             end
-                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
@@ -698,10 +700,10 @@ switch type
                             catch
                                 [clustered_map,num] = bwlabel((neg_data > h));
                             end
-                            extent_map = zeros(x,y,z); % same as cluster map but contains extent value instead
+                            extent_map = zeros(x,y,z); 
                             for i=1:num
                                 idx = clustered_map(:) == i;
-                                extent_map(idx) = extent_map(idx) + sum(idx);
+                                extent_map(idx) = sum(idx);
                             end
                             neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
