@@ -29,7 +29,7 @@ switch varargin{1}
         
         % NBOOT (updated if specified in LIMO.design)
         % ------------------------------------------
-        nboot = 599;
+        nboot = 1000;
         % ----------
         
         % get the LIMO.mat
