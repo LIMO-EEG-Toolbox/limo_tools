@@ -1,4 +1,4 @@
-function new_cont = limo_split_continuous(cat,cont)
+function new_cont = limo_split_continuous(varargin)
 
 % simple routine to create normalized continuous regressors (1st level
 % analysis) split per condition -- such regressors are useful if one is
@@ -7,6 +7,7 @@ function new_cont = limo_split_continuous(cat,cont)
 %
 % FORMAT limo_split_continuous
 %        limo_split_continuous(cat,cont)
+%        new_cont = limo_split_continuous(cat,cont)
 %
 % INPUT if no input the user is prompted to select a categorical variable
 % file (*.mat or *.txt) and a continous variable file (*.mat or *.txt)
@@ -15,7 +16,7 @@ function new_cont = limo_split_continuous(cat,cont)
 % OUPUT new_cont is the continuous regressor normalized and split per
 % condition - if no output specified, user is prompted to save
 %
-% Cyril Pernet 01-April-2014
+% Cyril Pernet 08-April-2014
 % -------------------------------
 % Copyright (C) LIMO Team 2014
 

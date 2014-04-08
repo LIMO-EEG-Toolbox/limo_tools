@@ -112,6 +112,9 @@ elseif handles.b == 0
     set(handles.TFCE,'Value',0)
 else
     fprintf('bootstrap changed to %g \n',handles.b)
+    if handles.b > 0 && handles.b < 1000
+        warndlg(['Our simulations suggest that you need at leat 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
+    end
 end
 guidata(hObject, handles);
 
@@ -248,7 +251,7 @@ if whatsup == 1
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
              && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && sum(channeighbstructmat(:)) ~= 0
-             % && ~isempty(test(1).urchan) % urchan shound not be needed
+             % && ~isempty(test(1).urchan) % urchan should not be needed
             
         handles.chan_file = sprintf('%s\%s',chan_path,chan_file);
         disp('channel location loaded');
