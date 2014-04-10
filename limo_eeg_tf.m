@@ -29,7 +29,7 @@ switch varargin{1}
         
         % NBOOT (updated if specified in LIMO.design)
         % ------------------------------------------
-        nboot = 599;
+        nboot = 1000;
         % ----------
         
         % get the LIMO.mat
@@ -172,8 +172,8 @@ switch varargin{1}
                             tmp_Covariate_effect(electrode,:,1,2) = model.continuous.p;
                         else
                             for i=1:LIMO.design.nb_continuous
-                                tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(i,:);
-                                tmp_Covariate_effect(electrode,:,i,2) = model.continuous.p(i,:);
+                                tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(:,i);
+                                tmp_Covariate_effect(electrode,:,i,2) = model.continuous.p(:,i);
                             end
                         end
                     end
@@ -346,8 +346,8 @@ switch varargin{1}
                                     tmp_H0_Covariates(electrode,:,1,2,B) = model.continuous.p{B};
                                 else
                                     for i=1:LIMO.design.nb_continuous
-                                        tmp_H0_Covariates(electrode,:,i,1,B) = model.continuous.F{B}(i,:);
-                                        tmp_H0_Covariates(electrode,:,i,2,B) = model.continuous.p{B}(i,:);
+                                        tmp_H0_Covariates(electrode,:,i,1,B) = model.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(electrode,:,i,2,B) = model.continuous.p{B}(:,i);
                                     end
                                 end
                             end
@@ -387,7 +387,7 @@ switch varargin{1}
                     end
                     
                     if LIMO.design.nb_continuous ~=0
-                        for i=1:length(LIMO.design.nb_continuous)
+                        for i=1:LIMO.design.nb_continuous
                             name = sprintf('H0_Covariate_effect_%g',i);
                             H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,i,:,:));
                             H0_Covariate_effect = limo_tf_5d_reshape(H0_Covariate_effect);
