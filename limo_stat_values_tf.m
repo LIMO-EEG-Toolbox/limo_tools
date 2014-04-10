@@ -1,6 +1,7 @@
-function [M, mask, mytitle] = limo_stat_values(varargin)
+function [M, mask, mytitle] = limo_stat_values_tf(varargin)
 
 % find corrected p values and mask from data under H0
+% adaptation of limo_stat_values to handle freq*time data
 %
 % FORMAT [M, mask, mytitle] = limo_stat_values(varargin)
 %
@@ -26,14 +27,11 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 %         mask the significant data
 %         mytitle is the right title to use to make the figure for type 1 and 2
 %
-% see limo_display_results
+% see limo_display_results limo_stat_values
 %
-% Cyril Pernet v1 25-05-2011
-% Cyril Pernet v2 25-07-2012
-% Marianne Latinus v3 2013 updated code for tfce
-% Cyril Pernet v3 changed output + clean up
+% Cyril Pernet v1 21-03-2014
 % --------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 
 
 Type      = varargin{1}; % type of plot
@@ -55,9 +53,9 @@ M = []; mask =[]; mytitle=[];
 c = clock; disp(' ');
 
 if MCC ~= 1
-    fprintf('limo_display_results %gh %gmin %gsec: computing statistical correction...\n',c(4),c(5),c(6));
+    fprintf('limo_display_results %g h %g min %g sec:\n computing statistical correction...\n',c(4),c(5),c(6));
 else
-    fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6));
+    fprintf('limo_display_results %g h %g min %g sec:\n making figure...\n',c(4),c(5),c(6));
 end
 
 
@@ -70,7 +68,7 @@ end
     
 if strcmp(FileName,'R2.mat')
     
-    M = squeeze(R2(:,:,2)); % F values
+    M = squeeze(R2(:,:,:,2)); % F values
     MCC_data = 'H0_R2.mat';
     
     % no correction for multiple testing
@@ -82,25 +80,27 @@ if strcmp(FileName,'R2.mat')
         
         if strcmp(choice,'use empirical p values')
             try cd('H0');load(MCC_data); cd ..
-                H0_F_values = squeeze(H0_R2(:,:,2,:)); clear H0_R2;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = (M >= sorted_values(:,:,U));
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                H0_F_values = squeeze(H0_R2(:,:,:,2,:)); clear H0_R2;
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('R^2 : uncorrected threshold \n using bootstraped F values');
             catch ME
-                mask = squeeze(R2(:,:,3)) < p;
-                M = squeeze(R2(:,:,3)); % p values
+                mask = squeeze(R2(:,:,:,3)) < p;
+                M = squeeze(R2(:,:,:,3)); % p values
                 mytitle = sprintf('R^2 : uncorrected threshold');
             end
         else
-            mask = squeeze(R2(:,:,3)) < p;
-            M = squeeze(R2(:,:,3)); % p values
+            mask = squeeze(R2(:,:,:,3)) < p;
+            M = squeeze(R2(:,:,:,3)); % p values
             mytitle = sprintf('R^2 : uncorrected threshold');
         end
         
@@ -109,9 +109,9 @@ if strcmp(FileName,'R2.mat')
         % ---------------------------------------  
     elseif MCC == 2 || MCC == 3
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
-            [mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            bootM = squeeze(H0_R2(:,:,:,1,:)); % get all F values under H0
+            bootP = squeeze(H0_R2(:,:,:,2,:)); % get all P values under H0
+            [mask,M] = local_clustering(M,squeeze(R2(:,:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             if MCC == 2
                 mytitle = sprintf('R^2: correction by \spatial-temporal cluster');
             elseif MCC == 3
@@ -126,7 +126,7 @@ if strcmp(FileName,'R2.mat')
         % --------------------------
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_R2(:,:,2,:)); % get all F values under H0
+            bootM = squeeze(H0_R2(:,:,:,2,:)); % get all F values under H0
             [mask,M] = max_correction(M,bootM,p);
             mytitle = sprintf('R^2 : correction by F max');
         catch ME
@@ -157,7 +157,7 @@ if strcmp(FileName,'R2.mat')
 elseif strncmp(FileName,'Condition_effect',16)
     
     effect_nb = eval( FileName(18:end-4));
-    M = squeeze(Condition_effect(:,:,1)); % F values
+    M = squeeze(Condition_effect(:,:,:,1)); % F values
     MCC_data = sprintf('H0_Condition_effect_%g',effect_nb);
     
     % no correction for multiple testing
@@ -169,25 +169,27 @@ elseif strncmp(FileName,'Condition_effect',16)
         
         if strcmp(choice,'use empirical p values')
             try cd('H0');load(MCC_data); cd ..
-                H0_F_values = squeeze(H0_Condition_effect(:,:,1,:)); clear H0_Condition;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                H0_F_values = squeeze(H0_Condition_effect(:,:,:,1,:)); clear H0_Condition;
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('Condition %g: uncorrected threshold \n using bootstraped F values',effect_nb);
             catch ME
-                mask = squeeze(Condition_effect(:,:,2)) < p;
-                M = squeeze(Condition_effect(:,:,2)); % p values
+                mask = squeeze(Condition_effect(:,:,:,2)) < p;
+                M = squeeze(Condition_effect(:,:,:,2)); % p values
                 mytitle = sprintf('Condition %g: uncorrected threshold',effect_nb);
             end
         else
-            mask = squeeze(Condition_effect(:,:,2)) < p;
-            M = squeeze(Condition_effect(:,:,2));
+            mask = squeeze(Condition_effect(:,:,:,2)) < p;
+            M = squeeze(Condition_effect(:,:,:,2));
             mytitle = sprintf('Condition %g: uncorrected threshold',effect_nb);
         end
         
@@ -197,10 +199,10 @@ elseif strncmp(FileName,'Condition_effect',16)
     elseif MCC == 2 || MCC == 3
 
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Condition_effect(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_Condition_effect(:,:,2,:)); % get all P values under H0
+            bootM = squeeze(H0_Condition_effect(:,:,:,1,:)); % get all F values under H0
+            bootP = squeeze(H0_Condition_effect(:,:,:,2,:)); % get all P values under H0
             clear H0_Conditions;
-            [mask,M] = local_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(Condition_effect(:,:,:,2)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 mytitle = sprintf('Condition %g: \n correction by spatial-temporal cluster',effect_nb);
             elseif MCC == 3
@@ -215,7 +217,7 @@ elseif strncmp(FileName,'Condition_effect',16)
         % --------------------------
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Condition_effect(:,:,1,:)); % get all F values under H0
+            bootM = squeeze(H0_Condition_effect(:,:,:,1,:)); % get all F values under H0
             clear H0_Condition_effect; [mask,M] = max_correction(M,bootM,p);
             mytitle = sprintf('Condition %g: \n correction by F max',effect_nb);
         catch ME
@@ -244,7 +246,7 @@ elseif strncmp(FileName,'Condition_effect',16)
 elseif strncmp(FileName,'Covariate_effect',16)
     
     effect_nb = eval( FileName(18:end-4));
-    M = squeeze(Covariate_effect(:,:,1)); % F values
+    M = squeeze(Covariate_effect(:,:,:,1)); % F values
     MCC_data = sprintf('H0_Covariate_effect_%g',effect_nb);
     
     % no correction for multiple testing
@@ -256,25 +258,27 @@ elseif strncmp(FileName,'Covariate_effect',16)
         
         if strcmp(choice,'use empirical p values')
             try cd('H0');load(MCC_data); cd ..
-                H0_F_values = squeeze(H0_Covariate_effect(:,:,1,:)); clear H0_Covariates;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                H0_F_values = squeeze(H0_Covariate_effect(:,:,:,1,:)); clear H0_Covariates;
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('Covariate %g: uncorrected threshold \n using bootstraped F values',effect_nb);
             catch ME
-                mask = squeeze(Covariate_effect(:,:,2)) < p;
-                M = squeeze(Covariate_effect(:,:,2)); % p values
+                mask = squeeze(Covariate_effect(:,:,:,2)) < p;
+                M = squeeze(Covariate_effect(:,:,:,2)); % p values
                 mytitle = sprintf('Covariate %g: uncorrected threshold ',effect_nb);
             end
         else
-            mask = squeeze(Covariate_effect(:,:,2)) < p;
-            M = squeeze(Covariate_effect(:,:,2)); % p values
+            mask = squeeze(Covariate_effect(:,:,:,2)) < p;
+            M = squeeze(Covariate_effect(:,:,:,2)); % p values
             mytitle = sprintf('Covariate %g: uncorrected threshold ',effect_nb);
         end
         
@@ -284,10 +288,10 @@ elseif strncmp(FileName,'Covariate_effect',16)
     elseif MCC == 2 || MCC == 3
         
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Covariate_effect(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_Covariate_effect(:,:,2,:)); % get all P values under H0
+            bootM = squeeze(H0_Covariate_effect(:,:,:,1,:)); % get all F values under H0
+            bootP = squeeze(H0_Covariate_effect(:,:,:,2,:)); % get all P values under H0
             clear H0_Covariate_effect;
-            [mask,M] = local_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(Covariate_effect(:,:,:,2)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 mytitle = sprintf('Covariate %g: \n correction by spatial-temporal cluster',effect_nb);
             elseif MCC == 3
@@ -302,7 +306,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
         % --------------------------
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Covariate_effect(:,:,1,:)); % get all F values under H0
+            bootM = squeeze(H0_Covariate_effect(:,:,:,1,:)); % get all F values under H0
             [mask,M] = max_correction(M,bootM,p);
             mytitle = sprintf('Covariate %g: \n correction by F max',effect_nb);
         catch ME
@@ -332,7 +336,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
 elseif strncmp(FileName,'Interaction_effect',18)
     
     effect_nb = eval( FileName(20:end-4));
-    M = squeeze(Interaction_effect(:,:,1)); % F values
+    M = squeeze(Interaction_effect(:,:,:,1)); % F values
     MCC_data = sprintf('H0_Interaction_effect_%g',effect_nb);
     
     % no correction for multiple testing
@@ -344,25 +348,27 @@ elseif strncmp(FileName,'Interaction_effect',18)
         
         if strcmp(choice,'use empirical p values')
             try cd('H0');load(MCC_data); cd ..
-                H0_F_values = squeeze(H0_Interaction(:,:,1,:)); clear H0_Interaction;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                H0_F_values = squeeze(H0_Interaction(:,:,:,1,:)); clear H0_Interaction;
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('Interaction %g: uncorrected threshold \n using bootstraped F values',effect_nb);
             catch ME
-                mask = squeeze(Interaction_effect(:,:,2)) < p;
-                M = squeeze(Interaction_effect(:,:,2)); % p values
+                mask = squeeze(Interaction_effect(:,:,:,2)) < p;
+                M = squeeze(Interaction_effect(:,:,:,2)); % p values
                 mytitle = sprintf('Interaction %g: uncorrected threshold',effect_nb);
             end
         else
-            mask = squeeze(Interaction_effect(:,:,2)) < p;
-            M = squeeze(Interaction_effect(:,:,2));
+            mask = squeeze(Interaction_effect(:,:,:,2)) < p;
+            M = squeeze(Interaction_effect(:,:,:,2));
             mytitle = sprintf('Interaction %g: uncorrected threshold',effect_nb);
         end
         
@@ -372,10 +378,10 @@ elseif strncmp(FileName,'Interaction_effect',18)
     elseif MCC == 2 || MCC == 3
         
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Interaction_effect(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_Interaction_effect(:,:,2,:)); % get all P values under H0
+            bootM = squeeze(H0_Interaction_effect(:,:,:,1,:)); % get all F values under H0
+            bootP = squeeze(H0_Interaction_effect(:,:,:,2,:)); % get all P values under H0
             clear H0_Interaction;
-            [mask,M] = local_clustering(M,squeeze(Interaction_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(Interaction_effect(:,:,:,2)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 mytitle = sprintf('Interaction %g: \n correction by spatial-temporal cluster',effect_nb);
             elseif MCC == 3
@@ -390,7 +396,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
         % --------------------------
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_Interaction_effect(:,:,1,:)); % get all F values under H0
+            bootM = squeeze(H0_Interaction_effect(:,:,:,1,:)); % get all F values under H0
             clear H0_Interaction_effect; [mask,M] = max_correction(M,bootM,p);
             mytitle = sprintf('Interaction %g: \n correction by F max',effect_nb);
         catch ME
@@ -419,7 +425,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
 elseif strncmp(FileName,'semi_partial_coef',17)
     
     effect_nb = eval(FileName(19:end-4));
-    M = squeeze(semi_partial_coef(:,:,2)); % F values
+    M = squeeze(semi_partial_coef(:,:,:,2)); % F values
     MCC_data = sprintf('H0_semi_partial_coef_%g',effect_nb);
     
     % no correction for multiple testing
@@ -431,27 +437,28 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         
         if strcmp(choice,'use empirical p values')
             try cd('H0'); load(MCC_data); cd ..
-                H0_F_values = squeeze(H0_semi_partial_coef(:,:,2,:)); % get F values
+                H0_F_values = squeeze(H0_semi_partial_coef(:,:,:,2,:)); % get F values
                 clear H0_semi_partial_coef;
-                sorted_values = sort(H0_F_values,3);
-                clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('Semi partial coef %g: uncorrected threshold \n using on bootstraped F values',effect_nb);
             catch ME
-                mask = squeeze(semi_partial_coef(:,:,3)) < p; % simply threshold p values
-                M = squeeze(semi_partial_coef(:,:,3));
+                mask = squeeze(semi_partial_coef(:,:,:,3)) < p; % simply threshold p values
+                M = squeeze(semi_partial_coef(:,:,:,3));
                 mytitle = sprintf('Semi partial coef %g: uncorrected threshold ',effect_nb);
             end
         else
-            mask = squeeze(semi_partial_coef(:,:,3)) < p;
-            M = squeeze(semi_partial_coef(:,:,3));
+            mask = squeeze(semi_partial_coef(:,:,:,3)) < p;
+            M = squeeze(semi_partial_coef(:,:,:,3));
             mytitle = sprintf('Semi partial coef %g: uncorrected threshold ',effect_nb);
         end
         
@@ -459,10 +466,10 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         % ---------------------------------------
     elseif MCC == 2 || MCC == 3
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_semi_partial_coef(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_semi_partial_coef(:,:,2,:)); % get all P values under H0
+            bootM = squeeze(H0_semi_partial_coef(:,:,:,1,:)); % get all F values under H0
+            bootP = squeeze(H0_semi_partial_coef(:,:,:,2,:)); % get all P values under H0
             clear H0_semi_partial_coef;
-            [mask,M] = local_clustering(M,squeeze(semi_partial_coef(:,:,3)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(semi_partial_coef(:,:,:,3)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 mytitle = sprintf('Semi partial coef %g: \n correction by spatial-temporal cluster',effect_nb);
             elseif MCC == 3
@@ -477,7 +484,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         % --------------------------
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_semi_partial_coef(:,:,1,:)); % get all F values under H0
+            bootM = squeeze(H0_semi_partial_coef(:,:,:,1,:)); % get all F values under H0
             [mask,M] = max_correction(M,bootM,p);
             mytitle = sprintf('Semi partial coef %g: \n correction by F max',effect_nb);
         catch ME
@@ -507,7 +514,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
 elseif strncmp(FileName,'con_',4)
     
     effect_nb = eval(FileName(5:end-4));
-    M = squeeze(con(:,:,4)); 
+    M = squeeze(con(:,:,:,4)); 
     MCC_data = sprintf('H0_con_%g',effect_nb);
     
     % no correction for multiple testing
@@ -519,25 +526,27 @@ elseif strncmp(FileName,'con_',4)
         
         if strcmp(choice,'use empirical p values')
             try cd H0; load(MCC_data);
-                H0_T_values  = squeeze(boot_H0_con(:,:,2,:)); % T values under H0
-                sorted_values = sort(H0_T_values,3);
-                clear boot_H0_con H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                H0_T_values  = squeeze(boot_H0_con(:,:,:,2,:)); % T values under H0
+                clear boot_H0_con 
+                sorted_values = sort(H0_F_values,4); clear H0_F_values
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = min((tmp ./ size(sorted_values,3)), 1- (tmp ./ size(sorted_values,3))) ; % p values
+                M = min((tmp ./ size(sorted_values,4)), 1- (tmp ./ size(sorted_values,4))) ; % p values
             catch ME
-                mask = con(:,:,5) <= p;
-                M = con(:,:,5);
+                mask = con(:,:,:,5) <= p;
+                M = con(:,:,:,5);
                 mytitle = sprintf('Contrast T %g: uncorrected threshold',effect_nb);
             end
         else
-            mask = con(:,:,5) <= p;
-            M = con(:,:,5);
+            mask = con(:,:,:,5) <= p;
+            M = con(:,:,:,5);
             mytitle = sprintf('Contrast T %g: uncorrected threshold',effect_nb);
         end
 
@@ -546,10 +555,10 @@ elseif strncmp(FileName,'con_',4)
         % ---------------------------------------
     elseif MCC == 2 || MCC == 3
         try cd H0; load(MCC_data); % dim electrode, frames, param/t/p, nboot
-            bootT = H0_con(:,:,2,:); % get all t values under H0
-            bootP = H0_con(:,:,3,:); % get all p values under H0
+            bootT = H0_con(:,:,:,2,:); % get all t values under H0
+            bootP = H0_con(:,:,:,3,:); % get all p values under H0
             clear H0_con
-            [mask,M] = local_clustering(M.^2,squeeze(con(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            [mask,M] = local_clustering(M.^2,squeeze(con(:,:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if MCC == 2
                 mytitle = sprintf('Contrast T %g: correction by spatial-temporal cluster', effect_nb);
             elseif MCC == 3
@@ -565,7 +574,7 @@ elseif strncmp(FileName,'con_',4)
         % --------------------------------------
     elseif MCC == 4 % Stat max
         try load(MCC_data);
-            bootT = squeeze(H0_con(:,:,2,:)); % take all T values under H0
+            bootT = squeeze(H0_con(:,:,:,2,:)); % take all T values under H0
             [mask,M] = max_correction(abs(M),abs(bootT),p); % absolute T values
             mytitle = sprintf('Contrast T %g: correction by T max', effect_nb);
         catch ME
@@ -595,7 +604,7 @@ elseif strncmp(FileName,'ess_',4)
     
     start_at = max(strfind(FileName,'_'))+1;
     effect_nb = eval(FileName(start_at:end-4));
-    M = squeeze(ess(:,:,end-1)); 
+    M = squeeze(ess(:,:,:,end-1)); 
     MCC_data = sprintf('H0_ess_%g',effect_nb);
         
     % no correction for multiple testing
@@ -609,24 +618,26 @@ elseif strncmp(FileName,'ess_',4)
             try
                 cd H0; load(MCC_data);
                 % sort all F values
-                sorted_values = sort(squeeze(boot_H0_ess(:,:,end-1,:)),3);
-                U = round((1-p)*LIMO.design.nboot);
-                mask = ess(:,:,end-1) >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+                sorted_values = sort(squeeze(boot_H0_ess(:,:,:,end-1,:)),4);
+                U = round((1-p)*size(sorted_values,4));
+                mask = (M >= sorted_values(:,:,:,U));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(sorted_values(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                M = 1- (tmp ./ size(sorted_values,4)) ; % p values
                 mytitle = sprintf('Contrast F %g: threshold using bootstrapped F values',effect_nb);
             catch ME
-                mask = squeeze(ess(:,:,end)) < p;
-                M = squeeze(ess(:,:,end));
+                mask = squeeze(ess(:,:,:,end)) < p;
+                M = squeeze(ess(:,:,:,end));
                 mytitle = sprintf('Contrast F %g: uncorrected threshold', effect_nb);
             end
         else
-            mask = squeeze(ess(:,:,end)) < p;
-            M = squeeze(ess(:,:,end));
+            mask = squeeze(ess(:,:,:,end)) < p;
+            M = squeeze(ess(:,:,:,end));
             mytitle = sprintf('Contrast F %g: uncorrected threshold', effect_nb);
         end
         
@@ -636,10 +647,10 @@ elseif strncmp(FileName,'ess_',4)
     elseif MCC == 2 || MCC == 3
         
         try cd H0; load(MCC_data);
-                bootF = squeeze(H0_ess(:,:,end-1,:)); 
-                bootP = squeeze(H0_ess(:,:,end,:)); 
+                bootF = squeeze(H0_ess(:,:,:,end-1,:)); 
+                bootP = squeeze(H0_ess(:,:,:,end,:)); 
             clear H0_ess
-            [mask,M] = local_clustering(M,squeeze(ess(:,:,end)),bootF,bootP,LIMO,MCC,p); 
+            [mask,M] = local_clustering(M,squeeze(ess(:,:,:,end)),bootF,bootP,LIMO,MCC,p); 
             if MCC == 2
                 mytitle = sprintf('Contrast F %g: correction by spatial-temporal cluster', effect_nb);
             elseif MCC == 3
@@ -654,7 +665,7 @@ elseif strncmp(FileName,'ess_',4)
         % --------------------------------------
     elseif MCC == 4
         try cd H0; load(MCC_data);
-            bootF  = squeeze(H0_ess(:,:,end-1,:)); clear H0_ess;
+            bootF  = squeeze(H0_ess(:,:,:,end-1,:)); clear H0_ess;
             [mask,M] = max_correction(M,bootF,p); % absolute T values
             mytitle = sprintf('Contrast F %g: correction by F max', effect_nb);
         catch ME
@@ -1359,8 +1370,8 @@ end
 function [mask,cluster_p] = local_clustering(M,P,bootM,bootP,LIMO,MCC,p)
 % call field trip functions to do 2D or 1D clustering
 %
-% M = 2D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
-% P = 2D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
+% M = 3D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
+% P = 3D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % bootP = 3D matrix of F values for data bootstrapped under H0
 % LIMO = LIMO structure - information requested is LIMO.data.chanlocs and LIMO.data.neighbouring_matrix
@@ -1375,7 +1386,7 @@ cluster_p = [];
 mask = [];
 
 if MCC == 2 
-    nboot = size(bootM,3);
+    nboot = size(bootM,4);
     U = round((1-p)*nboot); % bootstrap threshold
     if size(bootM,1)>1 % many electrodes
         minnbchan = 2;
@@ -1383,7 +1394,8 @@ if MCC == 2
         channeighbstructmat = LIMO.data.neighbouring_matrix;
         boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
         for boot=1:nboot
-            boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
+            fprintf('getting clusters under H0 boot %g \n',boot);
+            boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,:,boot),bootP(:,:,:,boot),channeighbstructmat,minnbchan,p);
         end
         [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
 
@@ -1394,7 +1406,7 @@ if MCC == 2
     end
     
 elseif MCC == 3
-    nboot = size(bootM,3);
+    nboot = size(bootM,4);
     U = round((1-p)*nboot); % bootstrap threshold
     th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
     sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
@@ -1407,14 +1419,15 @@ function [mask,p_val] = max_correction(M,bootM,p)
 % correction for multiple testing using the max stat value
 % note this works for bootstrapped data under H0 and for TFCE
 %
-% M = 2D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
+% M = 3D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % p = threshold to apply 
 
-nboot = size(bootM,3);
+nboot = size(bootM,4);
 for boot=1:nboot
-    data = squeeze(bootM(:,:,boot));
-    maxM(boot) = max(data(:)); % collect highest absolute value in space and time for each boot
+    fprintf('reading boot data %g \n',boot);
+    data = squeeze(bootM(:,:,:,boot));
+    maxM(boot) = max(data(:)); % collect highest absolute value for each boot
 end
 
 U=round((1-p).*nboot);
@@ -1422,12 +1435,14 @@ sortmaxM = sort(maxM); % sort bootstraps
 maxF_th = sortmaxM(U); % get threshold for each parameter
 mask = squeeze(M) >= maxF_th; 
 % figure; imagesc(mask)
-for row =1:size(M,1)
-    for column=1:size(M,2)
-        p_val(row,column) = 1-(sum(squeeze(M(row,column)) >=sortmaxM) / nboot);
+for channel = 1:size(M,1)
+    for freq = 1:size(M,2)
+        for time = 1:size(M,3)
+            p_val(channel,freq,time) = 1-(sum(squeeze(M(channel,freq,time)) >=sortmaxM) / nboot);
+        end
     end
-end 
- 
+end
+
 end
 
 

@@ -1,19 +1,30 @@
 function reshaped = limo_tf_4d_reshape(reshape_in)
 
-% Simple function to 'stack' loaded elec-freqs-times-N 4D
-% time-frequency (ERSP) data into a 3D matrix or reverse this process
-% This is done explicitly within simple loops. 
+% Simple function to 'stack' elec-freqs-times-N or 'unstack' 
+% elec-freqs*times-N matrices
 %
-% FORMAT: reshaped = limo_tf_4d_reshape(reshape_in)
-% INPUT: reshape_in is a 4D (channel*freq*time*N) or 3D (channel*[freq*time]*N) matrix
-% OUTPUT: is a reshaped 4D-->3D or 3D-->4D matrix
+% FORMAT reshaped = limo_tf_4d_reshape(reshape_in)
+%
+% INPUT/OUTPUT elec-freqs-times-N / elec-freqs*times-N
+%              elec-freqs*times-N / elec-freqs-times-N
+%
+% This is done explicitly within simple loops to be clear to read.
+% Could be vectorised and/or use reshape(), but that makes it easier to get
+% lost in dimensions.
 %
 % Andrew X Stewart, nov13
 % Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
 % ------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2014
 
-global LIMO
+if ~exist('LIMO','var')
+    try 
+        global LIMO
+        load LIMO
+    catch NO_FILE
+        error('looking for a LIMO variable/file')
+    end
+end
 
 % Check the size of input
 reshape_size = size(reshape_in);

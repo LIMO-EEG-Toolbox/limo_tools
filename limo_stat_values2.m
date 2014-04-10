@@ -244,7 +244,11 @@ elseif strncmp(FileName,'Condition_effect',16)
 elseif strncmp(FileName,'Covariate_effect',16)
     
     effect_nb = eval( FileName(18:end-4));
-    M = squeeze(Covariate_effect(:,:,1)); % F values
+    if strcmp(LIMO.Analysis,'Time-Frequency') 
+        M = squeeze(Covariate_effect(:,:,:,1)); % F values
+    else
+        M = squeeze(Covariate_effect(:,:,1)); % F values
+    end
     MCC_data = sprintf('H0_Covariate_effect_%g',effect_nb);
     
     % no correction for multiple testing
@@ -1359,8 +1363,8 @@ end
 function [mask,cluster_p] = local_clustering(M,P,bootM,bootP,LIMO,MCC,p)
 % call field trip functions to do 2D or 1D clustering
 %
-% M = 2D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
-% P = 2D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
+% M = 3D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
+% P = 3D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % bootP = 3D matrix of F values for data bootstrapped under H0
 % LIMO = LIMO structure - information requested is LIMO.data.chanlocs and LIMO.data.neighbouring_matrix
@@ -1407,7 +1411,7 @@ function [mask,p_val] = max_correction(M,bootM,p)
 % correction for multiple testing using the max stat value
 % note this works for bootstrapped data under H0 and for TFCE
 %
-% M = 2D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
+% M = 3D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % p = threshold to apply 
 

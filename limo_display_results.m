@@ -22,9 +22,9 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
 %
 % Although the function is mainly intented to be used via the GUI, some figures
 % can be generated automatically, for instance limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
-% would load the R2.mar file from the current directory, and plot all
-% electrodes/time frames F values threshiolded using tfce at alpha 0.05
-% topoplot and ERP like figiures can't be automated since they require user
+% would load the R2.mat file from the current directory, and plot all
+% electrodes/time frames F values thresholded using tfce at alpha 0.05
+% topoplot and ERP like figures can't be automated since they require user
 % input
 %
 % Cyril Pernet, Guillaume Rousselet v3 06-05-2009
@@ -36,7 +36,11 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
 % Nicolas Chauveau 08-12-2011 fixed the ERP plot of gp*repeated measures (for levels>2)
 % Cyril Pernet v5 10-10-2012 added tfce and redesigned CI with filling
 % Andrew Stewart 10-11-2013 added options for spectral power and time-freq
-% -----------------------------
+% Cyril Pernet 21-03-2014 made time-freq to work with the new display +
+% changed limo_stat values to take timne-freq
+%
+% see also limo_stat_values topoplot
+% ----------------------------------
 %  Copyright (C) LIMO Team 2010
 
 
@@ -102,7 +106,12 @@ if LIMO.Level == 1
                     
                 else % compute the plot
                     
-                    [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice);
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice);
+                    else
+                        [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice);
+                    end
+                    
                     if isempty(mask)
                         return
                     elseif sum(mask(:)) == 0
@@ -315,8 +324,7 @@ if LIMO.Level == 1
                         end
                         
                     else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
-                        scale = toplot.*mask; scale(scale==0)=NaN;
-                        limo_display_results_tf(LIMO,scale,mytitle);
+                        limo_display_results_tf(LIMO,toplot,mask,mytitle);
                     end
                 end
                 
@@ -432,7 +440,7 @@ if LIMO.Level == 1
                 subplot(3,3,[1 2]);
                 scale = toplot'.*mask; scale(scale==0)=NaN;
                 imagesc(timevect,1,scale);
-                v = max(toplot(:)); [e,f]=find(toplot==v);
+                v = max(toplot(:)); [~,f]=find(toplot==v);
                 try
                     caxis([min(min(scale)), max(max(scale))]);
                 end
