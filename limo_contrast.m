@@ -109,6 +109,7 @@ switch type
                     % Update ess file [mean value, se, df, F, p]
                     ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ; % contrast
                     
+                    R = eye(size(Y,3)) - (X*pinv(X));
                     E = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
                     c = zeros(length(C));
                     for n=1:length(C)

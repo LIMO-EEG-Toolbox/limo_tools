@@ -272,8 +272,8 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cat = load(FileName);
     else
-        load(FileName)
-        handles.Cat = eval(FileName(1:end-4));
+        FileName = load(FileName);
+        handles.Cat = getfield(FileName,cell2mat(fieldnames(FileName)));
     end
     
     % if there is more than one factor, allow factorial design
@@ -312,8 +312,8 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cont = load(FileName);
     else
-        load(FileName)
-        handles.Cont = eval(FileName(1:end-4));
+        FileName = load(FileName);
+        handles.Cont = getfield(FileName,cell2mat(fieldnames(FileName)));
     end
     
     % if the regressors are not zscored, allow option to leave it as such 

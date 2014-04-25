@@ -56,10 +56,9 @@ varargout{1} = 'LIMO random effect terminated';
 
 
 
-% --- Executes on button press in Review_Design.
-% ---------------------------------------------------------------
-function Review_Design_Callback(hObject, eventdata, handles)
-limo_review
+% --- Executes on button press in Split_continuous.
+function Split_continuous_Callback(hObject, eventdata, handles)
+limo_split_continuous
 guidata(hObject, handles);
 
 % --- Executes on button press in File_creation.
@@ -96,31 +95,6 @@ delete(handles.figure1)
 limo_batch;
 %guidata(hObject, handles);
 
-% --- Executes on button press in CD.
-% ---------------------------------------------------------------
-function CD_Callback(hObject, eventdata, handles)
-
-PathName=uigetdir(pwd,'select LIMO working directory');
-if PathName ~= 0
-    list = dir(PathName);
-    for i=1:length(list)
-        if strcmp(list(i).name,'LIMO.mat')
-            stop = questdlg('a LIMO file already exists, are you sure you want to move to this directory', ...
-                'WARNING','Yes','No','No');
-            if strcmp(stop,'Yes')
-                cd(PathName);
-                handles.dir = PathName;
-            else
-                return
-            end
-        else
-            cd(PathName);
-            handles.dir = PathName;
-        end
-    end
-end
-guidata(hObject, handles);
-
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
@@ -138,9 +112,4 @@ uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
-
-
-
-
-
 

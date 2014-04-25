@@ -3,6 +3,9 @@ function reshaped = limo_tf_5d_reshape(reshape_in)
 % Simple function to 'unstack' loaded elec-freqs*times-N-boot 4D
 % data into a 5D matrix elec-freqs-times-N-boot
 %
+% INPUT    4D electrode*[freq*time]*N*boot
+% OUTPUT   5D electrode*freq*time*N*boot
+%
 % Copy of limo_tf_4d_reshape with a bootstrap loop
 %
 % Cyril Pernet, January 2014

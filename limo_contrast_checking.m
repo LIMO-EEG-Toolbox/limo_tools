@@ -66,7 +66,7 @@ elseif nargin == 2
     for s=1:size(varargin{1},1)
         C = varargin{1}(s,:);
         
-        if sum(C(find(C))) == sum(ones(1,length(find(C))))
+        if sum(C) == length(find(C))
             go = 1; % if contrast with ones only to add parameters
         else
             check = int16(C*single((pinv(X'*X))*(X'*X)));

@@ -19,23 +19,47 @@ elseif sum(LIMO.design.nb_conditions)==0 && length(LIMO.design.nb_continuous) ==
 end
 
 %% move to the right directoty and load data
+disp('------------------------------------------')
+disp('Starting semi_partial_coefficient analyses')
+disp('------------------------------------------')
+
 cd (LIMO.dir);
-load Yr; load R2;
 
 % do the computation
 % -----------------------
-tmp = compute(LIMO,Yr,R2,1);
-clear R2
-
-for i=1:size(tmp,3)
-    name = sprintf('semi_partial_coef_%g',i);
-    semi_partial_coef = squeeze(tmp(:,:,i,:));
-    save(name,'semi_partial_coef','-v7.3')
+if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
+    load Yr; load R2;
+    tmp = compute(LIMO,Yr,R2,1);
+    clear R2
+    
+    for i=1:size(tmp,3)
+        name = sprintf('semi_partial_coef_%g',i);
+        semi_partial_coef = squeeze(tmp(:,:,i,:));
+        save(name,'semi_partial_coef','-v7.3')
+    end
+    
+elseif strcmp(LIMO.Analysis,'Time-Frequency')
+    
+    disp('loading 4D data - be patient')
+    load Yr; load R2;
+    Yr = limo_tf_4d_reshape(Yr);
+    R2 = limo_tf_4d_reshape(R2);
+    tmp = compute(LIMO,Yr,R2,1);
+    clear R2
+    
+    for i=1:size(tmp,3)
+        name = sprintf('semi_partial_coef_%g',i);
+        tmp2 = squeeze(tmp(:,:,i,:));
+        semi_partial_coef = limo_tf_4d_reshape(tmp2);
+        save(name,'semi_partial_coef','-v7.3')
+    end
+    
 end
 
 % same under H0 and TFCE
 % -------------------------
 if LIMO.design.bootstrap == 1
+    disp('loading data under H0')
     
     % Compute under H0
     % ---------------
@@ -44,38 +68,65 @@ if LIMO.design.bootstrap == 1
     cd('H0'); load('boot_table'); load('H0_R2');
     H0 = NaN(size(Yr,1),size(Yr,2),size(tmp,3),3,size(boot_table,2)); clear tmp
     
-    % compute nboot times
-    for b=1:size(boot_table,2)
-        fprintf('computing semi parital coef under H0 - bootstrap %g\n',b);
-        H0(:,:,:,:,b) = compute(LIMO,Yr(:,:,boot_table(:,b)),squeeze(H0_R2(:,:,1,b)),0);
-    end
+    if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
+        % compute nboot times
+        for b=1:size(boot_table,2)
+            fprintf('computing semi parital coef under H0 - bootstrap %g\n',b);
+            H0(:,:,:,:,b) = compute(LIMO,Yr(:,:,boot_table(:,b)),squeeze(H0_R2(:,:,1,b)),0);
+        end
         
-    for i=1:size(H0,3)
-        name = sprintf('H0_semi_partial_coef_%g',i);
-        H0_semi_partial_coef = squeeze(H0(:,:,i,[2 3],:)); % only keep F and p
-        save(name,'H0_semi_partial_coef','-v7.3')
+        for i=1:size(H0,3)
+            name = sprintf('H0_semi_partial_coef_%g',i);
+            H0_semi_partial_coef = squeeze(H0(:,:,i,[2 3],:)); % only keep F and p
+            save(name,'H0_semi_partial_coef','-v7.3')
+        end
+        clear H0 H0_semi_partial_coef
+        
+    elseif strcmp(LIMO.Analysis,'Time-Frequency')
+        % compute nboot times
+        for b=1:size(boot_table,2)
+            fprintf('computing semi parital coef under H0 - bootstrap %g\n',b);
+            staked_R2 = limo_tf_4d_reshape(squeeze(H0_R2(:,:,:,:,b)));
+            H0(:,:,:,:,b) = compute(LIMO,Yr(:,:,boot_table(:,b)),squeeze(staked_R2(:,:,1)),0);
+        end
+        
+        for i=1:size(H0,3)
+            name = sprintf('H0_semi_partial_coef_%g',i);
+            tmp = squeeze(H0(:,:,i,[2 3],:)); % only keep F and p
+            H0_semi_partial_coef = limo_tf_5d_reshape(tmp);
+            save(name,'H0_semi_partial_coef','-v7.3')
+        end
+        clear H0 H0_semi_partial_coef
+        
     end
-    clear H0 H0_semi_partial_coef
     
     % run TFCE
     % ----------
     
     if LIMO.design.tfce == 1
         
-         % check / get TFCE scores for all covariates
+        % check / get TFCE scores for all - transform F values
         cd (LIMO.dir); names = dir('semi_partial_coef*.mat');
-       
+        
         for i=1:size(names,1)
             name = sprintf('semi_partial_coef_%g',i); load(name)
             fprintf('Thresholding observed semi partial coef %g using TFCE \n',i);
-            tfce_score = limo_tfce(squeeze(semi_partial_coef(:,:,2)), LIMO.data.neighbouring_matrix);
+            if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
+                tfce_score = limo_tfce(2,squeeze(semi_partial_coef(:,:,2)), LIMO.data.neighbouring_matrix);
+            else
+                tfce_score = limo_tfce(3,squeeze(semi_partial_coef(:,:,:,2)), LIMO.data.neighbouring_matrix);
+            end
             cd TFCE; newname = sprintf('tfce_%s',name); save(newname,'tfce_score');
             clear tfce_score; cd ..
             
             % check / get H0 for TFCE
             cd H0; disp('Thresholding H0 semi partial coef using TFCE');
             newname = sprintf('H0_%s',name); load(newname)
-            tfce_H0_score = limo_tfce(squeeze(H0_semi_partial_coef(:,:,i,:)), LIMO.data.neighbouring_matrix);
+            if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
+                tfce_H0_score = limo_tfce(2,squeeze(H0_semi_partial_coef(:,:,1,:)), LIMO.data.neighbouring_matrix);
+            else
+                tfce_H0_score = limo_tfce(3,squeeze(H0_semi_partial_coef(:,:,:,1,:)), LIMO.data.neighbouring_matrix);
+            end
             newname = sprintf('tfce_%s',newname); save(newname,'tfce_H0_score');
             clear tfce_H0_score; cd ..
         end
@@ -91,7 +142,7 @@ end
 %% Compute
 function Partial_coef = compute(LIMO,Yr,R2,flag)
 % LIMO is the LIMO.mat structure
-% Yr ther data electrode * time frame * trials
+% Yr the data electrode * [freq/time] * trials
 % R2 is the R2 data
 % flag is to indicate to print what's going on or not
 
@@ -113,7 +164,7 @@ for i=1:length(LIMO.design.nb_conditions)
     index = index+LIMO.design.nb_conditions(i);
 end
 
-% interactions 
+% interactions
 if length(LIMO.design.nb_interactions)>1 && LIMO.design.nb_interactions(1) ~= 0
     for j=1:length(LIMO.design.nb_interactions)
         if j == 1
@@ -125,7 +176,7 @@ if length(LIMO.design.nb_interactions)>1 && LIMO.design.nb_interactions(1) ~= 0
         index = index+LIMO.design.nb_interactions(i);
     end
 end
- 
+
 % continuous variables
 if LIMO.design.nb_continuous~=0
     s = length(regressors);
@@ -171,8 +222,8 @@ for r=1:length(regressors)
         R0   = eye(size(Y,1)) - (X0*pinv(X0));
         M    = R0 - R;
         H    = (Betas'*X'*M*X*Betas);
-        R2_reduced = diag(H)./diag(T);      % dim time frames 
-        Partial_coef(i,:,r,1)= squeeze(R2(i,:,1)) -  R2_reduced';  % dim electrode i * frame : * regressor r -->R2
+        R2_reduced = diag(H)./diag(T);      % dim [freq/time]
+        Partial_coef(i,:,r,1)= squeeze(R2(i,:,1)) -  R2_reduced';  % dim electrode i * [freq/time] * regressor r -->R2
         Partial_coef(i,:,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,:,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,:,1)))); % --> F
         Partial_coef(i,:,r,3) = 1 - fcdf(squeeze(Partial_coef(i,:,r,2)), df, dfe); % --> p
     end

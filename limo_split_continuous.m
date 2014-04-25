@@ -23,13 +23,25 @@ function new_cont = limo_split_continuous(varargin)
 %% INPUT CHECK
 if nargin == 0
     [cat,cpath,filt]=uigetfile({'*.mat','MAT-file (*.mat)'; '*.txt','Text (*.txt)'},...
-        'Select your categorical variable'); CAT = load([cpath cat]);
+        'Select your categorical variable'); 
+    if filt == 0
+        return
+    else
+        CAT = load([cpath cat]);
+    end
+    
     if strcmp(cat(end-3:end),'.mat')
         CAT = getfield(CAT,cell2mat(fieldnames(CAT)));
     end
     
     [cont,cpath,filt]=uigetfile({'*.mat','MAT-file (*.mat)'; '*.txt','Text (*.txt)'},...
-        'Select your categorical variable'); CONT = load([cpath cont]);
+        'Select your categorical variable'); 
+    if filt == 0
+        return
+    else
+        CONT = load([cpath cont]);
+    end
+    
     if strcmp(cont(end-3:end),'.mat')
         CONT = getfield(CONT,cell2mat(fieldnames(CONT)));
     end

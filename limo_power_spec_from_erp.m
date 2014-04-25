@@ -28,7 +28,7 @@ function [limo_psd,limo_psd_freqlist] = limo_power_spec_from_erp(EEG,maxfreq,win
 
 if EEG.nbchan == 0 || isstruct(EEG)~=1     % if the EEG structure is empty or absent, fill it    
     warndlg2(' EEG is empty. On the next window, please select the EEGLAB .set file for which you wish to generate PSD data');
-    EEG=pop_loadset
+    EEG=pop_loadset;
 end
 
 if nargin<5;downsamp = 0;end

@@ -5,8 +5,8 @@ function reshaped = limo_tf_4d_reshape(reshape_in)
 %
 % FORMAT reshaped = limo_tf_4d_reshape(reshape_in)
 %
-% INPUT/OUTPUT elec-freqs-times-N / elec-freqs*times-N
-%              elec-freqs*times-N / elec-freqs-times-N
+% INPUT/OUTPUT 4D elec-freqs-times-N / 3D elec-freqs*times-N
+%              3D elec-freqs*times-N / 4D elec-freqs-times-N
 %
 % This is done explicitly within simple loops to be clear to read.
 % Could be vectorised and/or use reshape(), but that makes it easier to get
@@ -17,14 +17,19 @@ function reshaped = limo_tf_4d_reshape(reshape_in)
 % ------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2014
 
+current = pwd;
 if ~exist('LIMO','var')
-    try 
-        global LIMO
+    try
         load LIMO
     catch NO_FILE
-        error('looking for a LIMO variable/file')
+        try
+            cd ..; load LIMO
+        catch NO_FILE
+            error('looking for a LIMO variable/file')
+        end
     end
 end
+cd(current)
 
 % Check the size of input
 reshape_size = size(reshape_in);

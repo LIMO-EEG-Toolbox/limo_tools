@@ -123,7 +123,10 @@ switch varargin{1}
                             disp('selection aborded');
                             return
                         else
-                            cd(path); load(file); cd(LIMO.dir);
+                            cd(path); 
+                            channeighbstructmat = load(file); 
+                            channeighbstructmat = getfield(channeighbstructmat,cell2mat(fieldnames(channeighbstructmat)));
+                            cd(LIMO.dir);
                         end
                     else
                         channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);

@@ -472,65 +472,84 @@ if LIMO.Level == 1
             % univariate results from 1st level analysis
             % ------------------------------------------
             
-            EEG.pnts = size(EEG.data,2);
-            EEG.nbchan = size(EEG.data,1);
-            EEG.trials = 1;
-            EEG.chanlocs = LIMO.data.chanlocs;
-            if strcmp(LIMO.Analysis,'Time')
-                EEG.xmin = LIMO.data.start;
-                EEG.xmax = LIMO.data.end;
-                EEG.times = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
-            else strcmp(LIMO.Analysis,'Frequency')
-                EEG.xmin = LIMO.data.freqlist(1);
-                EEG.xmax = LIMO.data.freqlist(end);
-                EEG.times = LIMO.data.freqlist;
-            end
-            
-            if strcmp(FileName,'R2.mat')
-                EEG.data = squeeze(R2(:,:,2));
-                EEG.setname = 'R2 - F values';
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            elseif strncmp(FileName,'Condition_effect',16)
-                EEG.data = squeeze(Condition_effect(:,:,1));
-                EEG.setname = sprintf('Condition %s - F values',FileName(18:end-4));
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            elseif strncmp(FileName,'Covariate_effect',16)
-                EEG.data = squeeze(Covariate_effect(:,:,1));
-                EEG.setname = sprintf('Covariate %s - F values',FileName(18:end-4));
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            elseif strncmp(FileName,'Interaction_effect',18)
-                EEG.data = squeeze(Interaction_effect(:,:,1));
-                EEG.setname = sprintf('Interaction %s - F values',FileName(20:end-4));
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            elseif strcmp(FileName,'Partial_coef.mat')
-                regressor = str2num(cell2mat(inputdlg('which regressor to plot (e.g. 1:3)','Plotting option')));
-                if max(regressor) > size(Partial_coef,3); errordlg('error in regressor number'); return; end
-                for b = regressor
-                    EEG.data = squeeze(Partial_coef(:,:,b,1));
-                    EEG.setname = sprintf('Partial coef R2 values variable %g',b);
-                    EEG.pnts = size(EEG.data,2);
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                warndlg('topoplot not supported for 3D data')
+            else
+                EEG.trials = 1;
+                EEG.chanlocs = LIMO.data.chanlocs;
+                if strcmp(LIMO.Analysis,'Time')
                     EEG.xmin = LIMO.data.start;
                     EEG.xmax = LIMO.data.end;
-                    EEG.times = timevect;
-                    EEG.trials = 1;
-                    EEG.chanlocs = LIMO.data.chanlocs;
-                    EEG.nbchan = size(EEG.data,1);
-                    pop_topoplot(EEG);
-                    tmp_name = sprintf('Plotted_data_partial_coef_%g',b);
-                    assignin('base',[tmp_name],squeeze(Partial_coef(:,:,b,1)))
+                    EEG.times = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+                else strcmp(LIMO.Analysis,'Frequency')
+                    EEG.xmin = LIMO.data.freqlist(1);
+                    EEG.xmax = LIMO.data.freqlist(end);
+                    if size(LIMO.data.freqlist,1) == 1
+                        EEG.times = LIMO.data.freqlist;
+                    else
+                        EEG.times = LIMO.data.freqlist';
+                    end
                 end
-            elseif strcmp(FileName(1:4),'con_')
-                toplot = squeeze(con(:,:,4));
-                EEG.setname = ['Contrast ',[FileName(5:end-4)],' -- T values'];
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            elseif strcmp(FileName(1:4),'ess_')
-                toplot = squeeze(ess(:,:,end-1));
-                EEG.setname = ['Contrast ',[FileName(5:end-4)],' -- F values'];
-                pop_topoplot(EEG); assignin('base',EEG.setname,EEG.data);
-            else
-                disp('file not supported');
+                
+                if strcmp(FileName,'R2.mat')
+                    EEG.data = squeeze(R2(:,:,2));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = 'R2 - F values';
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:2),EEG.data);
+                elseif strncmp(FileName,'Condition_effect',16)
+                    EEG.data = squeeze(Condition_effect(:,:,1));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = sprintf('Condition %s - F values',FileName(18:end-4));
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:9),EEG.data);
+                elseif strncmp(FileName,'Covariate_effect',16)
+                    EEG.data = squeeze(Covariate_effect(:,:,1));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = sprintf('Covariate %s - F values',FileName(18:end-4));
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:9),EEG.data);
+                elseif strncmp(FileName,'Interaction_effect',18)
+                    EEG.data = squeeze(Interaction_effect(:,:,1));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = sprintf('Interaction %s - F values',FileName(20:end-4));
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:11),EEG.data);
+                elseif strcmp(FileName,'Partial_coef.mat')
+                    regressor = str2num(cell2mat(inputdlg('which regressor to plot (e.g. 1:3)','Plotting option')));
+                    if max(regressor) > size(Partial_coef,3); errordlg('error in regressor number'); return; end
+                    for b = regressor
+                        EEG.data = squeeze(Partial_coef(:,:,b,1));
+                        EEG.pnts = size(EEG.data,2);
+                        EEG.nbchan = size(EEG.data,1);
+                        EEG.setname = sprintf('Partial coef R2 values variable %g',b);
+                        EEG.pnts = size(EEG.data,2);
+                        EEG.xmin = LIMO.data.start;
+                        EEG.xmax = LIMO.data.end;
+                        EEG.times = timevect;
+                        EEG.trials = 1;
+                        EEG.chanlocs = LIMO.data.chanlocs;
+                        EEG.nbchan = size(EEG.data,1);
+                        pop_topoplot(EEG);
+                        tmp_name = sprintf('Plotted_data_partial_coef_%g',b);
+                        assignin('base','Partial_coef',squeeze(Partial_coef(:,:,b,1)))
+                    end
+                elseif strcmp(FileName(1:4),'con_')
+                    EEG.data = squeeze(con(:,:,4));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = ['Contrast ',[FileName(5:end-4)],' -- T values'];
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:8),EEG.data);
+                elseif strcmp(FileName(1:4),'ess_')
+                    EEG.data = squeeze(ess(:,:,end-1));
+                    EEG.pnts = size(EEG.data,2);
+                    EEG.nbchan = size(EEG.data,1);
+                    EEG.setname = ['Contrast ',[FileName(5:end-4)],' -- F values'];
+                    pop_topoplot(EEG); assignin('base',EEG.setname(1:8),EEG.data);
+                else
+                    disp('file not supported');
+                end
             end
-            
             
         case{3}
             
@@ -582,13 +601,13 @@ if LIMO.Level == 1
             end
             
             % timing info
-            if LIMO.analysis_flag  == 1
+            if strcmp(LIMO.Analysis,'Time')
                 timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
-            elseif LIMO.analysis_flag  == 2
-                freqvect=LIMO.data.freqlist;
+            elseif strcmp(LIMO.Analysis,'Frequency')
+                freqvect=LIMO.data.freqlist';
             elseif strcmp(LIMO.Analysis,'Time-Frequency') 
                 timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
-                freqvect = LIMO.data.freqlist;
+                freqvect = LIMO.data.freqlist';
             end
             
             % down to business
@@ -669,9 +688,9 @@ if LIMO.Level == 1
             figure;set(gcf,'Color','w')
             if sum(regressor <= categorical) == length(regressor)
                 for i=1:size(average,1)
-                    if LIMO.analysis_flag  == 1
+                    if strcmp(LIMO.Analysis,'Time')
                         plot(timevect,average(i,:),'LineWidth',1.5); hold on
-                    elseif LIMO.analysis_flag  == 2
+                    elseif strcmp(LIMO.Analysis,'Frequency')
                         plot(freqvect,average(i,:),'LineWidth',1.5); hold on
                     end
                     
@@ -680,7 +699,11 @@ if LIMO.Level == 1
                         colorOrder = repmat(colorOrder,ceil(size(average,1)/size(colorOrder,1)),1);
                     end
                     x = squeeze(ci(i,1,:)); y = squeeze(ci(i,2,:));
-                    fillhandle = patch([timevect fliplr(timevect)], [x',fliplr(y')], colorOrder(i,:));
+                    if strcmp(LIMO.Analysis,'Time')
+                        fillhandle = patch([timevect fliplr(timevect)], [x',fliplr(y')], colorOrder(i,:));
+                    elseif strcmp(LIMO.Analysis,'Frequency')
+                        fillhandle = patch([freqvect fliplr(freqvect)], [x' fliplr(y')], colorOrder(i,:));
+                    end
                     set(fillhandle,'EdgeColor',colorOrder(i,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
                 end
                 
@@ -701,9 +724,9 @@ if LIMO.Level == 1
                                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                             end
                             h = axis;
-                            if LIMO.analysis_flag  == 1
+                            if strcmp(LIMO.Analysis,'Time')
                                 plot(timevect,sig.*h(3),'r*','LineWidth',2)
-                            else
+                            elseif strcmp(LIMO.Analysis,'Frequency')
                                 plot(freqvect,sig.*h(3),'r*','LineWidth',2)
                             end
                             break
@@ -755,10 +778,10 @@ if LIMO.Level == 1
                 assignin('base','Plotted_data', average)
                 v=axis;axis([v(1) v(2) v(3)+.1*v(3) v(4)+.1*v(4)])
                 set(gca,'FontSize',14);
-                if LIMO.analysis_flag  == 1
+                if strcmp(LIMO.Analysis,'Time')
                     xlabel('Time in ms','FontSize',16)
                     ylabel('Amplitude in {\mu}V','FontSize',16)
-                elseif LIMO.analysis_flag  == 2
+                elseif strcmp(LIMO.Analysis,'Frequency')
                     xlabel('Freq in Hz','FontSize',16)
                     ylabel('Power spectral density','FontSize',16);
                 end

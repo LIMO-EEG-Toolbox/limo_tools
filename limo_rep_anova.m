@@ -259,7 +259,7 @@ switch type
 
         df  = p-1; 
         dfe = (n-p+1) - (k-1); % remove from dfe nb_gp - 1
-        yp  = squeeze(mean(Data,2))'; % average across gp
+        yp  = squeeze(nanmean(Data,2))'; % average across gp
         ve  = sum(sum(X(:,1:end-1))-1); % - rank(X); % dfe for different sample sizes (gives the same as rank(X)*(sum(X(:,1))-1) for equal sample sizes            
         Spl = E/ve; % covariance of data split per gp
         for time = 1:f
@@ -271,7 +271,7 @@ switch type
         
         % compute the gp effect (=univariate stat on the mean across repeated measures)
         % ----------------------------------------------------------------------------              
-        Y  = mean(Data,3); % average repeated measures
+        Y  = nanmean(Data,3); % average repeated measures
         [result.gp.F,result.gp.p] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
 
         
@@ -313,7 +313,7 @@ switch type
             [C,result.names] = limo_OrthogContrasts(factors); % set of orthogonal contrasts between factors
         end
 
-        y  = squeeze(mean(Data,2))'; % average across gp
+        y  = squeeze(nanmean(Data,2))'; % average across gp
         ve = 0; % dfe as a function of the number of subjects per gp
         for g=1:k
             v = sum(sum(X(:,g)==1));
@@ -345,7 +345,7 @@ switch type
         
         % compute the gp effect (=univariate stat)
         % ---------------------------------------     
-        Y  = mean(Data,3); % average repeated measures
+        Y  = nanmean(Data,3); % average repeated measures
         [result.gp.F, result.gp.p] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
        
        % compute the interactions with gp
