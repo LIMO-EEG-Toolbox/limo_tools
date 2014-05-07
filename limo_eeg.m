@@ -48,17 +48,16 @@ function limo_eeg(varargin)
 % ------------------------------------------
 % Copyright (C) LIMO Team 2014
 
-
-
 % make sure paths are ok
 local_path = which('limo_eeg');
 root = local_path(1:max(find(local_path == filesep))-1);
 addpath([root filesep 'limo_cluster_functions'])
+addpath([root filesep 'external'])
 addpath([root filesep 'help'])
+global EEG
 
 % in case data are already there
 if isempty(varargin);
-    global EEG
     varargin={1};
 end
 
@@ -79,7 +78,7 @@ switch varargin{1}
         disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus. These authors are thereafter');
         disp(' referred as the LIMO Team');
         disp(' ')
-        disp('LIMO_EEG  Copyright (C) 2010  LIMO TEAM');
+        disp('LIMO_EEG  Copyright (C) 2014  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
@@ -171,8 +170,12 @@ switch varargin{1}
         % Check data where specified and load
         try
             cd (LIMO.data.data_dir);
-            disp('reloading data ..');
-            EEG=pop_loadset(LIMO.data.data);
+            if strcmp([LIMO.data.data_dir LIMO.data.data],[EEG.filepath filesep EEG.filename])
+                disp('Using Global variable EEG')
+            else
+                disp('reloading data ..');
+                EEG=pop_loadset(LIMO.data.data);
+            end
         catch
             error('error loading data (most likely a memory issue) or cannot find the data ; error line 103/104 cd/pop_loadset')
         end
@@ -190,14 +193,14 @@ switch varargin{1}
             
         elseif strcmp(LIMO.Analysis,'Time-Frequency') 
             clear EEG; disp('Time-Frequency implementation - loading tf data...');
-            Y=load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
-            Y=Y.limo_tf(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
-            LIMO.data.size4D=size(Y);
-            LIMO.data.freq_list=repmat(LIMO.data.tf_freqs,[1 numel(LIMO.data.tf_times)]);
+            Y = load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
+            Y = getfield(Y,cell2mat(fieldnames(Y))); % take the actual data from the structure
+            Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); % trim
             LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
+            LIMO.data.size4D= size(Y);
         end
         
-        clear ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY
+        clear ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY 
         cd (LIMO.dir) ; save LIMO LIMO
 
 
@@ -682,7 +685,6 @@ switch varargin{1}
                                 tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             else
                                 tfce_score = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                                
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
                             clear Condition_effect tfce_score; cd ..

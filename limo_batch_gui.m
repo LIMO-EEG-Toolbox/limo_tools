@@ -1,0 +1,426 @@
+function varargout = limo_batch_gui(varargin)
+
+% BATCH INTERFACE
+% created using GUIDE 
+% Based on limo_import_tf
+% Cyril Pernet v1. May 2014
+% -----------------------------
+% Copyright (C) LIMO Team 2014
+
+
+%% GUI stuffs
+% -------------------------
+% Begin initialization code
+% -------------------------
+warning off
+
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @limo_batch_gui_OpeningFcn, ...
+                   'gui_OutputFcn',  @limo_batch_gui_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+
+% -----------------------
+% End initialization code
+% -----------------------
+
+
+% --------------------------------------------------
+%   Executes just before the menu is made visible
+% --------------------------------------------------
+function limo_batch_gui_OpeningFcn(hObject, eventdata, handles, varargin)
+handles.output = hObject;
+
+% define handles used for the save callback
+try
+    clear LIMO
+    LIMO     = [];
+catch
+    LIMO     = [];    
+end
+
+handles.FileName = [];
+handles.Cat                 = [];
+handles.fullfactorial       = 0;
+handles.Cont                = [];
+handles.zscore              = 1;
+handles.start               = 0;
+handles.end                 = 0;
+handles.lowf                = 0;
+handles.highf               = 0;
+handles.Analysis            = [];
+handles.type_of_analysis    = 'Mass-univariate';
+handles.method              = 'OLS';
+handles.bootstrap           = 0;
+handles.tfce                = 0;
+
+guidata(hObject, handles);
+uiwait(handles.figure1);
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = limo_batch_gui_OutputFcn(hObject, eventdata, handles) 
+varargout{1} = 'LIMO import terminated';
+
+
+%% Callbacks
+
+%-------------------------
+%         IMPORT
+%------------------------
+
+% load a data set -- EEG 
+% ---------------------------------------------------------------
+function Import_data_set_Callback(hObject, eventdata, handles)
+
+[FileName,PathName,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; ...
+        '*.txt','Text (*.txt)'; '*set*', 'EEGLAB (EEG.set)'}, ...
+        'Pick sets or list', 'MultiSelect', 'on');
+if FilterIndex ~= 0
+    
+    if size(FileName,2) ~=1 % multiselect for .sets
+        for f=1:size(FileName,2)
+            if ~strcmp(FileName{f}(end-3:end),'.set')
+                errordlg('only multiple set files are allowed or a single .mat/.txt list')
+                return
+            end
+        end
+        
+    else % use .mat or .txt
+        
+        if strcmp(FileName(end-3:end),'.txt')
+            FileName = importdata(FileName);
+        elseif strcmp(FileName(end-3:end),'.mat')
+            FileName = load([PathName FileName]);
+            FileName = getfield(FileName,cell2mat(fieldnames(FileName)));
+        end
+    
+        for f=1:size(FileName,1)
+            if ~exist(FileName{f},'file')
+                errordlg(sprintf('%s \n file not found',FileName{f}));
+                return
+            end
+        end
+    end
+    handles.FileName = FileName;
+end
+guidata(hObject, handles);
+
+
+% --- Executes on selection change in analysis_type.
+% ---------------------------------------------------------------
+function analysis_type_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function analysis_type_Callback(hObject, eventdata, handles)
+
+content = get(hObject,'Value');
+if content == 1
+    handles.Analysis = 'Time';
+    set(handles.Starting_point,'Enable','on')
+    set(handles.ending_point,'Enable','on')
+    set(handles.low_freq,'Enable','off')
+    set(handles.high_freq,'Enable','off')
+elseif content == 2
+    handles.Analysis = 'Frequency';
+    set(handles.Starting_point,'Enable','off')
+    set(handles.ending_point,'Enable','off')
+    set(handles.low_freq,'Enable','on')
+    set(handles.high_freq,'Enable','on')
+elseif content == 3
+    handles.Analysis = 'Time-Frequency';
+    set(handles.Starting_point,'Enable','on')
+    set(handles.ending_point,'Enable','on')
+    set(handles.low_freq,'Enable','on')
+    set(handles.high_freq,'Enable','on')
+end
+guidata(hObject, handles);
+
+
+% get the starting time point of the analysis
+% ---------------------------------------------------------------
+function Starting_point_CreateFcn(hObject, eventdata, handles)
+
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function Starting_point_Callback(hObject, eventdata, handles)
+
+handles.start = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% get the ending time point of the analysis
+% ---------------------------------------------------------------
+function ending_point_CreateFcn(hObject, eventdata, handles)
+
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function ending_point_Callback(hObject, eventdata, handles)
+
+handles.end = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% get the starting frequency point of the analysis
+% ---------------------------------------------------------------
+function low_freq_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function low_freq_Callback(hObject, eventdata, handles)
+
+handles.lowf = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+
+% get the ending frequency point of the analysis
+% ---------------------------------------------------------------
+function high_freq_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function high_freq_Callback(hObject, eventdata, handles)
+
+handles.highf = str2double(get(hObject,'String'));
+guidata(hObject, handles);
+
+%---------------------------
+%      ANALYSIS
+% --------------------------
+
+% type of analysis
+% --- Executes on selection change in type_of_analysis.
+% --- Executes during object creation, after setting all properties.
+function type_of_analysis_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function type_of_analysis_Callback(hObject, eventdata, handles)
+
+contents{1} = 'Mass-univariate';  
+contents{2} = 'Multivariate'; 
+handles.type_of_analysis = contents{get(hObject,'Value')};
+if isempty(handles.type_of_analysis)
+    handles.type_of_analysis = 'Mass-univariate';
+end
+fprintf('analysis selected %s \n',handles.type_of_analysis);
+guidata(hObject, handles);
+
+
+% method
+function method_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function method_Callback(hObject, eventdata, handles)
+
+contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
+handles.method = contents{get(hObject,'Value')};
+if isempty(handles.method)
+    handles.method = 'OLS';
+end
+fprintf('method selected %s \n',handles.method);
+guidata(hObject, handles);
+
+
+% bootstrap
+% --- Executes on button press in boostrap_check_box.
+function boostrap_check_box_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.bootstrap = 1;
+    disp('bootstrap is on');
+    set(handles.TFCE,'Enable','on')
+elseif M == 0
+    handles.bootstrap = 0;
+    disp('boostrap is off');
+    set(handles.TFCE,'Enable','off')
+end
+guidata(hObject, handles);
+
+
+% TFCE
+% --- Executes on button press in TFCE.
+function TFCE_CreateFcn(hObject, eventdata, handles)
+function TFCE_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.tfce = 1;
+    disp('tfce is on');
+elseif M == 0
+    handles.tfce = 0;
+    disp('tfce is off');
+end
+guidata(hObject, handles);
+
+
+
+%-------------------------
+%         SPECIFY
+%------------------------
+
+% --- Executes on button press in categorical_variable_input.
+% ---------------------------------------------------------------
+function categorical_variable_input_Callback(hObject, eventdata, handles)
+
+[CatName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','on');
+if FilterIndex == 1 
+    if size(CatName,2) ==1 % NOT multiselect        
+        if strcmp(CatName(end-3:end),'.txt')
+            CatName = importdata(CatName);
+        elseif strcmp(CatName(end-3:end),'.mat')
+            CatName = load([PathName CatName]);
+            CatName = getfield(CatName,cell2mat(fieldnames(CatName)));
+        end
+    
+        for f=1:size(CatName,1)
+            if ~exist(CatName{f},'file')
+                errordlg(sprintf('%s \n file not found',CatName{f}));
+                return
+            end
+        end
+    end
+    handles.Cat = CatName;
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in full_factorial.
+% ---------------------------------------------------------------
+function full_factorial_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.fullfactorial = 1;
+    disp('full factorial on');
+elseif M == 0
+    handles.fullfactorial = 0;
+    disp('full factorial off');
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in continuous_variable_input.
+% ---------------------------------------------------------------
+function continuous_variable_input_Callback(hObject, eventdata, handles)
+
+[ContName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO continuous data','Multiselect','on');
+if FilterIndex == 1
+    if size(ContName,2) ==1 % NOT multiselect        
+        if strcmp(ContName(end-3:end),'.txt')
+            ContName = importdata(ContName);
+        elseif strcmp(ContName(end-3:end),'.mat')
+            ContName = load([PathName ContName]);
+            ContName = getfield(ContName,cell2mat(fieldnames(ContName)));
+        end
+    
+        for f=1:size(ContName,1)
+            if ~exist(ContName{f},'file')
+                errordlg(sprintf('%s \n file not found',ContName{f}));
+                return
+            end
+        end
+    end
+    handles.Cont = ContName;
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in z_score.
+% ---------------------------------------------------------------
+function z_score_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 0
+    handles.zscore = 1;
+    disp('zscoring on');
+elseif M == 1
+    handles.zscore = 0;
+    disp('zscoring off');
+end
+guidata(hObject, handles);
+
+
+%-------------------------
+%         OTHERS
+%------------------------
+
+% --- Executes on button press in Done.
+% ---------------------------------------------------------------
+function Done_Callback(hObject, eventdata, handles)
+  
+varargout{1} = handles.FileName;
+varargout{2} = handles.CatName;
+varargout{3} = handles.ContName;
+
+defaults.fullfactorial     = handles.fullfactorial;
+defaults.zscore            = handles.zscore;
+defaults.start             = handles.start;
+defaults.end               = handles.end ;
+defaults.lowf              = handles.lowf;
+defaults.highf             = handles.highf;
+defaults.method            = handles.method;
+defaults.type_of_analysis  = handles.type_of_analysis;  
+defaults.bootstrap         = handles.bootstrap;  
+defaults.tfce              = handles.tfce;  
+
+% -----------------------------------------
+% load the expected channel locations
+% -----------------------------------------
+if handles.bootstrap == 1
+    [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
+    if whatsup == 1
+        load (sprintf('%s%s',chan_path,chan_file))
+        test = eval(chan_file(1:end-4));
+        if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
+                && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
+                && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
+            default.channloc = test; disp('channel location loaded');
+        else
+            warndlg('this file is not recognize as a channel location file or informations are missing','file error')
+        end
+    else
+        disp('exiting batch mode'); limo_gui; return
+    end
+end
+varargout{4} = defaults;
+
+if isempty(handles.Cat) && isempty(handles.Cont);
+    errordlg('no regressors were loaded','error')
+    return
+else
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
+end
+
+% --- Executes on button press in Quit.
+% ---------------------------------------------------------------
+function Quit_Callback(hObject, eventdata, handles)
+
+clc
+uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_gui

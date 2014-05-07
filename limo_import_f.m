@@ -92,18 +92,16 @@ function Import_data_set_Callback(hObject, eventdata, handles)
 global EEG 
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
-if FilterIndex ~= 0
-    cd(PathName)
-    
+if FilterIndex ~= 0    
     try
         disp('loading EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset(FileName);
+        EEG=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
         handles.rate     = EEG.srate;
         
-        if isfield(EEG.etc,'limo_psd') == 1 % data are there
+        if isfield(EEG.etc,'limo_psd') == 1 && numel(size(EEG.etc.limo_psd)) == 3; % data are there
             try
             handles.start    = EEG.etc.limo_psd_freqlist(1);
             handles.end      = EEG.etc.limo_psd_freqlist(end);
@@ -113,11 +111,11 @@ if FilterIndex ~= 0
             end
             cd(handles.dir); fprintf('Data set %s loaded \n',FileName);
         else
-            errordlg('Can''t find the field EEG.etc.limo_psd - see help.');
+            errordlg('Can''t find the field EEG.etc.limo_psd - see help.'); return
         end
     
     catch
-        errordlg('pop_loadset eeglab function not found','error');
+        errordlg('pop_loadset eeglab function error / not found','error'); return
     end
 end
 guidata(hObject, handles);
@@ -143,7 +141,9 @@ else
     % Find a possible frequency bin close to the requested one
     [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-lowf));
     closest_lowf = EEG.etc.limo_psd_freqlist(ind);
-    helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);   
+    if lowf ~= closest_lowf
+        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
+    end
     
     handles.start        = closest_lowf;
     handles.trim_lowf    = ind; % gives the 1st column to start the analysis
@@ -172,7 +172,9 @@ else
     % Find a possible frequency bin close to the requested one
     [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-highf));
     closest_highf = EEG.etc.limo_psd_freqlist(ind);
-    helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
+    if highf ~= closest_highf
+        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
+    end
     
     handles.end           = closest_highf;
     handles.trim_highf    = ind; % gives the 1st column to start the analysis
@@ -215,7 +217,7 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
+contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
     handles.method = 'OLS';
@@ -395,7 +397,6 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont;  
 LIMO.data.start               = handles.start;
 LIMO.data.end                 = handles.end ;
-LIMO.data.freqlist            = handles.freqlist;
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
 LIMO.design.method            = 'OLS';
@@ -417,6 +418,8 @@ if isempty(handles.trim_highf)
 else
     LIMO.data.trim2 = handles.trim_highf ;
 end
+
+LIMO.data.freqlist = handles.freqlist(LIMO.data.trim1:LIMO.data.trim2);
 
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;

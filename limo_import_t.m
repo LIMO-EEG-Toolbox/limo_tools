@@ -90,12 +90,10 @@ function Import_data_set_Callback(hObject, eventdata, handles)
 global EEG 
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
-if FilterIndex ~= 0
-    cd(PathName)
-    
+if FilterIndex ~= 0    
     try  
         disp('loading EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset(FileName);
+        EEG=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
@@ -105,7 +103,7 @@ if FilterIndex ~= 0
         cd(handles.dir) 
         fprintf('Data set %s loaded \n',FileName);
     catch
-        errordlg('pop_loadset eeglab function not found','error');
+        errordlg('pop_loadset eeglab function error / not found','error'); return
     end
 end
 guidata(hObject, handles);

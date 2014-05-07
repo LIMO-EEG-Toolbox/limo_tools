@@ -71,6 +71,7 @@ handles.start               = 0;
 handles.end                 = 0;
 handles.lowf                = 0;
 handles.highf               = 0;
+handles.freqlist            = 0;
 handles.dir                 = [];
 handles.zscore              = 1;
 handles.fullfactorial       = 0;
@@ -100,11 +101,9 @@ global EEG
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data with TF data');
 if FilterIndex ~= 0
-    cd(PathName)
-    
     try
         disp('loading TF EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset(FileName);
+        EEG=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
@@ -122,11 +121,11 @@ if FilterIndex ~= 0
            cd(handles.dir)
            fprintf('Data set %s loaded \n',FileName); 
         else
-            helpdlg('Can''t load the data. Ensure that time-frequency information is stored in EEG.etc - see help.');
+            errordlg('Can''t load the data. Ensure that time-frequency information is stored in EEG.etc - see help.'); return
         end
         
     catch
-        errordlg('Error loading. Is eeglab loaded?','error');
+        errordlg('pop_loadset eeglab function error / not found','error'); return
     end
 end
 guidata(hObject, handles);
@@ -293,7 +292,7 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
+contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
     handles.method = 'OLS';
@@ -471,8 +470,6 @@ LIMO.data.end                 = handles.end ;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont; 
-LIMO.data.tf_freqs            = EEG.etc.tf_freqs;
-LIMO.data.tf_times            = EEG.etc.tf_times;
 
 if exist(handles.tf_dir,'file') == 2;
     LIMO.data.tf_data_filepath    = EEG.etc.tf_path;
@@ -507,6 +504,8 @@ else
     LIMO.data.trim_high_f = handles.trim_highf;
 end
 
+LIMO.data.tf_freqs = EEG.etc.tf_freqs(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
+
 if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
 else
@@ -518,6 +517,8 @@ if isempty(handles.trim2)
 else
     LIMO.data.trim2 = handles.trim2;
 end
+
+LIMO.data.tf_times = EEG.etc.tf_times(LIMO.data.trim1:LIMO.data.trim2);
 
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;

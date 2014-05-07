@@ -529,8 +529,9 @@ elseif strncmp(FileName,'con_',4)
                 H0_T_values  = squeeze(boot_H0_con(:,:,:,2,:)); % T values under H0
                 clear boot_H0_con 
                 sorted_values = sort(H0_F_values,4); clear H0_F_values
-                U = round((1-p)*size(sorted_values,4));
-                mask = (M >= sorted_values(:,:,:,U));
+                low = round(p*size(sorted_values,4)/2);
+                high = size(sorted_values,4) - low;
+                mask = (M <= sorted_values(:,:,low))+(M >= sorted_values(:,:,high));
                 for channel = 1:size(M,1)
                     for freq = 1:size(M,2)
                         for time = 1:size(M,3)
@@ -695,9 +696,9 @@ elseif strncmp(FileName,'one_sample',10)
     
     effect_nb = eval(FileName(28:end-4));
     if size(one_sample,1)>1
-        M = squeeze(one_sample(:,:,4)); % T values
+        M = squeeze(one_sample(:,:,:,4)); % T values
     else
-        M = one_sample(1,:,4);
+        M = one_sample(1,:,:,4);
     end
     MCC_data = sprintf('H0%sH0_%s', filesep, FileName); 
      
@@ -713,30 +714,32 @@ elseif strncmp(FileName,'one_sample',10)
                 lo = round((LIMO.design.bootstrap.*p)/2);
                 hi = LIMO.design.bootstrap - lo;
                 load(MCC_data)
-                Tsorted  = sort(squeeze(H0_one_sample(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                Tsorted  = sort(squeeze(H0_one_sample(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                 if size(one_sample,1) == 1
-                    tmp = NaN(1,size(one_sample,2),size(H0_one_sample,4));
-                    tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                    tmp = NaN(1,size(one_sample,2),size(one_sample,3),size(H0_one_sample,5));
+                    tmp(1,:,:,:) = Tsorted; Tsorted = tmp; clear tmp
                 end
-                TCI(:,:,1) = Tsorted(:,:,lo+1);
-                TCI(:,:,2) = Tsorted(:,:,hi);
-                mask = M >= TCI(:,:,2) | M <= TCI(:,:,1);
+                TCI(:,:,:,1) = Tsorted(:,:,:,lo+1);
+                TCI(:,:,:,2) = Tsorted(:,:,:,hi);
+                mask = M >= TCI(:,:,:,2) | M <= TCI(:,:,:,1);
                 
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(Tsorted(row,column,:)));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(Tsorted(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = min(tmp./size(Tsorted,3), 1-(tmp./size(Tsorted,3))) ; % p values
+                M = min(tmp./size(Tsorted,4), 1-(tmp./size(Tsorted,4))) ; % p values
                 mytitle = sprintf('One sample t-test \n thresholding using bootstrapped T values');
             else
-                mask = one_sample(:,:,5) <= p;
-                M = squeeze(one_sample(:,:,5));
+                mask = one_sample(:,:,:,5) <= p;
+                M = squeeze(one_sample(:,:,:,5));
                 mytitle = sprintf('One sample t-test: uncorrected threshold');
             end
         catch ME
-            mask = one_sample(:,:,5) <= p;
-            M = squeeze(one_sample(:,:,5));
+            mask = one_sample(:,:,:,5) <= p;
+            M = squeeze(one_sample(:,:,:,5));
             mytitle = sprintf('One sample t-test: uncorrected threshold');
         end
         
@@ -746,15 +749,15 @@ elseif strncmp(FileName,'one_sample',10)
    elseif MCC == 2 || MCC == 3
        if size(M,1) == 1; MCC =3; end
         try load(MCC_data);
-            bootT = squeeze(H0_one_sample(:,:,1,:)); % get all T values under H0
-            bootP = squeeze(H0_one_sample(:,:,2,:)); % get all P values under H0
+            bootT = squeeze(H0_one_sample(:,:,:,1,:)); % get all T values under H0
+            bootP = squeeze(H0_one_sample(:,:,:,2,:)); % get all P values under H0
             if size(one_sample,1) == 1
-                tmp = NaN(1,size(one_sample,2),size(H0_one_sample,4));
-                tmp(1,:,:) = bootT; bootT = tmp;
-                tmp(1,:,:) = bootP; bootP = tmp; 
+                tmp = NaN(1,size(one_sample,2),size(one_sample,3),size(H0_one_sample,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp;
+                tmp(1,:,:,:) = bootP; bootP = tmp; 
                 clear tmp
             end
-            [mask,M] = local_clustering(M.^2,squeeze(one_sample(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            [mask,M] = local_clustering(M.^2,squeeze(one_sample(:,:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if MCC == 2
                 mytitle = sprintf('One Sample t-test \n correction by spatial-temporal cluster');
             elseif MCC == 3
@@ -770,10 +773,10 @@ elseif strncmp(FileName,'one_sample',10)
     % -------------------------------------
     elseif MCC == 4 % Stat max
         try load(MCC_data)
-            bootT = squeeze(H0_one_sample(:,:,1,:)); % get all T values under H0
+            bootT = squeeze(H0_one_sample(:,:,:,1,:)); % get all T values under H0
             if size(one_sample,1) == 1
-                tmp = NaN(1,size(one_sample,2),size(H0_one_sample,4));
-                tmp(1,:,:) = bootT; bootT = tmp; clear tmp
+                tmp = NaN(1,size(one_sample,2),size(one_sample,3),size(H0_one_sample,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('One Sample t-test \n correction by T max');
@@ -805,9 +808,9 @@ elseif strncmp(FileName,'two_samples',11)
     
     effect_nb = eval(FileName(29:end-4));
     if size(two_samples,1)>1
-        M = squeeze(two_samples(:,:,4)); % T values
+        M = squeeze(two_samples(:,:,:,4)); % T values
     else
-        M = two_samples(1,:,4);
+        M = two_samples(1,:,:,4);
     end
     MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
     
@@ -823,30 +826,32 @@ elseif strncmp(FileName,'two_samples',11)
                 load(MCC_data)
                 lo = round((LIMO.design.bootstrap.*p)/2);
                 hi = LIMO.design.bootstrap - lo;
-                Tsorted  = sort(squeeze(H0_two_samples(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                Tsorted  = sort(squeeze(H0_two_samples(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                 if size(two_samples,1) == 1
-                    tmp = NaN(1,size(two_samples,2),size(H0_two_samples,4));
-                    tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                    tmp = NaN(1,size(two_samples,2),size(two_samples,3),size(H0_two_samples,5));
+                    tmp(1,:,:,:) = Tsorted; Tsorted = tmp; clear tmp
                 end
-                TCI(:,:,1) = Tsorted(:,:,lo+1);
-                TCI(:,:,2) = Tsorted(:,:,hi);
-                mask = M >= TCI(:,:,2) | M <= TCI(:,:,1);
+                TCI(:,:,:,1) = Tsorted(:,:,:,lo+1);
+                TCI(:,:,:,2) = Tsorted(:,:,:,hi);
+                mask = M >= TCI(:,:,:,2) | M <= TCI(:,:,:,1);
                 
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(Tsorted(row,column,:)));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(Tsorted(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = min(tmp./size(Tsorted,3), 1-(tmp./size(Tsorted,3))) ; % p values
+                M = min(tmp./size(Tsorted,4), 1-(tmp./size(Tsorted,4))) ; % p values
                 mytitle = sprintf('Two samples t-test \n thresholding using bootstrapped T values');
             else
-                mask = two_samples(:,:,5) <= p;
-                M = squeeze(two_samples(:,:,5));
+                mask = two_samples(:,:,:,5) <= p;
+                M = squeeze(two_samples(:,:,:,5));
                 mytitle = sprintf('Two samples t-test: uncorrected threshold');
             end
         catch ME
-            mask = two_samples(:,:,5) <= p;
-            M = squeeze(two_samples(:,:,5));
+            mask = two_samples(:,:,:,5) <= p;
+            M = squeeze(two_samples(:,:,:,5));
             mytitle = sprintf('Two samples t-test: uncorrected threshold');
         end
         
@@ -856,15 +861,15 @@ elseif strncmp(FileName,'two_samples',11)
    elseif MCC == 2 || MCC == 3
        if size(M,1) == 1; MCC =3; end
         try load(MCC_data);
-            bootT = squeeze(H0_two_samples(:,:,1,:)); % get all T values under H0
-            bootP = squeeze(H0_two_samples(:,:,2,:)); % get all P values under H0
+            bootT = squeeze(H0_two_samples(:,:,:,1,:)); % get all T values under H0
+            bootP = squeeze(H0_two_samples(:,:,:,2,:)); % get all P values under H0
             if size(two_samples,1) == 1
-                tmp = NaN(1,size(two_samples,2),size(H0_two_samples,4));
-                tmp(1,:,:) = bootT; bootT = tmp;
-                tmp(1,:,:) = bootP; bootP = tmp; 
+                tmp = NaN(1,size(two_samples,2),size(two_samples,3),size(H0_two_samples,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp;
+                tmp(1,:,:,:) = bootP; bootP = tmp; 
                 clear tmp
             end
-            [mask,M] = local_clustering(M.^2,squeeze(two_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            [mask,M] = local_clustering(M.^2,squeeze(two_samples(:,:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if MCC == 2
                 mytitle = sprintf('Two Samples t-test \n correction by spatial-temporal cluster');
             elseif MCC == 3
@@ -880,10 +885,10 @@ elseif strncmp(FileName,'two_samples',11)
     % -------------------------------------
     elseif MCC == 4 % Stat max
         try load(MCC_data)
-            bootT = squeeze(H0_two_samples(:,:,1,:)); % get all T values under H0
+            bootT = squeeze(H0_two_samples(:,:,:,1,:)); % get all T values under H0
             if size(two_samples,1) == 1
-                tmp = NaN(1,size(two_samples,2),size(H0_two_samples,4));
-                tmp(1,:,:) = bootT; bootT = tmp; clear tmp
+                tmp = NaN(1,size(two_samples,2),size(two_samples,3),size(H0_two_samples,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('Two Samples t-test \n correction by T max');
@@ -907,16 +912,16 @@ elseif strncmp(FileName,'two_samples',11)
         end
     end    
     
-    % paired t-test
+    %% paired t-test
     % --------------------
     
 elseif strncmp(FileName,'paired_samples',14)
     
     effect_nb = eval(FileName(32:end-4));
     if size(paired_samples,1)>1
-        M = squeeze(paired_samples(:,:,4)); % T values
+        M = squeeze(paired_samples(:,:,:,4)); % T values
     else
-        M = paired_samples(1,:,4);
+        M = paired_samples(1,:,:,4);
     end
     MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
     
@@ -932,30 +937,32 @@ elseif strncmp(FileName,'paired_samples',14)
                 load(MCC_data)
                 lo = round((LIMO.design.bootstrap.*p)/2);
                 hi = LIMO.design.bootstrap - lo;
-                Tsorted  = sort(squeeze(H0_paired_samples(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                Tsorted  = sort(squeeze(H0_paired_samples(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                 if size(paired_samples,1) == 1
-                    tmp = NaN(1,size(paired_samples,2),size(H0_paired_samples,4));
-                    tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                    tmp = NaN(1,size(paired_samples,2),size(paired_samples,3),size(H0_paired_samples,5));
+                    tmp(1,:,:,:) = Tsorted; Tsorted = tmp;
                 end
-                TCI(:,:,1) = Tsorted(:,:,lo+1);
-                TCI(:,:,2) = Tsorted(:,:,hi);
-                mask = M >= TCI(:,:,2) | M <= TCI(:,:,1);
+                TCI(:,:,:,1) = Tsorted(:,:,:,lo+1);
+                TCI(:,:,:,2) = Tsorted(:,:,:,hi);
+                mask = M >= TCI(:,:,:,2) | M <= TCI(:,:,:,1);
                 
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(Tsorted(row,column,:)));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(Tsorted(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = min(tmp./size(Tsorted,3), 1-(tmp./size(Tsorted,3))) ; % p values
+                M = min(tmp./size(Tsorted,4), 1-(tmp./size(Tsorted,4))) ; % p values
                 mytitle = sprintf('Paired samples t-test \n thresholding using bootstrapped T values');
             else
-                mask = paired_samples(:,:,5) <= p;
-                M = squeeze(paired_samples(:,:,5));
+                mask = paired_samples(:,:,:,5) <= p;
+                M = squeeze(paired_samples(:,:,:,5));
                 mytitle = sprintf('Paired samples t-test: \n uncorrected threshold');
             end
         catch ME
-            mask = paired_samples(:,:,5) <= p;
-            M = squeeze(paired_samples(:,:,5));
+            mask = paired_samples(:,:,:,5) <= p;
+            M = squeeze(paired_samples(:,:,:,5));
             mytitle = sprintf('Paired samples t-test: \n uncorrected threshold');
         end
         
@@ -965,15 +972,15 @@ elseif strncmp(FileName,'paired_samples',14)
    elseif MCC == 2 || MCC == 3
        if size(M,1) == 1; MCC =3; end
         try load(MCC_data);
-            bootT = squeeze(H0_paired_samples(:,:,1,:)); % get all T values under H0
-            bootP = squeeze(H0_paired_samples(:,:,2,:)); % get all P values under H0
+            bootT = squeeze(H0_paired_samples(:,:,:,1,:)); % get all T values under H0
+            bootP = squeeze(H0_paired_samples(:,:,:,2,:)); % get all P values under H0
             if size(paired_samples,1) == 1
-                tmp = NaN(1,size(paired_samples,2),size(H0_paired_samples,4));
-                tmp(1,:,:) = bootT; bootT = tmp;
-                tmp(1,:,:) = bootP; bootP = tmp; 
+                tmp = NaN(1,size(paired_samples,2),size(paired_samples,3),size(H0_paired_samples,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp;
+                tmp(1,:,:,:) = bootP; bootP = tmp; 
                 clear tmp
             end
-            [mask,M] = local_clustering(M.^2,squeeze(paired_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            [mask,M] = local_clustering(M.^2,squeeze(paired_samples(:,:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if MCC == 2
                 mytitle = sprintf('Paired Samples t-test \n correction by spatial-temporal cluster');
             elseif MCC == 3
@@ -989,10 +996,10 @@ elseif strncmp(FileName,'paired_samples',14)
     % -------------------------------------
     elseif MCC == 4 % Stat max
         try load(MCC_data)
-            bootT = squeeze(H0_paired_samples(:,:,1,:)); % get all T values under H0
+            bootT = squeeze(H0_paired_samples(:,:,:,1,:)); % get all T values under H0
             if size(paired_samples,1) == 1
-                tmp = NaN(1,size(paired_samples,2),size(H0_paired_samples,4));
-                tmp(1,:,:) = bootT; bootT = tmp; clear tmp
+                tmp = NaN(1,size(paired_samples,2),size(paired_samples,3),size(H0_paired_samples,5));
+                tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('Paired Samples t-test \n correction by T max');
@@ -1017,21 +1024,21 @@ elseif strncmp(FileName,'paired_samples',14)
     end    
         
     
-    % Repeated measure ANOVA
+    %% Repeated measure ANOVA
     % --------------------
     
 elseif strncmp(FileName,'Rep_ANOVA',9) 
     
     % all files have dim electrode x time frames x F/p
     if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-        M = Rep_ANOVA_Interaction_with_gp(:,:,1); % get the F values
-        PVAL = Rep_ANOVA_Interaction_with_gp(:,:,2);
+        M = Rep_ANOVA_Interaction_with_gp(:,:,:,1); % get the F values
+        PVAL = Rep_ANOVA_Interaction_with_gp(:,:,:,2);
     elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-        M = Rep_ANOVA_Gp_effect(:,:,1); % get the F values
-        PVAL = Rep_ANOVA_Gp_effect(:,:,2);
+        M = Rep_ANOVA_Gp_effect(:,:,:,1); % get the F values
+        PVAL = Rep_ANOVA_Gp_effect(:,:,:,2);
     elseif strncmp(FileName,'Rep_ANOVA',9)
-        M = Rep_ANOVA(:,:,1); % get the F values
-        PVAL = Rep_ANOVA(:,:,2);
+        M = Rep_ANOVA(:,:,:,1); % get the F values
+        PVAL = Rep_ANOVA(:,:,:,2);
     end
     
     MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
@@ -1046,38 +1053,38 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
             
             if strcmp(choice,'use empirical p values')
                 load(MCC_data)
-                lo = round((LIMO.design.bootstrap.*p)/2);
-                hi = LIMO.design.bootstrap - lo;
+                U = round((1-p)*LIMO.design.bootstrap);
                 
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    Tsorted  = sort(squeeze(Rep_ANOVA_Interaction_with_gp(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                    Tsorted  = sort(squeeze(Rep_ANOVA_Interaction_with_gp(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                     if size(Rep_ANOVA_Interaction_with_gp,1) == 1
-                        tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
-                        tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                        tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(Rep_ANOVA_Interaction_with_gp,3),size(H0_Rep_ANOVA_Interaction_with_gp,5));
+                        tmp(1,:,:,:) = Tsorted; Tsorted = tmp; clear tmp
                     end
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    Tsorted  = sort(squeeze(Rep_ANOVA_Gp_effect(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                    Tsorted  = sort(squeeze(Rep_ANOVA_Gp_effect(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                     if size(Rep_ANOVA_Gp_effect,1) == 1
-                        tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
-                        tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                        tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(Rep_ANOVA_Gp_effect,3),size(H0_Rep_ANOVA_Gp_effect,5));
+                        tmp(1,:,:,:) = Tsorted; Tsorted = tmp; clear tmp
                     end
                 elseif strncmp(FileName,'Rep_ANOVA',9)
-                    Tsorted  = sort(squeeze(Rep_ANOVA(:,:,1,:)),3); % sort T values under H0 along bootstrap dimension
+                    Tsorted  = sort(squeeze(Rep_ANOVA(:,:,:,1,:)),4); % sort T values under H0 along bootstrap dimension
                     if size(Rep_ANOVA,1) == 1
-                        tmp = NaN(1,size(Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
-                        tmp(1,:,:) = Tsorted; Tsorted = tmp;
+                        tmp = NaN(1,size(Rep_ANOVA,2),size(Rep_ANOVA,3),size(H0_Rep_ANOVA,5));
+                        tmp(1,:,:,:) = Tsorted; Tsorted = tmp; clear tmp
                     end
                 end
-                TCI(:,:,1) = Tsorted(:,:,lo+1);
-                TCI(:,:,2) = Tsorted(:,:,hi);
-                mask = M >= TCI(:,:,2) | M <= TCI(:,:,1);
+                mask = (M >= Tsorted(:,:,:,U));
                 
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(Tsorted(row,column,:)));
+                for channel = 1:size(M,1)
+                    for freq = 1:size(M,2)
+                        for time = 1:size(M,3)
+                            tmp(channel,freq,time) = sum(M(channel,freq,time)>squeeze(Tsorted(channel,freq,time,:)));
+                        end
                     end
                 end
-                M = 2*min(tmp./size(Tsorted,3), 1-(tmp./size(Tsorted,3))) ; % p values
+                M = 1-(tmp./size(Tsorted,4)) ; % p values
+
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     mytitle = sprintf('Rep ANOVA Interaction: \n thresholding using bootstrapped T values');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
@@ -1116,30 +1123,30 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
        
        try load(MCC_data);
            if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-               bootT = H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:);
-               bootP = H0_Rep_ANOVA_Interaction_with_gp(:,:,2,:);
+               bootT = H0_Rep_ANOVA_Interaction_with_gp(:,:,:,1,:);
+               bootP = H0_Rep_ANOVA_Interaction_with_gp(:,:,:,2,:);
                if size(Rep_ANOVA_Interaction_with_gp,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(Rep_ANOVA_Interaction_with_gp,3),size(H0_Rep_ANOVA_Interaction_with_gp,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-               bootT = H0_Rep_ANOVA_Gp_effect(:,:,1,:);
-               bootP = H0_Rep_ANOVA_Gp_effect(:,:,2,:);
+               bootT = H0_Rep_ANOVA_Gp_effect(:,:,:,1,:);
+               bootP = H0_Rep_ANOVA_Gp_effect(:,:,:,2,:);
                if size(Rep_ANOVA_Gp_effect,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(Rep_ANOVA_Gp_effect,3),size(H0_Rep_ANOVA_Gp_effect,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            elseif strncmp(FileName,'Rep_ANOVA',9)
-               bootT = H0_Rep_ANOVA(:,:,1,:); % get all F values under H0
-               bootP = H0_Rep_ANOVA(:,:,2,:); % get all P values under H0
+               bootT = H0_Rep_ANOVA(:,:,:,1,:); % get all F values under H0
+               bootP = H0_Rep_ANOVA(:,:,:,2,:); % get all P values under H0
                if size(Rep_ANOVA,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA,2),size(Rep_ANOVA,3),size(H0_Rep_ANOVA,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            end
@@ -1174,27 +1181,27 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
     elseif MCC == 4 % Stat max
        try load(MCC_data);
            if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-               bootT = H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:); 
+               bootT = H0_Rep_ANOVA_Interaction_with_gp(:,:,:,1,:); 
                if size(Rep_ANOVA_Interaction_with_gp,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(Rep_ANOVA_Interaction_with_gp,3),size(H0_Rep_ANOVA_Interaction_with_gp,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-               bootT = H0_Rep_ANOVA_Gp_effect(:,:,1,:);
+               bootT = H0_Rep_ANOVA_Gp_effect(:,:,:,1,:);
                if size(Rep_ANOVA_Gp_effect,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(Rep_ANOVA_Gp_effect,3),size(H0_Rep_ANOVA_Gp_effect,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            elseif strncmp(FileName,'Rep_ANOVA',9)
-               bootT = H0_Rep_ANOVA(:,:,1,:); % get all F values under H0
+               bootT = H0_Rep_ANOVA(:,:,:,1,:); % get all F values under H0
                if size(Rep_ANOVA,1) == 1
-                   tmp = NaN(1,size(Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
-                   tmp(1,:,:) = bootT; bootT = tmp;
-                   tmp(1,:,:) = bootP; bootP = tmp;
+                   tmp = NaN(1,size(Rep_ANOVA,2),size(Rep_ANOVA,3),size(H0_Rep_ANOVA,5));
+                   tmp(1,:,:,:) = bootT; bootT = tmp;
+                   tmp(1,:,:,:) = bootP; bootP = tmp;
                    clear tmp
                end
            end
@@ -1247,7 +1254,7 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
     
 elseif strncmp(FileName,'LI_Map',6)
     
-    M = squeeze(LI_Map(:,:,4)); % T values
+    M = squeeze(LI_Map(:,:,:,4)); % T values
     
     % no correction for multiple testing
     % -----------------------------------
@@ -1262,24 +1269,24 @@ elseif strncmp(FileName,'LI_Map',6)
                 
                 lo = round((LIMO.design.nboot.*p)/2);
                 hi = LIMO.design.nboot - lo;
-                Tsorted  = sort(squeeze(boot_LI_Map(:,:,1,:)),3); % sort T values under H1 along bootstrap dimension
+                Tsorted  = sort(squeeze(boot_LI_Map(:,:,:,1,:)),4); % sort T values under H1 along bootstrap dimension
                 if size(M,1) > 1
+                    TCI(:,:,:,1) = Tsorted(:,:,:,lo+1);
+                    TCI(:,:,:,2) = Tsorted(:,:,:,hi);
+                    mask = (TCI(:,:,:,1) > 0) + (TCI(:,:,:,2) < 0); % sig if does not include 0
+                else
                     TCI(:,:,1) = Tsorted(:,:,lo+1);
                     TCI(:,:,2) = Tsorted(:,:,hi);
-                    mask = (TCI(:,:,1) > 0) + (TCI(:,:,2) < 0); % sig if does not include 0
-                else
-                    TCI(:,1) = Tsorted(:,lo+1);
-                    TCI(:,2) = Tsorted(:,hi);
-                    mask = (TCI(:,1)' >0) + (TCI(:,2)' < 0);
+                    mask = (TCI(:,:,1)' >0) + (TCI(:,:,2)' < 0);
                 end
                 mytitle = sprintf('LI Map: one sample T values \n threshold based on bootstrap T values');
             else
-                mask = LI_Map(:,:,5) <= p;
+                mask = LI_Map(:,:,:,5) <= p;
                 mytitle = sprintf('LI Map: one sample T values \n threshold based on theoretical p values');
                 
             end
         catch ME
-            mask = LI_Map(:,:,5) <= p;
+            mask = LI_Map(:,:,:,5) <= p;
             mytitle = sprintf('LI Map: one sample T values \n threshold based on theoretical p values');
         end
         
@@ -1290,8 +1297,8 @@ elseif strncmp(FileName,'LI_Map',6)
         
         MCC_data = sprintf('boot_%s',FileName);
         try load(MCC_data);
-            bootT = squeeze(boot_LI_Map(:,:,2,:)); % get all T values under H0
-            bootP = squeeze(boot_LI_Map(:,:,3,:)); % get all P values under H0
+            bootT = squeeze(boot_LI_Map(:,:,:,2,:)); % get all T values under H0
+            bootP = squeeze(boot_LI_Map(:,:,:,3,:)); % get all P values under H0
             U = round((1-p)*LIMO.design.nboot); % bootstrap threshold
             
             if size(bootT,1)>1 % many electrodes
@@ -1301,10 +1308,10 @@ elseif strncmp(FileName,'LI_Map',6)
                 channeighbstructmat = LIMO.data.neighbouring_matrix;
                 boot_maxclustersum=zeros(LIMO.design.nboot,1); % compute bootstrap clusters
                 for s=1:LIMO.design.nboot
-                    boot_maxclustersum(s) = limo_getclustersum(bootT(:,:,s).^2,bootP(:,:,s),channeighbstructmat,minnbchan,p);
+                    boot_maxclustersum(s) = limo_getclustersum(bootT(:,:,:,s).^2,bootP(:,:,:,s),channeighbstructmat,minnbchan,p);
                 end
                 sort_boot_maxclustersum = sort(boot_maxclustersum,1);
-                mask = limo_cluster_test(LI_Map(:,:,4).^2,LI_Map(:,:,5),sort_boot_maxclustersum(U),channeighbstructmat,minnbchan,p);
+                mask = limo_cluster_test(LI_Map(:,:,:,4).^2,LI_Map(:,:,:,5),sort_boot_maxclustersum(U),channeighbstructmat,minnbchan,p);
                 mytitle = sprintf('LI Map: one sample T values \n correction by spatial-temporal cluster');
                 
             elseif size(booT,1)==1 % one electrode

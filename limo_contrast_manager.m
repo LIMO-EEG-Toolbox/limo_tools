@@ -305,28 +305,61 @@ if ~isempty(handles.C);
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
                 % -------------------------------------------------------
-                result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
+                if strcmp(LIMO.Analysis ,'Time-Frequency')
+                    result = limo_contrast(limo_tf_4d_reshape(Yr), limo_tf_4d_reshape(Betas), LIMO, handles.F,1);
+                else
+                    result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
+                end
                 
                 if LIMO.design.bootstrap ~= 0
-                    cd H0; load H0_Betas.mat;
-                    result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
+                    if strcmp(LIMO.Analysis ,'Time-Frequency')
+                        disp('preparing data matrix');
+                        clear Yr Betas % release some memory
+                        cd H0; load H0_Betas.mat;
+                        tmp = zeros(size(H0_Betas,1), size(H0_Betas,2)*size(H0_Betas,3), size(H0_Betas,4), size(H0_Betas,5));
+                        for boot = 1:size(H0_Betas,5)
+                           tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
+                        end
+                        clear H0_Betas; cd ..; load Yr; cd(H0);
+                        result = limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
+                        clear tmp
+                    else
+                        clear Betas; cd H0; load H0_Betas
+                        result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
+                    end
                     clear Yr ; cd ..
                 end
                 
                 if LIMO.design.tfce == 1
                     if handles.F == 0
                         filename = sprintf('con_%g.mat',index); load(filename);
-                        tfce_score = limo_tfce(squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
+                        if strcmp(LIMO.Analysis ,'Time-Frequency')
+                            tfce_score = limo_tfce(3,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
+                        else
+                            tfce_score = limo_tfce(2,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
+                        end
                         cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear con tfce_score
                         cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        tfce_H0_score = limo_tfce(squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        if strcmp(LIMO.Analysis ,'Time-Frequency')
+                            tfce_H0_score = limo_tfce(3,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        else
+                            tfce_H0_score = limo_tfce(2,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        end
                         filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_con tfce_score
                     else
                         filename = sprintf('ess_%g.mat',index); load(filename);
-                        tfce_score = limo_tfce(squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
+                        if strcmp(LIMO.Analysis ,'Time-Frequency')
+                            tfce_score = limo_tfce(3,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
+                        else
+                            tfce_score = limo_tfce(2,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
+                        end
                         cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                         cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
+                        if strcmp(LIMO.Analysis ,'Time-Frequency')
+                            tfce_H0_score = limo_tfce(3,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
+                        else
+                            tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
+                        end
                         filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
                     end
                 end

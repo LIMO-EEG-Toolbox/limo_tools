@@ -4,15 +4,18 @@ function limo_batch
 % others - select directories and files - possibly enter contrasts of
 % interests and let it run.
 %
+% see also psom in external folder
+%
 % Cyril Pernet and Nicolas Chauveau
 % CP 24-06-2013 updated to be even more automatic + fix for new designs
+% Cyril Pernet May 2014 - redesigned it based on PSOM
 % -----------------------------
-% Copyright (C) LIMO Team 2010
+% Copyright (C) LIMO Team 2014
+
+%% what to do
+option = questdlg('batch mode','option','model specification','contrast only','model specification');
 
 
-%% Defaults
-bootstrap = 0;
-tfce      = 0;
 
 %% -------------------------------------
 % 1 - specify the folder of each subject
@@ -22,40 +25,25 @@ tfce      = 0;
 % continuous regressor should not be
 % z-scored (by default it is)
 
-current_dir = pwd;
-default = [];
+% bootstrap = 0;
+% tfce      = 0;
+% current_dir = pwd;
+% default = [];
+% 
+% N = inputdlg('how many subjects do you want to batch?', 'Define N');
+% if isempty(N) || str2double(cell2mat(N)) == 0
+%     disp('exiting batch mode'); limo_gui; return
+% else
+%     N = str2double(cell2mat(N));
+% end
 
-option = questdlg('batch mode','option','model specification','contrast only','model specification');
-N = inputdlg('how many subjects do you want to batch?', 'Define N');
-if isempty(N) || str2double(cell2mat(N)) == 0
-    disp('exiting batch mode'); limo_gui; return
-else
-    N = str2double(cell2mat(N));
-end
 
-
-% -----------------------------------------
-% load the expected channel locations
-% -----------------------------------------
-if bootstrap == 1
-    [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
-    if whatsup == 1
-        load (sprintf('%s%s',chan_path,chan_file))
-        test = eval(chan_file(1:end-4));
-        if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
-                && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
-                && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && ~isempty(test(1).urchan)
-            disp('channel location loaded');
-        else
-            warndlg('this file is not recognize as a channel location file or informations are missing','file error')
-        end
-    else
-        disp('exiting batch mode'); limo_gui; return
-    end
-end
 
 if strcmp(option,'model specification')
     
+    %% Get defaults and files
+[set_files,cat_files,cont_files,defaults]=limo_batch_gui;
+
     % --------------------------------------------------------------
     % do subject 1 and ask if the same operation has to be repeated
     % --------------------------------------------------------------

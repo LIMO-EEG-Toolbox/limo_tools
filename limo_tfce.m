@@ -108,7 +108,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(tfce,3);
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -154,7 +154,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
-                    close(f)
+                    try close(f); end
                 end
                 
                 
@@ -201,7 +201,7 @@ switch type
                         end
                         tfce_score(1,:,boot) = nansum(tfce,3);
                     end
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -262,7 +262,7 @@ switch type
                         % compute final score
                         tfce_score(1,:,boot) = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     end
-                    close(f)
+                    try close(f); end
                 end
                 
         end
@@ -323,7 +323,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(tfce,3);
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -369,7 +369,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
-                    close(f)
+                    try close(f); end
                 end
                 
                 
@@ -415,7 +415,7 @@ switch type
                         end
                         tfce_score(:,:,boot) = nansum(tfce,3);
                     end
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -476,7 +476,7 @@ switch type
                         % compute final score
                         tfce_score(:,:,boot) = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     end
-                    close(f)
+                    try close(f); end
                 end
                 
         end
@@ -539,7 +539,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(tfce,4);
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -593,7 +593,7 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(pos_tfce,4)+nansum(neg_tfce,4);
-                    close(f)
+                    try close(f); end
                 end
                 
                 
@@ -643,7 +643,7 @@ switch type
                         end
                         tfce_score(:,:,:,boot) = nansum(tfce,4);
                     end
-                    close(f)
+                    try close(f); end
                     
                 else
                     
@@ -712,7 +712,7 @@ switch type
                         % compute final score
                         tfce_score(:,:,:,boot) = nansum(pos_tfce,4)+nansum(neg_tfce,4);
                     end
-                    close(f)
+                    try close(f); end
                 end
                 
         end
