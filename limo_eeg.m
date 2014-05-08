@@ -693,7 +693,7 @@ switch varargin{1}
                         cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
                         for i=1:length(LIMO.design.nb_conditions)
                             name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
-                            if size(H0_Condition_effect,1)
+                            if size(H0_Condition_effect,1) == 1
                                 tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
                             else
                                 tfce_H0_score = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);                                
