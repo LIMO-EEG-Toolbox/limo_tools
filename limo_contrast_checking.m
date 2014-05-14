@@ -5,8 +5,8 @@ function go = limo_contrast_checking(varargin)
 % also used to make sure contrasts have the right size
 %
 % FORMAT
-% go = LIMO_contrast_checking(C,X)
-% go = LIMO_contrast_checking(LIMO.dir, LIMO.design.X, C);
+% go = limo_contrast_checking(C,X)
+% go = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
 %
 % INPUT
 % C a vector or matrix of contrasts
@@ -69,9 +69,19 @@ elseif nargin == 2
         if sum(C) == length(find(C))
             go = 1; % if contrast with ones only to add parameters
         else
-            check = int16(C*single((pinv(X'*X))*(X'*X)));
-            check = (check == C);
-            if sum(check) ~= length(C)
+%             check = int16(C*single((pinv(X'*X))*(X'*X)));
+%             check = (check == C);
+%             if sum(check) ~= length(C)
+%                 go = 0; % if contrast not ones nor invariant
+%             else
+%                 go = 1;
+%             end
+            
+            P = X*pinv(X); % projection
+            lambda = X*C'; % contrast
+            check = int16(P*lambda); % contrast onto X
+            check = (check == int16(lambda)); % it is invariant
+            if sum(check) ~= size(X,1)
                 go = 0; % if contrast not ones nor invariant
             else
                 go = 1;

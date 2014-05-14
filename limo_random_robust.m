@@ -139,6 +139,7 @@ switch type
         nboot               = varargin{4};
         tfce                = varargin{5};
         clear varargin
+        load LIMO
         
         % ------------------------------------------------
         % make a one_sample file per parameter (electrodes, frames, [mean value, se, df, t, p])
@@ -198,15 +199,32 @@ switch type
             end
             
             if tfce ~= 0 && size(data,1) > 1
-                mkdir tfce
                 tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
                 % do tfce for the current data
                 fprintf('Thresholding One Sample T-test using TFCE \n');
-                tfce_one_sample = limo_tfce(squeeze(one_sample(:,:,4)),channeighbstructmat);
-                save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3'); clear tfce_one_sample;
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    
+                else
+                    if size(one_sample,1) == 1
+                        tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4)),channeighbstructmat);
+                    else
+                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,4)),channeighbstructmat);
+                    end
+                end
+                mkdir tfce
+                save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3'); 
+                clear tfce_one_sample; 
                 fprintf('Thresholding H0 One Sample T-test using TFCE \n');
-                tfce_H0_one_sample = limo_tfce(squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    
+                else
+                    if size(H0_one_sample,1) == 1
+                        tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
+                    else
+                        tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
+                    end
+                end
                 save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3'); clear tfce_H0_one_sample;
             end
             clear H0_one_sample

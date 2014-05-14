@@ -114,9 +114,9 @@ if strcmp(FileName,'R2.mat')
             [mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             if MCC == 2
                 if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('R^2: correction by \spatial-temporal cluster');
+                mytitle = sprintf('R^2: correction by \n spatial-temporal cluster');
                 else
-                mytitle = sprintf('R^2: correction by \spatial-frequency cluster');
+                mytitle = sprintf('R^2: correction by \n spatial-frequency cluster');
                 end
             elseif MCC == 3
                 if strcmp(LIMO.Analysis,'Time')

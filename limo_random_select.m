@@ -36,8 +36,9 @@ function limo_random_select(varargin)
 % Cyril Pernet changed Regression / ANOVA to get structure handled within
 % limo_random_effect May 2013
 % Add fix from Marlene Poncet for N by N repeated neasures - July 2013
+% Update for 'Frequency' and 'Time-Freuqncy' Cyril Pernet May 2014
 % ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 
 
 %% take the inputs and load some parameters
@@ -1207,6 +1208,14 @@ for i=1:size(Paths,2)
         cd (cell2mat(Paths{i}))
     end
     load LIMO;
+    
+    if i==1
+        Analysis = LIMO.Analysis;
+    else
+        if ~strcmp(LIMO.Analysis,Analysis)
+            error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
+        end
+    end
     sampling_rate(i)          = LIMO.data.sampling_rate;
     first_frame(i)            = LIMO.data.trim1;
     last_frame(i)             = LIMO.data.trim2;
@@ -1217,7 +1226,6 @@ for i=1:size(Paths,2)
        channeighbstructmat = LIMO.data.channeighbstructmat;
     catch ME
     end
-    clear LIMO
 end
 
 if ~isempty(ME) && isempty(limo.data.neighbouring_matrix)
@@ -1228,6 +1236,7 @@ if (sum(sampling_rate == sampling_rate(1))) ~= length(sampling_rate)
     error('data have different sampling rates')
 end
 
+limo.Analysis = Analysis;
 limo.data.sampling_rate = sampling_rate(1);
 [v,c] = max(first_frame);
 limo.data.trim1 = v;
@@ -1235,6 +1244,11 @@ limo.data.start = start(c);
 [v,c] = min(last_frame);
 limo.data.trim2 = v;
 limo.data.end = stop(c);
+if strcmp(Analysis,'Frequency')
+   a = find((LIMO.data.freqlist-limo.data.start)==0);
+   b = find((LIMO.data.freqlist-limo.data.end)==0);
+   limo.data.freqlist = LIMO.data.freqlist(a:b);  % assumes all subject match this
+end
 end
 
 

@@ -91,7 +91,6 @@ if LIMO.Level == 1
                                 LIMO.cache.fig.MCC == MCC && ...
                                 LIMO.cache.fig.threshold == p
                             
-                            data_chached = 1;
                             disp('using cached data');
                             mask = LIMO.cache.fig.mask;
                             if isempty(mask)
@@ -103,7 +102,7 @@ if LIMO.Level == 1
                                 M = LIMO.cache.fig.pval;
                                 mytitle = LIMO.cache.fig.title;
                                 toplot = LIMO.cache.fig.stats;
-                                update_cache = 0;
+                                data_cached = 1;
                                 assignin('base','p_values',M)
                                 assignin('base','mask',mask)
                             end
@@ -262,7 +261,7 @@ if LIMO.Level == 1
                         catch caxiserror
                         end
                         color_images_(scale,LIMO);
-                        title(mytitle,'Fontsize',16)
+                        title(mytitle,'Fontsize',14)
                         
                         if length(e)>1 % happen if we have multiple times the exact same max values
                             e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
@@ -1126,32 +1125,45 @@ if LIMO.Level == 1
     
 elseif LIMO.Level == 2
     
-    if ~strncmp(FileName,'LIMO',4) % in all cases but ERP plot for GLM
+    if ~strncmp(FileName,'LIMO',4) % in all cases but ERP plot 
         
         % if previously plotted, recover from the cache
-        if isfield(LIMO,'cache') && ...
-                strcmp(LIMO.cache.fig.name, FileName) && ...
-                LIMO.cache.fig.MCC == MCC && ...
-                LIMO.cache.fig.threshold == p
-            
-            mask = LIMO.cache.fig.mask;
-            if isempty(mask)
-                return
-            elseif sum(mask(:)) == 0
-                warndlg('  no values under threshold  ','no significant effect','modal');
-                toplot = []; return
-            else
-                M = LIMO.cache.fig.pval;
-                mytitle = LIMO.cache.fig.title;
-                toplot = LIMO.cache.fig.stats;
-                update_cache = 0;
-                assignin('base','p_values',M)
-                assignin('base','mask',mask)
-            end
+                 data_cached = 0;
+                if isfield(LIMO,'cache') 
+                    try
+                        if strcmp(LIMO.cache.fig.name, FileName) && ...
+                                LIMO.cache.fig.MCC == MCC && ...
+                                LIMO.cache.fig.threshold == p
+                            
+                            disp('using cached data');
+                            mask = LIMO.cache.fig.mask;
+                            if isempty(mask)
+                                data_cached = 0;
+                            elseif sum(mask(:)) == 0
+                                warndlg('  no values under threshold  ','no significant effect','modal');
+                                toplot = []; return
+                            else
+                                M = LIMO.cache.fig.pval;
+                                mytitle = LIMO.cache.fig.title;
+                                toplot = LIMO.cache.fig.stats;
+                                data_cached = 1;
+                                assignin('base','p_values',M)
+                                assignin('base','mask',mask)
+                            end
+                        end
+                    catch no_cache
+                        data_cached = 0;
+                    end
+                end
             
         else % compute and plot
             
-            [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice,[]);
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice,[]);
+            else
+                [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice,[]);
+            end
+            
             if isempty(mask)
                 return
             elseif sum(mask(:)) == 0
@@ -1162,7 +1174,7 @@ elseif LIMO.Level == 2
                 assignin('base','mask',mask)
             end
             
-            if LIMO.analysis_flag == 3
+            if strcmp(LIMO.Analysis,'Time-Frequency')
                 if strncmp(FileName,'R2',2)
                     toplot = squeeze(R2(:,:,:,1));
                     assignin('base','R_values',toplot)
@@ -1237,7 +1249,7 @@ elseif LIMO.Level == 2
                     disp('file no supported'); return
                 end
             end
-            update_cache = 1;
+            data_cached = 0;
         end
         
         % ------------------------------
@@ -1245,7 +1257,7 @@ elseif LIMO.Level == 2
         % ----------------------------
         if Type == 1 || Type == 2
             
-            if Type == 1 && LIMO.analysis_flag ~= 3
+            if Type == 1 && ~strcmp(LIMO.Analysis,'Time-Frequency')
                 %--------------------------
                 % imagesc of the results
                 %--------------------------
@@ -1262,7 +1274,7 @@ elseif LIMO.Level == 2
                 figure; set(gcf,'Color','w');
                 
                 % cache the results for next time
-                if update_cache == 1
+                if data_cached == 0
                     LIMO.cache.fig.name       = FileName;
                     LIMO.cache.fig.MCC        = MCC;
                     LIMO.cache.fig.stats      = toplot;
@@ -1276,12 +1288,7 @@ elseif LIMO.Level == 2
                 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
                 if strcmp(LIMO.Analysis,'Time')
                     timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
-                    ratio = (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
-                    if LIMO.data.start < 0
-                        frame_zeros = round(abs(LIMO.data.start*1000) / ratio);
-                    end
                     imagesc(timevect,1:size(toplot,1),scale);
-                    
                 else
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     imagesc(freqvect,1:size(M,1),scale);
@@ -1289,16 +1296,22 @@ elseif LIMO.Level == 2
                 title(mytitle,'FontSize',16);
                 color_images_(scale,LIMO);
                 set(gca,'layer','top');
+                ratio = (LIMO.data.end - LIMO.data.start) / size(toplot,2);
+                if LIMO.data.start < 0
+                    frame_zeros = round(abs(LIMO.data.start / ratio));
+                else
+                    frame_zeros = 1;
+                end
                 
                 if size(toplot,1)>1
                     ax(2) = subplot(3,3,6);
                     if length(f)>0
                         f=f(1);
                     end
-                    if LIMO.analysis_flag == 1
+                    if strcmp(LIMO.Analysis,'Time')
                         topoplot(toplot(:,f),LIMO.data.chanlocs);
                         title(['topoplot @' num2str(timevect(f)) 'ms'],'FontSize',12)
-                    else
+                    elseif strcmp(LIMO.Analysis,'Frequency')
                         topoplot(toplot(:,f),LIMO.data.chanlocs);
                         title(['topoplot @' num2str(freqvect(f)) 'Hz'],'FontSize',12)
                     end
@@ -1309,14 +1322,14 @@ elseif LIMO.Level == 2
                     e=e(1);
                 end
                 
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis,'Time')
                     plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
                     if size(toplot,1)>1
                         mytitle = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
                     else
                         mytitle = sprintf('time course of \n optimized electrode');
                     end
-                elseif LIMO.analysis_flag == 2
+                elseif strcmp(LIMO.Analysis,'Frequency')
                     plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
                     if size(toplot,1)>1
                         mytitle = sprintf('frequencies @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
@@ -1345,21 +1358,21 @@ elseif LIMO.Level == 2
                             subplot(3,3,6,'replace');
                             frame = frame_zeros + round(x / ratio);
                             topoplot(toplot(:,frame),LIMO.data.chanlocs);
-                            if LIMO.analysis_flag == 1
+                            if strcmp(LIMO.Analysis,'Time')
                                 title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
-                            else
+                            elseif strcmp(LIMO.Analysis,'Frequency')
                                 title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
                             end
                             % ERP/Power
                             subplot(3,3,9,'replace'); y = round(y);
-                            if LIMO.analysis_flag == 1
+                            if strcmp(LIMO.Analysis,'Time')
                                 plot(timevect,toplot(y,:),'LineWidth',3); grid on, axis tight
                                 if size(toplot,1)>1
                                     mytitle = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
                                 else
                                     mytitle = sprintf('time course of \n optimized electrode');
                                 end
-                            else
+                            elseif strcmp(LIMO.Analysis,'Frequency')
                                 plot(freqvect,toplot(y,:),'LineWidth',3); grid on, axis tight
                                 if size(toplot,1)>1
                                     mytitle = sprintf('frequencies @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
@@ -1372,38 +1385,72 @@ elseif LIMO.Level == 2
                         end
                     end
                 end
-                
-            elseif Type == 2 && LIMO.analysis_flag ~= 3
+            
+            elseif Type == 1 && stcmp(LIMO.Analysis,'Time-Frequency')
+                limo_display_results_tf(LIMO,toplot,mask,mytitle);
+             
+            elseif Type == 2
                 %--------------------------
                 % topoplot
                 %--------------------------
-                if ~isempty(LIMO.design.electrode)  % not full scalp
-                    msgbox('Only one electrode found','No topoplot')
-                elseif sum(mask(:)) == 0
-                    warndlg('no values under threshold','no significant effect');
+                
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    errordlg('topoplot not supported for time-frequency analyses')
+                    
                 else
-                    EEG.data = toplot;
-                    EEG.setname = mytitle;
-                    EEG.pnts = size(EEG.data,2);
-                    EEG.trials = 1;
-                    EEG.chanlocs = LIMO.data.chanlocs;
-                    EEG.nbchan = size(EEG.data,1);
-                    if LIMO.analysis_flag == 1
-                        EEG.xmin = LIMO.data.start;
-                        EEG.xmax = LIMO.data.end;
-                        EEG.times =  (LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000); % in sec;
+                    
+                    if ~isempty(LIMO.design.electrode)  % not full scalp
+                        msgbox('Only one electrode found','No topoplot')
+                    elseif sum(mask(:)) == 0
+                        warndlg('no values under threshold','no significant effect');
                     else
-                        EEG.xmin = LIMO.data.freqlist(1);
-                        EEG.xmax = LIMO.data.freqlist(end);
-                        EEG.times = LIMO.data.freqlist;
+                        EEG.data = toplot;
+                        EEG.setname = mytitle;
+                        EEG.pnts = size(EEG.data,2);
+                        EEG.trials = 1;
+                        EEG.chanlocs = LIMO.data.chanlocs;
+                        EEG.nbchan = size(EEG.data,1);
+                        if strcmp(LIMO.Analysis,'Time')
+                            EEG.xmin = LIMO.data.start;
+                            EEG.xmax = LIMO.data.end;
+                            EEG.times =  (LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000); % in sec;
+                            pop_topoplot(EEG);
+                        elseif strcmp(LIMO.Analysis,'Frequency')
+                            EEG.xmin = LIMO.data.freqlist(1);
+                            EEG.xmax = LIMO.data.freqlist(end);
+                            freqlist = inputdlg('specify frequency range e.g. [5:2:40]','Choose Frequencies to plot');
+                            if isempty(freqlist)
+                                return
+                            else
+                                try
+                                    EEG.freq = eval(cell2mat(freqlist));
+                                catch NO_NUM
+                                    EEG.freq = str2num(cell2mat(freqlist));
+                                end
+                                
+                                if min(EEG.freq)<EEG.xmin || max(EEG.freq)>EEG.xmax
+                                    errordlg('selected frequency out of bound'); return
+                                end
+                            end
+                            
+                            N=length(EEG.freq); figure;
+                            for f=1:N
+                                if N<=6
+                                    subplot(1,N,f)
+                                else
+                                    subplot(ceil(N/6),6,f);
+                                end
+                                [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
+                                topoplot(EEG.data(:,ind),EEG.chanlocs);
+                                title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
+                            end
+                            EEG.times = LIMO.data.freqlist;
+                        end
+                        assignin('base','Plotted_data',EEG.data)
                     end
-                    pop_topoplot(EEG);
-                    assignin('base','Plotted_data',EEG.data)
                 end
-            end
             
-            
-        elseif Type == 3 && LIMO.analysis_flag ~= 3
+        elseif Type == 3 
             
             %--------------------------
             % ERP
@@ -1452,19 +1499,20 @@ elseif LIMO.Level == 2
                 
                 figure;
                 set(gcf,'Color','w')
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis,'Time')
                     timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
                     plot(timevect,squeeze(trimci(:,:,2)),'LineWidth',3);
+                    fillhandle = patch([timevect fliplr(timevect)], [squeeze(trimci(:,:,1)),fliplr(squeeze(trimci(:,:,3)))], [1 0 0]);
                     xlabel('Time in ms','FontSize',14)
                     ylabel('Amplitude (A.U.)','FontSize',14)
-                else
+                elseif strcmp(LIMO.Analysis,'Frequency')
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     plot(timevect,squeeze(trimci(:,:,2)),'LineWidth',3);
+                    fillhandle = patch([freqvect fliplr(freqvect)], [squeeze(trimci(:,:,1)),fliplr(squeeze(trimci(:,:,3)))], [1 0 0]);
                     xlabel('Frequency in Hz','FontSize',14)
                     ylabel('Spectral Power (A.U.)','FontSize',14)
                 end
                 
-                fillhandle = patch([timevect fliplr(timevect)], [squeeze(trimci(:,:,1)),fliplr(squeeze(trimci(:,:,3)))], [1 0 0]);
                 set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;

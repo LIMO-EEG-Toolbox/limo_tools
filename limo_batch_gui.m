@@ -26,7 +26,7 @@ if nargin && ischar(varargin{1})
 end
 
 if nargout
-    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+    [varargout{1:4}] = gui_mainfcn(gui_State, varargin{:});
 else
     gui_mainfcn(gui_State, varargin{:});
 end
@@ -43,27 +43,21 @@ function limo_batch_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % define handles used for the save callback
-try
-    clear LIMO
-    LIMO     = [];
-catch
-    LIMO     = [];    
-end
-
 handles.FileName = [];
-handles.Cat                 = [];
+handles.CatName             = [];
 handles.fullfactorial       = 0;
-handles.Cont                = [];
+handles.ContName            = [];
 handles.zscore              = 1;
-handles.start               = 0;
-handles.end                 = 0;
-handles.lowf                = 0;
-handles.highf               = 0;
+handles.start               = [];
+handles.end                 = [];
+handles.lowf                = [];
+handles.highf               = [];
 handles.Analysis            = [];
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'OLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
+handles.quit                = 0;
 
 guidata(hObject, handles);
 uiwait(handles.figure1);
@@ -71,7 +65,19 @@ uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_batch_gui_OutputFcn(hObject, eventdata, handles) 
-varargout{1} = 'LIMO import terminated';
+
+if handles.quit == 1
+    varargout{1} = [] ;
+    varargout{2} = [] ;
+    varargout{3} = [] ;
+    varargout{4} = [] ;
+else
+    varargout{1} = handles.FileName;
+    varargout{2} = handles.CatName;
+    varargout{3} = handles.ContName;
+    varargout{4} = handles.defaults ;
+end
+delete(handles.figure1)
 
 
 %% Callbacks
@@ -89,7 +95,7 @@ function Import_data_set_Callback(hObject, eventdata, handles)
         'Pick sets or list', 'MultiSelect', 'on');
 if FilterIndex ~= 0
     
-    if size(FileName,2) ~=1 % multiselect for .sets
+    if iscell(FileName) % multiselect for .sets
         for f=1:size(FileName,2)
             if ~strcmp(FileName{f}(end-3:end),'.set')
                 errordlg('only multiple set files are allowed or a single .mat/.txt list')
@@ -288,7 +294,7 @@ function categorical_variable_input_Callback(hObject, eventdata, handles)
 
 [CatName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','on');
 if FilterIndex == 1 
-    if size(CatName,2) ==1 % NOT multiselect        
+    if ischar(CatName) % NOT multiselect        
         if strcmp(CatName(end-3:end),'.txt')
             CatName = importdata(CatName);
         elseif strcmp(CatName(end-3:end),'.mat')
@@ -302,8 +308,10 @@ if FilterIndex == 1
                 return
             end
         end
+    else
+        errordlg('file selection not supported'); return
     end
-    handles.Cat = CatName;
+    handles.CatName = CatName;
 end
 guidata(hObject, handles);
 
@@ -328,7 +336,7 @@ function continuous_variable_input_Callback(hObject, eventdata, handles)
 
 [ContName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO continuous data','Multiselect','on');
 if FilterIndex == 1
-    if size(ContName,2) ==1 % NOT multiselect        
+    if ischar(ContName) % NOT multiselect        
         if strcmp(ContName(end-3:end),'.txt')
             ContName = importdata(ContName);
         elseif strcmp(ContName(end-3:end),'.mat')
@@ -342,8 +350,10 @@ if FilterIndex == 1
                 return
             end
         end
+    else
+        errordlg('file selection not supported'); return
     end
-    handles.Cont = ContName;
+    handles.ContName = ContName;
 end
 guidata(hObject, handles);
 
@@ -370,10 +380,6 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
   
-varargout{1} = handles.FileName;
-varargout{2} = handles.CatName;
-varargout{3} = handles.ContName;
-
 defaults.fullfactorial     = handles.fullfactorial;
 defaults.zscore            = handles.zscore;
 defaults.start             = handles.start;
@@ -382,6 +388,7 @@ defaults.lowf              = handles.lowf;
 defaults.highf             = handles.highf;
 defaults.method            = handles.method;
 defaults.type_of_analysis  = handles.type_of_analysis;  
+defaults.analysis          = handles.Analysis;  
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
 
@@ -396,7 +403,7 @@ if handles.bootstrap == 1
         if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
                 && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
                 && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
-            default.channloc = test; disp('channel location loaded');
+            defaults.chanloc = test; disp('channel location loaded');
         else
             warndlg('this file is not recognize as a channel location file or informations are missing','file error')
         end
@@ -404,23 +411,25 @@ if handles.bootstrap == 1
         disp('exiting batch mode'); limo_gui; return
     end
 end
-varargout{4} = defaults;
+handles.defaults = defaults;
 
-if isempty(handles.Cat) && isempty(handles.Cont);
+if isempty(handles.CatName) && isempty(handles.ContName);
     errordlg('no regressors were loaded','error')
     return
 else
     uiresume
     guidata(hObject, handles);
-    delete(handles.figure1)
 end
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
+persistent out
 
 clc
 uiresume
+handles.quit = 1;
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
+

@@ -80,10 +80,16 @@ if FilterIndex == 1
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') ...
                 && strncmp(FileName,'con',3) == 0 && strncmp(FileName,'ess',3) ==0
             if strcmp(questdlg('Level 1: compute all bootstraps?','bootstrap turned on','Yes','No','No'),'Yes');
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4); 
+                LIMO = handles.LIMO.LIMO;
+                LIMO.design.bootstrap = 1;
+                if handles.tfce == 1
+                    LIMO.design.tfce = 1;
+                end
+                save LIMO LIMO
+                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
+                    limo_eeg_tf(4);
                 else
-                    limo_eeg(4); 
+                    limo_eeg(4);
                 end
             end
         end
@@ -92,10 +98,13 @@ if FilterIndex == 1
                 && exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') && strncmp(FileName,'con',3) == 0 ...
                 && strncmp(FileName,'ess',3) ==0
             if strcmp(questdlg('Level 1: compute all tfce?','tfce turned on','Yes','No','No'),'Yes');
+                LIMO = handles.LIMO.LIMO;
+                LIMO.design.tfce = 1;
+                save LIMO LIMO
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4); 
+                    limo_eeg_tf(4);
                 else
-                    limo_eeg(4); 
+                    limo_eeg(4);
                 end
             end
         end

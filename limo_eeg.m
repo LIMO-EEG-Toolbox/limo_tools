@@ -50,8 +50,9 @@ function limo_eeg(varargin)
 
 % make sure paths are ok
 local_path = which('limo_eeg');
-root = local_path(1:max(find(local_path == filesep))-1);
+root = fileparts(local_path);
 addpath([root filesep 'limo_cluster_functions'])
+addpath([root filesep 'external' filesep 'psom'])
 addpath([root filesep 'external'])
 addpath([root filesep 'help'])
 global EEG
@@ -168,16 +169,18 @@ switch varargin{1}
         
         
         % Check data where specified and load
-        try
-            cd (LIMO.data.data_dir);
+        if exist('EEG','var')
             if strcmp([LIMO.data.data_dir LIMO.data.data],[EEG.filepath filesep EEG.filename])
                 disp('Using Global variable EEG')
             else
+                cd (LIMO.data.data_dir);
                 disp('reloading data ..');
                 EEG=pop_loadset(LIMO.data.data);
             end
-        catch
-            error('error loading data (most likely a memory issue) or cannot find the data ; error line 103/104 cd/pop_loadset')
+        else
+            cd (LIMO.data.data_dir);
+            disp('reloading data ..');
+            EEG=pop_loadset(LIMO.data.data);
         end
 
         % Load either elec voltage over time, elec power over frequency, or
@@ -196,8 +199,8 @@ switch varargin{1}
             Y = load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
             Y = getfield(Y,cell2mat(fieldnames(Y))); % take the actual data from the structure
             Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); % trim
-            LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
             LIMO.data.size4D= size(Y);
+            LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         end
         
         clear ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY 
@@ -254,8 +257,7 @@ switch varargin{1}
         
         % ---------------
         LIMO.design.status = 'to do';
-        save LIMO LIMO
-        clear Y Cat Cont
+        save LIMO LIMO; clear Y 
         
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
