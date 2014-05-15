@@ -30,13 +30,11 @@ function limo_random_select(varargin)
 % see also limo_random_robust, limo_expected_chanlocs
 % Cyril Pernet - Guillaume Rousselet v1 18-05-2009
 % Cyril Pernet v3 20-05-2010
-% Cyril Pernet 22-04-2011 fixed the repeated ANOVA (thx to Nicolas) 
-% and added tfce
-% Mariane Latinus 2013 - Update for tfce + some fix
-% Cyril Pernet changed Regression / ANOVA to get structure handled within
-% limo_random_effect May 2013
+% Cyril Pernet 22-04-2011 fixed the repeated ANOVA (thx to Nicolas) and added tfce
+% Mariane Latinus 2013 - Update for tfce + some fixes
+% Cyril Pernet changed Regression / ANOVA to get structure handled within limo_random_effect May 2013
 % Add fix from Marlene Poncet for N by N repeated neasures - July 2013
-% Update for 'Frequency' and 'Time-Freuqncy' Cyril Pernet May 2014
+% Update for 'Frequency' and 'Time-Frequency' Cyril Pernet May 2014
 % ---------------------------------------------------------
 %  Copyright (C) LIMO Team 2014
 
@@ -1188,6 +1186,7 @@ global limo
 channeighbstructmat = []; ME = [];
 
 disp('match frames between subjects ...')
+% check Paths format
 if iscell(Paths{1})
     tmp = Paths; clear Paths
     index = 1;
@@ -1199,8 +1198,7 @@ if iscell(Paths{1})
     end
 end
 
-first_frame = NaN(1,size(Paths,2));last_frame = first_frame;
-start = last_frame; stop = start; sampling_rate = stop;
+% now loop loading the LIMO.mat for each subject to collect information
 for i=1:size(Paths,2)
     try
         cd (Paths{i});
@@ -1216,18 +1214,37 @@ for i=1:size(Paths,2)
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
         end
     end
+    
     sampling_rate(i)          = LIMO.data.sampling_rate;
-    first_frame(i)            = LIMO.data.trim1;
-    last_frame(i)             = LIMO.data.trim2;
-    start(i)                  = LIMO.data.start;
-    stop(i)                   = LIMO.data.end;
     subj_chanlocs(i).chanlocs = LIMO.data.chanlocs;
     try
        channeighbstructmat = LIMO.data.channeighbstructmat;
     catch ME
     end
+       
+    if strcmp(Analysis,'Time-Frequency')
+        first_frame(i,1)            = LIMO.data.trim1;
+        last_frame(i,1)             = LIMO.data.trim2;
+        start(i,1)                  = LIMO.data.start;
+        stop(i,1)                   = LIMO.data.end;
+        first_frame(i,2)            = LIMO.data.trim_low_f;
+        last_frame(i,2)             = LIMO.data.trim_high_f;
+        start(i,2)                  = LIMO.data.tf_freqs(1);
+        stop(i,2)                   = LIMO.data.tf_freqs(2);
+        tf_times(i,:)               = LIMO.data.tf_times;
+        tf_freqs(i,:)               = LIMO.data.tf_freqs;
+    else
+        first_frame(i)              = LIMO.data.trim1;
+        last_frame(i)               = LIMO.data.trim2;
+        start(i)                    = LIMO.data.start;
+        stop(i)                     = LIMO.data.end;
+        if strcmp(Analysis,'Frequency')
+            freqlist(i,:)           = LIMO.data.freqlist;
+        end
+    end
 end
 
+% quick check things are ok
 if ~isempty(ME) && isempty(limo.data.neighbouring_matrix)
     error(sprintf('some subject(s) have a different channel structure \nplease load an expected chanloc when choosing a test'));                          
 end
@@ -1236,19 +1253,61 @@ if (sum(sampling_rate == sampling_rate(1))) ~= length(sampling_rate)
     error('data have different sampling rates')
 end
 
+% match and return into limo - the temp structure passed as global
 limo.Analysis = Analysis;
 limo.data.sampling_rate = sampling_rate(1);
+
+% we need 1) to find the highest start in time and freq 2) the lowest end
+% in time and freq and 3) match that on freqlist or tf_times/tf_freqs
+
 [v,c] = max(first_frame);
-limo.data.trim1 = v;
-limo.data.start = start(c);
-[v,c] = min(last_frame);
-limo.data.trim2 = v;
-limo.data.end = stop(c);
-if strcmp(Analysis,'Frequency')
-   a = find((LIMO.data.freqlist-limo.data.start)==0);
-   b = find((LIMO.data.freqlist-limo.data.end)==0);
-   limo.data.freqlist = LIMO.data.freqlist(a:b);  % assumes all subject match this
+if strcmp(Analysis,'Time-Frequency')
+    limo.data.trim1 = v(1);
+    limo.data.start = start(c(1));
+    limo.data.trim_low_f = v(2);
+    % loop to adjust each subject list
+    tf_times = tf_times(c(1),:);
+    tf_freqs = tf_freqs(c(1),:);
+else
+    limo.data.trim1 = v;
+    limo.data.start = start(c);
+    if strcmp(Analysis,'Frequency')
+        % loop to adjust each subject list
+        freqlist = freqlist(c);
+    end
 end
+
+[v,c] = min(last_frame);
+if strcmp(Analysis,'Time-Frequency')
+    limo.data.trim2 = v(1);
+    limo.data.end = stop(c(1));
+    limo.data.trim_high_f = v(2);    
+    % loop to adjust each subject list
+    tf_times = tf_times(c(1),:);
+    tf_freqs = tf_freqs(c(1),:);
+else
+    limo.data.trim2 = v;
+    limo.data.end = stop(c);
+    if strcmp(Analysis,'Frequency')
+        % loop to adjust each subject list
+        freqlist = freqlist(c);
+    end
+end
+    
+if strcmp(Analysis,'Frequency')
+    % check all lists match
+    
+    
+    a = find((LIMO.data.freqlist-limo.data.start)==0);
+    b = find((LIMO.data.freqlist-limo.data.end)==0);
+    limo.data.freqlist = LIMO.data.freqlist(a:b);  % assumes all subject match this
+elseif strcmp(Analysis,'Time-Frequency')
+    % check all lists match
+    
+    limo.data.tf_times = LIMO.data.tf_times(limo.data.trim1:limo.data.trim2);
+    limo.data.tf_freqs = LIMO.data.tf_freqs(limo.data.trim_low_f:limo.data.trim_high_f);
+end
+
 end
 
 

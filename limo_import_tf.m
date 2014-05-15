@@ -465,8 +465,6 @@ global EEG LIMO
 LIMO.data.data_dir            = handles.data_dir;
 LIMO.data.data                = handles.data;
 LIMO.data.chanlocs            = handles.chanlocs;
-LIMO.data.start               = handles.start;
-LIMO.data.end                 = handles.end ;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont; 
@@ -519,6 +517,8 @@ else
 end
 
 LIMO.data.tf_times = EEG.etc.tf_times(LIMO.data.trim1:LIMO.data.trim2);
+LIMO.data.start = EEG.etc.tf_times(LIMO.data.trim1); % should match handles.start;
+LIMO.data.end = EEG.etc.tf_times(LIMO.data.trim2);; % should match handles.end ;
 
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;
