@@ -44,8 +44,8 @@ scale              = handles.data3d.*handles.mask;
 scale(scale==0)    = NaN;
 handles.scale      = scale;
 handles.title      = varargin{4};
-handles.freqs_here = handles.LIMO.data.tf_freqs(handles.LIMO.data.trim_low_f:handles.LIMO.data.trim_high_f);
-handles.times_here = handles.LIMO.data.tf_times(handles.LIMO.data.trim1:handles.LIMO.data.trim2);
+handles.freqs_here = handles.LIMO.data.tf_freqs; % (handles.LIMO.data.trim_low_f:handles.LIMO.data.trim_high_f);
+handles.times_here = handles.LIMO.data.tf_times; % (handles.LIMO.data.trim1:handles.LIMO.data.trim2);
 handles.plot_sel   = 1;
 clear varargin scale
 
@@ -60,8 +60,8 @@ handles.maxvi        = find(handles.data3d == handles.maxv);
 handles.clims        = [0 handles.maxv];  % Set the global default scale of the colour bar to be 0:max value
 handles.slider_sel   = handles.maxt; % 0.5
 handles.ef           = squeeze(handles.data3d(:,:,handles.maxt));
-plot_data.freqs_here = handles.LIMO.data.tf_freqs(handles.LIMO.data.trim_low_f:handles.LIMO.data.trim_high_f);
-plot_data.times_here = handles.LIMO.data.tf_times(handles.LIMO.data.trim1:handles.LIMO.data.trim2);
+plot_data.freqs_here = handles.LIMO.data.tf_freqs; % (handles.LIMO.data.trim_low_f:handles.LIMO.data.trim_high_f);
+plot_data.times_here = handles.LIMO.data.tf_times; % (handles.LIMO.data.trim1:handles.LIMO.data.trim2);
 guidata(hObject, plot_data);
 guidata(hObject, handles);
 
@@ -161,6 +161,8 @@ varargout{1} = handles.output;
 %      UPDATE: swith between Electrode * Frequencies (slide in time)
 %              and Electrode * Time (slide in Frequencies)
 % ------------------------------------------------------------------
+function Main_display_CreateFcn(hObject, eventdata, handles)
+function topoplot_CreateFcn(hObject, eventdata, handles)
 
 % --- Executes during object creation, after setting all properties.
 function pop_up_dimensions_CreateFcn(hObject, eventdata, handles)
@@ -658,21 +660,48 @@ function gifbutton_Callback(hObject, eventdata, handles)
 
 %%%%%%%%%%%%%%%%%%%% MENU %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes during object creation, after setting all properties.
-function topoplot_CreateFcn(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function FileMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function OpenMenuItem_Callback(hObject, eventdata, handles)
-file = uigetfile('*.fig');
+
+[file,p] = uigetfile('*.mat','select effect file');
 if ~isequal(file, 0)
-    open(file);
+    cd(p); load(file); load LIMO;
+    do_not_update = 0;
+    if strncmp(file,'Covariate_effect',16)
+        data3d     = squeeze(Covariate_effect(:,:,:,1));
+    elseif strncmp(file,'Condition_effect',16)
+        data3d     = squeeze(Condition_effect(:,:,:,1));
+    elseif strncmp(file,'R2',2)
+        data3d     = squeeze(R2(:,:,:,2));
+    elseif strncmp(file,'one_sample',10)
+        data3d     = squeeze(one_sample(:,:,:,4));
+    else
+        do_not_update = 1;
+        errordlg('file not supported')
+    end
+    
+    % ---------------------
+    if do_not_update == 0
+        clc; uiresume
+        guidata(hObject, handles);
+        delete(handles.figure1)
+        limo_display_results_tf(LIMO,data3d,ones(size(data3d)),file)
+    end
 end
 
+
 % --------------------------------------------------------------------
-%function PrintMenuItem_Callback(hObject, eventdata, handles)
-printdlg(handles.figure1)
+function PrintMenuItem_Callback(hObject, eventdata, handles)
+
+saveas(handles.figure1,cell2mat(inputdlg('save figure as: ')))
+guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function CloseMenuItem_Callback(hObject, eventdata, handles)
+clc; uiresume
+guidata(hObject, handles);
+delete(handles.figure1)

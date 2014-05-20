@@ -170,40 +170,73 @@ if FilterIndex == 1
                 && exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
             mkdir tfce; load(FileName); load(sprintf('H0%sH0_%s', filesep, FileName));
             if strncmp(FileName,'one_sample',10)
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency'); x = 3;
-                else [x,y,z] = size(one_sample); if x~=1; x=2; end
-                end
                 parameter = eval(FileName(28:end-4));
                 tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
-                tfce_one_sample = limo_tfce(x,squeeze(one_sample(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['tfce', filesep, tfce_name], 'tfce_one_sample'); clear tfce_one_sample;
-                tfce_H0_one_sample = limo_tfce(x,squeeze(H0_one_sample(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample'); clear tfce_H0_one_sample;
-            elseif strncmp(FileName,'two_samples',11)
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency'); x = 3;
-                else [x,y,z] = size(two_samples); if x~=1; x=2; end
+                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency');
+                    x = size(one_sample,1); 
+                    if x==1
+                        x=2; LIMO.LIMO.data.neighbouring_matrix = [];
+                    else
+                        x=3;
+                    end
+                    tfce_one_sample = limo_tfce(x,squeeze(one_sample(:,:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_one_sample'); clear tfce_one_sample;
+                    tfce_H0_one_sample = limo_tfce(x,squeeze(H0_one_sample(:,:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample'); clear tfce_H0_one_sample;
+                else
+                    x = size(one_sample,1); if x~=1; x=2; end
+                    tfce_one_sample = limo_tfce(x,squeeze(one_sample(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_one_sample'); clear tfce_one_sample;
+                    tfce_H0_one_sample = limo_tfce(x,squeeze(H0_one_sample(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample'); clear tfce_H0_one_sample;
                 end
+            elseif strncmp(FileName,'two_samples',11)
                 parameter = eval(FileName(29:end-4));
                 tfce_name = sprintf('tfce_two_samples_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_two_samples_ttest_parameter_%g',parameter);
-                tfce_two_samples = limo_tfce(x,squeeze(two_samples(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['tfce', filesep, tfce_name], 'tfce_two_samples'); clear tfce_two_samples;
-                tfce_H0_two_samples = limo_tfce(x,squeeze(H0_two_samples(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_two_samples'); clear tfce_H0_two_samples;
-            elseif strncmp(FileName,'paired_samples',14)
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency'); x = 3;
-                else [x,y,z] = size(paired_samples); if x~=1; x=2; end
+                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency');
+                    x = size(one_sample,1); 
+                    if x==1
+                        x=2; LIMO.LIMO.data.neighbouring_matrix = [];
+                    else
+                        x=3;
+                    end
+                    tfce_two_samples = limo_tfce(x,squeeze(two_samples(:,:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_two_samples'); clear tfce_two_samples;
+                    tfce_H0_two_samples = limo_tfce(x,squeeze(H0_two_samples(:,:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_two_samples'); clear tfce_H0_two_samples;
+                else
+                    x = size(two_samples,1); if x~=1; x=2; end
+                    tfce_two_samples = limo_tfce(x,squeeze(two_samples(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_two_samples'); clear tfce_two_samples;
+                    tfce_H0_two_samples = limo_tfce(x,squeeze(H0_two_samples(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_two_samples'); clear tfce_H0_two_samples;
                 end
+            elseif strncmp(FileName,'paired_samples',14)
                 parameter = eval(FileName(32:end-4));
                 tfce_name = sprintf('tfce_paired_samples_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_paired_samples_ttest_parameter_%g',parameter);
-                tfce_paired_samples = limo_tfce(x,squeeze(paired_samples(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['tfce', filesep, tfce_name], 'tfce_paired_samples'); clear tfce_paired_samples;
-                tfce_H0_paired_samples = limo_tfce(x,squeeze(H0_paired_samples(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_paired_samples'); clear tfce_H0_paired_samples;
+                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
+                    x = size(one_sample,1); 
+                    if x==1
+                        x=2; LIMO.LIMO.data.neighbouring_matrix = [];
+                    else
+                        x=3;
+                    end
+                    tfce_paired_samples = limo_tfce(x,squeeze(paired_samples(:,:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_paired_samples'); clear tfce_paired_samples;
+                    tfce_H0_paired_samples = limo_tfce(x,squeeze(H0_paired_samples(:,:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_paired_samples'); clear tfce_H0_paired_samples;
+                else
+                    x = size(paired_samples,1); if x~=1; x=2; end
+                    tfce_paired_samples = limo_tfce(x,squeeze(paired_samples(:,:,4)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['tfce', filesep, tfce_name], 'tfce_paired_samples'); clear tfce_paired_samples;
+                    tfce_H0_paired_samples = limo_tfce(x,squeeze(H0_paired_samples(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_paired_samples'); clear tfce_H0_paired_samples;
+                end
             elseif strncmp(FileName,'Repeated_measures',17)
-                msgbox('repeated measure ANOVA bootstrap is not availbale at this stage, please use the random effect GUI','action not performed','warn')
+                msgbox('repeated measure ANOVA tfce is not availbale at this stage, please use the random effect GUI','action not performed','warn')
             else
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                     limo_eeg_tf(4);
@@ -423,5 +456,3 @@ clc; uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
-
-

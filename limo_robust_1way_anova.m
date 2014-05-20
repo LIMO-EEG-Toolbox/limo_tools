@@ -30,7 +30,7 @@ function [F,p] = limo_robust_1way_anova(Y,X,percent)
 % Cyril Pernet v1 11/06/2013
 % GAR 12/06/2013: edited help, fixed code and added percent input
 % -----------------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 
 if nargin<3 || isempty(percent)
 percent = 20;

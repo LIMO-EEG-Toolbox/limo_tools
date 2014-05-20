@@ -153,7 +153,7 @@ if type == 1 || type == 4
         else
             errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
         end
-    else
+    else % Full scalp
         if type == 1
             limo.design.name = 'one sample t-test all electrodes';
             limo.data.chanlocs = expected_chanlocs;
@@ -164,29 +164,52 @@ if type == 1 || type == 4
         limo.design.electrode = [];
     end
     
-    % get data for all parameters dim [electrode, frame, param, nb subjects
-    % -----------------------------------------------------------------
+    % get data for all parameters 
+    % -----------------------------
     disp('gathering data ...'); index = 1;
     for i=1:size(Paths,2) % for each subject
         load(limo.data.data{i});
         try
-            tmp = eval(str2mat(Names{1}(1:end-4)));
+            tmp = eval(str2mat(Names{1}(1:end-4))); % load Betas values
         catch
             tmp = eval(str2mat(Names{1}(1:end-6)));
             tmp = squeeze(tmp(:,:,1));
         end
-        begins_at = max(first_frame) - first_frame(i) + 1;
-        ends_at = size(tmp,2) - (last_frame(i) - min(last_frame));
+        
+        % get indices to trim data
+        if strcmp(limo.Analysis,'Time-Frequency')
+            begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
+            ends_at(1) = size(tmp,2) - (last_frame(i,2) - min(last_frame(:,2)));
+            ends_at(2) = size(tmp,3) - (last_frame(i,1) - min(last_frame(:,1)));
+        else
+            begins_at = max(first_frame) - first_frame(i) + 1;
+            ends_at = size(tmp,2) - (last_frame(i) - min(last_frame));
+        end
+        
+        % data dim [electrode, freq/time, param, nb subjects]
         if strcmp(Analysis_type,'Full scalp analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-            data(:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+            if strcmp(limo.Analysis,'Time-Frequency')
+                data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+            else
+                data(:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+            end
             index = index + 1; removed(i) = 0;
+        
         elseif strcmp(Analysis_type,'1 electrode only') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
             if  length(limo.design.electrode) == 1;
-                data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                if strcmp(limo.Analysis,'Time-Frequency')
+                    data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                else
+                    data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                end
                 index = index + 1; removed(i) = 0;
             else
                 out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                if strcmp(limo.Analysis,'Time-Frequency')
+                    data(1,:,:,:,index) = out(i,:,:);
+                else
+                    data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                end
                 index = index +1; removed(i) = 0;
             end
         else
@@ -196,9 +219,13 @@ if type == 1 || type == 4
         clear tmp
     end
     
-    if strcmp(Analysis_type,'1 electrode only') && size(data,2) == 1
+    if strcmp(Analysis_type,'1 electrode only') % but these are different electrodes
         tmp_data = squeeze(data); clear data
-        data(1,1:size(tmp_data,1),1,1:size(tmp_data,2)) = tmp_data;
+        if strcmp(limo.Analysis,'Time-Frequency')
+            data(1,1:size(tmp_data,1),1:size(tmp_data,2),1,1:size(tmp_data,3),:) = tmp_data;
+        else
+            data(1,1:size(tmp_data,1),1,1:size(tmp_data,2),:) = tmp_data;
+        end
     end
     
     
@@ -221,12 +248,28 @@ if type == 1 || type == 4
             LIMO.dir = pwd;
             
             if strcmp(Analysis_type,'1 electrode only') && size(data,1) == 1
-                tmp = squeeze(data(:,:,i,:));
-                tmp_data = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-                tmp_data(1,:,:) = tmp; clear tmp;
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp = squeeze(data(:,:,:,i,:));
+                    tmp_data = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+                    tmp_data(1,:,:,:) = tmp; clear tmp;
+                else
+                    tmp = squeeze(data(:,:,i,:));
+                    tmp_data = NaN(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
+                    tmp_data(1,:,:) = tmp; clear tmp;
+                end
             else
-                tmp_data = squeeze(data(:,:,i,:));
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp_data = squeeze(data(:,:,:,i,:));
+                else
+                    tmp_data = squeeze(data(:,:,i,:));
+                end
             end
+            
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
+                LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
+            end
+                    
             save LIMO LIMO
             Yr = tmp_data; save Yr Yr, clear Yr % just to be consistent with name
             limo_random_robust(type,tmp_data,i,nboot,tfce)
@@ -246,15 +289,26 @@ if type == 1 || type == 4
             X = load(FileName);
         elseif strcmp(FileName(end-3:end),'.mat')
             cd(PathName)
-            load(FileName);
-            X = eval(FileName(1:end-4));
+            % load(FileName);
+            % X = eval(FileName(1:end-4));
+            X = load(FileName); 
+            X = getfield(X,cell2mat(fieldnames(X)));
         end
         disp('Regressor(s) loaded');
         
         % check size and orientation
         try
-            if size(X,2) == size(data,4) || size(X,2) == size(Paths,2); disp('X has been transposed'); X = X'; end
-            if size(X,1) > size(data,4);
+            if strcmp(limo.Analysis,'Time-Frequency')
+                N = size(data,5);
+            else
+                N = size(data,4);
+            end
+            
+            if size(X,2) == N || size(X,2) == size(Paths,2)
+                disp('X has been transposed'); X = X';
+            end
+
+            if size(X,1) > N;
                 try
                     index = 0;
                     for i=1:size(Paths,2)
@@ -269,13 +323,14 @@ if type == 1 || type == 4
                 end
             end
                        
-            if size(X,2)==2 && nboot ~= 599; 
+            if size(X,2)==1 && nboot ~= 599; 
                 limo.design.bootstrap = 599;
                 disp('nb of bootstrap adjusted to 599 for a simple regression'); 
             end
                         
         catch ME
-            errordlg('covariate not loaded - make sure data are in lines or columns','Covariate error'); return
+            errordlg('covariate error - make sure data are in lines or columns','Covariate error'); 
+            return
         end
         
         LIMO = limo;
@@ -291,13 +346,28 @@ if type == 1 || type == 4
             LIMO.dir = pwd;
             
             if strcmp(Analysis_type,'1 electrode only')
-                tmp = squeeze(data(:,:,i,:));
-                tmp_data = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-                tmp_data(1,:,:) = tmp; clear tmp;
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp = squeeze(data(:,:,:,i,:));
+                    tmp_data = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+                    tmp_data(1,:,:,:) = tmp; clear tmp;
+                else
+                    tmp = squeeze(data(:,:,i,:));
+                    tmp_data = NaN(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
+                    tmp_data(1,:,:) = tmp; clear tmp;
+                end
             else
-                tmp_data = squeeze(data(:,:,i,:));
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp_data = squeeze(data(:,:,:,i,:));
+                else
+                    tmp_data = squeeze(data(:,:,i,:));
+                end
             end
             
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
+                LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
+            end
+
             % compute
             save LIMO LIMO; clear LIMO ;
             limo_random_robust(type,tmp_data,X,i,nboot,tfce)
@@ -1227,19 +1297,22 @@ for i=1:size(Paths,2)
         last_frame(i,1)             = LIMO.data.trim2;
         start(i,1)                  = LIMO.data.start;
         stop(i,1)                   = LIMO.data.end;
+        
         first_frame(i,2)            = LIMO.data.trim_low_f;
         last_frame(i,2)             = LIMO.data.trim_high_f;
         start(i,2)                  = LIMO.data.tf_freqs(1);
-        stop(i,2)                   = LIMO.data.tf_freqs(2);
-        tf_times(i,:)               = LIMO.data.tf_times;
-        tf_freqs(i,:)               = LIMO.data.tf_freqs;
+        stop(i,2)                   = LIMO.data.tf_freqs(end);
+        
+        tf_times{i}(1,:)            = LIMO.data.tf_times;
+        tf_freqs{i}(1,:)            = LIMO.data.tf_freqs;
     else
         first_frame(i)              = LIMO.data.trim1;
         last_frame(i)               = LIMO.data.trim2;
         start(i)                    = LIMO.data.start;
         stop(i)                     = LIMO.data.end;
+        
         if strcmp(Analysis,'Frequency')
-            freqlist(i,:)           = LIMO.data.freqlist;
+            freqlist{i}(1,:)        = LIMO.data.freqlist;
         end
     end
 end
@@ -1263,50 +1336,83 @@ limo.data.sampling_rate = sampling_rate(1);
 [v,c] = max(first_frame);
 if strcmp(Analysis,'Time-Frequency')
     limo.data.trim1 = v(1);
-    limo.data.start = start(c(1));
+    limo.data.start = start(c(1),1);
     limo.data.trim_low_f = v(2);
+    limo.data.low_f = start(c(2),2);
     % loop to adjust each subject list
-    tf_times = tf_times(c(1),:);
-    tf_freqs = tf_freqs(c(1),:);
+    for i=1:size(Paths,2)
+        [~,ind] = min(abs(tf_times{i}-limo.data.start));
+        tf_times{i} = tf_times{i}(ind:end);
+        [~,ind] = min(abs(tf_freqs{i}-limo.data.low_f));
+        tf_freqs{i} = tf_freqs{i}(ind:end);
+    end
 else
     limo.data.trim1 = v;
     limo.data.start = start(c);
     if strcmp(Analysis,'Frequency')
         % loop to adjust each subject list
-        freqlist = freqlist(c);
+        for i=1:size(Paths,2)
+            [~,ind] = min(abs(freqlist{i}-limo.data.start));
+            freqlist{i} = freqlist{i}(ind:end);
+        end
     end
 end
 
 [v,c] = min(last_frame);
 if strcmp(Analysis,'Time-Frequency')
     limo.data.trim2 = v(1);
-    limo.data.end = stop(c(1));
+    limo.data.end = stop(c(1),1);
     limo.data.trim_high_f = v(2);    
+    limo.data.high_f = stop(c(2),2);
     % loop to adjust each subject list
-    tf_times = tf_times(c(1),:);
-    tf_freqs = tf_freqs(c(1),:);
+    for i=1:size(Paths,2)
+        [~,ind] = min(abs(tf_times{i}-limo.data.end));
+        tf_times{i} = tf_times{i}(1:ind);
+        [~,ind] = min(abs(tf_freqs{i}-limo.data.high_f));
+        tf_freqs{i} = tf_freqs{i}(1:ind);
+    end
 else
     limo.data.trim2 = v;
     limo.data.end = stop(c);
     if strcmp(Analysis,'Frequency')
         % loop to adjust each subject list
-        freqlist = freqlist(c);
+        for i=1:size(Paths,2)
+            [~,ind] = min(abs(freqlist{i}-limo.data.end));
+            freqlist{i} = freqlist{i}(1:ind);
+        end
     end
 end
-    
+
+
+% finally match everything
 if strcmp(Analysis,'Frequency')
-    % check all lists match
+    % check all lists match ; if sampled the same across subject, all same sizes
+    try
+        freqlist = cell2mat(freqlist');
+    catch list_issue
+        assignin('base','freqlist',freqlist)
+        error('the resolution of frequency lists doesn''t match between subjects')
+    end
+    limo.data.freqlist = mean(freqlist,1);
+    limo.data.start    = limo.data.freqlist(1);
+    limo.data.end      = limo.data.freqlist(end);
     
-    
-    a = find((LIMO.data.freqlist-limo.data.start)==0);
-    b = find((LIMO.data.freqlist-limo.data.end)==0);
-    limo.data.freqlist = LIMO.data.freqlist(a:b);  % assumes all subject match this
 elseif strcmp(Analysis,'Time-Frequency')
     % check all lists match
-    
-    limo.data.tf_times = LIMO.data.tf_times(limo.data.trim1:limo.data.trim2);
-    limo.data.tf_freqs = LIMO.data.tf_freqs(limo.data.trim_low_f:limo.data.trim_high_f);
+    try
+        tf_times = cell2mat(tf_times');
+        tf_freqs = cell2mat(tf_freqs');
+    catch list_issue
+        error('the resolution of time/frequency lists doesn''t match between subjects')
+    end
+    limo.data.tf_times = mean(tf_times,1);
+    limo.data.tf_freqs = mean(tf_freqs,1);
+    limo.data.start    = limo.data.tf_times(1);
+    limo.data.low_f    = limo.data.tf_freqs(1);
+    limo.data.end      = limo.data.tf_times(end);
+    limo.data.high_f   = limo.data.tf_freqs(end);
 end
+
 
 end
 

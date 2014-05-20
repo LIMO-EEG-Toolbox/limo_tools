@@ -6,34 +6,41 @@ function limo_random_robust(varargin)
 % the data in the appropriate format. Limo_random_robust calls low level
 % functions like limo_ttest to perform the actual computation.
 %
-% FORMAT
+% FORMAT limo_random_robust(test,data,label,nboot,tfce)
 %
+% INPUT
 % limo_random_robust(1,y,parameter number,nboot,tfce)
 %                    1                = a one-sample t-test
-%                    y                = data (dim electrodes, frames, subjects)
+%                    y                = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
 %                    parameter number = describe which parameters is analysed (e.g. 1)
 %                    nboot            = nb of resamples
 %                    tfce             = 1 run tcfe.
 %                   
 % limo_random_robust(2,y1,y2,parameter number,nboot,tfce);
 %                    2                = two samples t-test
-%                    y1               = data (dim electrodes, frames, subjects)
-%                    y2               = data (dim electrodes, frames, subjects)
+%                    y1               = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
+%                    y2               = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
 %                    parameter number = describe which parameters is analysed (e.g. 1)
 %                    nboot            = nb of resamples
 %                    tfce             = 1 run tcfe.
 %
 % limo_random_robust(3,y1,y2,parameter number,nboot,tfce);
 %                    3                = paired t-test
-%                    y1               = data (dim electrodes, frames, subjects)
-%                    y2               = data (dim electrodes, frames, subjects)
+%                    y1               = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
+%                    y2               = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
 %                    parameter number = describe which parameters were analysed (e.g. 1 2)
 %                    nboot            = nb of resamples
 %                    tfce             = 1 run tcfe.
 %
 % limo_random_robust(4,y,X,parameter number,nboot,tfce);
 %                    4                = regression analysis
-%                    y                = data (dim electrodes, frames, subjects)
+%                    y                = data (dim electrodes, time or freq, subjects)
+%                                     = data (dim electrodes, freq, time, subjects)
 %                    X                = continuous regressor(s)
 %                    parameter number = describe which parameters is analysed (e.g. 1)
 %                    nboot            = nb of resamples
@@ -41,45 +48,61 @@ function limo_random_robust(varargin)
 %
 % limo_random_robust(5,y,cat,cont,nboot,tfce)
 %                    5     = N-way ANOVA/ANCOVA
-%                    y     = data (dim electrodes, frames, subjects)
+%                    y     = data (dim electrodes, time or freq, subjects)
+%                          = data (dim electrodes, freq, time, subjects)
 %                    cat   = categorical variable(s)
 %                    cont  = continuous regressors (covariates) 
 %                    nboot = nb of resamples
 %                    tfce  = 1 run tcfe.
 %
 % limo_random_robust(6,y,gp,factor_levels,nboot,tfce)
-%                    6 = Repeated measures ANOVA/ANCOVA using multivariate approach
-%                    y = data (dim electrodes, frames, subjects, measures)
-%                    gp = a vector defining gps
+%                    6             = Repeated measures ANOVA/ANCOVA using multivariate approach
+%                    y             = data (dim electrodes, time or freq, subjects, measures)
+%                                  = data (dim electrodes, freq, time, subjects, measures)
+%                    gp            = a vector defining gps
 %                    factor_levels = a vector specifying the levels of each repeated measure factor
-%                    nboot = nb of resamples
-%                    tfce = 1 run tcfe.
+%                    nboot         = nb of resamples
+%                    tfce          = 1 run tcfe.
 %
 % OUPUT
+% write on the disk matrices correponding to the test + LIMO.mat
 %
-% write on the disk matrices correponding to the test
-% 1 sample t-test: one_parameter_X (electrodes, frames, [mean value, std, nb_subjects, t, p])
+% 1 sample t-test: one_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, std, nb_subjects, t, p])
 %                  boot_one_sample_X (electrodes, frames, [T values under H1, T values under H0, p values under H0], nboot)
 %
-% See also LIMO_TRIMCI LIMO_YUEN_TTEST LIMO_YUEND_TTEST LIMO TFCE
-% LIMO_DESIGN_MATRIX LIMO_GLM1 LIMO_EEG(4) LIMO_REP_ANOVA
-% LIMO_CREATE_BOOT_TABLE
+% 2 sample t-test: 
+%
+% paired t-test
+%
+% regression: regression_parameter_X (electrodes, frames [time, freq or freq-time], [F p values])
+%
+% ANOVA
+%
+% ANCOVA
+%
+% Repeated measure ANOVA
+%
+% See also LIMO_TRIMCI LIMO_YUEN_TTEST LIMO_YUEND_TTEST LIMO_ROBUST_1WAY_ANOVA
+% LIMO_GLM1 LIMO_EEG(4) LIMO_EEG_TF(4) LIMO_REP_ANOVA LIMO_CREATE_BOOT_TABLE 
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 
 % v1: Cyril Pernet and Guillaume Rousselet 24-08-2009
 % v2: Cyril Pernet 12-07-2010
-% 25-08-2010: GAR fixed bug in one-sample bootstrap + added new NaN check of boot indices
+% v3: GAR 25-08-2010 - fixed bug in one-sample bootstrap + added new NaN check of boot indices
 % 29-08-2010:  Cyril Pernet and Guillaume Rousselet ANOVAs sorted out (boot_index per cell)
 % 11/12-2012 Marianne Latinus added TFCE computation. Also added a check
 % that if a bootstrap file with same characteristics (nboot, and nelec) on
 % the same data exists the bootstrap step is skipped.
-% 02/06/2013 cleaned up + changed ANOVA to create matrices amd run
+% v4: 02/06/2013 cleaned up + changed ANOVA to create matrices amd run
 % limo_glm(4) - updated repeated measure - boot_tables are made via
 % function -- thx to Benedikt Ehinger for spotting a few bugs here and
 % there
 % Novembre 2013 - Matt Craddock fixes applied on rep ANOVA for single
 % electrode analyses
+% v5: May 2014 - added time-frequency analyses + added check for matrices with
+% NaNs everywhere (ie empty channel) + changed test of hypotheses to
+% trimmed means when possible
 
 
 %% inputs checks for tfce
@@ -134,12 +157,31 @@ switch type
     %--------------------------------------------------------------------------
     case {1}
         
-        data                = varargin{2}; 
+        load LIMO
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            data = limo_tf_4d_reshape(varargin{2});
+        else
+            data            = varargin{2};
+        end
         parameter           = varargin{3};
         nboot               = varargin{4};
         tfce                = varargin{5};
         clear varargin
-        load LIMO
+        
+        % ------------------------------------------------
+        % check the data structure
+        if nboot ~=0
+            for e=1:size(data,1)
+                tmp = isnan(data(e,1,:));
+                if length(tmp) == sum(isnan(tmp))
+                    errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 3
+                    errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                    return
+                end
+            end
+        end
         
         % ------------------------------------------------
         % make a one_sample file per parameter (electrodes, frames, [mean value, se, df, t, p])
@@ -149,11 +191,20 @@ switch type
        
         for electrode = 1:size(data,1) % run per electrode because we have to remove NaNs
             fprintf('analyse parameter %g electrode %g \n',parameter, electrode); 
-            tmp = data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+            tmp = data(electrode,:,:); 
+            if nansum(tmp(1,:)) == 0
+                error('there is at least one empty electrode using your expected chanlocs')
+            else
+                Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+            end
             [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2),one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
             % [one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
             % one_sample(electrode,:,2) = sd./sqrt(n);
             clear tmp Y
+        end
+        
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            one_sample = limo_tf_4d_reshape(one_sample);
         end
         save ([name],'one_sample', '-v7.3')
 
@@ -195,6 +246,10 @@ switch type
                     end
                     clear tmp Y
                 end % closes for electrode
+                
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    H0_one_sample = limo_tf_5d_reshape(H0_one_sample);
+                end
                 save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
             end
             
@@ -204,10 +259,14 @@ switch type
                 % do tfce for the current data
                 fprintf('Thresholding One Sample T-test using TFCE \n');
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    
+                    if size(one_sample,1) == 1
+                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,:,4))); % cluster in freq-time
+                    else
+                        tfce_one_sample = limo_tfce(3,squeeze(one_sample(:,:,:,4)),channeighbstructmat);
+                    end
                 else
                     if size(one_sample,1) == 1
-                        tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4)),channeighbstructmat);
+                        tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4))); % cluster in time or freq
                     else
                         tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,4)),channeighbstructmat);
                     end
@@ -215,12 +274,17 @@ switch type
                 mkdir tfce
                 save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3'); 
                 clear tfce_one_sample; 
+                
                 fprintf('Thresholding H0 One Sample T-test using TFCE \n');
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    
+                    if size(H0_one_sample,1) == 1
+                        tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)));
+                    else
+                        tfce_H0_one_sample = limo_tfce(3,squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
+                    end
                 else
                     if size(H0_one_sample,1) == 1
-                        tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
+                        tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)));
                     else
                         tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),channeighbstructmat);
                     end
@@ -428,6 +492,28 @@ switch type
         clear varargin
         
         % ------------------------------------------------
+        % check the data structure
+        if nboot ~=0
+            for e=1:size(data,1)
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp = isnan(data(e,1,1,:));
+                else
+                    tmp = isnan(data(e,1,:));
+                end
+                
+                if length(tmp) == sum(isnan(tmp))
+                    errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 3
+                    errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 6
+                    warndlg(['electrode ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
+                end
+            end
+        end
+        
+        % ------------------------------------------------
         % update the LIMO structure
         load LIMO
         LIMO.design.type_of_analysis  = 'Mass-univariate';
@@ -439,21 +525,35 @@ switch type
         if isempty(answer)
             return
         elseif strcmp(answer,'Yes')
-            LIMO.design.zscore            = 1;
+            LIMO.design.zscore        = 1;
         else
-            LIMO.design.zscore            = 0;
+            LIMO.design.zscore        = 0;
         end
         LIMO.design.status            = 'to do';
         LIMO.design.method            = 'OLS'; % change to 'IRLS' for robust (to be validated)
-        % make design matrix and files
-        [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
-            LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
+        save LIMO LIMO
         
+        % make design matrix and files
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
+            LIMO.design.nb_continuous] = limo_design_matrix_tf(data, LIMO,1);
+        else
+            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
+            LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
+        end
+        
+        % ------------------------------------------------
+        % do the analysis
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
             save LIMO LIMO
-            clear data regressors files LIMO
-            limo_eeg(4); disp('regression analysis done');
+            clear data regressors files 
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                limo_eeg_tf(4)
+            else
+                limo_eeg(4);
+            end
+            disp('regression analysis done');
         else
             return
         end
@@ -472,6 +572,28 @@ switch type
         clear varargin
 
         % ------------------------------------------------
+        % check the data structure
+        if nboot ~=0
+            for e=1:size(data,1)
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp = isnan(data(e,1,1,:));
+                else
+                    tmp = isnan(data(e,1,:));
+                end
+                
+                if length(tmp) == sum(isnan(tmp))
+                    errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 3
+                    errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 6
+                    warndlg(['electrode ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
+                end
+            end
+        end
+        
+        % ------------------------------------------------
         % update the LIMO structure
         load LIMO
         LIMO.design.type_of_analysis  = 'Mass-univariate';
@@ -488,13 +610,43 @@ switch type
         LIMO.design.method            = 'OLS'; % change to 'IRLS' for robust (to be validated)
         
         % make design matrix and files
-        [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
-            LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
-        
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
+                LIMO.design.nb_continuous] = limo_design_matrix_tf(data, LIMO,1);
+        else
+            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
+                LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
+        end
+ 
+        % ------------------------------------------------
+        % do the analysis
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
             save LIMO LIMO; clear data LIMO
-            limo_eeg(4); disp('ANOVA/ANCOVA analysis done');
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+                    Condition_effect_1 = NaN(size(data,1),size(data,2),size(data,3),2);
+                    for e=1:size(data,1)
+                        Y = limo_tf_4d_reshape(data);
+                        Y = squeeze(Y(e,:,:));
+                        [F,p] = limo_robust_1way_anova(Y,LIMO.design.X,20);
+                        Condition_effect_1(e,:,:,1) = limo_tf_4d_reshape(F);
+                        Condition_effect_1(e,:,:,2) = limo_tf_4d_reshape(p);
+                    end
+                else
+                    limo_eeg_tf(4)
+                end
+            else
+                if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+                    Condition_effect_1 = NaN(size(data,1),size(data,2),2);
+                    for e=1:size(data,1)
+                        [Condition_effect_1(e,:,1),Condition_effect_1(e,:,2)] = limo_robust_1way_anova(squeeze(Y(e,:,:)),LIMO.design.X,20);
+                    end
+                else
+                    limo_eeg(4)
+                end
+                disp('ANOVA/ANCOVA analysis done');
+            end
         else
             return
         end

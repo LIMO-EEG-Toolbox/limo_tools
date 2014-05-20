@@ -2,18 +2,26 @@ function tfce_score = limo_tfce(varargin)
 
 % implementation of the Threshold-free cluster enhancement method
 % developped for fMRI by Smith & Nichols, NeuroImage 44(2009), 83-98
+% tfce = sum(extent(h)^E*height^H*dh)
 %
 % INPUT tfce_score = limo_tfce(type,data,channeighbstructmat)
 %       tfce_score = limo_tfce(type,data,channeighbstructmat,E,H,dh)
 %
-%       type = 1 for 1D data (one channel), 2 for 2D data (ERP, Power), 3 for 3D data (ESP)
+%       type = 1 for 1D data (one channel ERP or Power), 
+%              2 for 2D data (ERP, Power, a single freq*time map), 
+%              3 for 3D data (ERSP)
 %       data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
+%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, swtich to bwlabel = freq*time map
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
-%       tfce = sum(extent(h)^E*height^H*dh)
+%       
 %
 % OUPUT tfce_score is a map of scores
 %
-% Ref
+% References
+%
+% Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP. 
+% figshare. http://dx.doi.org/10.6084/m9.figshare.1008325 
+%
 % Pernet, C., Latinus, M., Nichols, T.E., & Rousselet, G.A.
 % Cluster-based computational methods for mass univariate analyses
 % of event-related brain potentials/fields: a simulation study
@@ -311,7 +319,12 @@ switch type
                     nsteps = length(min(data(:)):increment:max(data(:)));
                     for h=min(data(:)):increment:max(data(:))
                         waitbar(index/nsteps);
-                        [clustered_map, num] = limo_ft_findcluster((data > h), channeighbstructmat,2);
+                        if isempty(channeighbstructmat)
+                            [clustered_map, num] = bwlabel((data > h),4);
+                        else
+                            [clustered_map, num] = limo_ft_findcluster((data > h), channeighbstructmat,2);
+                        end
+                        
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead
                         for i=1:num
                             idx = clustered_map(:) == i;
@@ -341,8 +354,13 @@ switch type
                     pos_tfce = NaN(x,y,l); index = 1;
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         waitbar(index/nsteps);
-                        [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
-                        extent_map = zeros(x,y); 
+                        if isempty(channeighbstructmat)
+                            [clustered_map, num] = bwlabel((pos_data > h),4);
+                        else
+                            [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                        end
+                        
+                        extent_map = zeros(x,y);
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = sum(idx);
@@ -357,8 +375,13 @@ switch type
                     neg_tfce = NaN(x,y,l); index = 1;
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         waitbar((hindex+index)/nsteps);
-                        [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
-                        extent_map = zeros(x,y); 
+                        if isempty(channeighbstructmat)
+                            [clustered_map, num] = bwlabel((neg_data > h),4);
+                        else
+                            [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                        end
+                        
+                        extent_map = zeros(x,y);
                         for i=1:num
                             idx = clustered_map(:) == i;
                             extent_map(idx) = sum(idx);
@@ -404,8 +427,13 @@ switch type
                         % fprintf('estimating tfce under H0 boot %g \n',boot)
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
-                            [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); 
+                            if isempty(channeighbstructmat)
+                                [clustered_map, num] = bwlabel((tmp_data > h),4);
+                            else
+                                [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
+                            end
+                            
+                            extent_map = zeros(x,y);
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = sum(idx);
@@ -449,8 +477,13 @@ switch type
                         pos_increment = (max(pos_data(:)) - min(pos_data(:))) / l;
                         pos_tfce = NaN(x,y,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
-                            [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); 
+                            if isempty(channeighbstructmat)
+                                [clustered_map, num] = bwlabel((pos_data > h),4);
+                            else
+                                [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                            end
+                            
+                            extent_map = zeros(x,y);
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = sum(idx);
@@ -463,8 +496,13 @@ switch type
                         neg_increment = (max(neg_data(:)) - min(neg_data(:))) / l;
                         neg_tfce = NaN(x,y,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
-                            [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
-                            extent_map = zeros(x,y); 
+                            if isempty(channeighbstructmat)
+                                [clustered_map, num] = bwlabel((neg_data > h),4);
+                            else
+                                [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                            end
+                            
+                            extent_map = zeros(x,y);
                             for i=1:num
                                 idx = clustered_map(:) == i;
                                 extent_map(idx) = sum(idx);

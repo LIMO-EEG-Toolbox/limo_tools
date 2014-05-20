@@ -751,7 +751,7 @@ switch varargin{1}
                         cd('H0'); fprintf('Creating H0 Covariate(s) TFCE scores \n');
                         for i=1:LIMO.design.nb_continuous
                             name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
-                            if size(H0_Covariate_effect,1)
+                            if size(H0_Covariate_effect,1) == 1
                                 tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
                             else
                                 tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
@@ -1071,16 +1071,24 @@ switch varargin{1}
         % code of the contrast manager)
         
         % load LIMO and C
-        try
-            cd (LIMO.dir);
-        catch
+        if ~exist(LIMO,'var')
+            load LIMO; cd (LIMO.dir);
+        else
             [LIMO_file,LIMO_dir] = uigetfile('.mat','select a LIMO.mat file');
             cd (LIMO_dir); load LIMO.mat;
         end
         
-        
-        [contrast_file,contrast_dir] = uigetfile('.txt','select your contrast file');
-        cd (contrast_dir); load(contrast_file); cd (LIMO.dir); % problm here it has to be named C
+        if ~exist(C,'var')
+            [contrast_file,contrast_dir] = uigetfile({'*.mat';'*.txt'},'select your contrast file');
+            cd (contrast_dir); load(contrast_file);  % problm here it has to be named C
+            if strcmp(FileName(end-3:end),'.txt')
+                C = importdata(contrast_file);
+            elseif strcmp(FileName(end-3:end),'.mat')
+                contrast_file = load(contrast_file);
+                C = getfield(contrast_file,cell2mat(fieldnames(contrast_file)));
+            end
+            cd (LIMO.dir);
+        end
         
         % Check dimensions
         C = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
@@ -1123,7 +1131,6 @@ switch varargin{1}
                     LIMO.contrast{i}.multivariate{electrode} = result;
                 end
             end
-            
             save LIMO LIMO
         end
         
