@@ -658,8 +658,8 @@ end
 
 % -------------------------------------------------
 % plot data ---------------------------------------
-if nargout ==0
-    Xf = linspace(max(start)*1000,min(stop)*1000,size(data,2)); % make time vector
+if nargout ==0 && ~isempty(data(:))
+    Xf = linspace(max(start),min(stop),size(data,2)); % make time vector
     if strcmp(Analysis_type,'1 electrode only')
         for k = 1:size(data,3)
             figure('color','w','NumberTitle','off');hold on
@@ -686,7 +686,8 @@ if nargout ==0
         end
     end
     % -------------------------------------------------
-    
-    disp('computation done')
+elseif isempty(data(:))    
+    warndlg('computed central tendency is empty','nothing obtained')
 end
+disp('computation done')
 

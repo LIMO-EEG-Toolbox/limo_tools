@@ -41,6 +41,8 @@ else
             name{turn} = 'Subjects'' Mid Deciles HD';
         elseif ~isempty(strfind(file, 'Median'))
             name{turn} = 'Subjects'' Medians';
+        else
+            name{turn} = file;
         end
         tmp = data.data;
         subjects_plot = 1;
