@@ -697,7 +697,11 @@ end
 % --------------------------------------------------------------------
 function PrintMenuItem_Callback(hObject, eventdata, handles)
 
-saveas(handles.figure1,cell2mat(inputdlg('save figure as: ')))
+fig_save_name = cell2mat(inputdlg('save figure as: '));
+fig_id = min(findall(0,'type','figure'));  % Seems to be a lower fig id than that of other GUI elements.
+set(fig_id, 'PaperPositionMode', 'auto');
+print(fig_id,'-depsc2',fig_save_name);
+
 guidata(hObject, handles);
 
 % --------------------------------------------------------------------
