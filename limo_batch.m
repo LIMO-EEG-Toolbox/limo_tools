@@ -1,8 +1,10 @@
 function limo_batch(varargin)
 
-% interactive function to run several 1st level analyses one after the
-% others - select directories and files - possibly enter contrasts of
-% interests and let it run.
+% interactive function to run several 1st level analyses
+% select directories and files - possibly enter contrasts of
+% interests and let it run. The batch relies on PSOM (see Ref)
+% see opt.mode for parallel computing on grid using qsub or msub
+% <https://code.google.com/p/psom/wiki/ConfigurationPsom>
 %
 % FORMAT limo_batch
 %        limo_batch(option,model,contrast)
@@ -33,20 +35,34 @@ function limo_batch(varargin)
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf and psom in external folder
 %
-% Cyril Pernet and Nicolas Chauveau
-% CP 24-06-2013 updated to be even more automatic + fix for new designs
-% Cyril Pernet May 2014 - redesigned it using psom
+% Reference for pipeline engine
+% Bellec P, Lavoie-Courchesne S, Dickinson P, Lerch JP, Zijdenbos AP and Evans AC (2012) 
+% The pipeline system for Octave and Matlab (PSOM): a lightweight scripting framework and 
+% execution engine for scientific workflows. Front. Neuroinform. 6:7. 
+% doi: 10.3389/fninf.2012.00007
 % -----------------------------
 % Copyright (C) LIMO Team 2014
 
-% psom stuff see mode for parallel computing
-opt.mode = 'session'; % run one after the other in the current matlab session
-opt.flag_pause = false; 
+% Cyril Pernet and Nicolas Chauveau 2012
+% CP 24-06-2013 updated to be even more automatic + fix for new designs
+% Cyril Pernet May 2014 - redesigned it using psom
+
+
+opt.mode = 'background'; % run in parallel matlab session
+opt.max_queued = Inf; % with a maximum of possible sessions
+opt.time_between_checks = 2; % and 2sec between job submission
+opt.flag_pause = false; % don't bother asking to start jobs
+opt.flag_debug = true; % report a bit more of issues
+psom_gb_vars
+
 
 %% what to do
 
 if nargin == 0
     option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
+    if isempty(option)
+        return
+    end
     
     % model
     if strcmp(option,'model specification') || strcmp(option,'both')
@@ -197,3 +213,23 @@ end
 cd([current filesep 'limo_batch_report'])
 cell2csv('batch_report', report')
 cd(current); disp('LIMO batch processing done');
+
+
+% update pipe as below for parallel processing
+%                 fprintf('bootstrapping data to estimate H0 ...\n');
+%                 pipeline = struct();
+%                 for electrode = 1:size(data,1)
+%                     tmp = centered_data(electrode,:,:);
+%                     boot_Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+%                     save boot_Y boot_Y; clear tmp boot_Y
+%                     command = 'load(files_in); [H0_one_sample(opt.electrode,:,1,opt.b),tmdata,trimci,se,H0_one_sample(opt.electrode,:,2,opt.b),tcrit,df]=limo_trimci(files_in(1,:,opt.boot_table));';
+%                     for b=1:2
+%                         pipeline = setfield(pipeline,['onesample' num2str(b)],b);
+%                         opt = struct('electrode', electrode, 'boot_table', boot_table{electrode}(:,b));
+%                         s = struct('command', command, 'files_in', [pwd filesep 'boot_Y'], 'opt', opt);
+%                         pipeline = setfield(pipeline,['onesample' num2str(b)],s);
+%                     end
+%                     opt.path_logs = [pwd filesep 'psom_boot'];
+%                     psom_run_pipeline(pipeline,opt)
+%                 end
+

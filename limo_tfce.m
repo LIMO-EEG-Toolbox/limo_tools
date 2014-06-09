@@ -11,7 +11,7 @@ function tfce_score = limo_tfce(varargin)
 %              2 for 2D data (ERP, Power, a single freq*time map), 
 %              3 for 3D data (ERSP)
 %       data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
-%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, swtich to bwlabel = freq*time map
+%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, siwtch to bwlabel = freq*time map
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
 %       
 %

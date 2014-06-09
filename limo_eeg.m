@@ -74,7 +74,6 @@ switch varargin{1}
         % if not called via the eeglab menu but via the matlab command window
         % show the GUI
         
-        disp(' ')
         disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,');
         disp(' with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar,');
         disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus. These authors are thereafter');
@@ -85,11 +84,7 @@ switch varargin{1}
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
         disp(' ');
-        disp('Reference:  Pernet, C.R., Chauveau, N., Gaspar, C. & Rousselet, G.A.');
-        disp('LIMO EEG: a toolbox for hierarchical LInear Modeling of EletroEncephaloGraphic');
-        disp('data. Computational Intelligence and Neuroscience, Volume 2011 (2011),');
-        disp('Article ID 831409, 11 pages, doi:10.1155/2011/831409');
-        disp(' ')
+        
         limo_gui
         
         %------

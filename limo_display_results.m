@@ -1177,7 +1177,7 @@ elseif LIMO.Level == 2
         
         if data_cached == 0 % compute and plot
             
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice,[]);
             else
                 [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice,[]);
@@ -1193,7 +1193,7 @@ elseif LIMO.Level == 2
                 assignin('base','mask',mask)
             end
             
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 if strncmp(FileName,'R2',2)
                     toplot = squeeze(R2(:,:,:,1));
                     assignin('base','R_values',toplot)
@@ -1306,7 +1306,7 @@ elseif LIMO.Level == 2
             figure; set(gcf,'Color','w');
             
             ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-            if strcmp(LIMO.Analysis,'Time')
+            if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'ITC') 
                 timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
                 imagesc(timevect,1:size(toplot,1),scale);
             else
@@ -1342,7 +1342,7 @@ elseif LIMO.Level == 2
                 e=e(1);
             end
             
-            if strcmp(LIMO.Analysis,'Time')
+            if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'ITC') 
                 plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
                 if size(toplot,1)>1
                     mytitle = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
@@ -1406,9 +1406,9 @@ elseif LIMO.Level == 2
                 end
             end
             
-        elseif Type == 1 && strcmp(LIMO.Analysis,'Time-Frequency')
+        elseif Type == 1 && strcmp(LIMO.Analysis,'Time-Frequency') || ...
+                Type == 1 && strcmp(LIMO.Analysis,'ITC')
             limo_display_results_tf(LIMO,toplot,mask,mytitle);
-            
             
         elseif Type == 2
             %--------------------------
@@ -1475,7 +1475,7 @@ elseif LIMO.Level == 2
     elseif Type == 3
         
         %--------------------------
-        % ERP
+        % Course plot
         %--------------------------
         
         if strncmp(FileName,'one_sample',10) || strncmp(FileName,'two_samples',11) || strncmp(FileName,'paired_samples',14) || ...
@@ -1484,11 +1484,11 @@ elseif LIMO.Level == 2
             % stat file dim = (electrodes, frames, [mean value, se, df, t, p])
             % H0 file dim = (electrodes,frames,[t, p],nboot)
             
-            if strncmp(FileName,'one_sample',10); data = one_sample;
-            elseif strncmp(FileName,'two_samples',11); data = two_samples;
-            elseif  strncmp(FileName,'paired_samples',14);  data = paired_samples;
-            elseif  strncmp(FileName,'con',4); data = con;
-            elseif  strncmp(FileName,'ess',4); data = ess;
+            if strncmp(FileName,'one_sample',10); data = one_sample; clear one_sample;
+            elseif strncmp(FileName,'two_samples',11); data = two_samples; clesr two_samples
+            elseif  strncmp(FileName,'paired_samples',14);  data = paired_samples; clear paired_samples
+            elseif  strncmp(FileName,'con',4); data = con; clear con
+            elseif  strncmp(FileName,'ess',4); data = ess; clear ess
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -1496,8 +1496,8 @@ elseif LIMO.Level == 2
                     electrode = inputdlg('which electrode to plot','Plotting option');
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         tmp = squeeze(data(:,:,:,4));
-                        [electrode,freq,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
-                        clear tmp
+                        [electrode,freq_index,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+                        clear tmp ; frequency = LIMO.data.tf_freqs(freq_index);
                     else
                         electrode = eval(cell2mat(electrode));
                         if length(electrode) > 1
@@ -1512,22 +1512,22 @@ elseif LIMO.Level == 2
                 
                 frequency = inputdlg('which frequency to plot','Plotting option');
                 if isempty(frequency) || strcmp(cell2mat(frequency),'')
-                    if ~exist(freq,'var')
-                        [v,f] = max(squeeze(data(electrode,:,:,4)));
-                        [v,c]=max(v); frequency = f(c);
-                    else
-                        frequency = freq; % max
-                    end
+                        if ~exist('freq_index','var')
+                            [v,f] = max(squeeze(data(electrode,:,:,4)));
+                            [v,c]=max(v); freq_index = f(c);
+                            frequency = LIMO.data.tf_freqs(freq_index);
+                        end
                 else
                     frequency = eval(cell2mat(frequency));
+                    [~,freq_index] = min(abs(LIMO.data.tf_freqs-frequency));
                     if length(frequency) > 1
                         error('1 frequency only can be plotted')
-                    elseif electrode > size(data,2)
+                    elseif freq_index > size(data,2)
                         error('frequency number invalid')
                     end
                 end
                 
-            else % Time or Freq
+            else % Time or Freq or ITC
                 if size(data,1) > 1
                     electrode = inputdlg('which electrode to plot','Plotting option');
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
@@ -1546,7 +1546,7 @@ elseif LIMO.Level == 2
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                trimci(:,2) = squeeze(data(electrode,frequency,:,1));
+                trimci(:,2) = squeeze(data(electrode,freq_index,:,1));
                 if strncmp(FileName,'ess',4)
                     start_at = max(strfind(FileName,'_'))+1;
                     C = LIMO.contrast{eval(FileName(start_at:end-4))}.C;
@@ -1577,8 +1577,10 @@ elseif LIMO.Level == 2
             if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Time-Frequency')
                 if isfield(LIMO.data,'tf_times')
                     timevect = LIMO.data.tf_times;
+                    sig = squeeze(single(mask(electrode,freq_index,:))); sig(find(sig==0)) = NaN;
                 else
                     timevect = LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end;
+                    sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 end
                 plot(timevect,squeeze(trimci(:,2)),'LineWidth',3);
                 try
@@ -1590,6 +1592,7 @@ elseif LIMO.Level == 2
                 ylabel('Amplitude (A.U.)','FontSize',14)
             elseif strcmp(LIMO.Analysis,'Frequency')
                 plot(LIMO.data.freqlist,squeeze(trimci(:,2)),'LineWidth',3);
+                sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 try
                     fillhandle = patch([LIMO.data.freqlist fliplr(LIMO.data.freqlist)], [squeeze(trimci(:,1)),fliplr(squeeze(trimci(:,3)))], [1 0 0]);
                 catch no_fill
@@ -1601,7 +1604,6 @@ elseif LIMO.Level == 2
             
             set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
             grid on; box on; axis tight
-            sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
             h = axis;  hold on;
             try
                 plot(timevect,sig.*h(3),'r.','MarkerSize',20)
@@ -1625,9 +1627,12 @@ elseif LIMO.Level == 2
             % ----------------------
             if size(LIMO.design.X,2) > 2
                 input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2));
-                regressor = inputdlg(input_title,'Plotting option'); if isempty(regressor); return; end
+                regressor = inputdlg(input_title,'Plotting option'); 
+                if isempty(regressor); return; end
                 try regressor = sort(eval(cell2mat(regressor)));
-                    if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
+                    if max(regressor) > size(LIMO.design.X,2); 
+                        errordlg('invalid regressor number'); 
+                    end
                 catch ME
                     return
                 end
@@ -1642,6 +1647,11 @@ elseif LIMO.Level == 2
                 errordlg('you can''t plot categorical and continuous regressors together'); return
             end
             
+            % load the effect
+            % --------------
+            name = sprintf('Covariate_effect_%g.mat',regressor);
+            data = load(name); data = getfield(data,cell2mat(fieldnames(data)));
+            
             % which ERP to make
             % ------------------
             extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
@@ -1653,37 +1663,76 @@ elseif LIMO.Level == 2
                 end
             end
             
-            % which electrode to plot
-            % ------------------
-            if isempty(LIMO.design.electrode)
-                electrode = inputdlg('which electrode to plot','Plotting option');
-                try
-                    electrode = eval(cell2mat(electrode));
-                    if size(electrode) > 1
-                        errordlg('invalid electrode number'); return
-                    elseif electrode > size(LIMO.data.chanlocs,2)
-                        errordlg('invalid electrode number'); return
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                if size(data,1) > 1
+                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(electrode) || strcmp(cell2mat(electrode),'')
+                        tmp = squeeze(data(:,:,:,1));
+                        [electrode,freq_index,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+                        clear tmp ; frequency = LIMO.data.tf_freqs(freq_index);
+                    else
+                        electrode = eval(cell2mat(electrode));
+                        if length(electrode) > 1
+                            error('1 electrode only can be plotted')
+                        elseif electrode > size(data,1)
+                            error('electrode number invalid')
+                        end
                     end
-                catch ME
-                    load R2; [v,e] = max(R2(:,:,1)); [v,c]=max(v); electrode = e(c);
-                    % [v,electrode] = max(max(mean(Yr,3),[],2)); % plot at the max of Yr
+                else
+                    electrode = 1;
                 end
-            else
-                electrode =1;  % for optimized electrode analyses
-            end
-            
+                
+                frequency = inputdlg('which frequency to plot','Plotting option');
+                if isempty(frequency) || strcmp(cell2mat(frequency),'')
+                        if ~exist('freq_index','var')
+                            [v,f] = max(squeeze(data(electrode,:,:,1)));
+                            [v,c]=max(v); freq_index = f(c);
+                            frequency = LIMO.data.tf_freqs(freq_index);
+                        end
+                else
+                    frequency = eval(cell2mat(frequency));
+                    [~,freq_index] = min(abs(LIMO.data.tf_freqs-frequency));
+                    if length(frequency) > 1
+                        error('1 frequency only can be plotted')
+                    elseif freq_index > size(data,2)
+                        error('frequency number invalid')
+                    end
+                end
+                
+            else % Time or Freq
+                if size(data,1) > 1
+                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(electrode) || strcmp(cell2mat(electrode),'')
+                        [v,e] = max(data(:,:,4)); [v,c]=max(v); electrode = e(c);
+                    else
+                        electrode = eval(cell2mat(electrode));
+                        if length(electrode) > 1
+                            error('1 electrode only can be plotted')
+                        elseif electrode > size(data,1)
+                            error('electrode number invalid')
+                        end
+                    end
+                else
+                    electrode = 1;
+                end
+            end            
+            clear data
             
             % down to business
             % ----------------------
             probs = [p/2; 1-p/2];
             z = norminv(probs);
-            
+            load Yr;
+           
             if strcmp(extra,'Original')
-                load Yr;
                 if sum(regressor <= categorical) == length(regressor) % for categorical variables
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
-                        data = squeeze(Yr(electrode,:,index{i}));
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            data = squeeze(Yr(electrode,freq_index,:,index{i}));
+                        else
+                            data = squeeze(Yr(electrode,:,index{i}));
+                        end
                         average(i,:) = nanmean(data,2);
                         se = (nanstd(data') ./ sqrt(numel(index{i})));
                         ci(i,:,:) = repmat(average(i,:),2,1) + repmat(se,2,1).*repmat(z,1,size(Yr,2));
@@ -1696,8 +1745,13 @@ elseif LIMO.Level == 2
                 else % continuous variable
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
-                        [reg_values(i,:),sorting_values]=sort(LIMO.design.X(index{i},regressor(i)));  % continuous variable 3D plot
-                        continuous(i,:,:) = Yr(electrode,:,sorting_values);
+                        [~,sorting_values]=sort(LIMO.design.X(index{i},regressor(i)));  % continuous variable 3D plot
+                        reg_values(i,:) = LIMO.data.Cont(:,sorting_values);
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            continuous(i,:,:) = Yr(electrode,freq_index,:,sorting_values);
+                        else
+                            continuous(i,:,:) = Yr(electrode,:,sorting_values);
+                        end
                         if isempty(LIMO.design.electrode)
                             mytitle{i} = sprintf('Original subjects'' parameters \n sorted by regressor %g electrode %s (%g)', regressor(i), LIMO.data.chanlocs(electrode).labels, electrode);
                         else
@@ -1705,11 +1759,15 @@ elseif LIMO.Level == 2
                         end
                     end
                 end
-                clear Yr
             elseif strcmp(extra,'Modelled')
-                load Betas; Betas = squeeze(Betas(electrode,:,:));
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    load Betas; Betas = squeeze(Betas(electrode,freq_index,:,:));
+                    R = eye(size(Yr,4)) - (LIMO.design.X*pinv(LIMO.design.X));
+                else
+                    load Betas; Betas = squeeze(Betas(electrode,:,:));
+                    R = eye(size(Yr,3)) - (LIMO.design.X*pinv(LIMO.design.X));
+                end
                 Yh = (LIMO.design.X*Betas')'; % modelled data
-                load Yr; R = eye(size(Yr,3)) - (LIMO.design.X*pinv(LIMO.design.X));
                 
                 if sum(regressor <= categorical) == length(regressor) % for categorical variables
                     for i=1:length(regressor)
@@ -1726,6 +1784,7 @@ elseif LIMO.Level == 2
                     else
                         mytitle = sprintf('Modelled subjects'' parameters at optimized electrode');
                     end
+                    clear Yr
                 else % continuous variable
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
@@ -1741,10 +1800,17 @@ elseif LIMO.Level == 2
                 end
             else % Adjusted
                 all = [1:size(LIMO.design.X,2)-1]; all(regressor)=[];
-                load Yr; Yr = squeeze(Yr(electrode,:,:));
-                load Betas; Betas = squeeze(Betas(electrode,:,:));
-                confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    Yr = squeeze(Yr(electrode,freq_index,:,:));
+                    load Betas; Betas = squeeze(Betas(electrode,freq_index,:,:));
+                    confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                else
+                    Yr = squeeze(Yr(electrode,:,:));
+                    load Betas; Betas = squeeze(Betas(electrode,:,:));
+                    confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                end
                 Ya = Yr - confounds; clear Yr Betas confounds;
+               
                 if sum(regressor <= categorical) == length(regressor) % for categorical variables
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
@@ -1758,6 +1824,7 @@ elseif LIMO.Level == 2
                     else
                         mytitle = sprintf('Adjusted subjects'' parameters at  at optimized electrode');
                     end
+                    clear Yr
                 else % continuous variable
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
@@ -1869,8 +1936,12 @@ elseif LIMO.Level == 2
                 for i=1:size(continuous,1)
                     if i > 1; figure;set(gcf,'Color','w'); end
                     index = find(~isnan(squeeze(continuous(i,1,:))));
-                    if strcmp(LIMO.Analysis,'Time')
-                        timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
+                    if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Time-Frequency')
+                        if strcmp(LIMO.Analysis,'Time')
+                            timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in msec
+                        else
+                            timevect = LIMO.data.tf_times;
+                        end
                         surf(index,timevect,squeeze(continuous(i,:,index)));shading interp
                         ylabel('Time in ms','FontSize',16)
                         zlabel('Amplitude (A.U.)','FontSize',16)

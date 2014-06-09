@@ -1,79 +1,86 @@
-function electrode_vector = limo_best_electrodes
+function [electrode_vector,urchan_vector] = limo_best_electrodes(varargin)
 
 % This function finds the electrode with the maximum F value in each subject.
 % The function works on files R2.mat, Condition_effect.mat, Continuous.mat. 
 % The function returns a map of frequency showing how often an electrode is
-% selected across subjects. Values are the number associated to the channel
-% in LIMO.data.chanlocs.urchan
+% selected across subjects. 
 %
-% Cyril Pernet 15 July 2010
-% Code stollen from GAR :-)
-% GAR, 15 August 2010: updated description, uigetfile prompt, frequency
-% figure
+% FORMAT [electrode_vector,urchan_vector] = limo_best_electrodes(expected_chanlocs)
+%
+% INPUT if empty user is prompted overwise an expected chanlocs (list of
+% fullcap) must be provided -- if the format is wrong or aborded during
+% selection the map is not computed ; but the function outputs will
+%
+% OUTPUTS electrode_vector the indices of which electrodes had the strongest F values
+%         urchan_vector the value read from the urchan field (if present)
+%         a frequency map is also presented as graphical output
+%
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 
-%% get the 'best' electrodes
+% Cyril Pernet 15 July 2010
+% GAR, 15 August 2010: updated description, uigetfile prompt, frequency figure
+% Cyril Pernet May 2014: revamp + update for time-frequency 
+
+%% file selection
 
 current_dir = pwd;
+[name,pathname,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; '*.txt','Text (*.txt)'}, ...
+    'Pick a list of result files (e.g. R2)');
 
-[name,path] = uigetfile('*.mat',['Select an expected chanloc file']);
-cd(path); load(name); cd(current_dir)
-
-go = 1; index = 1;
-while go == 1
-    [name,path] = uigetfile('*.mat',['Select a R2, Condition_effect, or Continuous file for subject ',num2str(index),go]);
-    if name == 0
-        go = 0;
-    else
-        Names{index} = name;
-        Paths{index} = path;
-        Files{index} = sprintf('%s\%s',path,name);
-        cd(path); cd ..
-        index = index + 1;
+if FilterIndex ~= 0
+    
+    if strcmp(name(end-3:end),'.txt')
+        name = importdata(name);
+    elseif strcmp(name(end-3:end),'.mat')
+        name = load([pathname name]);
+        name = getfield(name,cell2mat(fieldnames(name)));
     end
+    
+    for f=1:size(name,1)
+        if ~exist(name{f},'file')
+            errordlg(sprintf('%s \n file not found',name{f}));
+            return
+        end
+    end
+else
+    disp('selection aborded')
+    return
 end
 
-Ns = length(Names);
+
+%% now collect data
+Ns = length(name);
 electrode_vector = NaN(Ns,1);
-abs_electrode_vector = NaN(Ns,1);
+urchan_vector = NaN(Ns,1);
 
 for i=1:Ns
-    cd(Paths{i})
-    load(Names{i})
-    name = Names{i}(1:end-4);
-    load LIMO
+    tmp = load(name{i});
+    tmp = getfield(tmp,cell2mat(fieldnames(tmp)));
     try
-        % check type of map: R2, condition_effect or Continuous
-        if strcmp(Names{i},'R2.mat') || strcmp(Names{i}(1:end-6),'Condition_effect')
-            tmp = eval(name);
-            data{i} = squeeze(tmp(:,:,end-1));
-        elseif strcmp(Names{i},'Continuous.mat')
-            if size(Continuous,3) > 1
-                tmp = eval(name);
-                data{i} = squeeze(tmp(:,:,end-1));
-            else
-                if i == 1
-                    n = eval(cell2mat(inputdlg('which regressor to use?','several regressors found')));
-                end
-                tmp = eval(name);
-                data{i} = squeeze(tmp(:,:,n,end-1));
-            end
+        if numel(size(tmp)) == 4
+            data{i} = squeeze(tmp(:,:,:,end-1)); % end-1 because R2 dim is R2,F,p
+            % and condition/covariates dim are F/p
+            data_size{i} = size(data{i});
+            index = find(data{i} == max(data{i}(:)));
+            [electrode_vector(i),~,~]=ind2sub(data_size{i},index);
         else
-            error('limo_best_electrodes: input file not supported')
+            data{i} = squeeze(tmp(:,:,end-1));
+            data_size{i} = size(data{i});
+            index = find(data{i} == max(data{i}(:)));
+            [electrode_vector(i),~]=ind2sub(data_size{i},index);
         end
-        data_size(:,:,i) = size(data{i});
-        [v,f] = max(data{i},[],2); % max over electrodes
-        electrode_vector(i)=find(v == max(v));
-        % frames(i) = f(electrode_vector(i));
+        
         try
-            electrode_vector(i) = LIMO.data.chanlocs(electrode_vector(i)).urchan;
-        catch 
+            load([fileparts(name{i}) filesep 'LIMO.mat'])
+            urchan_vector(i) = LIMO.data.chanlocs(electrode_vector(i)).urchan;
+        catch nourchan
             fprintf('can''t read data.chanlocs.urchan subject %g \n',i)
         end
-        fprintf('subject %g analysed \n',i); 
+        fprintf('subject %g analysed \n',i);
+        
     catch ME
-        message = sprintf('file error, the map of subject %s%s is not recognized',Paths{i},Names{i});
+        message = sprintf('file error, the map of subject %s is not recognized',name{i});
         error([message])
     end
 end
@@ -87,15 +94,26 @@ if nargout == 0
     else
         save ([name],'electrode_vector')
         assignin('base',[name],electrode_vector)
+        save ([name '_urchan'],'urchan_vector')
+        assignin('base',[name '_urchan'],urchan_vector)
     end
 end
 
 
 %% do the map
-
+clear data
 if sum(isnan(electrode_vector)) == 0
     
-    origin = which('limo_eeg'); origin = origin(1:end-10); cd(origin);
+    if nargin == 0
+        [p,f,filt]=uigetfile('load expected chanlocs');
+        if filt == 0
+            return
+        else
+            load([f filesep p]);
+        end
+    else
+        expected_chanlocs = varargin{1};
+    end
     data = zeros(1,length(expected_chanlocs));
     
     for S=1:Ns
@@ -103,6 +121,7 @@ if sum(isnan(electrode_vector)) == 0
     end
     
     % create the frequency map
+    figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
     [h grid_or_val plotrad_or_grid, xmesh, ymesh]= ...
         topoplot( data,expected_chanlocs,'style','both','electrodes','off','hcolor','none','numcontour',0,'whitebk','on','noplot','on','conv','on');
     freqmap = grid_or_val(end:-1:1,:); % reverse row order to get back of the head at the bottom of the image
@@ -110,56 +129,9 @@ if sum(isnan(electrode_vector)) == 0
     freqmap(isnan(freqmap))=max(freqmap(:))+1;
     
     % make the figure
-    figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
     imagesc(freqmap,[0 max(freqmap(:))])
     axis tight;axis square;axis off
     cc=colormap(jet);cc(1,:)=[.9 .9 .9];cc(end,:)=[1 1 1];colormap(cc);
     cd(current_dir)
 end
-
-% % get the subjects maps
-% maxmaps = zeros(67,67,Ns); % 67 = default topoplot map size
-% for S=1:Ns 
-%     % data has format E x F x subjects with subjects in cell
-%     [h grid_or_val plotrad_or_grid, xmesh, ymesh]= ...
-%         topoplot( data{S}(:,frames(S)),chanlocs{S},'style','both','electrodes','off','hcolor','none','numcontour',0,'whitebk','on','noplot','on');
-%     maxmaps(:,:,S) = grid_or_val(end:-1:1,:); % reverse row order to get back of the head at the bottom of the image
-% end
-% 
-% 
-% % create the frequency map
-% topomask = zeros(size(maxmaps,1),size(maxmaps,2));
-% topomask = topomask.*mean(maxmaps,3); % using mean we keep the NaNs
-% freqmap  = zeros(size(topomask,1),size(topomask,2),Ns); % default size is 67 in EEGlab
-% 
-% % take the max and neighbours
-% for S=1:Ns
-%     tmp = squeeze(maxmaps(:,:,S));
-%     [R,C] = find(tmp==max(tmp(:)));
-%     freqR2maps(R,C,S) = 1;
-% end
-%  
-% % make the figure
-% figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
-% cst=4; % constant to add so that the background has one colour and the lowest frequency value another one
-% toplot = squeeze(sum(freqmap,3));
-% imagesc(toplot+topomask.*cst,[0 max(toplot(:))])
-% axis tight;axis square;axis off
-% colormap(jet)
-% h=colormap;
-% colormap(h(end:-1:1,:))
-% cd(current_dir)
-
-
-
-
-
-
-
-
-
-
-
-
-
 

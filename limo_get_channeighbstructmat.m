@@ -31,12 +31,12 @@ function [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEG,nei
 % channeighbstructmat, a matrix of electrode neighbourhood
 % used in cluster analyses. The matrix is calculated using the current EEGLAB dataset.
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2014
 %
 % See also LIMO_EEGLAB2FIELDTRIP LIMO_FT_NEIGHBOURSELECTION
 % LIMO_FT_PREPARE_LAYOUT LIMO_EXPECTED_CHANLOCS
 
-disp('computing neighbouring using fieldtrip tools .. ') 
+disp('computing neighbourhood using fieldtrip tools .. ') 
 if isempty(EEG.chanlocs) || isfield(EEG,'chanlocs') == 0
     error('no channel locations found in the EEG/LIMO file');
 end
