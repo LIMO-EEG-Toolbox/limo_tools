@@ -753,7 +753,7 @@ switch type
         
         load LIMO
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-            tmp = NaN(size(data,1), size(data,2),*size(data,3),size(data,4),size(data,5));
+            tmp = NaN(size(data,1), size(data,2)*size(data,3),size(data,4),size(data,5));
             for measure = 1:size(data,5)
                 tmp(:,:,:,measure) = limo_tf_4d_reshape(squeeze(data(:,:,:,:,measure)));
             end
@@ -1006,7 +1006,7 @@ switch type
                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),[]);
                     else
                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),channeighbstructmat);
-                    end                else
+                    end                %else
                     if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),[]);
                     else
