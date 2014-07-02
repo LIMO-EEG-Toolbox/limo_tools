@@ -113,3 +113,17 @@ guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
 
+
+% --- Executes on button press in ITC.
+function ITC_Callback(hObject, eventdata, handles)
+% hObject    handle to ITC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of ITC
+limo_itc
+guidata(hObject, handles);
+
+
+
+

@@ -53,10 +53,11 @@ uiwait(handles.figure1);
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_itc_gui2_OutputFcn(hObject, eventdata, handles) 
 
+guidata(hObject, handles);
+
 varargout{1} = handles.test_select;
 
 delete(handles.figure1)
-
 
 %% Callbacks
 
@@ -84,9 +85,9 @@ function Quit_Callback(hObject, eventdata, handles)
 
 clc
 uiresume
-handles.quit = 1;
+
 guidata(hObject, handles);
-delete(handles.figure1)
+
 limo_gui
 
 
@@ -95,6 +96,7 @@ function One_Sample_t_test_Callback(hObject, eventdata, handles)
 % hObject    handle to One_Sample_t_test (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 
 handles.test_select = {1,'One_Sample_t_test'};
 

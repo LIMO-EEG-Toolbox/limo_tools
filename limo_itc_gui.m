@@ -49,6 +49,8 @@ handles.CatName             = [];
 handles.fullfactorial       = 0;
 handles.ContName            = [];
 handles.zscore              = 1;
+handles.Cat                 = [];
+handles.Cont                = [];
 handles.start               = [];
 handles.end                 = [];
 handles.lowf                = [];
@@ -69,6 +71,8 @@ uiwait(handles.figure1);
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_itc_gui_OutputFcn(hObject, eventdata, handles) 
 
+varargout{1} = 'ITC out';
+
 if handles.quit == 1
     varargout{1} = [] ;
     varargout{2} = [] ;
@@ -76,8 +80,8 @@ if handles.quit == 1
     varargout{4} = [] ;
 else
     varargout{1} = handles.FileName;
-    varargout{2} = handles.CatName;
-    varargout{3} = handles.ContName;
+    varargout{2} = handles.Cat;
+    varargout{3} = handles.Cont;
     varargout{4} = handles.defaults ;
 end
 delete(handles.figure1)
@@ -241,21 +245,6 @@ fprintf('analysis selected %s \n',handles.type_of_analysis);
 guidata(hObject, handles);
 
 
-% method
-function method_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function method_Callback(hObject, eventdata, handles)
-
-contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
-handles.method = contents{get(hObject,'Value')};
-if isempty(handles.method)
-    handles.method = 'OLS';
-end
-fprintf('method selected %s \n',handles.method);
-guidata(hObject, handles);
 
 
 % bootstrap
@@ -339,7 +328,7 @@ clc
 uiresume
 handles.quit = 1;
 guidata(hObject, handles);
-delete(handles.figure1)
+% delete(handles.figure1)
 limo_gui
 
 
@@ -579,3 +568,110 @@ function boostrap_check_box_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to boostrap_check_box (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in Help.
+function Help_Callback(hObject, eventdata, handles)
+% hObject    handle to Help (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.dir = pwd;
+origin = which('limo_eeg'); origin = origin(1:end-10); 
+origin = sprintf('%shelp',origin); cd(origin)
+web(['file://' which('limo_itc.html')]);
+cd (handles.dir)
+
+
+%-------------------------
+%         SPECIFY
+%------------------------
+
+% --- Executes on button press in categorical_variable_input.
+% ---------------------------------------------------------------
+function categorical_variable_input_Callback(hObject, eventdata, handles)
+
+[FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data');
+if FilterIndex == 1 
+    cd(PathName); 
+    if strcmp(FileName(end-3:end),'.txt')
+        handles.Cat = load(FileName);
+    else
+        load(FileName)
+        handles.Cat = eval(FileName(1:end-4));
+    end
+    
+    % if there is more than one factor, allow factorial design
+    if size(handles.Cat,2) > 1
+        set(handles.full_factorial,'Enable','on')
+        handles.fullfactorial = 0;
+    else
+        handles.fullfactorial = 0;
+    end
+    disp('Categorical data loaded');
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in full_factorial.
+% ---------------------------------------------------------------
+function full_factorial_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.fullfactorial = 1;
+    disp('full factorial on');
+elseif M == 0
+    handles.fullfactorial = 0;
+    disp('full factorial off');
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in continuous_variable_input.
+% ---------------------------------------------------------------
+function continuous_variable_input_Callback(hObject, eventdata, handles)
+
+[FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO continuous data');
+if FilterIndex == 1
+    cd(PathName); 
+    if strcmp(FileName(end-3:end),'.txt')
+        handles.Cont = load(FileName);
+    else
+        load(FileName)
+        handles.Cont = eval(FileName(1:end-4));
+    end
+    
+    % if the regressors are not zscored, allow option to leave it as such 
+    % test mean = 0 with a margin of 10^-5
+    M = mean(mean(handles.Cont));
+    centered = M>-0.00001 && M<0.00001;
+    % if mean = 0 also test std = 1
+    if centered == 1
+        S = mean(std(handles.Cont));
+        reducted = S>0.99999 && S<1.00001;
+    else
+        reducted = 0;        
+    end
+    
+    if  centered~=1 && reducted~= 1
+        set(handles.full_factorial,'Enable','on')
+        handles.zscore = 1;
+    else
+        handles.zscore = 1;
+    end
+    disp('Continuous data loaded');
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in full_factorial.
+% ---------------------------------------------------------------
+function z_score_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 0
+    handles.zscore = 1;
+    disp('zscoring on');
+elseif M == 1
+    handles.zscore = 0;
+    disp('zscoring off');
+end
+guidata(hObject, handles);

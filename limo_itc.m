@@ -59,6 +59,7 @@ option='model specification';
 
 % ITC gui - loading dataset list and trim info
 [model.set_files,model.cat_files,model.cont_files,model.defaults] = limo_itc_gui;
+model.info = 'Running ITC data loading';
 
 for subject = 1:size(model.set_files,1)
     
@@ -80,16 +81,40 @@ for subject = 1:size(model.set_files,1)
     
     if size(Yitc,1)/EEG.nbchan == 2  % If double electrode count in ITC data, check for 2 now
         disp('*** - Found double electrode count in ITC data - taking as two conditions')
+        model.Ncond{subject} = 2;
+        %model.info = strcat(model.info,' x2 electrode count in ITC data, taking as two conditions');
         
+        if model.Ncond{subject} ~= model.Ncond{1}
+            subject; error('Some subjects appear to have differing numbers of conditions')
+        end
+        
+
         Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),2);
         Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
         Y(:,:,:,2) = abs(Yitc(EEG.nbchan+1:end,:,:));
+              
+        % Load a 4D Y with ITC data
+        LIMO.data.size4D= size(Y);
+        LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         
-        %Y1_3d = abs(Yitc(1:EEG.nbchan,:,:));
-        %Y2_3d = abs(Yitc(EEG.nbchan+1:end,:,:));
         
-        %save('Y_3d', 'Y1_3d', 'Y2_3d')
+    elseif size(Yitc,1)/EEG.nbchan == 3  % If double electrode count in ITC data, check for 3 now
+        disp('*** - Found triple electrode count in ITC data - taking as three conditions')
+        model.Ncond{subject} = 3;
+        %model.info = strcat(model.info,' x3 electrode count in ITC data, taking as three conditions');
         
+        if model.Ncond{subject} ~= model.Ncond{1}
+            subject; error('Some subjects appear to have differing numbers of conditions')
+        end
+        
+
+        Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),3);
+        Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
+        Y(:,:,:,2) = abs(Yitc(EEG.nbchan+1:EEG.nbchan*2,:,:));
+        Y(:,:,:,3) = abs(Yitc(EEG.nbchan*2+1:EEG.nbchan*3,:,:));
+        
+        
+              
         % Load a 4D Y with ITC data
         LIMO.data.size4D= size(Y);
         LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
@@ -97,6 +122,14 @@ for subject = 1:size(model.set_files,1)
         
     elseif size(Yitc,1)/EEG.nbchan == 1
         
+        
+         model.Ncond{subject} = 1;
+        %model.info = strcat(model.info,' x3 electrode count in ITC data, taking as three conditions');
+        
+        if model.Ncond{subject} ~= model.Ncond{1}
+            subject; error('Some subjects appear to have differing numbers of conditions')
+        end
+        model.info{subject} = '1 condition';
         Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),1);
         Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
         
@@ -145,15 +178,18 @@ if model.test_select{1} == 1
     
     % Build selected ITC data into correct format
     Nsub = length(model.set_files);
-    Ncond = 2;
+    Ncond = model.Ncond{1};
     total_elecs = length(model.defaults.chanlocs);
+    
+    
     
     
     disp(model.test_select{2})
     
-    Ybig = nan(total_elecs,size(Y1_3d,2),size(Y1_3d,3),Nsub*Ncond);
+    Ybig = nan(total_elecs,size(Y,2),size(Y,3),Nsub*Ncond);
     
     % Populate Ybig with ITC data already saved
+   
     for sub = 1:Nsub
         
         cd(model.itc_data{sub})
@@ -166,8 +202,11 @@ if model.test_select{1} == 1
             
             org_elec = LIMO.data.chanlocs(elec).urchan;  % Find original elec index
             
-            Ybig(org_elec,:,:,sub*2-1) = Y(elec,:,:,1);  % Write low phase
-            Ybig(org_elec,:,:,sub*2) = Y(elec,:,:,2);    % Write high phase
+            j=0; % Additional cond count
+            for cond = 1:Ncond
+                Ybig(org_elec,:,:,sub+j) = Y(elec,:,:,cond);
+                j=j+1;
+            end
             
             % Leave the rest as nan
             
@@ -177,10 +216,16 @@ if model.test_select{1} == 1
     % --- Check values
     if model.defaults.bootstrap == 1
         nboot = 1000;
+    else
+        nboot = [];
     end
     
     tfce = model.defaults.tfce; Analysis_type = 'ITC';
     parameters = 1;
+    
+    LIMO.data.cond_tested = 1;
+    LIMO.data.chanlocs = model.defaults.chanlocs;
+    save LIMO LIMO
     
     
     % Run stats on this Ybig
@@ -189,8 +234,8 @@ if model.test_select{1} == 1
     
     
     % Plot
-    plot = 0;
-    if plot == 1
+    plotnow = 0;
+    if plotnow == 1
         load one_sample_ttest_parameter_1
         
         
@@ -206,28 +251,231 @@ if model.test_select{1} == 1
 elseif model.test_select{1} == 2
     %% 2-samp t-test
     
+    
+    
     disp(model.test_select{2})
+    
+    conds1 = 1;
+    conds2 = 2;
+    
+    if model.Ncond{1} > 2
+        cond_text{1} = sprintf('There are %d conditions. Which should be tested here? \n\nChoose first condition(s):', model.Ncond{1});
+        cond_text{2} = 'Second condition(s) to test:';
+        cond_tested = inputdlg(cond_text,'Which conditions should be tested?',1,{'1','2,3'});
+        
+        conds1 = str2num(cond_tested{1});
+        conds2 = str2num(cond_tested{2});
+    end
+    
+    
+    
+    % Build selected ITC data into correct format
+    Nsub = length(model.set_files);
+    Nconds = [length(conds1) length(conds2)];
+    
+    total_elecs = length(model.defaults.chanlocs);
+    
+    
+    
+    
+ 
+    
+    Y1 = nan(total_elecs,size(Y,2),size(Y,3),Nsub*Nconds(1));
+    Y2 = nan(total_elecs,size(Y,2),size(Y,3),Nsub*Nconds(2));
+    
+   % Populate Y1 and Y2 with ITC data already saved
+   
+
+    for sub = 1:Nsub
+        
+        cd(model.itc_data{sub})
+        
+        load LIMO
+        load Y
+        
+        
+        for elec = 1:size(Y,1)
+            
+            org_elec = LIMO.data.chanlocs(elec).urchan;  % Find original elec index
+            
+            
+            for cond = 1:Nconds(1)  % For each cond going into Y1
+                Y1(org_elec,:,:,sub-1+cond) = Y(elec,:,:,conds1(cond));
+            end
+            
+            
+            for cond = 1:Nconds(2)  % For each cond going into Y2
+                Y2(org_elec,:,:,sub-1+cond) = Y(elec,:,:,conds2(cond));
+            end
+            
+            % Leave the rest as nan
+            
+        end
+    end
+    
+    size(Y1)
+    size(Y2)
+    
+    Y1nans = mean(isnan(Y1(:)))
+    Y2nans = mean(isnan(Y2(:)))
+
+    
+    % --- Check values
+    if model.defaults.bootstrap == 1
+        nboot = 1000;
+    else
+        nboot = 0;
+    end
+    
+    tfce = model.defaults.tfce; Analysis_type = 'ITC';
+    parameters = 1;
+    
+
+    
+    
+    % Run stats on this Ybig
+    cd(original_LIMO_dir); 
+    tag = sprintf('%s_conds%s_%s',model.test_select{2},cond_tested{1},cond_tested{2});
+    tag(~ismember(tag,['A':'Z' 'a':'z' '1':'9' '_']))= ''; % Clean up tag string
+    mkdir(tag);cd(tag)
+    LIMO.data.cond_tested = cond_tested;
+    LIMO.data.chanlocs = model.defaults.chanlocs;
+    save LIMO LIMO
+    
+    limo_random_robust(model.test_select{1},Y1,Y2,parameters,nboot,tfce);
+    disp([model.test_select{2} ' done'])
+    
+    % Plot
+    plotnow = 1;
+    if plotnow == 1
+        load two_samples_ttest_parameter_1
+        
+        
+        limo_display_results_tf(LIMO, two_samples(:,:,:,4),1,['ITC F ', model.test_select{2}])
+    end
+    
+    
+elseif model.test_select{1} == 3  % Paired t
     
     disp(model.test_select{2})
     disp('Not yet implemented')
     
     
+elseif model.test_select{1} == 4 % Reg
+    
+    
+    cont_data = model.cont_files;
+    
+    disp(model.test_select{2})
+    
+    conds1 = 1;
+    conds2 = 2;
+    
+    if model.Ncond{1} > 1
+        cond_text{1} = sprintf('There are %d conditions. Which should be tested here? \n\nChoose first condition(s):', model.Ncond{1});
+        %cond_text{2} = 'Second condition(s) to test:';
+        cond_tested = inputdlg(cond_text,'Which conditions should be tested?',1,{'1,2'});
+        
+        conds1 = str2num(cond_tested{1});
+    end
     
     
     
-elseif model.test_select{1} == 3
+    % Build selected ITC data into correct format
+    Nsub = length(model.set_files);
+    Nconds = [length(conds1)];
+    
+    total_elecs = length(model.defaults.chanlocs);
+    
+    
+    
+    
+    
+    
+    Y1 = nan(total_elecs,size(Y,2),size(Y,3),Nsub*Nconds(1));
+    %Y2 = nan(total_elecs,size(Y,2),size(Y,3),Nsub*Nconds(2));
+    
+    % Check cont length
+    if length(cont_data) ~= size(Y1,4)
+        error('Continuous data is of different length to subjects*Conditions analysed')
+    end
+    
+    
+    % Populate Y1 and Y2 with ITC data already saved
+    
+    
+    for sub = 1:Nsub
+        
+        cd(model.itc_data{sub})
+        
+        load LIMO
+        load Y
+        
+        
+        for elec = 1:size(Y,1)
+            
+            org_elec = LIMO.data.chanlocs(elec).urchan;  % Find original elec index
+            
+            
+            for cond = 1:Nconds(1)  % For each cond going into Y1
+                Y1(org_elec,:,:,sub-1+cond) = Y(elec,:,:,conds1(cond));
+            end
+            
+            % Leave the rest as nan
+            
+        end
+    end
+    
+    size(Y1)
+    
+    
+    Y1nans = mean(isnan(Y1(:)))
+    
+
+    
+    % --- Check values
+    if model.defaults.bootstrap == 1
+        nboot = 1000;
+    else
+        nboot = 0;
+    end
+    
+    tfce = model.defaults.tfce; Analysis_type = 'ITC';
+    parameters = 1;
+    
+    
+
+    
+    
+    % Run stats on this Ybig
+    cd(original_LIMO_dir); 
+    tag = sprintf('%s_conds%s',model.test_select{2},cond_tested{1});
+    tag(~ismember(tag,['A':'Z' 'a':'z' '1':'9' '_']))= ''; % Clean up tag string
+    mkdir(tag);cd(tag)
+    LIMO.data.cond_tested = cond_tested;
+    LIMO.data.chanlocs = model.defaults.chanlocs;
+    save LIMO LIMO
+    
+    limo_random_robust(model.test_select{1},Y1,cont_data,parameters,nboot,tfce);
+    disp([model.test_select{2} ' done'])
+    
+    
+       % Plot
+    plotnow = 1;
+    if plotnow == 1
+        load R2        
+        
+        limo_display_results_tf(LIMO, R2(:,:,:,3),1,['ITC R2 ', model.test_select{2}])
+    end
+    
+    
+elseif model.test_select{1} == 5 % ANOVA
     
     disp(model.test_select{2})
     disp('Not yet implemented')
     
     
-elseif model.test_select{1} == 4
-    
-    disp(model.test_select{2})
-    disp('Not yet implemented')
-    
-    
-elseif model.test_select{1} == 5
+elseif model.test_select{1} == 6 % Central tendancy?
     
     disp(model.test_select{2})
     disp('Not yet implemented')

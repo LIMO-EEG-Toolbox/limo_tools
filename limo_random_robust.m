@@ -226,6 +226,19 @@ switch type
                 
                 % do tfce for the current data
                 fprintf('Thresholding One Sample T-test using TFCE \n');
+                
+                
+                % also need to ensure that channeighbstructmat is available
+                if exist('channeighbstructmat','var') ~= 1
+                    try
+                        global channeighbstructmat
+                        load expected_chanlocs
+                    catch
+                        disp('Please ensure channeighbstructmat is available')
+                    end
+                end
+                
+                
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     if size(one_sample,1) == 1
                         tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,:,4))); % cluster in freq-time
@@ -589,6 +602,7 @@ switch type
         tfce       = varargin{6};
         clear varargin
         
+        load LIMO
         % ------------------------------------------------
         % check the data structure
         for e=1:size(data,1)
@@ -611,7 +625,7 @@ switch type
         
         % ------------------------------------------------
         % update the LIMO structure
-        load LIMO
+        %load LIMO
         LIMO.data.Cat                = 0;
         LIMO.data.Cont               = regressors;
         LIMO.data.data_dir           = pwd;
@@ -645,7 +659,7 @@ switch type
         if strcmp(a,'Yes')
             save LIMO LIMO
             clear data regressors files
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 limo_eeg_tf(4)
             else
                 limo_eeg(4);

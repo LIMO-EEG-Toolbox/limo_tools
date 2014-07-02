@@ -582,7 +582,26 @@ if ~isempty(data)
                 tmp_data(1,:,:) = squeeze(data(:,:,k,:));
             else
                 tmp_data = squeeze(data(:,:,k,:));
+            else
+                tmp_data = squeeze(data(:,:,k,:));
             end
+            Med(:,:,k,:)=limo_median(tmp_data,100);
+        end
+        
+        if nargout ==0
+            if nargin == 3
+                newname = sprintf('%s_Median',name);
+            else
+                newname = sprintf('%s_%s_Median',name,Estimator1);
+            end
+            save ([newname],'Med');
+        else
+            result = Med;
+        end
+        data=Med;
+    end
+end
+         end
             TM(:,:,k,:)=limo_trimmed_mean(tmp_data,20,5/100);
         end
         

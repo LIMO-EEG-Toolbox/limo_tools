@@ -16,7 +16,7 @@ Neighbour(2,4) = 1; Neighbour(2,6) = 1; Neighbour(2,8) = 1;
 Neighbour(4,2) = 1; Neighbour(4,6) = 1; Neighbour(4,8) = 1;
 Neighbour(6,2) = 1; Neighbour(6,4) = 1; Neighbour(6,8) = 1;
 Neighbour(8,2) = 1; Neighbour(8,4) = 1; Neighbour(8,6) = 1;
-figure; imagesc(Neighbour); colormap('grey'); title('Neighbourhood matrix')
+figure; imagesc(Neighbour); colormap('gray'); title('Neighbourhood matrix')
 
 elec_display = [1 3 5 7 9 10 2 4 6 8]; % indices to look at data
 elec_signal = [2 4 6 8]; % indices to input signal
