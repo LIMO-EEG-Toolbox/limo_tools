@@ -111,7 +111,9 @@ if strcmp(FileName,'R2.mat')
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
-            [mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            %[mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            [mask,M] = andrews_local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % axs - mask and cluster p values
+
             if MCC == 2
                 if strcmp(LIMO.Analysis,'Time')
                 mytitle = sprintf('R^2: correction by \n spatial-temporal cluster');

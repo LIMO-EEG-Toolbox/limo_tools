@@ -145,7 +145,7 @@ for subject = 1:size(model.set_files,1)
     model.itc_data{subject} = pwd;
     
     
-    clear EEG Yitc
+    clear Yitc
     
     
     
@@ -220,7 +220,17 @@ if model.test_select{1} == 1
         nboot = [];
     end
     
-    tfce = model.defaults.tfce; Analysis_type = 'ITC';
+    tfce = model.defaults.tfce;
+    if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
+        EEG.chanlocs = model.defaults.chanlocs;
+        neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
+        neighbdis = str2num(neighbdis{1});
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+    end
+    
+    
+    
+    Analysis_type = 'ITC';
     parameters = 1;
     
     LIMO.data.cond_tested = 1;
@@ -237,8 +247,7 @@ if model.test_select{1} == 1
     plotnow = 0;
     if plotnow == 1
         load one_sample_ttest_parameter_1
-        
-        
+
         limo_display_results_tf(LIMO, one_sample(:,:,:,4),1,['ITC ', model.test_select{2}])
     end
     
@@ -327,10 +336,21 @@ elseif model.test_select{1} == 2
         nboot = 0;
     end
     
-    tfce = model.defaults.tfce; Analysis_type = 'ITC';
+    tfce = model.defaults.tfce;
+    if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
+        EEG.chanlocs = model.defaults.chanlocs;
+        neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
+        neighbdis = str2num(neighbdis{1});
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+    end
+    
+    
+    
+    
+    Analysis_type = 'ITC';
     parameters = 1;
     
-
+    
     
     
     % Run stats on this Ybig
@@ -346,12 +366,19 @@ elseif model.test_select{1} == 2
     disp([model.test_select{2} ' done'])
     
     % Plot
-    plotnow = 1;
+    plotnow = 0;
     if plotnow == 1
-        load two_samples_ttest_parameter_1
         
         
-        limo_display_results_tf(LIMO, two_samples(:,:,:,4),1,['ITC F ', model.test_select{2}])
+        if nboot == 0
+            load two_samples_ttest_parameter_1
+            limo_display_results_tf(LIMO, two_samples(:,:,:,4),1,['ITC F ', model.test_select{2}])
+        else
+            load /H0/H0_two_samples_ttest_parameter_1
+            limo_display_results_tf(LIMO, H0_two_samples(:,:,:,4),1,['ITC F ', model.test_select{2}])
+        end
+            
+        
     end
     
     
@@ -440,13 +467,19 @@ elseif model.test_select{1} == 4 % Reg
         nboot = 0;
     end
     
-    tfce = model.defaults.tfce; Analysis_type = 'ITC';
+    tfce = model.defaults.tfce;
+    if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
+        EEG.chanlocs = model.defaults.chanlocs;
+        neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
+        neighbdis = str2num(neighbdis{1});
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+    end
+    
+    
+    Analysis_type = 'ITC';
     parameters = 1;
     
-    
 
-    
-    
     % Run stats on this Ybig
     cd(original_LIMO_dir); 
     tag = sprintf('%s_conds%s',model.test_select{2},cond_tested{1});
