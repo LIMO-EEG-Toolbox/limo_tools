@@ -163,8 +163,12 @@ for j = 1:length(uniquelabel)
     
     uniquelabel_here = find(replaceby==uniquelabel(j));
     %labelmat_is_unique_here = ismember(labelmat(:),uniquelabel_here);
-    
+
     labelmat_is_unique_here = ismembc(labelmat(:),uniquelabel_here); % axs - Using the semi-documented ismembc is x3 faster than ismember
+                % For ismembc to work, uniquelabel_here MUST be sorted
+                % low-high. This should be the case.
+    
+    
     
     cluster(labelmat_is_unique_here) = num;
 end
