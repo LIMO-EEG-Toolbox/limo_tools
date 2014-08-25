@@ -31,27 +31,27 @@ function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
 %
 % v1 Guillaume Rousselet, University of Glasgow, August 2010
 % edit Marianne Latinus adding spm_bwlabel
-% v2 Edited for return p values
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% Cyril Pernet Edited for return p values + compatible time frequency  
+% ---------------------------------------------------------------------
+%  Copyright (C) LIMO Team 2014
 %
-% See also ECLUSTER_MAKE
+% See also limo_ecluster_make limo_tfcluster_make
 
 if nargin < 3
     alpha_value = 0.05;
 end
 
-if isfield(th, 'max') % Ne x Nf **************************
+Ne = size(orif,1); % electrodes or frequencies
+Nf = size(orif,2); % time frames
 
-    Ne = size(orif,1);
-    Nf = size(orif,2);
-    sigcluster.elec_mask = zeros(Ne,Nf);
-    sigcluster.elec_pvalues = zeros(Ne,Nf);
+%% threshold the data base on the maximum cluster sum obtained over the 1st dimension
+if isfield(th, 'max') 
+
     sigcluster.max_mask = zeros(Ne,Nf);
     sigcluster.max_pvalues = zeros(Ne,Nf);
     ME = [];
     
-    for E = 1:Ne % for each electrode
+    for E = 1:Ne % for each electrode or frequency
         try
             [L,NUM] = bwlabeln(orip(E,:)<=alpha_value); % find clusters 
         catch ME
@@ -63,21 +63,18 @@ if isfield(th, 'max') % Ne x Nf **************************
         end
         
         for C = 1:NUM % for each cluster compute cluster sums & compare to bootstrap threshold
-            % for the all space
             if sum(abs(orif(E,L==C))) >= th.max;
-                sigcluster.max(E,L==C)=1; % flag clusters above threshold
-            end
-            % for that electrode
-            if sum(abs(orif(E,L==C))) >= th.elec(E);
-                sigcluster.elec(E,L==C)=1; % flag clusters above threshold
+                sigcluster.max_mask(E,L==C)=1; % flag clusters above threshold
             end
         end
     end 
-    
-else % Nf only, no electrode dimension **************************
+end
 
-    Nf = length(orif);
-    sigcluster.elec = zeros(1,Nf);
+%% threshold the data base on the maximum of cluster sum obtained over each electrode
+if isfield(th, 'elec') 
+
+    sigcluster.elec_mask = zeros(Ne,Nf);
+    sigcluster.elec_pvalues = zeros(Ne,Nf);
     ME = [];
     try
         [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters

@@ -170,7 +170,13 @@ for B = 1:nboot
         if strcmp(method,'OLS')
             Betas = pinv(X)*Y;
         elseif strcmp(method,'WLS')
-            [Betas,W] = limo_WLS(X,Y);
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+               error('no implemented yet')
+               % get the break down of frames and iterate per freq bin
+               % then reassemple the matrix of Betas and Weight
+            else
+                [Betas,W] = limo_WLS(X,Y);
+            end
         elseif strcmp(method,'IRLS')
             [Betas,W] = limo_IRLS(X,Y);
         end

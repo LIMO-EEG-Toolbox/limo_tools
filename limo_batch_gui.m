@@ -90,9 +90,10 @@ delete(handles.figure1)
 % ---------------------------------------------------------------
 function Import_data_set_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; ...
-        '*.txt','Text (*.txt)'; '*set*', 'EEGLAB (EEG.set)'}, ...
+[FileName,PathName,FilterIndex]=uigetfile({'*.txt','Text (*.txt)' ; ...
+        '*.mat','MAT-files (*.mat)'; '*set*', 'EEGLAB (EEG.set)'}, ...
         'Pick sets or list', 'MultiSelect', 'on');
+    
 if FilterIndex ~= 0
     
     if iscell(FileName) % multiselect for .sets
@@ -112,10 +113,13 @@ if FilterIndex ~= 0
             FileName = getfield(FileName,cell2mat(fieldnames(FileName)));
         end
     
+        disp('checking files .. ')
         for f=1:size(FileName,1)
             if ~exist(FileName{f},'file')
                 errordlg(sprintf('%s \n file not found',FileName{f}));
                 return
+            else
+                fprintf('%s found \n',FileName{f}); 
             end
         end
     end
@@ -306,6 +310,8 @@ if FilterIndex == 1
             if ~exist(CatName{f},'file')
                 errordlg(sprintf('%s \n file not found',CatName{f}));
                 return
+            else
+                fprintf('%s found \n',CatName{f});
             end
         end
     else
@@ -348,6 +354,8 @@ if FilterIndex == 1
             if ~exist(ContName{f},'file')
                 errordlg(sprintf('%s \n file not found',ContName{f}));
                 return
+            else
+                fprintf('%s found \n',ContName{f});
             end
         end
     else

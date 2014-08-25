@@ -111,9 +111,7 @@ if strcmp(FileName,'R2.mat')
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
-            %[mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            [mask,M] = andrews_local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % axs - mask and cluster p values
-
+            [mask,M] = local_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             if MCC == 2
                 if strcmp(LIMO.Analysis,'Time')
                 mytitle = sprintf('R^2: correction by \n spatial-temporal cluster');
@@ -210,8 +208,7 @@ elseif strncmp(FileName,'Condition_effect',16)
             bootM = squeeze(H0_Condition_effect(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_Condition_effect(:,:,2,:)); % get all P values under H0
             clear H0_Conditions;
-            %[mask,M] = local_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
-            [mask,M] = andrews_local_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 if strcmp(LIMO.Analysis,'Time')
                 mytitle = sprintf('Condition %g: \n correction by spatial-temporal cluster',effect_nb);
@@ -306,8 +303,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
             bootM = squeeze(H0_Covariate_effect(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_Covariate_effect(:,:,2,:)); % get all P values under H0
             clear H0_Covariate_effect;
-            %[mask,M] = local_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
-            [mask,M] = andrews_local_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
+            [mask,M] = local_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
             if MCC == 2
                 if strcmp(LIMO.Analysis,'Time')
                 mytitle = sprintf('Covariate %g: \n correction by spatial-temporal cluster',effect_nb);
@@ -1473,15 +1469,21 @@ if MCC == 2
         expected_chanlocs = LIMO.data.chanlocs;
         channeighbstructmat = LIMO.data.neighbouring_matrix;
         boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-        for boot=1:nboot
-            boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
+        if exist('parfor','file') ~=0
+            fprintf('getting clusters under H0 \n');
+            parfor boot = 1:nboot
+                boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
+            end
+        else
+            for boot=1:nboot
+                boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
+            end
+            [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
         end
-        [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
-
     elseif size(bootM,1)==1 % one electrode
         th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
         sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-        mask = sigcluster.elec; cluster_p = [];
+        mask = sigcluster.elec_mask; cluster_p = [];
     end
     
 elseif MCC == 3
@@ -1489,7 +1491,7 @@ elseif MCC == 3
     U = round((1-p)*nboot); % bootstrap threshold
     th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
     sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-    mask = sigcluster.elec;
+    mask = sigcluster.elec_mask; cluster_p = [];
     
 end
 end

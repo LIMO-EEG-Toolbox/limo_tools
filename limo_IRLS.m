@@ -53,6 +53,7 @@ b = pinv(X)*Y;
 H = diag(X*pinv(X'*X)*X');
 % Adjustment factor
 adjfactor = 1 ./ sqrt(1-H);
+adjfactor(adjfactor==Inf) = 1; % when H=1 do nothing
 
 numiter = 0; iterlim = 100; % set a 100 iteration max
 oldRes=1; newRes=10;
@@ -90,6 +91,14 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    
    % newRes= sum(sum(res.^2));
    newRes= sum(res(:).^2);
+   
+%    % plot
+%    if numiter == 1
+%        figure; xx = zeros(100,1);
+%    end
+%    xx(numiter) = newRes;
+%    plot([1:100],xx); drawnow
+   
 end
 
 end

@@ -1,19 +1,20 @@
 function limo_eeg_tf(varargin)
 
 % Forked from limo_eeg to run time-frequncy analyses
-% This mostly runs parallel to limo_eeg{3} and +, but adapted for 4D tf 
+% This mostly runs parallel to limo_eeg{3} and +, but adapted for 4D tf
 % data - the LIMO.mat is created and updated via limo_eeg.m - if data are
 % 4D then limo_eeg_tf is called.
 %
-% IMPUT limo_eeg_tf(4) to run the GLM with/without bootstrap and tfce 
+% IMPUT limo_eeg_tf(4) to run the GLM with/without bootstrap and tfce
 %       limo_eeg_tf(5) make figures
 %       limo_eeg(6) contrasts
-% 
+%
 % Andrew X Stewart, Nov 2013
 % Cyril Pernet February 2014
 % ---------------------------
 % Copyright (C) LIMO Team 2014
 
+global LIMO
 if ~isnumeric(cell2mat(varargin))
     error('case number expected - see help')
 end
@@ -45,27 +46,26 @@ switch varargin{1}
         end
         cd (LIMO.dir);
         
-        
         % ---------------- univariate analysis ------------------
         % --------------------------------------------------------
         if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
             
-            % --------- load files created by limo_design_matrix ------------------            
+            % --------- load files created by limo_design_matrix ------------------
             load Yr; % load a 4D Yr with tf data,
             if sum(size(Yr) ~= LIMO.data.size4D)~=0; % then check it is so
-                errordlg('Is 4D data given to limo_design_matrix_tf?','size(Y) == LIMO.data.size4D');
+                errordlg('Is 4D data given to limo_design_matrix_tf?','LIMO.data.size4D'); return
             end
             
             Yr = limo_tf_4d_reshape(Yr); % reshape to 3D
             if sum(size(Yr) ~= LIMO.data.size3D)~=0; % confirm now shaped 3D
-                errordlg('Is 4D data reshaped correctly?','size(Y) == LIMO.data.size3D');
+                errordlg('Is 4D data reshaped correctly?','LIMO.data.size3D'); return
             end
             
             Yhat = zeros(LIMO.data.size3D);
             Res = zeros(LIMO.data.size3D);
             Betas = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),size(LIMO.design.X,2));
             R2 = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),3);
-
+            
             % ------------- prepare weight matrix -------------------------------------
             if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
                 W = ones(LIMO.data.size3D(1),LIMO.data.size3D(3));
@@ -104,7 +104,11 @@ switch varargin{1}
                         index = find(~isnan(Y(1,:)));
                         Y = Y(:,index);
                         LIMO.design.X = X(index,:);
-                        model = limo_glm1(Y',LIMO); warning on;
+                        if size(LIMO.design.X,1) <= size(LIMO.design.X,2)
+                            fprintf('skipping electrode %g not enough data \n',electrode);
+                        else
+                            model = limo_glm1(Y',LIMO); warning on;
+                        end
                         if isempty(index)
                             index = [1:size(Y,2)];
                         end
@@ -243,6 +247,7 @@ switch varargin{1}
                 clear file electrode filename model reg dir i W
             end
             
+            
             % as above for bootstrap under H0
             % -------------------------------
             boot_go = 0;
@@ -267,9 +272,9 @@ switch varargin{1}
             if boot_go == 1
                 try
                     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-                    mkdir H0; 
+                    mkdir H0;
                     
-                    if LIMO.design.bootstrap > 599
+                    if LIMO.design.bootstrap > 599 || ~exist(nboot,'var')
                         nboot = LIMO.design.bootstrap;
                     end
                     
@@ -303,7 +308,10 @@ switch varargin{1}
                         if LIMO.Level == 2
                             Y = squeeze(Yr(electrode,:,:));
                             index = find(~isnan(Y(1,:)));
-                            model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,boot_table{electrode});
+                            [rows,cols] = size(X(index,:));
+                            if (rows >= cols)
+                                model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,boot_table{electrode});
+                            end
                         else
                             model = limo_glm1_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);
                         end
@@ -357,7 +365,7 @@ switch varargin{1}
                     clear electrode model;
                     
                     % save data on the disk and clear out
-                    disp('saving H0 data to disk ... '); 
+                    disp('saving H0 data to disk ... ');
                     save(['H0' filesep 'boot_table'],'boot_table')
                     H0_Betas = limo_tf_5d_reshape(H0_Betas);
                     save(['H0' filesep 'H0_Betas'],'H0_Betas','-v7.3')
@@ -365,13 +373,13 @@ switch varargin{1}
                     H0_R2 = limo_tf_5d_reshape(H0_R2);
                     save(['H0' filesep 'H0_R2'], 'H0_R2', '-v7.3');
                     clear H0_R2
-
+                    
                     if prod(LIMO.design.nb_conditions) ~=0
                         for i=1:length(LIMO.design.nb_conditions)
                             name = sprintf('H0_Condition_effect_%g',i);
                             H0_Condition_effect = squeeze(tmp_H0_Conditions(:,:,i,:,:));
                             H0_Condition_effect = limo_tf_5d_reshape(H0_Condition_effect);
-                            save(name,'H0_Condition_effect','-v7.3');
+                            save(['H0' filesep name],'H0_Condition_effect','-v7.3');
                             clear H0_Condition_effect
                         end
                         clear tmp_H0_Conditions
@@ -382,7 +390,7 @@ switch varargin{1}
                             name = sprintf('H0_Interaction_effect_%g',i);
                             H0_Interaction_effect = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
                             H0_Interaction_effect = limo_tf_5d_reshape(H0_Interaction_effect);
-                            save(name,'H0_Interaction_effect','-v7.3');
+                            save(['H0' filesep name],'H0_Interaction_effect','-v7.3');
                             clear H0_Interaction_effect
                         end
                         clear tmp_H0_Interaction_effect
@@ -404,15 +412,14 @@ switch varargin{1}
                     disp('an error occured while attempting to bootstrap or save the data')
                     fprintf('%s \n',boot_error.message); return
                 end
+                cd LIMO.dir
             end
-            cd LIMO.dir
+            
             
             % TFCE if requested
             % --------------
             if LIMO.design.tfce == 1
-                load Yr;
                 if isfield(LIMO.data,'neighbouring_matrix') && LIMO.design.bootstrap ~=0
-                    clear Yr;
                     if exist('TFCE','dir')
                         if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
                             return
@@ -423,19 +430,33 @@ switch varargin{1}
                     mkdir TFCE;
                     
                     % R2
-                    load R2.mat; fprintf('Creating R2 TFCE scores \n'); 
+                    load R2.mat; fprintf('Creating R2 TFCE scores \n');
                     if size(R2,1) == 1
                         tfce_score(1,:,:) = limo_tfce(2, squeeze(R2(:,:,:,2)),[]);
                     else
                         tfce_score = limo_tfce(3, squeeze(R2(:,:,:,2)),LIMO.data.neighbouring_matrix);
-                    end                        
-                    save(['H0' filesep 'tfce_R2'],'tfce_score'); clear R2; 
+                    end
+                    save(['H0' filesep 'tfce_R2'],'tfce_score'); clear R2;
                     
                     cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
                     if size(H0_R2,1) == 1
-                        tfce_H0_score(1,:,:,:) = limo_tfce(2, squeeze(H0_R2(:,:,:,2,:)),[]);
+                        if exist('parfor','file')
+                            tfce_H0_score = NaN(1,size(H0_R2,2),size(H0_R2,3),LIMO.design.bootstrap);
+                            parfor b=1:nboot
+                                tfce_H0_score(1,:,:,b) = limo_tfce(2,squeeze(H0_R2(:,:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                            end
+                        else
+                            tfce_H0_score(1,:,:,:) = limo_tfce(2, squeeze(H0_R2(:,:,:,2,:)),[]);
+                        end
                     else
-                        tfce_H0_score = limo_tfce(3, squeeze(H0_R2(:,:,:,2,:)),LIMO.data.neighbouring_matrix);                        
+                        if exist('parfor','file')
+                            tfce_H0_score = NaN(size(H0_R2,1),size(H0_R2,2),size(H0_R2,3),LIMO.design.bootstrap);
+                            parfor b=1:nboot
+                                tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_R2(:,:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                            end
+                        else
+                            tfce_H0_score = limo_tfce(3, squeeze(H0_R2(:,:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        end
                     end
                     save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
                     
@@ -456,10 +477,24 @@ switch varargin{1}
                         cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
                         for i=1:length(LIMO.design.nb_conditions)
                             name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
-                            if size(H0_Condition_effect,1)
-                                tfce_H0_score(1,:,:,:) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,:,1,:)),[]);
+                            if size(H0_Condition_effect,1) == 1
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Condition_effect,2),size(H0_Condition_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(2,:,:,:) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,:,1,:)),[]);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(2,squeeze(H0_Condition_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);                                
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),size(H0_Condition_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_Condition_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(3,squeeze(H0_Condition_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Condition_effect tfce_H0_score;
@@ -485,9 +520,23 @@ switch varargin{1}
                         for i=1:length(LIMO.design.fullfactorial)
                             name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
                             if size(H0_Interaction_effect,1) == 1
-                                tfce_H0_score(1,:,:) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,:,1,:)),[]);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Interaction_effect,2),size(H0_Interaction_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(1,:,:) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,:,1,:)),[]);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(3,squeeze(H0_Interaction_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Interaction_effect,1),size(H0_Interaction_effect,2),size(H0_Interaction_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_Interaction_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(3,squeeze(H0_Interaction_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Interaction_effect tfce_H0_score;
@@ -513,9 +562,23 @@ switch varargin{1}
                         for i=1:LIMO.design.nb_continuous
                             name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
                             if size(H0_Covariate_effect,1) ==1
-                                tfce_H0_score(1,:,:,:) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,:)),[]);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(1,:,:,:) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,:)),[]);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(3,squeeze(H0_Covariate_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(3,squeeze(H0_Covariate_effect(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Covariate_effect tfce_H0_score
@@ -533,192 +596,196 @@ switch varargin{1}
             % --------------------------------------------------------
         elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
             disp('multivariate in time*freq space not supported')
-% update = 1;
-%
-% % --------- load files created by limo_design_matrix ------------------
-% load Yr; load Yhat; load Res; load Betas;
-%
-% % ------------- prepare weight matrice -------------------------------------
-% if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
-% W = ones(size(Yr,1),size(Yr,3));
-% elseif strcmp(LIMO.design.method,'IRLS')
-% W = ones(size(Yr));
-% end
-%
-% % -------------- loop the analysis time frames per time frames
-%
-% if strcmp(LIMO.design.status,'to do')
-%
-% % 1st get weights based on time
-% if strcmp(LIMO.design.method,'WLS')
-% fprintf('getting trial weights \n')
-% array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
-% for e = 1:size(Yr,1)
-% electrode = array(e); [Betas,W(e,:)] = limo_WLS(LIMO.design.X,squeeze(Yr(electrode,:,:))');
-% end
-% LIMO.design.weights = W;
-% end
-%
-% % 2nd run the multivative analysis
-% for t = 1:size(Yr,2)
-% fprintf('analyzing time frame %g/%g \n',t,size(Yr,2));
-% model = limo_glmm1(squeeze(Yr(:,t,:))',LIMO); warning off;
-%
-% % update the LIMO.mat
-% if update == 1
-% if LIMO.design.nb_conditions ~=0
-% LIMO.model.conditions_df = [model.conditions.Roy.df' model.conditions.Roy.dfe' model.conditions.Pillai.df' model.conditions.Pillai.dfe'];
-% end
-% if LIMO.design.nb_interactions ~=0
-% LIMO.model.interactions_df = [model.interactions.Roy.df' model.interactions.Roy.dfe' model.interactions.Pillai.df' model.interactions.Pillai.dfe' ];
-% end
-% if LIMO.design.nb_continuous ~=0
-% LIMO.model.continuous_df = [model.continuous.Roy.df model.continuous.Roy.dfe];
-% end
-% update = 0;
-% end
-%
-% % update the files to be stored on the disk
-% fitted_data = LIMO.design.X*model.betas;
-% Yhat(:,t,:) = fitted_data';
-% Res(:,t,:) = squeeze(Yr(:,t,:)) - fitted_data'; clear fitted_data
-% R2{t} = model.R2;
-% Betas(:,t,:) = model.betas';
-%
-% if prod(LIMO.design.nb_conditions) ~=0
-% if length(LIMO.design.nb_conditions) == 1
-% tmp_Condition_effect{t} = model.conditions;
-% else
-% for i=1:length(LIMO.design.nb_conditions)
-% tmp_Condition_effect{t}(i).EV = model.conditions.EV(i,:);
-% tmp_Condition_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
-% tmp_Condition_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
-% tmp_Condition_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
-% tmp_Condition_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
-% end
-% end
-% end
-%
-% if LIMO.design.fullfactorial == 1
-% if length(LIMO.design.nb_interactions) == 1
-% tmp_Interaction_effect{t} = model.interactions;
-% else
-% for i=1:length(LIMO.design.nb_interactions)
-% tmp_Interaction_effect{t}(i).EV = model.conditions.EV(i,:);
-% tmp_Interaction_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
-% tmp_Interaction_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
-% tmp_Interaction_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
-% tmp_Interaction_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
-% end
-% end
-% end
-%
-% if LIMO.design.nb_continuous ~=0
-% if LIMO.design.nb_continuous == 1
-% tmp_Covariate_effect{t} = model.continuous;
-% else
-% for i=1:LIMO.design.nb_continuous
-% tmp_Covariate_effect{t}(i).EV = model.conditions.EV(i,:);
-% tmp_Covariate_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
-% tmp_Covariate_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
-% tmp_Covariate_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
-% tmp_Covariate_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
-% end
-% end
-% end
-% end
-%
-% % save data on the disk and clean out
-% LIMO.design.weights = W;
-% LIMO.design.status = 'done';
-% save LIMO LIMO; save Yhat Yhat;
-% save Res Res; save Betas Betas;
-% clear Yhat Res Betas
-%
-% % R2 data
-% name = sprintf('R2_EV',i); R2_EV = NaN(size(Yr,1),size(Yr,2));
-% for t=1:size(Yr,2); R2_EV(:,t) = real(R2{t}.EV); end
-% save(name,'R2_EV','-v7.3')
-% name = sprintf('R2'); tmp = NaN(size(Yr,2),5);
-% for t=1:size(Yr,2); tmp(t,:) = [R2{t}.V R2{t}.Roy.F R2{t}.Roy.p R2{t}.Pillai.F R2{t}.Pillai.p]; end
-% R2 = tmp; save(name,'R2','-v7.3')
-%
-% % condition effects
-% if prod(LIMO.design.nb_conditions) ~=0
-% for i=1:length(LIMO.design.nb_conditions)
-% name = sprintf('Condition_effect_%g_EV',i);
-% if length(LIMO.design.nb_conditions) == 1
-% for t=1:size(Yr,2); Condition_effect_EV(:,t) = real(tmp_Condition_effect{t}.EV); end
-% save(name,'Condition_effect_EV','-v7.3')
-% name = sprintf('Condition_effect_%g',i);
-% for t=1:size(Yr,2); Condition_effect(t,:) = [tmp_Condition_effect{t}.Roy.F tmp_Condition_effect{t}.Roy.p tmp_Condition_effect{t}.Pillai.F tmp_Condition_effect{t}.Pillai.p]; end
-% save(name,'Condition_effect','-v7.3')
-% else
-% for t=1:size(Yr,2); Condition_effect_EV(:,t) = real(tmp_Condition_effect{t}(i).EV); end
-% save(name,'Condition_effect_EV','-v7.3')
-% name = sprintf('Condition_effect_%g',i);
-% for t=1:size(Yr,2); Condition_effect(t,:) = [tmp_Condition_effect{t}(i).Roy.F tmp_Condition_effect{t}(i).Roy.p tmp_Condition_effect{t}(i).Pillai.F tmp_Condition_effect{t}(i).Pillai.p]; end
-% save(name,'Condition_effect','-v7.3')
-% end
-% end
-% clear Condition_effect Condition_effect_EV tmp_Condition_effect
-% end
-%
-% % interaction effects
-% if LIMO.design.fullfactorial == 1
-% for i=1:length(LIMO.design.nb_interactions)
-% name = sprintf('Interaction_effect_%g_EV',i);
-% if length(LIMO.design.nb_interactions) == 1
-% for t=1:size(Yr,2); Interaction_effect_EV(:,t) = real(tmp_Interaction_effect{t}.EV); end
-% save(name,'Interaction_effect_EV','-v7.3')
-% name = sprintf('Interaction_effect_%g',i);
-% for t=1:size(Yr,2); Interaction_effect(t,:) = [tmp_Interaction_effect{t}.Roy.F tmp_Interaction_effect{t}.Roy.p tmp_Interaction_effect{t}.Pillai.F tmp_Interaction_effect{t}.Pillai.p]; end
-% save(name,'Interaction_effect','-v7.3')
-% else
-% for t=1:size(Yr,2); Interaction_effect_EV(:,t) = real(tmp_Interaction_effect{t}(i).EV); end
-% save(name,'Interaction_effect_EV','-v7.3')
-% name = sprintf('Interaction_effect_%g',i);
-% for t=1:size(Yr,2); Interaction_effect(t,:) = [tmp_Interaction_effect{t}(i).Roy.F tmp_Interaction_effect{t}(i).Roy.p tmp_Interaction_effect{t}(i).Pillai.F tmp_Interaction_effect{t}(i).Pillai.p]; end
-% save(name,'Interaction_effectV','-v7.3')
-% end
-% end
-% clear Interaction_effect Interaction_effect_EV tmp_Interaction_effect
-% end
-%
-% if LIMO.design.nb_continuous ~=0
-% for i=1:LIMO.design.nb_continuous
-% name = sprintf('Covariate_effect_%g_EV',i);
-% if LIMO.design.nb_continuous == 1
-% for t=1:size(Yr,2); Covariate_effect_EV(:,t) = real(tmp_Covariate_effect{t}.EV); end
-% save(name,'Covariate_effect_EV','-v7.3')
-% name = sprintf('Covariate_effect_%g',i);
-% for t=1:size(Yr,2); Covariate_effect(t,:) = [tmp_Covariate_effect{t}.Roy.F tmp_Covariate_effect{t}.Roy.p tmp_Covariate_effect{t}.Pillai.F tmp_Covariate_effect{t}.Pillai.p]; end
-% save(name,'Covariate_effect','-v7.3')
-% else
-% for t=1:size(Yr,2); Covariate_effect_EV(:,t) = real(tmp_Covariate_effect{t}(i).EV); end
-% save(name,'Covariate_effect_EV','-v7.3')
-% name = sprintf('Covariate_effect_%g',i);
-% for t=1:size(Yr,2); Covariate_effect(t,:) = [tmp_Covariate_effect{t}(i).Roy.F tmp_Covariate_effect{t}(i).Roy.p tmp_Covariate_effect{t}(i).Pillai.F tmp_Covariate_effect{t}(i).Pillai.p]; end
-% save(name,'Covariate_effect','-v7.3')
-% end
-% end
-% clear Covariate_effect Covariate_effect_EV tmp_Covariate_effect
-% end
-% clear file electrode filename model reg dir i W
-% end
-%
-%
-% % if bootsrrap
-% if LIMO.design.bootstrap == 1
-%
-% end
-%
-% % TFCE if requested
-% if LIMO.design.tfce == 1
-% end
+            % update = 1;
+            %
+            % % --------- load files created by limo_design_matrix ------------------
+            % load Yr; load Yhat; load Res; load Betas;
+            %
+            % % ------------- prepare weight matrice -------------------------------------
+            % if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+            % W = ones(size(Yr,1),size(Yr,3));
+            % elseif strcmp(LIMO.design.method,'IRLS')
+            % W = ones(size(Yr));
+            % end
+            %
+            % % -------------- loop the analysis time frames per time frames
+            %
+            % if strcmp(LIMO.design.status,'to do')
+            %
+            % % 1st get weights based on time
+            % if strcmp(LIMO.design.method,'WLS')
+            % fprintf('getting trial weights \n')
+            % array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+            % for e = 1:size(Yr,1)
+            % electrode = array(e); [Betas,W(e,:)] = limo_WLS(LIMO.design.X,squeeze(Yr(electrode,:,:))');
+            % end
+            % LIMO.design.weights = W;
+            % end
+            %
+            % % 2nd run the multivative analysis
+            % for t = 1:size(Yr,2)
+            % fprintf('analyzing time frame %g/%g \n',t,size(Yr,2));
+            % model = limo_glmm1(squeeze(Yr(:,t,:))',LIMO); warning off;
+            %
+            % % update the LIMO.mat
+            % if update == 1
+            % if LIMO.design.nb_conditions ~=0
+            % LIMO.model.conditions_df = [model.conditions.Roy.df' model.conditions.Roy.dfe' model.conditions.Pillai.df' model.conditions.Pillai.dfe'];
+            % end
+            % if LIMO.design.nb_interactions ~=0
+            % LIMO.model.interactions_df = [model.interactions.Roy.df' model.interactions.Roy.dfe' model.interactions.Pillai.df' model.interactions.Pillai.dfe' ];
+            % end
+            % if LIMO.design.nb_continuous ~=0
+            % LIMO.model.continuous_df = [model.continuous.Roy.df model.continuous.Roy.dfe];
+            % end
+            % update = 0;
+            % end
+            %
+            % % update the files to be stored on the disk
+            % fitted_data = LIMO.design.X*model.betas;
+            % Yhat(:,t,:) = fitted_data';
+            % Res(:,t,:) = squeeze(Yr(:,t,:)) - fitted_data'; clear fitted_data
+            % R2{t} = model.R2;
+            % Betas(:,t,:) = model.betas';
+            %
+            % if prod(LIMO.design.nb_conditions) ~=0
+            % if length(LIMO.design.nb_conditions) == 1
+            % tmp_Condition_effect{t} = model.conditions;
+            % else
+            % for i=1:length(LIMO.design.nb_conditions)
+            % tmp_Condition_effect{t}(i).EV = model.conditions.EV(i,:);
+            % tmp_Condition_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
+            % tmp_Condition_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
+            % tmp_Condition_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
+            % tmp_Condition_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
+            % end
+            % end
+            % end
+            %
+            % if LIMO.design.fullfactorial == 1
+            % if length(LIMO.design.nb_interactions) == 1
+            % tmp_Interaction_effect{t} = model.interactions;
+            % else
+            % for i=1:length(LIMO.design.nb_interactions)
+            % tmp_Interaction_effect{t}(i).EV = model.conditions.EV(i,:);
+            % tmp_Interaction_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
+            % tmp_Interaction_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
+            % tmp_Interaction_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
+            % tmp_Interaction_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
+            % end
+            % end
+            % end
+            %
+            % if LIMO.design.nb_continuous ~=0
+            % if LIMO.design.nb_continuous == 1
+            % tmp_Covariate_effect{t} = model.continuous;
+            % else
+            % for i=1:LIMO.design.nb_continuous
+            % tmp_Covariate_effect{t}(i).EV = model.conditions.EV(i,:);
+            % tmp_Covariate_effect{t}(i).Roy.F = model.conditions.Roy.F(i);
+            % tmp_Covariate_effect{t}(i).Roy.p = model.conditions.Roy.p(i);
+            % tmp_Covariate_effect{t}(i).Pillai.F = model.conditions.Pillai.F(i);
+            % tmp_Covariate_effect{t}(i).Pillai.p = model.conditions.Pillai.p(i);
+            % end
+            % end
+            % end
+            % end
+            %
+            % % save data on the disk and clean out
+            % LIMO.design.weights = W;
+            % LIMO.design.status = 'done';
+            % save LIMO LIMO; save Yhat Yhat;
+            % save Res Res; save Betas Betas;
+            % clear Yhat Res Betas
+            %
+            % % R2 data
+            % name = sprintf('R2_EV',i); R2_EV = NaN(size(Yr,1),size(Yr,2));
+            % for t=1:size(Yr,2); R2_EV(:,t) = real(R2{t}.EV); end
+            % save(name,'R2_EV','-v7.3')
+            % name = sprintf('R2'); tmp = NaN(size(Yr,2),5);
+            % for t=1:size(Yr,2); tmp(t,:) = [R2{t}.V R2{t}.Roy.F R2{t}.Roy.p R2{t}.Pillai.F R2{t}.Pillai.p]; end
+            % R2 = tmp; save(name,'R2','-v7.3')
+            %
+            % % condition effects
+            % if prod(LIMO.design.nb_conditions) ~=0
+            % for i=1:length(LIMO.design.nb_conditions)
+            % name = sprintf('Condition_effect_%g_EV',i);
+            % if length(LIMO.design.nb_conditions) == 1
+            % for t=1:size(Yr,2); Condition_effect_EV(:,t) = real(tmp_Condition_effect{t}.EV); end
+            % save(name,'Condition_effect_EV','-v7.3')
+            % name = sprintf('Condition_effect_%g',i);
+            % for t=1:size(Yr,2); Condition_effect(t,:) = [tmp_Condition_effect{t}.Roy.F tmp_Condition_effect{t}.Roy.p tmp_Condition_effect{t}.Pillai.F tmp_Condition_effect{t}.Pillai.p]; end
+            % save(name,'Condition_effect','-v7.3')
+            % else
+            % for t=1:size(Yr,2); Condition_effect_EV(:,t) = real(tmp_Condition_effect{t}(i).EV); end
+            % save(name,'Condition_effect_EV','-v7.3')
+            % name = sprintf('Condition_effect_%g',i);
+            % for t=1:size(Yr,2); Condition_effect(t,:) = [tmp_Condition_effect{t}(i).Roy.F tmp_Condition_effect{t}(i).Roy.p tmp_Condition_effect{t}(i).Pillai.F tmp_Condition_effect{t}(i).Pillai.p]; end
+            % save(name,'Condition_effect','-v7.3')
+            % end
+            % end
+            % clear Condition_effect Condition_effect_EV tmp_Condition_effect
+            % end
+            %
+            % % interaction effects
+            % if LIMO.design.fullfactorial == 1
+            % for i=1:length(LIMO.design.nb_interactions)
+            % name = sprintf('Interaction_effect_%g_EV',i);
+            % if length(LIMO.design.nb_interactions) == 1
+            % for t=1:size(Yr,2); Interaction_effect_EV(:,t) = real(tmp_Interaction_effect{t}.EV); end
+            % save(name,'Interaction_effect_EV','-v7.3')
+            % name = sprintf('Interaction_effect_%g',i);
+            % for t=1:size(Yr,2); Interaction_effect(t,:) = [tmp_Interaction_effect{t}.Roy.F tmp_Interaction_effect{t}.Roy.p tmp_Interaction_effect{t}.Pillai.F tmp_Interaction_effect{t}.Pillai.p]; end
+            % save(name,'Interaction_effect','-v7.3')
+            % else
+            % for t=1:size(Yr,2); Interaction_effect_EV(:,t) = real(tmp_Interaction_effect{t}(i).EV); end
+            % save(name,'Interaction_effect_EV','-v7.3')
+            % name = sprintf('Interaction_effect_%g',i);
+            % for t=1:size(Yr,2); Interaction_effect(t,:) = [tmp_Interaction_effect{t}(i).Roy.F tmp_Interaction_effect{t}(i).Roy.p tmp_Interaction_effect{t}(i).Pillai.F tmp_Interaction_effect{t}(i).Pillai.p]; end
+            % save(name,'Interaction_effectV','-v7.3')
+            % end
+            % end
+            % clear Interaction_effect Interaction_effect_EV tmp_Interaction_effect
+            % end
+            %
+            % if LIMO.design.nb_continuous ~=0
+            % for i=1:LIMO.design.nb_continuous
+            % name = sprintf('Covariate_effect_%g_EV',i);
+            % if LIMO.design.nb_continuous == 1
+            % for t=1:size(Yr,2); Covariate_effect_EV(:,t) = real(tmp_Covariate_effect{t}.EV); end
+            % save(name,'Covariate_effect_EV','-v7.3')
+            % name = sprintf('Covariate_effect_%g',i);
+            % for t=1:size(Yr,2); Covariate_effect(t,:) = [tmp_Covariate_effect{t}.Roy.F tmp_Covariate_effect{t}.Roy.p tmp_Covariate_effect{t}.Pillai.F tmp_Covariate_effect{t}.Pillai.p]; end
+            % save(name,'Covariate_effect','-v7.3')
+            % else
+            % for t=1:size(Yr,2); Covariate_effect_EV(:,t) = real(tmp_Covariate_effect{t}(i).EV); end
+            % save(name,'Covariate_effect_EV','-v7.3')
+            % name = sprintf('Covariate_effect_%g',i);
+            % for t=1:size(Yr,2); Covariate_effect(t,:) = [tmp_Covariate_effect{t}(i).Roy.F tmp_Covariate_effect{t}(i).Roy.p tmp_Covariate_effect{t}(i).Pillai.F tmp_Covariate_effect{t}(i).Pillai.p]; end
+            % save(name,'Covariate_effect','-v7.3')
+            % end
+            % end
+            % clear Covariate_effect Covariate_effect_EV tmp_Covariate_effect
+            % end
+            % clear file electrode filename model reg dir i W
+            % end
+            %
+            %
+            % % if bootsrrap
+            % if LIMO.design.bootstrap == 1
+            %
+            % end
+            %
+            % % TFCE if requested
+            % if LIMO.design.tfce == 1
+            % end
             
         end
         warning on;
         
         
+end
+
+if exist('parfor','file') ~=0
+    matlabpool close
 end

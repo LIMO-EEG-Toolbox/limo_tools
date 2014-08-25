@@ -1,4 +1,4 @@
-function reshaped = limo_tf_4d_reshape(reshape_in)
+function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 
 % Simple function to 'stack' elec-freqs-times-N or 'unstack' 
 % elec-freqs*times-N matrices
@@ -7,15 +7,23 @@ function reshaped = limo_tf_4d_reshape(reshape_in)
 %
 % INPUT/OUTPUT 4D elec-freqs-times-N / 3D elec-freqs*times-N
 %              3D elec-freqs*times-N / 4D elec-freqs-times-N
+%              
+% By default the function looks for the LIMO variable (either already used
+% as global, or in the current dir or above) -- the forced_dim variable can
+% be used instead of the LIMO structure, forcing a set of dimensions. If
+% the input matrix is 4D, forced dim must be 3D, if the input matrix if 3D,
+% the forced dim must be 4D 
 %
-% This is done explicitly within simple loops to be clear to read.
+% The reshaping is done explicitly within simple loops to be clear to read.
 % Could be vectorised and/or use reshape(), but that makes it easier to get
 % lost in dimensions.
 %
-% Andrew X Stewart, nov13
-% Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
 % ------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2014
+
+% Andrew X Stewart, nov13
+% Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
+% add the fored_dim argument -- making the function more generic
 
 current = pwd;
 if ~exist('LIMO','var')
@@ -25,8 +33,21 @@ if ~exist('LIMO','var')
         try
             cd ..; load LIMO
         catch NO_FILE
-            error('looking for a LIMO variable/file')
+            if nargin == 1
+                error('no LIMO variable/file found - use forced dim as 2nd argument')
+            end
         end
+    end
+end
+
+% if forced dim, override LIMO.data.size
+if nargin == 2
+    if numel(forced_dim) == 3
+        LIMO.data.size3D = forced_dim;
+    elseif numel(forced_dim) == 4
+        LIMO.data.size4D = forced_dim;
+    else
+        error('forced dim dimension issue')
     end
 end
 cd(current)
@@ -57,7 +78,7 @@ if numel(reshape_size) == 4
         reshaped(:,:,tr) = tf_long_2d;
     end
     
-elseif numel(reshape_size) == 3
+elseif numel(reshape_size) == 3 || 2
     %% Else, if we have 3D input, reshape it to be 4D
     
     [n_elec, n_freq_times, N] = size(reshape_in);

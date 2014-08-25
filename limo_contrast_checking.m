@@ -14,7 +14,7 @@ function go = limo_contrast_checking(varargin)
 %
 % OUTPUT
 % if input C and X; go=1 if valid contrast or 0 if invalid
-% if input dir, X and C, go C corrected with extra 0s
+% if input dir, X and C, go = C corrected with extra 0s
 %
 % Cyril Pernet, v4. 25-04-2010
 % -----------------------------

@@ -74,6 +74,12 @@ switch type
         % compute Projection onto the error
         load Res; % rather than projecting Y onto error use Res because Res depends on how the GLM was done (OLS,WLS, IRLS)
 
+        if strcmp(LIMO.Analysis ,'Time-Frequency')
+            Y = limo_tf_4d_reshape(Y);
+            Betas = limo_tf_4d_reshape(Betas);
+            Res = limo_tf_4d_reshape(Res);
+        end
+                
         if strcmp(Method,'Mass-univariate')
             
             % create con or ess file
@@ -138,9 +144,16 @@ switch type
                 
             end
             result = [];
+            
             if Test == 0
+                if strcmp(LIMO.Analysis ,'Time-Frequency')
+                    con = limo_tf_4d_reshape(con);
+                end
                 save ([filename], 'con'); clear con
             else
+                if strcmp(LIMO.Analysis ,'Time-Frequency')
+                    ess = limo_tf_4d_reshape(ess);
+                end
                 save ([filename], 'ess'); clear ess
             end
             

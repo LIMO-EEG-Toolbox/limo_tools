@@ -11,13 +11,15 @@ function boot_table = limo_create_boot_table(data,nboot)
 %
 % INPUT: data: a 3D matrix [electrode x time frames x subjects];
 %        nboot: the number of bootstraps to do
+%        for repeated measures - call this function inputing 1 measure and
+%        apply to all measures the created table
 %
 % OUTPUT: boot_table is a cell array with one resampling matrix per
 % electrode
 %
 % Cyril Pernet v1 24-06-2013
 % ----------------------------
-% Copyright (C) LIMO Team 2010
+% Copyright (C) LIMO Team 2014
 
 % check data for NaNs
 if size(data,1) == 1
@@ -25,13 +27,21 @@ if size(data,1) == 1
 else
     chdata=squeeze(data(:,1,:)); 
 end
-    
+
+if sum(sum(isnan(chdata),2)==size(data,ndims(data))) ~=0
+    disp('some electrodes are empty (full of NaN) - still making the table but some cells will be empty')
+end
+
+if (sum((size(data,3) - sum(isnan(chdata),2))<=3)) ~=0
+    disp('some cells have a very low count <=3 ; bootstrapping cannot work - still making the table but some cells will be empty')
+end
+
 % create boot_table
 B=1;
 boot_index=zeros(size(data,3),nboot);
 while B~=nboot+1
     tmp = randi(size(data,3),size(data,3),1);
-    if length(unique(tmp)) >= 2 && min(sum(~isnan(chdata(:,tmp)),2)) > 2; % at least 3 different observations per boot and data collected
+    if length(unique(tmp)) >= 2 %% && min(sum(~isnan(chdata(:,tmp)),2)) >= 2; % at least 2 different observations per boot and data collected
         boot_index(:,B) = tmp;
         B=B+1;
     end
@@ -39,7 +49,9 @@ end
 clear chdata tmp
 
 % loop per electrode, if no nan use boot_index else change it
-for electrode = 1:size(data,1)
+array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3)-3);
+for e = 1:size(array,1)
+ electrode = array(e);
     tmp = squeeze(data(electrode,:,:)); % 2D
     Y = tmp(:,find(~isnan(tmp(1,:)))); % remove NaNs
     bad_subjects = find(isnan(tmp(1,:)));

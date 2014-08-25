@@ -23,8 +23,8 @@ elec_signal = [2 4 6 8]; % indices to input signal
 
 %% signal = 1 over 2 frequencies and 3 time points
 Data = NullData;
-Data(elec_signal,2:3,3:5) = 1;
-
+Data(elec_signal,2:3,3:5) = 1; % 4 elect 2 freq 3 time
+ 
 % let's do an ERP one one electrode, we call limo_ecluster_test
 one_d = squeeze(Data(2,2,:))';
 expected_cluster_mass = sum(one_d(:));

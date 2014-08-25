@@ -55,7 +55,17 @@ addpath([root filesep 'limo_cluster_functions'])
 addpath([root filesep 'external' filesep 'psom'])
 addpath([root filesep 'external'])
 addpath([root filesep 'help'])
-global EEG
+
+% initialize parallel work if any
+Ncore = feature('numCores');
+if exist('parfor','file') && Ncore > 1
+    myCluster = parcluster();
+    myPool = parpool(myCluster);
+    myPool = parpool(Ncore); % <------- CHANGE HERE TO THE MINIMUM NB OF CORE TO USE
+end
+
+% make these shared and available
+global EEG LIMO
 
 % in case data are already there
 if isempty(varargin);
@@ -672,9 +682,23 @@ switch varargin{1}
                     
                     cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
                     if size(H0_R2,1) == 1
-                        tfce_H0_score(1,:,:) = limo_tfce(1, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        if exist('parfor','file')
+                            tfce_H0_score = NaN(1,size(H0_R2,2),LIMO.design.bootstrap);
+                            parfor b=1:nboot
+                                tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                            end
+                        else
+                            tfce_H0_score(1,:,:) = limo_tfce(1, squeeze(H0_R2(:,2,:)),LIMO.data.neighbouring_matrix);
+                        end
                     else
-                        tfce_H0_score = limo_tfce(2, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        if exist('parfor','file')
+                            tfce_H0_score = NaN(size(H0_R2,1),size(H0_R2,2),LIMO.design.bootstrap);
+                            parfor b=1:nboot
+                                tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                            end
+                        else
+                            tfce_H0_score = limo_tfce(2, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                        end
                     end
                     save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
                     
@@ -685,7 +709,6 @@ switch varargin{1}
                             cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
                             if size(Condition_effect,1) == 1
                                 tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            else
                                 tfce_score = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
@@ -696,9 +719,23 @@ switch varargin{1}
                         for i=1:length(LIMO.design.nb_conditions)
                             name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
                             if size(H0_Condition_effect,1) == 1
-                                tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);                                
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_R2,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Condition_effect tfce_H0_score;
@@ -724,9 +761,23 @@ switch varargin{1}
                         for i=1:length(LIMO.design.fullfactorial)
                             name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
                             if size(H0_Interaction_effect,1) == 1
-                                tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Interaction_effect,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Interaction_effect,1),size(H0_Interaction_effect,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Interaction_effect tfce_H0_score;
@@ -752,9 +803,23 @@ switch varargin{1}
                         for i=1:LIMO.design.nb_continuous
                             name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
                             if size(H0_Covariate_effect,1) == 1
-                                tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             else
-                                tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                if exist('parfor','file')
+                                    tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
+                                    parfor b=1:nboot
+                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                    end
+                                else
+                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                                end
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
                             clear H0_Covariate_effect tfce_H0_score

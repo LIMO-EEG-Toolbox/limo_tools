@@ -61,7 +61,6 @@ end
 
 %% Deal with each case of FileName
 
-
     % -------------------------------
     %% R2.mat (from 1st or 2nd level) 
     % -------------------------------
@@ -747,21 +746,18 @@ elseif strncmp(FileName,'one_sample',10)
    % 2D cluster and 1D correction for multiple testing
    % ------------------------------------------
    elseif MCC == 2 || MCC == 3
-       if size(M,1) == 1; MCC =3; end
         try load(MCC_data);
             bootT = squeeze(H0_one_sample(:,:,:,1,:)); % get all T values under H0
             bootP = squeeze(H0_one_sample(:,:,:,2,:)); % get all P values under H0
             if size(one_sample,1) == 1
-                tmp = NaN(1,size(one_sample,2),size(one_sample,3),size(H0_one_sample,5));
-                tmp(1,:,:,:) = bootT; bootT = tmp;
-                tmp(1,:,:,:) = bootP; bootP = tmp; 
-                clear tmp
+                bootT = reshape(bootT,[1 size(bootT)]);
+                bootP = reshape(bootP,[1 size(bootT)]); 
             end
-            [mask,M] = local_clustering(M.^2,squeeze(one_sample(:,:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            [mask,M] = local_clustering(M.^2,one_sample(:,:,:,5),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if MCC == 2
-                mytitle = sprintf('One Sample t-test \n correction by spatial-temporal cluster');
+                mytitle = sprintf('One Sample t-test \n correction by spatial-time/freq cluster');
             elseif MCC == 3
-                mytitle = sprintf('One Sample t-test \n correction by temporal cluster');
+                mytitle = sprintf('One Sample t-test \n correction by time/freq cluster');
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -1375,20 +1371,19 @@ end
 
 %% subfunctions which do the actual thresholding
 function [mask,cluster_p] = local_clustering(M,P,bootM,bootP,LIMO,MCC,p)
-% call field trip functions to do 2D or 1D clustering
+
+% call field trip based functions to do clustering
 %
-% M = 3D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
-% P = 3D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
+% M = observed F values in 3D (electrodes*frequency*time)
+%     note for a single electrode the format is 1*frequency*time 
+% P = observed p values maching the dimensions of M
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % bootP = 3D matrix of F values for data bootstrapped under H0
 % LIMO = LIMO structure - information requested is LIMO.data.chanlocs and LIMO.data.neighbouring_matrix
-% MCC = 2 (spatial-temporal clustering) or 3 (temporal clustering)
-% p = threshold to apply (note this applied to create clusters and to
-% threshold the cluster map)
+% MCC = 2 for him dimensional clustering - max over whole space 
+%     = 3 for low dimensional clustering - max of each element in the 1st dim
+% p = threshold to apply 
 
-if size(M,1) == 1
-    MCC = 3;
-end
 cluster_p = [];
 mask = [];
 
@@ -1400,24 +1395,29 @@ if MCC == 2
         expected_chanlocs = LIMO.data.chanlocs;
         channeighbstructmat = LIMO.data.neighbouring_matrix;
         boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-        for boot=1:nboot
-            fprintf('getting clusters under H0 boot %g \n',boot);
-            boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,:,boot),bootP(:,:,:,boot),channeighbstructmat,minnbchan,p);
+        if exist('parfor','file') ~=0
+            fprintf('getting clusters under H0 \n');
+            parfor boot = 1:nboot
+                boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,:,boot),bootP(:,:,:,boot),channeighbstructmat,minnbchan,p);
+            end
+        else
+            for boot=1:nboot
+                fprintf('getting clusters under H0 boot %g \n',boot);
+                boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,:,boot),bootP(:,:,:,boot),channeighbstructmat,minnbchan,p);
+            end
         end
         [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
-
+    
     elseif size(bootM,1)==1 % one electrode
-        th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-        sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-        mask = sigcluster.elec; cluster_p = [];
+        th = limo_tfcluster_make(squeeze(bootM),squeeze(bootP),p);
+        sigcluster = limo_tfcluster_test(M,P,th,p);
+        mask = sigcluster.max_mask; cluster_p = sigcluster.max_pvalues;
     end
     
-elseif MCC == 3
-    nboot = size(bootM,4);
-    U = round((1-p)*nboot); % bootstrap threshold
-    th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-    sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-    mask = sigcluster.elec;
+elseif MCC == 3 % low dimensional clustering (max over each electrode)
+    th = limo_tfcluster_make(bootM,bootP,p); th = rmfield(th,'max'); 
+    sigcluster = limo_tfcluster_test(M,P,th,p);
+    mask = sigcluster.elec_mask; cluster_p = sigcluster.elec_pvalues;
     
 end
 end

@@ -305,11 +305,7 @@ if ~isempty(handles.C);
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
                 % -------------------------------------------------------
-                if strcmp(LIMO.Analysis ,'Time-Frequency')
-                    result = limo_contrast(limo_tf_4d_reshape(Yr), limo_tf_4d_reshape(Betas), LIMO, handles.F,1);
-                else
-                    result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
-                end
+                result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
                 
                 if LIMO.design.bootstrap ~= 0
                     if strcmp(LIMO.Analysis ,'Time-Frequency')
