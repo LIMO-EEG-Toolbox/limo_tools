@@ -49,9 +49,18 @@ elseif nargin == 1
     [PathName,f,e] = fileparts(varargin{1}); 
     FileName = [f e]; 
 elseif nargin >= 2
-    quest = 'One';
     FileName = varargin{1}; 
     PathName = varargin{2}; 
+    if size(FileName,1) == 1
+        quest = 'One';
+    else
+        quest = 'Skip';
+        for n=1:size(FileName,1)
+            [Paths{n},name,ext] = fileparts(FileName{n});
+            Names{n} = [name ext];
+            Files{n} = [Path{n} fielsep Names{n}];
+        end
+    end
     FilterIndex = 1;
 else
     error('wrong number of arguments')
@@ -104,7 +113,7 @@ if strcmp(quest,'One')
     end
     
     
-else   % from a set of subjects
+elseif strcmp(quest,'Set')   % from a set of subjects
     % -------------------------------------------
     
     %% get data
@@ -113,7 +122,7 @@ else   % from a set of subjects
         return
     else
         [~,file,~]=fileparts(name);
-        if strcmp(file,'LIMO.mat') % we gop for multiple LIMO.mat by hand
+        if strcmp(file,'LIMO.mat') % we go for multiple LIMO.mat by hand
             Names{index} = name;
             Paths{index} = path;
             Files{index} = sprintf('%s\%s',path,name);

@@ -3,8 +3,8 @@ function varargout = limo_gui(varargin)
 % GUI of LIMO_eeg toolbox
 % created using GUIDE
 % cyril pernet 12-03-2010 v1
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------------------
+% Copyright (C) LIMO Team 2014
 
 
 %% GUI stuffs
@@ -129,6 +129,9 @@ cd (handles.dir)
 function Quit_Callback(hObject, eventdata, handles)
 clc
 uiresume
+try
+    matlabpool('close');
+end
 delete(handles.figure1)
 
 

@@ -1,4 +1,4 @@
-function limo_batch(varargin)
+function LIMO_files = limo_batch(varargin)
 
 % interactive function to run several 1st level analyses
 % select directories and files - possibly enter contrasts of
@@ -8,30 +8,33 @@ function limo_batch(varargin)
 %
 % FORMAT limo_batch
 % limo_batch(option,model,contrast)
+% limo_batch(option,model,contrast,eeglab_study)
 %
 % INPUT if empty uses GUI
-% option should be 'model specification' 'contrast only' or 'both'
-% model is a structure that specifiy information to build a model
-% model.set_files: a cell array of EEG.set (full path) for the different subjects
-% model.cat_files: a cell array of categorial variable files
-% model.cont_files: a cell array of continuous variable files
-% model.defaults: specifiy the parameters to use for each subject
-% model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
-% model.defaults.fullfactorial 0/1
-% model.defaults.zscore 0/1
-% model.defaults.start starting time in ms
-% model.defaults.end ending time in ms
-% model.defaults.lowf starting point in Hz
-% model.defaults.highf ending point in Hz
-% model.defaults.bootstrap 0/1
-% model.defaults.tfce 0/1
-% model.defaults.channloc common channel locations (necessary if bootstrap = 1)
-% contrast is a structure that specify which contrasts to run for which subject
-% contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
-% this is optional if option 'both' is selected
-% contrast.mat: a matrix of contrasts to run (assumes the same for all subjects)
+%       option should be 'model specification' 'contrast only' or 'both'
+%       model is a structure that specifiy information to build a model
+%       model.set_files: a cell array of EEG.set (full path) for the different subjects
+%       model.cat_files: a cell array of categorial variable or variable files
+%       model.cont_files: a cell array of continuous variable or variable files
+%       model.defaults: specifiy the parameters to use for each subject
+%       model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
+%       model.defaults.fullfactorial 0/1
+%       model.defaults.zscore 0/1
+%       model.defaults.start starting time in ms
+%       model.defaults.end ending time in ms
+%       model.defaults.lowf starting point in Hz
+%       model.defaults.highf ending point in Hz
+%       model.defaults.bootstrap 0/1
+%       model.defaults.tfce 0/1
+%       model.defaults.channloc common channel locations (necessary if bootstrap = 1)
+%       contrast is a structure that specify which contrasts to run for which subject
+%       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
+%                            this is optional if option 'both' is selected
+%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects)
+%       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
 %
-% OUTPUT none - generate a directory per subject with GLM results in it
+% OUTPUT  LIMO a cell array of LIMO.mat (info about subjects' GLM)
+%         also generate a directory per subject with GLM results in it
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf and psom in external folder
 %
@@ -116,26 +119,38 @@ if nargin == 0
     end
 else
     option = varargin{1};
+    % model
     if strcmp(option,'model specification') || strcmp(option,'both')
         model = varargin{2};
     end
+    % contrast
     if strcmp(option,'contrast only') || strcmp(option,'both')
         contrast = varargin{3};
+        if ~isfield(contrast,'mat')
+            errordlg('the field contrast.mat is missing'); return
+        end
+        
         if strcmp(option,'both') && ~isfield(contrast,'LIMO_files')
             for f=1:size(model.set_files,1)
                 [root,~,~] = fileparts(model.set_files{f});
                 folder = ['GLM_' model.defaults.analysis];
-                contrast.LIMO_files = [root filesep folder filesep 'LIMO.mat'];
+                contrast.LIMO_files{f} = [root filesep folder filesep 'LIMO.mat'];
             end
-        end
-        if ~isfield(contrast,'mat')
-            errordlg('the field contrast.mat is missing'); return
+            contrast.LIMO_files = contrast.LIMO_files';
         end
     end
 end
 
-current =pwd;
-mkdir('limo_batch_report')
+if nargin == 4
+    STUDY = varargin{4}; clear varargin{4};
+    cd(STUDY.filepath); current =pwd;
+    mkdir('limo_batch_report'); 
+    mkdir(['LIMO_' STUDY.filename(1:end-6)]);
+    study_root = [STUDY.filepath filesep ['LIMO_' STUDY.filename(1:end-6)]];
+else
+    current =pwd;
+    mkdir('limo_batch_report')
+end
 
 %% -------------------------------------
 %% build pipelines
@@ -161,17 +176,26 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
-        [root,~,~] = fileparts(model.set_files{subject});
-        pipeline(subject).import.files_out = [root filesep 'GLM_' model.defaults.analysis filesep 'LIMO.mat'];
+        if nargin == 4
+            mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
+            root = [study_root filesep cell2mat(STUDY.names(subject))];
+            glm_name = ['GLM_' num2str(STUDY.design_index) model.defaults.analysis];
+            contrast.LIMO_files{subject} = [root filesep glm_name model.defaults.analysis filesep 'LIMO.mat']; 
+        else
+            [root,~,~] = fileparts(model.set_files{subject});
+            glm_name = ['GLM_' model.defaults.analysis];    
+        end
+        pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         pipeline(subject).import.opt.cat = model.cat_files{subject};
         pipeline(subject).import.opt.cont = model.cont_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
+        pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
         pipeline(subject).design.command = command;
         pipeline(subject).design.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).design.files_out = [root filesep 'GLM_' model.defaults.analysis filesep 'Yr.mat'];
+        pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
         
         % run GLM
         if strcmp(model.defaults.analysis,'Time') || strcmp(model.defaults.analysis,'Frequency');
@@ -181,7 +205,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).glm.command = command;
         pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).glm.files_out = [root filesep 'GLM_' model.defaults.analysis filesep 'Betas.mat'];
+        pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
     end
     
 elseif strcmp(option,'contrast only') || strcmp(option,'both')
@@ -205,6 +229,10 @@ catch
     N = size(contrast.LIMO_files,1);
 end
 
+if nargout == 1
+    LIMO_files = contrast.LIMO_files;
+end
+
 for subject = 1:N
     try
         opt.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
@@ -212,6 +240,7 @@ for subject = 1:N
         report{subject} = ['subject ' num2str(subject) ' processed'];
     catch ME
         report{subject} = ['subject ' num2str(subject) ' failed'];
+        LIMO_files{subject} = [];
     end
 end
 cd([current filesep 'limo_batch_report'])

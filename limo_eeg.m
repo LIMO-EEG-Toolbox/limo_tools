@@ -57,12 +57,16 @@ addpath([root filesep 'external'])
 addpath([root filesep 'help'])
 
 % initialize parallel work if any
-Ncore = feature('numCores');
-if exist('parfor','file') && Ncore > 1
-    myCluster = parcluster();
-    myPool = parpool(myCluster);
-    myPool = parpool(Ncore); % <------- CHANGE HERE TO THE MINIMUM NB OF CORE TO USE
-end
+% Ncore = feature('numCores');
+% if exist('parfor','file') && Ncore > 1
+%     myCluster = parcluster();
+%     if exist('parpool','file')
+%         myPool = parpool(myCluster);
+%         myPool = parpool(Ncore-1); % <------- CHANGE HERE TO THE MINIMUM NB OF CORE TO USE
+%     else
+%         matlabpool('local',Ncore-1)
+%     end
+% end
 
 % make these shared and available
 global EEG LIMO
@@ -381,14 +385,15 @@ switch varargin{1}
                     end
                     
                     % update the files to be stored on the disk
-                    if  strcmp(LIMO.design.method,'IRLS')
+                    if strcmp(LIMO.design.method,'IRLS')
                         W(electrode,:,index) = model.W;
-                    else
+                    elseif strcmp(LIMO.design.method,'WLS')
                         W(electrode,index) = model.W;
                     end
                     fitted_data = LIMO.design.X*model.betas;
                     Yhat(electrode,:,index) = fitted_data';
-                    Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data'; clear fitted_data
+                    Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data'; 
+                    clear fitted_data
                     R2(electrode,:,1) = model.R2_univariate;
                     R2(electrode,:,2) = model.F;
                     R2(electrode,:,3) = model.p;
@@ -412,8 +417,8 @@ switch varargin{1}
                             tmp_Interaction_effect(electrode,:,1,2) = model.interactions.p;
                         else
                             for i=1:length(LIMO.design.nb_interactions)
-                                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(i,:);
-                                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(i,:);
+                                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(:,i);
+                                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(:,i);
                             end
                         end
                     end
@@ -424,8 +429,8 @@ switch varargin{1}
                             tmp_Covariate_effect(electrode,:,1,2) = model.continuous.p;
                         else
                             for i=1:LIMO.design.nb_continuous
-                                tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(i,:);
-                                tmp_Covariate_effect(electrode,:,i,2) = model.continuous.p(i,:);
+                                tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(:,i);
+                                tmp_Covariate_effect(electrode,:,i,2) = model.continuous.p(:,i);
                             end
                         end
                     end

@@ -3,8 +3,7 @@ global EEG
 
 EEG=pop_loadset(setfile);
 [root,name,ext] = fileparts(setfile); 
-cd(root); mkdir(['GLM_' defaults.analysis]);
-LIMO.dir                    = [pwd filesep 'GLM_' defaults.analysis];
+LIMO.dir                    = defaults.name;
 LIMO.data.data              = [name ext];
 LIMO.data.data_dir          = root;
 LIMO.data.sampling_rate     = EEG.srate;
@@ -141,16 +140,24 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     LIMO.data.tf_freqs = EEG.etc.tf_freqs(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
 end
 
-if strcmp(cat(end-3:end),'.txt')
-    LIMO.data.Cat = load(cat);
-else strcmp(cat(end-3:end),'.mat')
-    load(cat); LIMO.data.Cat = eval(cat(1:end-4));
+if isnumeric(cat)
+    LIMO.data.Cat = cat;
+else
+    if strcmp(cat(end-3:end),'.txt')
+        LIMO.data.Cat = load(cat);
+    else strcmp(cat(end-3:end),'.mat')
+        load(cat); LIMO.data.Cat = eval(cat(1:end-4));
+    end
 end
 
-if strcmp(cont(end-3:end),'.txt')
-    LIMO.data.Cont = load(cont);
-else strcmp(cont(end-3:end),'.mat')
-    load(cont); LIMO.data.Cont = eval(cont(1:end-4));
+if isnumeric(cont)
+    LIMO.data.Cont = cont;
+else
+    if strcmp(cont(end-3:end),'.txt')
+        LIMO.data.Cont = load(cont);
+    else strcmp(cont(end-3:end),'.mat')
+        load(cont); LIMO.data.Cont = eval(cont(1:end-4));
+    end
 end
 
 LIMO.Analysis                = defaults.analysis;
