@@ -147,6 +147,7 @@ if nargin == 4
     mkdir('limo_batch_report'); 
     mkdir(['LIMO_' STUDY.filename(1:end-6)]);
     study_root = [STUDY.filepath filesep ['LIMO_' STUDY.filename(1:end-6)]];
+    LIMO_files.LIMO = study_root;
 else
     current =pwd;
     mkdir('limo_batch_report')
@@ -158,12 +159,13 @@ end
 
 if strcmp(option,'model specification') || strcmp(option,'both')
     % quick check
-    if ~isempty(size(model.cat_files,1))
+    if ~isempty(model.cat_files)
         if size(model.cat_files,1) ~= size(model.set_files,1)
             error('the number of set and cat files disagree')
         end
     end
-    if ~isempty(size(model.cont_files,1))
+    
+    if ~isempty(model.cont_files)
         if size(model.cont_files,1) ~= size(model.set_files,1)
             error('the number of set and cat files disagree')
         end
@@ -179,18 +181,29 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         if nargin == 4
             mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
             root = [study_root filesep cell2mat(STUDY.names(subject))];
-            glm_name = ['GLM_' num2str(STUDY.design_index) model.defaults.analysis];
-            contrast.LIMO_files{subject} = [root filesep glm_name model.defaults.analysis filesep 'LIMO.mat']; 
+            glm_name = ['GLM' num2str(STUDY.design_index) '_' model.type '_' model.defaults.analysis];
+            contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
         else
             [root,~,~] = fileparts(model.set_files{subject});
             glm_name = ['GLM_' model.defaults.analysis];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
-        pipeline(subject).import.opt.cat = model.cat_files{subject};
-        pipeline(subject).import.opt.cont = model.cont_files{subject};
+        if ~isempty(model.cat_files)
+            pipeline(subject).import.opt.cat = model.cat_files{subject};
+        else
+            pipeline(subject).import.opt.cat = [];
+        end
+        if ~isempty(model.cont_files)
+            pipeline(subject).import.opt.cont = model.cont_files{subject};
+        else
+            pipeline(subject).import.opt.cont = [];
+        end
         pipeline(subject).import.opt.defaults = model.defaults;
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
-        
+        pipeline(subject).import.opt.defaults.type = model.type;
+        LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
+        LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
+       
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
         pipeline(subject).design.command = command;
@@ -208,13 +221,20 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
     end
     
-elseif strcmp(option,'contrast only') || strcmp(option,'both')
+end
+
+if strcmp(option,'contrast only') || strcmp(option,'both')
     
     for subject = 1:size(contrast.LIMO_files,1)
         command = 'limo_batch_contrast(files_in,opt.C)';
         pipeline(subject).contrast.command = command;
         pipeline(subject).contrast.files_in = contrast.LIMO_files{subject};
         pipeline(subject).contrast.opt.C = contrast.mat;
+        for c=1:size(contrast.mat,1)
+            name{c} = [root filesep glm_name filesep 'con_' num2str(c) '.mat'];
+        end
+        pipeline(subject).contrast.files_out = name{1};
+        LIMO_files.con{subject} = name;
     end
 end
 
@@ -229,8 +249,10 @@ catch
     N = size(contrast.LIMO_files,1);
 end
 
-if nargout == 1
-    LIMO_files = contrast.LIMO_files;
+LIMO_files.mat = LIMO_files.mat';
+LIMO_files.Beta = LIMO_files.Beta';
+if isfield(LIMO_files,'con')
+    LIMO_files.con = LIMO_files.con';
 end
 
 for subject = 1:N
@@ -240,10 +262,33 @@ for subject = 1:N
         report{subject} = ['subject ' num2str(subject) ' processed'];
     catch ME
         report{subject} = ['subject ' num2str(subject) ' failed'];
-        LIMO_files{subject} = [];
     end
 end
+
+% save as txt file the list of .set, Betas, LIMO and con
+if exist('STUDY','var')
+    cd(LIMO_files.LIMO)
+else
+    cd(current)
+end
+cell2csv('EEGLAB_set.txt',model.set_files)
+cell2csv('LIMO_files.txt', LIMO_files.mat)
+cell2csv('Beta_files.txt', LIMO_files.Beta)
+if isfield(LIMO_files,'con')
+    for c=1:size(contrast.mat,1)
+        index = 1;
+        for subject = 1:N
+            name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+            index = index + 1;
+        end
+        cell2csv('con_files.txt', name')
+    end   
+end
+
+% save the report from psom
 cd([current filesep 'limo_batch_report'])
-cell2csv('batch_report', report')
-cd(current); disp('LIMO batch processing done');
+cell2csv('batch_report.txt', report')
+
+cd(current)
+disp('LIMO batch processing done')
 

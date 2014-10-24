@@ -45,6 +45,8 @@ function limo_eeg(varargin)
 % HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 %
 % Cyril Pernet & Andrew Stewart v6 21/01/2014
+% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
+
 % ------------------------------------------
 % Copyright (C) LIMO Team 2014
 
@@ -201,14 +203,29 @@ switch varargin{1}
         % electrode time-frequency -  depending on declared analysis
         
         if strcmp(LIMO.Analysis,'Time')
-            Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+            if strcmp(LIMO.Type,'Components')
+                if isempty(EEG.icawinv)
+                    errordlg('ICA compoments not found, please compute in EEG 1st','ICA error')
+                else
+                    good_comp = find(EEG.reject.gcompreject==0);
+                    if isempty(good_comp)
+                       errordlg('all compoments are marked bad')
+                    else
+                       signal = eeg_getdatact(EEG,'component',good_comp);
+                       Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
+                       clear signal
+                    end
+                end
+            else
+                Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+            end
             clear EEG
             
         elseif strcmp(LIMO.Analysis,'Frequency')
             Y = EEG.etc.limo_psd(:,LIMO.data.trim1:LIMO.data.trim2,:);
             clear EEG
             
-        elseif strcmp(LIMO.Analysis,'Time-Frequency') 
+        elseif strcmp(LIMO.Analysis,'Time-Frequency')
             clear EEG; disp('Time-Frequency implementation - loading tf data...');
             Y = load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
             Y = getfield(Y,cell2mat(fieldnames(Y))); % take the actual data from the structure
@@ -354,7 +371,11 @@ switch varargin{1}
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
                     electrode = array(e); warning off;
-                    fprintf('analyzing electrode %g/%g \n',electrode,size(Yr,1));
+                    if strcmp(LIMO.Type,'Channels')
+                        fprintf('analyzing channel %g/%g \n',e,size(array,1));
+                    else
+                        fprintf('analyzing component %g/%g \n',e,size(array,1));
+                    end
                     if LIMO.Level == 2
                         Y = squeeze(Yr(electrode,:,:));
                         index = find(~isnan(Y(1,:)));

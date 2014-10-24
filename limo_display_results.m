@@ -38,6 +38,7 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
 % Andrew Stewart 10-11-2013 added options for spectral power and time-freq
 % Cyril Pernet 21-03-2014 made time-freq to work with the new display +
 % changed limo_stat values to take timne-freq
+% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
 % see also limo_stat_values topoplot
 % ----------------------------------
@@ -271,7 +272,11 @@ if LIMO.Level == 1
                         ax(3) = subplot(3,3,9);
                         
                         if strcmp(LIMO.Analysis,'Time')
-                            mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            if strcmp(LIMO.Type,'Components')
+                                mytitle2 = sprintf('time course @ \n component %g', e);
+                            else
+                                mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            end
                             plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
                         elseif strcmp(LIMO.Analysis,'Frequency')
                             mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
@@ -281,14 +286,21 @@ if LIMO.Level == 1
                         
                         % topoplot at max time
                         ax(2) = subplot(3,3,6);
-                        chans = LIMO.data.chanlocs;
-                        topoplot(toplot(:,f),chans,'maplimits','maxmin');
-                        if strcmp(LIMO.Analysis,'Time')
-                            title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
-                            set(gca,'XTickLabel', timevect);
-                        elseif strcmp(LIMO.Analysis,'Frequency')
-                            title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
-                            set(gca,'XTickLabel', LIMO.data.freqlist);
+                        if strcmp(LIMO.Type,'Components')
+                            EEG=pop_loadset([LIMO.data.data_dir LIMO.data.data]);
+                            opt = {'maplimits','absmax','electrodes','off','verbose','off'};
+                            topoplot(toplot(:,f),EEG.chanlocs,opt{:});
+                            
+                        else
+                            chans = LIMO.data.chanlocs;
+                            topoplot(toplot(:,f),chans,'maplimits','maxmin','verbose','off');
+                            if strcmp(LIMO.Analysis,'Time')
+                                title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
+                                set(gca,'XTickLabel', timevect);
+                            elseif strcmp(LIMO.Analysis,'Frequency')
+                                title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
+                                set(gca,'XTickLabel', LIMO.data.freqlist);
+                            end
                         end
                         
                         % update with mouse clicks
@@ -721,7 +733,7 @@ if LIMO.Level == 1
             % timing /frequency info
             % -----------------------
             if strcmp(LIMO.Analysis,'Time')
-                timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+                timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; 
             elseif strcmp(LIMO.Analysis,'Frequency')
                 freqvect=LIMO.data.freqlist';
             elseif strcmp(LIMO.Analysis,'Time-Frequency')
@@ -2076,8 +2088,8 @@ elseif LIMO.Level == 2
                 n = size(Data,2);
                 if strcmp(extra,'Original')
                     for time_or_freq=1:size(Data,1)
-                        avg(time,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
-                        S(time,:,:) = cov(squeeze(Data(time_or_freq,:,:)));
+                        avg(time_or_freq,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
+                        S(time_or_freq,:,:) = cov(squeeze(Data(time_or_freq,:,:)));
                     end
                     if e>1
                         mytitle = sprintf('Original %s \n electrode %s (%g)',mytitle,LIMO.data.chanlocs(electrode).labels,electrode);
@@ -2094,7 +2106,7 @@ elseif LIMO.Level == 2
                         v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
                         [~,reorder] = sort(indices);
                         for j = 1:size(Data,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
-                        S(time,:,:) = cov(SD); % winsorized covariance
+                        S(time_or_freq,:,:) = cov(SD); % winsorized covariance
                     end
                     if e>1
                         mytitle = sprintf('Trimmed %s \n electrode %s (%g)',mytitle,LIMO.data.chanlocs(electrode).labels,electrode);
@@ -2106,10 +2118,10 @@ elseif LIMO.Level == 2
                 % CI
                 df = rank(C);
                 dfe = size(Data,2)-size(Data,3)+1;
-                % c = avg + 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time,:,:))*C'))); % uses Bonferoni inequality
-                % b = avg - 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time,:,:))*C')));
-                c = avg + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time,:,:))*C'));
-                b = avg - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time,:,:))*C'));
+                % c = avg + 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'))); % uses Bonferoni inequality
+                % b = avg - 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C')));
+                c = avg + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
+                b = avg - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
                 
                 if LIMO.analysis_flag == 1
                     timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in ms
@@ -2125,11 +2137,11 @@ elseif LIMO.Level == 2
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis,'Time')
                     plot(timevect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Time in ms','FontSize',14)
                     ylabel('Amplitude (A.U.)','FontSize',14)
-                elseif LIMO.analysis_flag == 2
+                elseif strcmp(LIMO.Analysis,'Frequency')
                     plot(freqvect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Frequency in Hz','FontSize',14)
                     ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -2472,14 +2484,17 @@ elseif strcmp(LIMO.Analysis,'Frequency')
 end
 
 if LIMO.Level == 1
-    for i = 1 : length(LIMO.data.chanlocs)
-        try
-            label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-        catch ME
-            label_electrodes{i} = LIMO.data.chanlocs(i).labels;
+    if strcmp(LIMO.data.chanlocs,'Components')
+        label_electrodes = [];
+    else
+        for i = 1 : length(LIMO.data.chanlocs)
+            try
+                label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
+            catch ME
+                label_electrodes{i} = LIMO.data.chanlocs(i).labels;
+            end
         end
     end
-    
 else
     if isempty(LIMO.design.electrode)
         for i = 1 : length(LIMO.data.chanlocs)

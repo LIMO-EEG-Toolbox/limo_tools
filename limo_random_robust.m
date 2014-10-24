@@ -9,7 +9,7 @@ function limo_random_robust(varargin)
 % FORMAT limo_random_robust(test,data,label,nboot,tfce)
 %
 % INPUTS --- note that a LIMO.mat is also expected in the current directory
-%            see limo_random_robust
+%            see limo_random_select
 %
 % limo_random_robust(1,y,parameter number,nboot,tfce)
 %                    1 = a one-sample t-test
@@ -886,16 +886,16 @@ switch type
             boot_table = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect_1 = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
             X = LIMO.design.X(:,1:end-1);
-            if exist('parfor','file')
-                parfor b=1:LIMO.design.bootstrap
-                    for e=1:size(array,1)
-                        electrode = array(e); fprintf('processing electrode %g \n,',electrode);
-                        [F(electrode,:), p(electrode,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,boot_table{electrode}(:,b)),X,20); % no intercept in this model
-                    end
-                    H0_Condition_effect_1(:,:,1,b) = F;
-                    H0_Condition_effect_1(:,:,2,b) = p;
-                end
-            else
+%             if exist('parfor','file')
+%                 parfor b=1:LIMO.design.bootstrap
+%                     for e=1:size(array,1)
+%                        %  electrode = array(e); fprintf('processing electrode %g \n,',electrode);
+%                        %  [F(electrode,:), p(electrode,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,boot_table{electrode}(:,b)),X,20)); % no intercept in this model
+%                     end
+%                     H0_Condition_effect_1(:,:,1,b) = F;
+%                     H0_Condition_effect_1(:,:,2,b) = p;
+%                 end
+%             else
                 for b=1:LIMO.design.bootstrap
                     for electrode=1:size(array,1)
                         e = array(electrode); index = find(~isnan(squeeze(data(e,1,:)))); X = LIMO.design.X(index,1:end-1);
@@ -905,7 +905,7 @@ switch type
                         end
                     end
                 end
-            end
+ %           end
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC'); H0_Condition_effect_1 = limo_tf_5d_reshape(H0_Condition_effect_1); end
             save H0_Condition_effect_1 H0_Condition_effect_1
@@ -1406,7 +1406,7 @@ switch type
 end
 
 % close parallel processing
-if exist('parfor','file') ~=0
-    matlabpool close
-end
+% if exist('parfor','file') ~=0
+%     matlabpool close
+% end
 

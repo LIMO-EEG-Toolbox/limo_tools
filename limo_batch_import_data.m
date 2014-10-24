@@ -6,6 +6,9 @@ EEG=pop_loadset(setfile);
 LIMO.dir                    = defaults.name;
 LIMO.data.data              = [name ext];
 LIMO.data.data_dir          = root;
+try
+LIMO.data.cluster           = defaults.icaclustering;
+end
 LIMO.data.sampling_rate     = EEG.srate;
 if isfield(defaults,'chanlocs')
     LIMO.data.chanlocs      = defaults.chanlocs;
@@ -160,7 +163,9 @@ else
     end
 end
 
+
 LIMO.Analysis                = defaults.analysis;
+LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
 LIMO.design.method           = defaults.method;
 LIMO.design.type_of_analysis = defaults.type_of_analysis;

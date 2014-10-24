@@ -409,13 +409,13 @@ try
     % no matter the analysis we have Beta, Yhat, Res - create them all here
     % also R2 for univariate analyses - also test if memory hold for tmp
     % files to be created in limo_eeg 
-    Yhat  = zeros(size(Yr,1),size(Yr,2),size(Yr,3));
-    Res   = zeros(size(Yr,1),size(Yr,2),size(Yr,3));
-    Betas = zeros(size(Yr,1),size(Yr,2),size(X,2));
+    Yhat  = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
+    Res   = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
+    Betas = NaN(size(Yr,1),size(Yr,2),size(X,2));
     
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = zeros(size(Yr,1),size(Yr,2),3); save R2 R2;
+        R2 = NaN(size(Yr,1),size(Yr,2),3); save R2 R2;
     end
     
     % these ones will be created in limo_eeg

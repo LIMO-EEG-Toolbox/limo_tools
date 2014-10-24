@@ -53,6 +53,7 @@ end
 handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
+handles.ica                 = 0;
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'OLS';
 handles.rate                = [];
@@ -108,6 +109,19 @@ if FilterIndex ~= 0
 end
 guidata(hObject, handles);
 
+
+% --- Executes on button press in use_ica.
+function use_ica_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.ica = 1;
+    disp('using independent components rather than scalp data');
+elseif M == 0
+    handles.ica = 0;
+    disp('ica import is off');
+    set(handles.TFCE,'Enable','off')
+end
+guidata(hObject, handles);
 
 % get the starting point of the analysis
 % ---------------------------------------------------------------
@@ -406,6 +420,13 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont;  
 LIMO.data.start               = handles.start;
 LIMO.data.end                 = handles.end ;
+
+if handles.ica == 1
+    LIMO.Type = 'Components';
+else
+    LIMO.Type = 'Channels';
+end
+
 if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
 else

@@ -130,6 +130,7 @@ elseif strcmp(quest,'Set')   % from a set of subjects
             cd(current_dir); % go back to pwd...
         else
             go = 0;
+            cd(path)
             if strcmp(name(end-3:end),'.txt')
                 name = importdata(name);
             elseif strcmp(name(end-3:end),'.mat')
@@ -208,7 +209,11 @@ elseif strcmp(quest,'Set')   % from a set of subjects
             
             new_chans = setdiff(tmp, ref_chan_labs);
             if isempty(new_chans)
-                counter  = counter + ismember(ref_chan_labs, tmp);
+                try
+                    counter  = counter + ismember(ref_chan_labs, tmp);
+                catch
+                    counter  = counter + ismember(ref_chan_labs, tmp)';
+                end
             else
                 ref_chan_labs = [ref_chan_labs;new_chans']; % add channel
                 try
