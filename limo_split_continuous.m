@@ -59,20 +59,21 @@ end
 
 if size(CAT,2) ~=1; CAT = CAT'; end
 if size(CONT,2) ~=1; CONT = CONT'; end
-if length(unique(CAT)) > length(unique(CONT))
-    disp('Categorical and continuous regressors likely inverted - reversing them')
-    tmp = CAT; CAT=CONT; CONT=tmp; clear tmp
-end
+% if length(unique(CAT)) > length(unique(CONT))
+%     disp('Categorical and continuous regressors likely inverted - reversing them')
+%     tmp = CAT; CAT=CONT; CONT=tmp; clear tmp
+% end
 
 %% DO THE STUFF
 cat_index = unique(CAT);
-% new_cat = zeros(length(CAT),length(unique(CAT)));
-new_cont = zeros(length(CAT),length(unique(CAT)));
-for n=1:length(unique(CAT))
+cat_index(isnan(cat_index)) = [];
+N = length(cat_index);
+new_cont = zeros(length(CAT),N);
+for n=1:N
     tmp = zscore(CONT(CAT==cat_index(n)));
     new_cont(CAT==cat_index(n),n) = tmp;
-    % new_cat(CAT==cat_index(n),n) = 1;
 end
+new_cont(find(isnan(CAT)),:) = NaN;
 
 % figure('Name','Design')
 % imagesc([new_cat new_cont]); 

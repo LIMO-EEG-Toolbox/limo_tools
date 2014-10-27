@@ -48,11 +48,13 @@ if strcmp(LIMO.Analysis,'Time')
         clear EEG
     end
 elseif strcmp(LIMO.Analysis,'Frequency')
+    % if IC recompute the psd of combined IC
     Y = EEG.etc.limo_psd(:,LIMO.data.trim1:LIMO.data.trim2,:);
     clear EEG
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
     clear EEG; disp('Time-Frequency implementation - loading tf data...');
+    % if IC recompute the ersp of combined IC
     try
         Y = load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
     catch no_file

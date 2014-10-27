@@ -95,8 +95,12 @@ switch type
             array = find(~isnan(Y(:,1,1))); % skip empty electrodes
             for e = 1:length(array)
                 electrode = array(e); warning off;
-                fprintf('analyzing electrode %g/%g \n',electrode,size(Y,1));
-                
+                if strcmp(LIMO.Type,'Channels')
+                    fprintf('analyzing channel %g/%g \n',e,size(array,1));
+                else
+                    fprintf('analyzing component %g/%g \n',e,size(array,1));
+                end
+                                
                 % T contrast
                 % -----------
                 if Test == 0
