@@ -17,8 +17,10 @@ function channeighbstructmat = limo_expected_chanlocs(varargin)
 % neighbourhood matrix
 %
 % channeighbstructmat is the neighbourhood matrix
-%
+% 
 % See also LIMO_NEIGHBOURDIST LIMO_GET_CHANNEIGHBSTRUCMAT
+% similar version from eeglab [STUDY neighbors] = std_prepare_neighbors( STUDY, ALLEEG, 'key', val)
+% see also eeg_mergelocs 
 %
 % Guillaume Rousselet v1 11 June 2010
 % Rewritten by Cyril Pernet so we don't have to know which subject has the

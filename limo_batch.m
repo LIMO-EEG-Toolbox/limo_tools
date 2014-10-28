@@ -178,16 +178,21 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
+        pipeline(subject).import.opt.defaults = model.defaults;
+        pipeline(subject).import.opt.defaults.type = model.type;
+
         if nargin == 4
             mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
             root = [study_root filesep cell2mat(STUDY.names(subject))];
             glm_name = ['GLM' num2str(STUDY.design_index) '_' model.type '_' model.defaults.analysis];
             contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
+            pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
             glm_name = ['GLM_' model.defaults.analysis];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
+        
         if ~isempty(model.cat_files)
             pipeline(subject).import.opt.cat = model.cat_files{subject};
         else
@@ -198,9 +203,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         else
             pipeline(subject).import.opt.cont = [];
         end
-        pipeline(subject).import.opt.defaults = model.defaults;
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
-        pipeline(subject).import.opt.defaults.type = model.type;
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
         LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
        

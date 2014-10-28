@@ -7,7 +7,6 @@ function [limo_psd,limo_psd_freqlist] = limo_power_spec_from_erp(EEG,options)
 %          option.maxfreq maximum of the frequency to be kept (default 50Hz)
 %          option.winsize is length of the window in data points (default EEG.srate)
 %          option.power_dataset_savename [EEG.setname '_power.set']
-%          option.logtrials
 %          option.ica
 %
 % OUTPUTS  limo_psd the actual PSD (3D array of electrodes x psd freq bins x epochs)
@@ -48,7 +47,7 @@ end
     for t=1:EEG.trials
         fprintf('computing single trial PSD for trial %g/%g\n',t,EEG.trials)
         %if data
-         [powerdata_here,limo_psd_freqlist] = spectopo(EEG.data(:,:,t),0,EEG.srate,'logtrials', 'on','chanloc',EEG.chanlocs,'winsize',winsize,'plot','off');
+         [powerdata_here,limo_psd_freqlist] = spectopo(EEG.data(:,:,t),0,EEG.srate,'chanloc',EEG.chanlocs,'winsize',winsize,'plot','off');
         %if ica
         
         % note - spectopo runs on all freqs up to sr/2, not just our range

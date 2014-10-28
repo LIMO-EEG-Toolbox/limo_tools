@@ -6,16 +6,24 @@ EEG=pop_loadset(setfile);
 LIMO.dir                    = defaults.name;
 LIMO.data.data              = [name ext];
 LIMO.data.data_dir          = root;
-try
+LIMO.data.sampling_rate     = EEG.srate;
+
+% optional fields using by EEGLAB study
+if isfield(defaults,'icaclustering')
 LIMO.data.cluster           = defaults.icaclustering;
 end
-LIMO.data.sampling_rate     = EEG.srate;
+
 if isfield(defaults,'chanlocs')
     LIMO.data.chanlocs      = defaults.chanlocs;
 else
     LIMO.data.chanlocs      = EEG.chanlocs;
 end
 
+if isfield(defaults,'studyinfo')
+    LIMO.data.studyinfo    = defaults.studyinfo; % same as STUDY.design(design_index).variable;
+end
+
+% update according to the type of data
 if strcmp(defaults.analysis,'Time') 
     
     % start

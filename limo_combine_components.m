@@ -6,7 +6,7 @@ function combined_ica = limo_combine_components(varargin)
 %
 % INPUT data a 3D matrix representing set of components 
 %            dim compoments*time frames*epochs
-%       weights are the rows from EEG.icawinv
+%       weights are the columns from EEG.icawinv
 %       method 'sum'
 %
 % OUTPUT combined_ica is the weighted average of comnponents
@@ -36,8 +36,12 @@ switch method
     
     %------
     case {'sum'}
-
+        
         W = sqrt(sum(weights.^2,2));
+        
+    case ('max')
+        
+        % [V,loc]= max(sum(weights.^2,2));
 end
 
 combined_ica = mean(data.*repmat(W,[1,size(data,2),size(data,3)]),1);
