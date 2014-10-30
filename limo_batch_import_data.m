@@ -1,48 +1,84 @@
 function limo_batch_import_data(setfile,cat,cont,defaults)
+
+% routine to import 
+%
+% FORMAT limo_batch_import_data(setfile,cat,cont,defaults)
+% 
+% INPUT setfile is a an EEG files .set to be loaded
+%       cat and cont are either numeric or txt or mat files
+%               corresponding to the regressors in the model
+%       defaults is a structure specifying all the parameters
+%                to use in the GLM (ie set in LIMO.mat)
+% 
+% OUTPUT create a LIMO.mat with the relevant info in the subject
+%        directory specified in the defaults -- importantly if 
+%        some info are not in the default, it tries to read it from
+%        the EEG.set file, from EEG.etc
+%
+% see also limo_batch 
+%% -----------------------------
+% Copyright (C) LIMO Team 2014
+
 global EEG
 
-EEG=pop_loadset(setfile);
-[root,name,ext] = fileparts(setfile); 
-LIMO.dir                    = defaults.name;
-LIMO.data.data              = [name ext];
-LIMO.data.data_dir          = root;
-LIMO.data.sampling_rate     = EEG.srate;
+EEG                          = pop_loadset(setfile);
+[root,name,ext]              = fileparts(setfile); 
+LIMO.dir                     = defaults.name;
+LIMO.data.data               = [name ext];
+LIMO.data.data_dir           = root;
+LIMO.data.sampling_rate      = EEG.srate;
+LIMO.Analysis                = defaults.analysis;
+LIMO.Type                    = defaults.type;
+LIMO.design.zscore           = defaults.zscore;
+LIMO.design.method           = defaults.method;
+LIMO.design.type_of_analysis = defaults.type_of_analysis;
+LIMO.design.fullfactorial    = defaults.fullfactorial;
+LIMO.design.bootstrap        = defaults.bootstrap;
+LIMO.design.tfce             = defaults.tfce;
+LIMO.Level                   = 1;
 
-% optional fields using by EEGLAB study
+% optional fields for EEGLAB study
 if isfield(defaults,'icaclustering')
-LIMO.data.cluster           = defaults.icaclustering;
+    LIMO.data.cluster = defaults.icaclustering;
 end
 
 if isfield(defaults,'chanlocs')
-    LIMO.data.chanlocs      = defaults.chanlocs;
+    LIMO.data.chanlocs = defaults.chanlocs;
 else
-    LIMO.data.chanlocs      = EEG.chanlocs;
+    LIMO.data.chanlocs = EEG.chanlocs;
 end
 
 if isfield(defaults,'studyinfo')
-    LIMO.data.studyinfo    = defaults.studyinfo; % same as STUDY.design(design_index).variable;
+    LIMO.data.studyinfo = defaults.studyinfo; % same as STUDY.design(design_index).variable;
 end
 
 % update according to the type of data
 if strcmp(defaults.analysis,'Time') 
     
+    if ~isfield(EEG.etc,'timeerp')
+        disp('the fied EEG.etc.timeerp is missing using the default EEG.times');
+        timevect = EEG.times;
+    else
+        timevect = EEG.etc.timeerp;
+    end
+    
     % start
     if isempty(defaults.start)
-        LIMO.data.start = min(EEG.times);
+        LIMO.data.start = timevect(1);
         LIMO.data.trim1 = 1;    
-    elseif defaults.start < min(EEG.times)
-        error(['The earliest time possible is:',num2str(EEG.times(1)),'ms']);
+    elseif defaults.start < min(timevect)
+        error(['The earliest time possible is:',num2str(timevect(1)),'ms']);
         return
     else
-        [~,position]=min(abs(EEG.times - defaults.start));
-        LIMO.data.start = EEG.times(position);
+        [~,position]=min(abs(timevect - defaults.start));
+        LIMO.data.start = timevect(position);
         LIMO.data.trim1 = position;
     end
     
     % end
     if isempty(defaults.end)
-        LIMO.data.start = max(EEG.times);
-        LIMO.data.trim2 = length(EEG.times);    
+        LIMO.data.start = timevect(end);
+        LIMO.data.trim2 = length(timevect);    
     elseif defaults.end > max(EEG.times)
         error(['The latest time possible is:',num2str(EEG.times(end)),'ms']);
         return
@@ -54,103 +90,109 @@ if strcmp(defaults.analysis,'Time')
     
 elseif strcmp(defaults.analysis,'Frequency') 
     
+    if ~isfield(EEG.etc,'freqspec')
+        error('can''t import spectrum the fied EEG.etc.freqspec (all freq computed) is missing')
+    else
+        freqvect = EEG.etc.freqspec;
+    end
+
     % start
     if isempty(defaults.lowf)
-        LIMO.data.start = EEG.etc.limo_psd_freqlist(1);
+        LIMO.data.start = freqvect(1);
         LIMO.data.trim1 = 1;
-    elseif defaults.lowf < EEG.etc.limo_psd_freqlist(1)
-        error(['The lowest frequency possible is:',num2str(EEG.etc.limo_psd_freqlist(1))]);
+    elseif defaults.lowf < freqvect(1)
+        error(['The lowest frequency possible is:',num2str(freqvect(1))]);
         return
     else
-        [~,position] = min(abs(EEG.etc.limo_psd_freqlist-defaults.lowf));
-        LIMO.data.start = EEG.etc.limo_psd_freqlist(position);
+        [~,position] = min(abs(freqvect-defaults.lowf));
+        LIMO.data.start = freqvect(position);
         LIMO.data.trim1 = position; 
     end
     
     % end
     if isempty(defaults.highf)
-        LIMO.data.end = EEG.etc.limo_psd_freqlist(end);
-        LIMO.data.trim2 = 1;
-    elseif defaults.highf > EEG.etc.limo_psd_freqlist(end)
-        error(['The highest frequency possible is:',num2str(EEG.etc.limo_psd_freqlist(end))]);
+        LIMO.data.end = freqvect(end);
+        LIMO.data.trim2 = numel(freqvect);
+    elseif defaults.highf > freqvect(end)
+        error(['The highest frequency possible is:',num2str(freqvect(end))]);
         return
     else
-        [~,position] = min(abs(EEG.etc.limo_psd_freqlist-defaults.highf));
-        LIMO.data.end = EEG.etc.limo_psd_freqlist(position);
+        [~,position] = min(abs(freqvect-defaults.highf));
+        LIMO.data.end = freqvect(position);
         LIMO.data.trim2 = position; 
     end
     
-    LIMO.data.freqlist = EEG.etc.limo_psd_freqlist(LIMO.data.trim1:LIMO.data.trim2);
-
+    LIMO.data.freqlist = freqvect(LIMO.data.trim1:LIMO.data.trim2);
 
 elseif strcmp(defaults.analysis,'Time-Frequency')
     
-    LIMO.data.tf_data_filepath = EEG.etc.tf_path;
-    if ~exist(EEG.etc.tf_path,'file')
-        cd(LIMO.data.data_dir)
-        [p,f,e]=fileparts(EEG.etc.tf_path);
-        if exist([pwd filesep f e])
-            LIMO.data.tf_data_filepath = [pwd filesep f e];
-        end
+    if ~isfield(EEG.etc,'freqersp')
+        error('can''t import ersp the fied EEG.etc.freqsersp (all freq computed) is missing')
+    elseif ~isfield(EEG.etc,'timeersp')
+        error('can''t import ersp the fied EEG.etc.timeersp (all times computed) is missing')
+    else
+        timevect = EEG.etc.timeersp;
+        freqvect = EEG.etc.freqersp;
     end
-    
+       
     % start
     if isempty(defaults.start)
-        LIMO.data.start = min(EEG.etc.tf_times);
+        LIMO.data.start = timevect(1);
         LIMO.data.trim1 = 1;    
-    elseif defaults.start < min(EEG.etc.tf_times)
-        error(['The earliest time possible is:',num2str(EEG.etc.tf_times(1)),'ms']);
+    elseif defaults.start < min(timevect)
+        error(['The earliest time possible is:',num2str(timevect(1)),'ms']);
         return
     else
-        [~,position]=min(abs(EEG.etc.tf_times - defaults.start));
-        LIMO.data.start = EEG.etc.tf_times(position);
-        LIMO.data.trim1 =  find(EEG.etc.tf_times == LIMO.data.start);
+        [~,position]=min(abs(timevect - defaults.start));
+        LIMO.data.start = timevect(position);
+        LIMO.data.trim1 =  find(timevect == LIMO.data.start);
     end
     
     % end
     if isempty(defaults.end)
-        LIMO.data.end = max(EEG.etc.tf_times);
-        LIMO.data.trim2 = length(EEG.etc.tf_times);    
-    elseif defaults.end > max(EEG.etc.tf_times)
-        error(['The latest time possible is:',num2str(EEG.etc.tf_times(end)),'ms']);
+        LIMO.data.end = timevect(end);
+        LIMO.data.trim2 = length(timevect);    
+    elseif defaults.end > max(timevect)
+        error(['The latest time possible is:',num2str(timevect(end)),'ms']);
         return
     else
-        [~,position]=min(abs(EEG.etc.tf_times - defaults.end));
-        LIMO.data.end = EEG.etc.tf_times(position);
-        LIMO.data.trim2 =  find(EEG.etc.tf_times == LIMO.data.end);
+        [~,position]=min(abs(timevect - defaults.end));
+        LIMO.data.end = timevect(position);
+        LIMO.data.trim2 =  position;
     end
 
-    LIMO.data.tf_times = EEG.etc.tf_times(LIMO.data.trim1:LIMO.data.trim2);
+    LIMO.data.tf_times = timevect(LIMO.data.trim1:LIMO.data.trim2);
 
     % start
     if isempty(defaults.lowf)
-        LIMO.data.lowf = EEG.etc.tf_freqs(1);
-        LIMO.data.trim_low_f = 1;
-    elseif defaults.lowf < EEG.etc.tf_freqs(1)
-        error(['The lowest frequency possible is:',num2str(EEG.etc.tf_freqs(1))]);
+        LIMO.data.lowf = freqvect(1);
+        LIMO.data.trim_lowf = 1;
+    elseif defaults.lowf < freqvect(1)
+        error(['The lowest frequency possible is:',num2str(freqvect(1))]);
         return
     else
-        [~,position] = min(abs(EEG.etc.tf_freqs-defaults.lowf));
-        LIMO.data.lowf = EEG.etc.limo_psd_freqlist(position);
+        [~,position] = min(abs(freqvect-defaults.lowf));
+        LIMO.data.lowf = freqvect(position);
         LIMO.data.trim_low_f = position; 
     end
     
     % end
     if isempty(defaults.highf)
-        LIMO.data.highf = EEG.etc.tf_freqs(end);
-        LIMO.data.trim_high_f = 1;
-    elseif defaults.highf > EEG.etc.tf_freqs(end)
-        error(['The highest frequency possible is:',num2str(EEG.etc.tf_freqs(end))]);
+        LIMO.data.highf = freqvect(end);
+        LIMO.data.trim_highf = length(freqvect);
+    elseif defaults.highf > freqvect(end)
+        error(['The highest frequency possible is:',num2str(freqvect(end))]);
         return
     else
-        [~,position] = min(abs(EEG.etc.tf_freqs-defaults.highf));
-        LIMO.data.hightf = EEG.etc.tf_freqs(position);
+        [~,position] = min(abs(freqvect-defaults.highf));
+        LIMO.data.hightf = freqvect(position);
         LIMO.data.trim_high_f = position; 
     end
     
-    LIMO.data.tf_freqs = EEG.etc.tf_freqs(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
+    LIMO.data.tf_freqs = freqvect(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
 end
 
+% deal with categorical and continuous regressors
 if isnumeric(cat)
     LIMO.data.Cat = cat;
 else
@@ -172,15 +214,6 @@ else
 end
 
 
-LIMO.Analysis                = defaults.analysis;
-LIMO.Type                    = defaults.type;
-LIMO.design.zscore           = defaults.zscore;
-LIMO.design.method           = defaults.method;
-LIMO.design.type_of_analysis = defaults.type_of_analysis;
-LIMO.design.fullfactorial    = defaults.fullfactorial;
-LIMO.design.bootstrap        = defaults.bootstrap;
-LIMO.design.tfce             = defaults.tfce;
-LIMO.Level                   = 1;
 cd(LIMO.dir); save LIMO LIMO; cd ..
 
 end

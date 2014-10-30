@@ -177,7 +177,7 @@ else
     end
     
     handles.end           = closest_highf;
-    handles.trim_highf    = ind; % gives the 1st column to start the analysis
+    handles.trim_highf    = ind; % gives the 1st column to end the analysis
 end
 guidata(hObject, handles);
 

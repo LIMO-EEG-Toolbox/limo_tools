@@ -15,8 +15,121 @@ end
 
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
-        signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+        if isfield(EEG.etc.datafiles,'icaerp')
+            for d=1:length(EEG.etc.datafiles.icaerp)
+                signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaerp(d)));
+                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+            end
+            signal = limo_concatcells(signal);
+        else
+            signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+        end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
+        if isfield(LIMO.data,'cluster')
+            try
+                STUDY = evalin('base','STUDY');
+            catch
+                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
+            end
+            nb_clusters = size(STUDY.cluster(1).child,2);
+            nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
+            Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+            current_subject = find(cellfun(@strcmp, {STUDY.datasetinfo.filepath}',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
+            newY = NaN(nb_clusters,size(Y,2),size(Y,3));
+            for c=1:nb_clusters
+                n = length(Cluster_matrix.clust(c).subj);
+                tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
+                if ~isempty(tmp)
+                    which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
+                    if length(which_ics)==1
+                        newY(c,:,:) =  Y(which_ics,:,:);
+                    else
+                        newY(c,:,:) = limo_combine_components(Y,EEG.icaweights,EEG.icawinv,which_ics);
+                    end
+                end
+            end
+            Y = newY; clear newY;
+        end
+    else % channels
+        if isfield(EEG.etc.datafiles,'daterp')
+            for d=1:length(EEG.etc.datafiles.daterp)
+                Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.daterp(d)));
+                if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+            end
+            Y = limo_concatcells(Y);
+        else
+            disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEG.data')
+            Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
+        end
+        clear EEG
+    end
+    
+elseif strcmp(LIMO.Analysis,'Frequency')
+    
+    if strcmp(LIMO.Type,'Components')
+        if isfield(EEG.etc.datafiles,'icaspec')
+            for d=1:length(EEG.etc.datafiles.icaspec)
+                signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaspec(d)));
+                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+            end
+            signal = limo_concatcells(signal);
+        else
+            signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+        end
+        Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
+        if isfield(LIMO.data,'cluster')
+            try
+                STUDY = evalin('base','STUDY');
+            catch
+                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
+            end
+            nb_clusters = size(STUDY.cluster(1).child,2);
+            nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
+            Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+            current_subject = find(cellfun(@strcmp, {STUDY.datasetinfo.filepath}',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
+            newY = NaN(nb_clusters,size(Y,2),size(Y,3));
+            for c=1:nb_clusters
+                n = length(Cluster_matrix.clust(c).subj);
+                tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
+                if ~isempty(tmp)
+                    which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
+                    if length(which_ics)==1
+                        newY(c,:,:) =  Y(which_ics,:,:);
+                    else
+                        newY(c,:,:) = limo_combine_components(Y,EEG.icaweights,EEG.icawinv,which_ics);
+                    end
+                end
+            end
+            Y = newY; clear newY;
+        end
+    else % channels
+        if isfield(EEG.etc.datafiles,'datspec')
+            for d=1:length(EEG.etc.datafiles.datspec)
+                Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.datspec(d)));
+                if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+            end
+            Y = limo_concatcells(Y); clear EEG
+        else
+            error('the field EEG.etc.datspec pointing to the data is missing')
+        end
+    end
+    
+elseif strcmp(LIMO.Analysis,'Time-Frequency')
+    disp('Time-Frequency implementation - loading tf data...');
+    
+    if strcmp(LIMO.Type,'Components')
+        if isfield(EEG.etc.datafiles,'icatimef')
+            for d=1:length(EEG.etc.datafiles.icatimef)
+                signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icatimef(d)));
+                if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
+            end
+            signal = limo_concatcells(signal);
+        else
+            signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+        end
+        Y = signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
         if isfield(LIMO.data,'cluster')
             try
                 STUDY = evalin('base','STUDY');
@@ -35,34 +148,27 @@ if strcmp(LIMO.Analysis,'Time')
                 if ~isempty(tmp)
                     which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
                     if length(which_ics)==1
-                        newY(c,:,:) =  Y(which_ics,:,:);
+                        newY(c,:,:,:) =  Y(which_ics,:,:);
                     else
-                        newY(c,:,:) = limo_combine_components(Y(which_ics,:,:),EEG.icawinv(:,which_ics));
+                        newY(c,:,:,:) = limo_combine_components(Y,EEG.icaweights,EEG.icawinv,which_ics);
                     end
                 end
             end
             Y = newY; clear newY;
         end
-    else
-        Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
-        clear EEG
+    else % channels
+        if isfield(EEG.etc.datafiles,'dattimef')
+            for d=1:length(EEG.etc.datafiles.dattimef)
+                Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.dattimef(d)));
+                if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+            end
+            Y = limo_concatcells(Y);
+            clear EEG
+        else
+            error('the field EEG.etc.dattimef pointing to the data is missing')
+        end
     end
-elseif strcmp(LIMO.Analysis,'Frequency')
-    % if IC recompute the psd of combined IC
-    Y = EEG.etc.limo_psd(:,LIMO.data.trim1:LIMO.data.trim2,:);
-    clear EEG
     
-elseif strcmp(LIMO.Analysis,'Time-Frequency')
-    clear EEG; disp('Time-Frequency implementation - loading tf data...');
-    % if IC recompute the ersp of combined IC
-    try
-        Y = load(LIMO.data.tf_data_filepath);  % Load tf data from path in *.set from import stage
-    catch no_file
-          error(sprintf('oops look like the time frequency data cannot be located \n edit LIMO.data.tf_data_filepath for %s',LIMO.data.data));
-          return
-    end
-    Y = getfield(Y,cell2mat(fieldnames(Y))); % take the actual data from the structure
-    Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); % trim
     LIMO.data.size4D= size(Y);
     LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
 end

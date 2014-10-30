@@ -43,12 +43,12 @@ function LIMO_files = limo_batch(varargin)
 % The pipeline system for Octave and Matlab (PSOM): a lightweight scripting framework and
 % execution engine for scientific workflows. Front. Neuroinform. 6:7.
 % doi: 10.3389/fninf.2012.00007
-% -----------------------------
-% Copyright (C) LIMO Team 2014
-
+%
 % Cyril Pernet and Nicolas Chauveau 2012
 % CP 24-06-2013 updated to be even more automatic + fix for new designs
 % Cyril Pernet May 2014 - redesigned it using psom
+% -----------------------------
+% Copyright (C) LIMO Team 2014
 
 
 opt.mode = 'session'; % run in the current session -- see psom for other options

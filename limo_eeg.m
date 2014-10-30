@@ -46,7 +46,7 @@ function limo_eeg(varargin)
 %
 % Cyril Pernet & Andrew Stewart v6 21/01/2014
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
-
+%
 % ------------------------------------------
 % Copyright (C) LIMO Team 2014
 
