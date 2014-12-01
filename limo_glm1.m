@@ -71,6 +71,9 @@ if nargin == 2
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
+    if strcmp(varargin{2}.Analysis,'Time-Frequency') && strcmp(method,'WLS')
+        method = 'WLS-TF'; % trick for concatenated TF data
+    end
 elseif nargin == 6
     Y               = varargin{1};
     X               = varargin{2};
@@ -118,11 +121,13 @@ if nb_factors == 1   %  1-way ANOVA
         W = ones(size(Y,1),1);
         Betas = pinv(X)*Y;
     elseif strcmp(method,'WLS')
-        if strcmp(LIMO.Analysis,'Time-Frequency')
-            
-        else
-            [Betas,W] = limo_WLS(X,Y);
-        end
+        [Betas,W] = limo_WLS(X,Y);
+    elseif strcmp(method,'WLS-TF')
+        % unpack the data
+        
+        % get estimates
+        [Betas,W] = limo_WLS(X,Y);
+        % concatenate again
     elseif strcmp(method,'IRLS')
         [Betas,W] = limo_IRLS(X,Y);
     end

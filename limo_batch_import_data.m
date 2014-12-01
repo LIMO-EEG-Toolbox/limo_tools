@@ -35,6 +35,7 @@ LIMO.design.type_of_analysis = defaults.type_of_analysis;
 LIMO.design.fullfactorial    = defaults.fullfactorial;
 LIMO.design.bootstrap        = defaults.bootstrap;
 LIMO.design.tfce             = defaults.tfce;
+LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
 
 % optional fields for EEGLAB study

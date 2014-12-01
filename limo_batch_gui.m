@@ -54,7 +54,7 @@ handles.lowf                = [];
 handles.highf               = [];
 handles.Analysis            = [];
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
 handles.quit                = 0;
@@ -77,7 +77,7 @@ else
     varargout{3} = handles.ContName;
     varargout{4} = handles.defaults ;
 end
-delete(handles.figure1)
+delete(handles.figure1); return
 
 
 %% Callbacks
@@ -438,6 +438,5 @@ clc
 uiresume
 handles.quit = 1;
 guidata(hObject, handles);
-delete(handles.figure1)
 limo_gui
 

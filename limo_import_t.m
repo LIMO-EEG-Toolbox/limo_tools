@@ -53,7 +53,7 @@ end
 handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
-handles.ica                 = 0;
+handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'OLS';
 handles.rate                = [];
@@ -62,6 +62,7 @@ handles.trim2               = [];
 handles.Cat                 = [];
 handles.Cont                = [];
 handles.bootstrap           = 0;
+handles.timevect            = [];
 handles.start               = 0;
 handles.end                 = 0;
 handles.dir                 = [];
@@ -98,9 +99,14 @@ if FilterIndex ~= 0
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
-        handles.start    = EEG.xmin;
-        handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
+        if ~isfield(EEG.etc,'timeerp')
+            handles.timevect = EEG.times;
+        else
+            handles.timevect = EEG.etc.timeerp;
+        end
+        handles.start = handles.timevect(1);
+        handles.end = handles.timevect(end);
         cd(handles.dir) 
         fprintf('Data set %s loaded \n',FileName);
     catch
@@ -114,10 +120,10 @@ guidata(hObject, handles);
 function use_ica_Callback(hObject, eventdata, handles)
 M = get(hObject,'Value');
 if M == 1
-    handles.ica = 1;
-    disp('using independent components rather than scalp data');
+    handles.type = 'Components';
+    disp('using independent components rather than scalp channels');
 elseif M == 0
-    handles.ica = 0;
+    handles.type = 'Channels';
     disp('ica import is off');
     set(handles.TFCE,'Enable','off')
 end
@@ -131,13 +137,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 function Starting_point_Callback(hObject, eventdata, handles)
 global EEG  
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
-    v = EEG.xmin;
+    v = handles.timevect(1);
 else
     if v == 0
         v = EEG.times(max(find(EEG.times<0))+1);
@@ -153,10 +158,10 @@ else
     end
 end
 
-if (v/1000) < EEG.xmin
+if v < EEG.times(1)
     errordlg('error in the starting point input')
 else
-    handles.start    = v/1000; % in sec
+    handles.start    = v;
     handles.trim1    = find(EEG.times == v); % gives the 1st column to start the analysis
 end
 
@@ -178,7 +183,7 @@ global EEG
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
-    v = EEG.xmax; 
+    v = handles.timevect(end); 
 else
     if v == 0
         v = EEG.times(max(find(EEG.times<0))+1);
@@ -194,10 +199,10 @@ else
     end
 end
 
-if (v/1000) > EEG.xmax
+if v > EEG.times(end)
     errordlg('error in the ending point input')
 else
-    handles.end     = v/1000; % in sec
+    handles.end     = v; % in sec
     handles.trim2   = find(EEG.times == v); % gives the last column to end the analysis
 end
 
@@ -420,12 +425,7 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont;  
 LIMO.data.start               = handles.start;
 LIMO.data.end                 = handles.end ;
-
-if handles.ica == 1
-    LIMO.Type = 'Components';
-else
-    LIMO.Type = 'Channels';
-end
+LIMO.Type                     = handles.type;
 
 if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
@@ -438,6 +438,8 @@ if isempty(handles.trim2)
 else
     LIMO.data.trim2 = handles.trim2;
 end
+
+LIMO.data.timevect  = handles.timevect(LIMO.data.trim1:LIMO.data.trim2);
 
 % LIMO.design
 LIMO.design.fullfactorial     = handles.fullfactorial;

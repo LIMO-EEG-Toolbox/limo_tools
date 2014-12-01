@@ -236,7 +236,7 @@ if LIMO.Level == 1
                         % imagesc
                         ax(1) = subplot(3,3,[1 2 4 5 7 8]);
                         if strcmp(LIMO.Analysis,'Time')
-                            timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(toplot,2));
+                            timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
                             ratio =  timevect(2)-timevect(1); % (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
                             if LIMO.data.start < 0
                                 frame_zeros = find(timevect == 0);
@@ -455,7 +455,7 @@ if LIMO.Level == 1
                 figure; set(gcf,'Color','w');
                 % imagesc eigen values
                 h = subplot(3,3,[4 5 7 8]);
-                timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(EV,2));
+                timevect = linspace(LIMO.data.start,LIMO.data.end,size(EV,2));
                 ratio = (LIMO.data.end*1000 - LIMO.data.start*1000) / size(EV,2);
                 if LIMO.data.start < 0
                     frame_zeros = round(abs(LIMO.data.start*1000) / ratio);
@@ -2518,7 +2518,7 @@ end
 % -------------------------------------------------------------------------
 function [timevect, label] = labels_time_(LIMO,ah)
 interval = 50/(1000/LIMO.data.sampling_rate); % in frame
-timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
 zero_column = find(timevect == 0);
 if isempty(zero_column) == 1 % in case it does not encompasses 0
     zero_column = 1;

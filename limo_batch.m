@@ -70,6 +70,9 @@ if nargin == 0
     % model
     if strcmp(option,'model specification') || strcmp(option,'both')
         [model.set_files,model.cat_files,model.cont_files,model.defaults]=limo_batch_gui;
+        if isempty(model.set_files)
+            return
+        end
     end
     % contrast
     if strcmp(option,'both')
@@ -179,7 +182,11 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
-        pipeline(subject).import.opt.defaults.type = model.type;
+        if isfield(model,'type')
+            pipeline(subject).import.opt.defaults.type = model.type;
+        else
+            pipeline(subject).import.opt.defaults.type = 'Channels';
+        end
 
         if nargin == 4
             mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
@@ -189,7 +196,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
-            glm_name = ['GLM_' model.defaults.analysis];    
+            glm_name = ['GLM_WLS_' model.defaults.analysis];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
@@ -259,6 +266,9 @@ if isfield(LIMO_files,'con')
 end
 
 for subject = 1:N
+    disp('--------------------------------')
+    fprintf('processing subject %g/%g \n',subject,N)
+    disp('--------------------------------')
     try
         opt.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
         psom_run_pipeline(pipeline(subject),opt)
@@ -271,12 +281,13 @@ end
 % save as txt file the list of .set, Betas, LIMO and con
 if exist('STUDY','var')
     cd(LIMO_files.LIMO)
+    cell2csv('EEGLAB_set.txt',model.set_files)
 else
     cd(current)
 end
-cell2csv('EEGLAB_set.txt',model.set_files)
 cell2csv('LIMO_files.txt', LIMO_files.mat)
 cell2csv('Beta_files.txt', LIMO_files.Beta)
+
 if isfield(LIMO_files,'con')
     for c=1:size(contrast.mat,1)
         index = 1;
@@ -292,6 +303,18 @@ end
 cd([current filesep 'limo_batch_report'])
 cell2csv('batch_report.txt', report')
 
-cd(current)
-disp('LIMO batch processing done')
+cd(current); 
+failed = 0;
+for subject=1:N; 
+    if strfind(report{subject},'failed')
+        failed = 1;
+    end
+end
+
+if failed == 0
+    disp('LIMO batch processing finished succesfully')
+else
+    disp('LIMO batch done, some errors where detected see report')
+end
+
 
