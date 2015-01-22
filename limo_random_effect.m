@@ -292,16 +292,3 @@ if isempty(handles.chan_file)
 else
     go = 1;
 end
-
-
-
-
-
-
-
-
-
-
-
-
-

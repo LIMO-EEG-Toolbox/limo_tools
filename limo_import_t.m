@@ -43,19 +43,17 @@ function limo_import_t_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % define handles used for the save callback
-try
-    clear LIMO
-    LIMO     = [];
-catch
-    LIMO     = [];    
+if exist('LIMO','var') 
+    clear LIMO; 
 end
+LIMO     = [];
 
 handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.rate                = [];
 handles.trim1               = [];
 handles.trim2               = [];
@@ -125,7 +123,6 @@ if M == 1
 elseif M == 0
     handles.type = 'Channels';
     disp('ica import is off');
-    set(handles.TFCE,'Enable','off')
 end
 guidata(hObject, handles);
 
@@ -175,8 +172,6 @@ function ending_point_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
 
 function ending_point_Callback(hObject, eventdata, handles)
 global EEG 
@@ -244,10 +239,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
+contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -416,60 +411,64 @@ cd (handles.dir)
 function Done_Callback(hObject, eventdata, handles)
 global EEG LIMO 
 
-% LIMO.data
-LIMO.data.data_dir            = handles.data_dir;
-LIMO.data.data                = handles.data;
-LIMO.data.chanlocs            = handles.chanlocs;
-LIMO.data.sampling_rate       = handles.rate;
-LIMO.data.Cat                 = handles.Cat;      
-LIMO.data.Cont                = handles.Cont;  
-LIMO.data.start               = handles.start;
-LIMO.data.end                 = handles.end ;
-LIMO.Type                     = handles.type;
-
-if isempty(handles.trim1)
-    LIMO.data.trim1 = 1;
+if isempty(handles.data)
+    errordlg('no data were loaded','error')
 else
-    LIMO.data.trim1 = handles.trim1;
+    
+    % LIMO.data
+    LIMO.data.data_dir            = handles.data_dir;
+    LIMO.data.data                = handles.data;
+    LIMO.data.chanlocs            = handles.chanlocs;
+    LIMO.data.sampling_rate       = handles.rate;
+    LIMO.data.Cat                 = handles.Cat;
+    LIMO.data.Cont                = handles.Cont;
+    LIMO.data.start               = handles.start;
+    LIMO.data.end                 = handles.end ;
+    LIMO.Type                     = handles.type;
+    
+    if isempty(handles.trim1)
+        LIMO.data.trim1 = 1;
+    else
+        LIMO.data.trim1 = handles.trim1;
+    end
+    
+    if isempty(handles.trim2)
+        LIMO.data.trim2 = length(EEG.times);
+    else
+        LIMO.data.trim2 = handles.trim2;
+    end
+    
+    LIMO.data.timevect  = handles.timevect(LIMO.data.trim1:LIMO.data.trim2);
+    
+    % LIMO.design
+    LIMO.design.fullfactorial     = handles.fullfactorial;
+    LIMO.design.zscore            = handles.zscore;
+    LIMO.design.method            = handles.method;
+    LIMO.design.type_of_analysis  = handles.type_of_analysis;
+    LIMO.design.bootstrap         = handles.bootstrap;
+    LIMO.design.tfce              = handles.tfce;
+    
+    % LIMO
+    LIMO.Level                    = 1;
+    LIMO.Analysis                 = 'Time';
+    if isempty(handles.dir)
+        LIMO.dir = handles.data_dir;
+    else
+        LIMO.dir = handles.dir;
+    end
+    
+    % exit
+    test = isempty(handles.Cat) + isempty(handles.Cont);
+    if test == 2
+        errordlg('no regressors were loaded','error')
+    else
+        cd (LIMO.dir);
+        save LIMO LIMO
+        uiresume
+        guidata(hObject, handles);
+        delete(handles.figure1)
+    end
 end
-
-if isempty(handles.trim2)
-    LIMO.data.trim2 = length(EEG.times);
-else
-    LIMO.data.trim2 = handles.trim2;
-end
-
-LIMO.data.timevect  = handles.timevect(LIMO.data.trim1:LIMO.data.trim2);
-
-% LIMO.design
-LIMO.design.fullfactorial     = handles.fullfactorial;
-LIMO.design.zscore            = handles.zscore;
-LIMO.design.method            = handles.method;
-LIMO.design.type_of_analysis  = handles.type_of_analysis;  
-LIMO.design.bootstrap         = handles.bootstrap;  
-LIMO.design.tfce              = handles.tfce;  
-
-% LIMO
-LIMO.Level                    = 1;
-LIMO.Analysis                 = 'Time';
-if isempty(handles.dir)
-    LIMO.dir = handles.data_dir;
-else
-    LIMO.dir = handles.dir;
-end
-
-% exit
-test = isempty(handles.Cat) + isempty(handles.Cont);
-if test == 2
-    errordlg('no regressors were loaded','error')
-else
-    cd (LIMO.dir);
-    save LIMO LIMO
-    uiresume
-    guidata(hObject, handles);
-    delete(handles.figure1)
-end
-
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------

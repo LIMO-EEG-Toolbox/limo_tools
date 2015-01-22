@@ -133,9 +133,3 @@ try
     matlabpool('close');
 end
 delete(handles.figure1)
-
-
-
-
-
-

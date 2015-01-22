@@ -808,8 +808,8 @@ if LIMO.Level == 1
                     
                     if mean([LIMO.cache.ERPplot.electrode == electrode ...
                             LIMO.cache.ERPplot.regressor == regressor ...
-                            LIMO.cache.ERPplot.frequency == frequency]) == 1
-                        
+                            LIMO.cache.ERPplot.frequency == frequency]) == 1 ...
+                            && strcmp('LIMO.cache.ERPplot.extra',extra)
                         
                         if sum(regressor <= categorical) == length(regressor)
                             average = LIMO.cache.ERPplot.average;
@@ -829,7 +829,8 @@ if LIMO.Level == 1
                         strcmp(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'ERPplot')
                     
                     if mean([LIMO.cache.ERPplot.electrode == electrode ...
-                            LIMO.cache.ERPplot.regressor == regressor]) == 1
+                            LIMO.cache.ERPplot.regressor == regressor]) == 1  ...
+                            && strcmp('LIMO.cache.ERPplot.extra',extra)
                         
                         if sum(regressor <= categorical) == length(regressor)
                             average = LIMO.cache.ERPplot.average;
@@ -1097,6 +1098,7 @@ if LIMO.Level == 1
                     ylabel('Amplitude in {\mu}V','FontSize',16)
                 end
                 
+                LIMO.cache.ERPplot.extra = extra;
                 LIMO.cache.ERPplot.average = average;
                 LIMO.cache.ERPplot.electrode = electrode;
                 LIMO.cache.ERPplot.regressor = regressor;

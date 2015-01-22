@@ -8,12 +8,15 @@ function IDX = limo_clusterica(varargin)
 %                     'spect' and data are of dim [ic, freqs]
 %                     'ersp' and data are of dim [ic, freqs, time]
 %                     'itc' and data are of dim [ic, freqs, time]
-%                     'smap' a scalp map of dim 64*64]
+%                     'smap' a scalp map of dim [64*64]
 %                     'dipole' and data are of dim [x,y,z] for spatial lovcation
 %                              or [x,y,z,xx,yy,zz] adding the orientation vector
 %                              assuming a common origin (i.e. not [x y z])
 %
 % OUPUT IDX is the indices of the compoments after clustering
+%       IDX{1} clustering based on mean corr of erp, ersp, itc .. 
+%       IDX{2} clustering based on dipole and scalp map
+%       IDX{3} intersection of IX{1} and IDX{2} - the final result
 %
 % The algorithm compute several similarity matrices based on (i) slightly
 % lagged cross-correlations of erp, spec, ersp, itc (ii) correlation of scalp
@@ -25,10 +28,17 @@ function IDX = limo_clusterica(varargin)
 % the clustering is blind of subject belonging and only relies on
 % similarity measurements.
 %
-% example 
-% IDX = limo_clusterica('erp',randn(75,200),'spec',randn(75,200), ...
-%     'ersp',randn(75,125,125),'itc',randn(75,125,125))
-%                 
+% example
+% A = sin(randn(1500,200)); % 75 IC * 20 subject  200 time frames
+% for erp = 1:1500
+%     coef = fft(A(erp,:));
+%     B(erp,:) = coef(1:100).*conj(coef(1:100))/ 100; % power spec
+% end
+% d = rand(75,3); D = d;
+% for s=2:20
+%     D = [D;d+ceil(randn(75,3))]; % create a bunch of dipoles 
+% end
+% IDX = limo_clusterica('erp',A,'spec',B, 'dip',D);
 %
 % Cyril Pernet, The University of Edinburgh
 % Arnaud Delorme, SCCN, INC, UCSD
@@ -36,9 +46,9 @@ function IDX = limo_clusterica(varargin)
 %% -----------------------------
 % Copyright (C) LIMO Team 2014
 
-% default lag
+% default lag - that is we take the max corr allowing a bit of lag in time
+% frames or frequencies
 lag = 2;
-index = 1;
 
 % note one computes xcorr on transposed data, i.e. between ic
 % -----------------------------------------------------------
@@ -47,18 +57,15 @@ for m=1:2:length(varargin)
     if strcmpi(varargin{m},'erp')
         % the absolute of xcorr to be insensitive to polarity
         disp('clustering components using ERPs')
-        M{index} = local_xcorr(cell2mat(varargin(m+1))',lag,'abs');
-        C{index} = apcluster(M{index},median(M{index}));
-        varargin(m+1) = {[]}; % free memory as we go along
-        index = index+1;
+        M = local_xcorr(cell2mat(varargin(m+1))',lag,'abs');
+        varargin{m+1} = M; clear M
     end
     
     if strcmpi(varargin(m),'spec')
         % power is already positive, take max of xcorr
         disp('clustering components using Spectra')
-        M{index} = local_xcorr(cell2mat(varargin(m+1)'),lag,'signed');
-        C{index} = apcluster(M{index},median(M{index}));
-        varargin(m+1) = {[]}; index = index+1;
+        M = local_xcorr(cell2mat(varargin(m+1))',lag,'signed');
+        varargin{m+1} = M; clear M
     end
     
     if strcmpi(varargin(m),'ersp')
@@ -67,14 +74,14 @@ for m=1:2:length(varargin)
         % no point looking at frequency bands with noise
         disp('clustering components using ERSP')
         data = cell2mat(varargin(m+1));
+        S = NaN(size(data,1),size(data,1),size(data,2));
         for f = 1:size(data,2)
             S(:,:,f) = local_xcorr(squeeze(data(:,f,:))',lag,'signed');
-            c = triu(squeeze(S(:,:,f)),1); score(f) = mean(c(:));            
+            c = triu(squeeze(S(:,:,f)),1); score(f) = mean(c(:));
         end
         [~,ranking]=sort(score);
-        M{index} = mean(S(:,:,ranking(1:5)),3); clear S
-        C{index} = apcluster(M{index},median(M{index}));
-        varargin(m+1) = {[]}; index = index+1;
+        M = mean(S(:,:,ranking(1:5)),3); clear S
+        varargin{m+1} = M; clear M
     end
     
     if strcmpi(varargin(m),'itc')
@@ -83,14 +90,14 @@ for m=1:2:length(varargin)
         % no point looking at frequency bands with noise
         disp('clustering components using ITC')
         data = cell2mat(varargin(m+1));
+        S = NaN(size(data,1),size(data,1),size(data,2));
         for f = 1:size(data,2)
             S(:,:,f) = local_xcorr(squeeze(data(:,f,:))',lag,'abs');
-            c = triu(squeeze(S(:,:,f)),1); score(f) = mean(c(:));            
+            c = triu(squeeze(S(:,:,f)),1); score(f) = mean(c(:));
         end
         [~,ranking]=sort(score);
-        M{index} = mean(S(:,:,ranking(1:5)),3); clear S
-        C{index} = apcluster(M{index},median(M{index}));
-        varargin(m+1) = {[]}; index = index+1; 
+        M = mean(S(:,:,ranking(1:5)),3); clear S
+        varargin{m+1} = M; clear M
     end
     
     if strcmpi(varargin(m),'smap')
@@ -101,56 +108,102 @@ for m=1:2:length(varargin)
         else
             data = cell2mat(varargin(m+1));
             disp('clustering components using scalp maps')
-       end
+        end
         % for each ic compute the 2D correlation with other maps
         pairs = nchoosek([1:n],2);
-        S = eye(n);
+        M = eye(n);
         for p=1:length(pairs)
-            S(pairs(p,1),pairs(p,2)) = corr2(squeeze(data(pairs(p,1),:,:)),squeeze(data(pairs(p,2),:,:)));
-            S(pairs(p,2),pairs(p,1)) = S(pairs(p,1),pairs(p,2));
+            M(pairs(p,1),pairs(p,2)) = corr2(squeeze(data(pairs(p,1),:,:)),squeeze(data(pairs(p,2),:,:)));
+            M(pairs(p,2),pairs(p,1)) = M(pairs(p,1),pairs(p,2));
         end
-        M{index} = S; clear S data 
-        C{index} = apcluster(M{index},median(M{index}));
-        varargin(m+1) = {[]}; index = index+1; 
+        varargin{m+1} = M; clear M
     end
     
     if strcmpi(varargin(m),'dip')
         % compute euclidian distance between diploles and normalize to 1
         data = cell2mat(varargin(m+1));
-        D = squareform(pdist(data(:,[1 2 3],'euclidean')));
-        M{index} = D ./ (max(D(:))); clear D
-        C{index} = apcluster(M{index},median(M{index}));
-        index = index+1;
-        % compute the abs(angle) between orientations
-        if size(data,2) == 6
+        D = squareform(pdist(data(:,[1 2 3]),'euclidean'));
+        % if only position, cluster now
+        if size(data,2) == 3
+            M = D ./ (max(D(:))); clear D
+        % if otientation compute the angles
+        elseif size(data,2) == 6
             pairs = nchoosek([1:size(data,1)],2);
             S = eye(size(data,1));
             for p=1:length(pairs)
                 v1 = data(pairs(p,1),[4 5 6]); v2 = data(pairs(p,2),[4 5 6]);
-                S(pairs(p,1),pairs(p,2)) = abs(acosd(dot(v1,v2)/(norm(v1)*norm(v2))));
+                S(pairs(p,1),pairs(p,2)) = acosd(dot(v1,v2)/(norm(v1)*norm(v2)));
                 S(pairs(p,2),pairs(p,1)) = S(pairs(p,1),pairs(p,2));
             end
-            M{index} = S./max(S(:)); clear S
-            C{index} = apcluster(M{index},median(M{index}));
-            index = index+1;
+            S = S./max(S); % normalize to 1
+            D = (D+S)./2; % average distance and orientation
+            M = D./max(D(:)); clear D S
         end
-        clear data
-        varargin(m+1) = {[]};
+        varargin{m+1} = M; clear M data
     end
 end % closes the varargin loop
 
-% we have a series of similarity matrices M and clustering matrices C
-% the final clustering is the intersection of Cs
+disp('computing intersection of clusters')
+% we have a series of similarity matrices M
 
 % similar components should have similar time courses, spectra, ersp, and
-% itc so we can either take the intersection of these or take the mean
-% similarity matrix and cluster this one
+% itc so we can take the mean similarity matrix and cluster this one
+MM = [];
+for m=1:2:length(varargin)
+    if strcmpi(varargin{m},'erp') || strcmpi(varargin{m},'spec') strcmpi(varargin{m},'ersp')
+        if isempty(MM)
+            MM = varargin{m+1};
+        else
+            MM = (MM + varargin{m+1}) ./2;
+        end
+    end
+end
 
-% similar components should also have similar origin, orientation and scalp
-% topography so again we can take either the intersection of these or take
-% the mean similarity matrix and cluster this one
+if ~isempty(MM)
+    IDX{1} = apcluster(MM,median(MM));
+else
+    IDX{1} = NaN(size(data,1),1);
+end
 
+% similar components should also have similar origin & orientation and scalp
+% topography so again we can take the mean similarity matrix and cluster this one
+MM = [];
+for m=1:2:length(varargin)
+    if strcmpi(varargin{m},'smap') || strcmpi(varargin{m},'dip')
+        if isempty(MM)
+            MM = varargin{m+1};
+        else
+            MM = (MM + varargin{m+1}) ./2;
+        end
+    end
+end
 
+if ~isempty(MM)
+    IDX{2} = apcluster(MM,median(MM));
+else
+    IDX{2} = NaN(size(data,1),1);
+end
+
+% update output
+% --------------
+% IDX corresponds to the exemplar number, simply reindex starting at 1
+% if the same IC is the exemplar for erp/spec/ersp/itc and for smap/dip
+% then they have the same cluster number
+for i=1:2
+    out = unique(IDX{i});
+    for v=1:length(out)
+        IDX{1}(IDX{1}==(out(v))) = v;
+    end
+end
+
+% the final clustering is thus
+if ~isnan(IDX{1}(1)) && ~isnan(IDX{2}(1))
+    common = IDX{1} == IDX{2};
+    IDX{3} = NaN(size(data,1),1);
+    IDX{3}(common) = IDX{1}(common);
+else
+    IDX{3} = NaN(size(data,1),1);
+end
 end
 
 function S = local_xcorr(data,lag,type)
@@ -158,21 +211,43 @@ function S = local_xcorr(data,lag,type)
 % lag and returns a correlation matrix S with the maximum value across
 % all lags - S is of dim [size(data,2) size(data,2)]
 % type is either 'abs' or 'signed' meaning one take either the max
-% of absolute values or we take the max of signed values
+% of absolute values or we take the max of signed values (ie only positive
+% correlations like for spec)
 
 % xcorr conputes the conjugate of matrices, which can be very large for
 % matrices with many ic, leading to memory issue, instead we loop per lag
-% creating lagged matrices and compute the correlation
+% creating lagged matrices and compute the correlation using corrcoef_cell
 
 % get max of abs cross corrrelation
+index = 1;
+C = NaN(size(data,2),size(data,2),length(-lag:lag));
+for l=-lag:lag
+    tmp = zeros(size(data,1)+abs(l),size(data,2));
+    if l < 0
+        for c=1:size(data,2)
+            tmp(1:end+l,:) = data;
+            tmp(:,c) = 0; tmp(1+abs(l):end,c) = data(:,c);
+            all_but_c = setdiff([1:size(data,2)],c);
+            C(c,all_but_c,index) = corr(tmp(:,c),tmp(:,all_but_c));
+        end
+    elseif l == 0
+        C(:,:,index) = corr(data);
+    elseif l > 0
+        for c=1:size(data,2)
+            tmp(1+l:end,:) = data;
+            tmp(:,c) = 0; tmp(1:end-l,c) = data(:,c);
+            all_but_c = setdiff([1:size(data,2)],c);
+            C(c,all_but_c,index) = corr(tmp(:,c),tmp(:,all_but_c));
+        end
+    end
+    index = index+1;
+end
+
 if strcmp(type,'abs')
-    out = max(abs(xcorr(data,lag,'coeff')));
+    S = max(abs(C),[],3);
 elseif strcmp(type,'signed')
-    out = max(xcorr(data,lag,'coeff'));
+    S = max(C,[],3);
 else
     error('error calling the subfunction local_xcorr, unidentified arg ''type''')
 end
-
-% reshape
-S = reshape(out',size(data,2),size(data,2));
 end

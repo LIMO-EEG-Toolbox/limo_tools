@@ -118,15 +118,15 @@ STUDY.design.cell.filebase = name;
 
 %% save-delete data / update EEG.set file
 if strcmp(opt.datatype,'channels')
-    
+     
     if strcmp(opt.erp,'on')
         data = load('-mat',[name '.daterp']);
         ALLEEG.etc.timeerp = data.times;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.daterp = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'daterp']);
+            save([name '_daterp.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.daterp = [name '_daterp.mat'];
+            delete([name '.daterp']);
         else
             ALLEEG.etc.datafiles.daterp = [name '.daterp'];
         end
@@ -137,9 +137,9 @@ if strcmp(opt.datatype,'channels')
         ALLEEG.etc.freqspec = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datspec = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'datspec']);
+            save([name '_datspec.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datspec = [name '_datspec.mat'];
+            delete([name '.datspec']);
         else
             ALLEEG.etc.datafiles.datspec = [name '.datspec'];
         end
@@ -153,9 +153,9 @@ if strcmp(opt.datatype,'channels')
         ALLEEG.etc.freqersp = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datersp = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'dattimef']);
+            save([name '_datersp.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datersp = [name '_datersp.mat'];
+            delete([name '.dattimef']);
         else
             ALLEEG.etc.datafiles.datersp = [name '.dattimef'];
         end
@@ -167,24 +167,27 @@ if strcmp(opt.datatype,'channels')
         ALLEEG.etc.freqitc = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datitc = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'datitc']);
+            save([name '_datitc.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datitc = [name '_datitc.mat'];
+            delete([name '.datitc']);
         else
             ALLEEG.etc.datafiles.datitc = [name '.datitc'];
         end
     end
     
-else % 'components'
+end
+
+
+if strcmp(opt.datatype,'ica')
 
     if strcmp(opt.erp,'on')
         data = load('-mat',[name '.icaerp']);
         ALLEEG.etc.timeerp = data.times;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.daterp = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'icaerp']);
+            save([name '_icaerp.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.daterp = [name '_icaerp.mat'];
+            delete([name '.icaerp']);
         else
             ALLEEG.etc.datafiles.icaerp = [name '.icaerp'];
         end
@@ -195,9 +198,9 @@ else % 'components'
         ALLEEG.etc.freqspec = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datspec = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'icaspec']);
+            save([name '_icaspec.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datspec = [name '_icaspec.mat'];
+            delete([name '.icaspec']);
         else
             ALLEEG.etc.datafiles.icaspec = [name '.icaspec'];
         end
@@ -210,9 +213,9 @@ else % 'components'
         ALLEEG.etc.freqersp = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datersp = [name '.mat'];
-            delete([ALLEEG.filepath filesep 'icatimef']);
+            save([name '_icaersp.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datersp = [name '_icaersp.mat'];
+            delete([name '.icatimef']);
         else
             ALLEEG.etc.datafiles.icaersp = [name '.icatimef'];
         end
@@ -224,9 +227,9 @@ else % 'components'
         ALLEEG.etc.freqitc = data.freqs;
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
-            save([name '.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datitc = [name '.mat'];
-            delete([ALLEEG.filepath filesep '.icaitc']);
+            save([name '_icaitc.mat'],'data'); clear data
+            ALLEEG.etc.datafiles.datitc = [name '_icaitc.mat'];
+            delete([name '.icaitc']);
         else
             ALLEEG.etc.datafiles.icaitc = [name '.icaitc'];
         end
