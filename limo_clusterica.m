@@ -14,7 +14,7 @@ function IDX = limo_clusterica(varargin)
 %                              assuming a common origin (i.e. not [x y z])
 %
 % OUPUT IDX is the indices of the compoments after clustering
-%       IDX{1} clustering based on mean corr of erp, ersp, itc .. 
+%       IDX{1} clustering based on mean corr of erp, ersp, itc ..
 %       IDX{2} clustering based on dipole and scalp map
 %       IDX{3} intersection of IX{1} and IDX{2} - the final result
 %
@@ -36,7 +36,7 @@ function IDX = limo_clusterica(varargin)
 % end
 % d = rand(75,3); D = d;
 % for s=2:20
-%     D = [D;d+ceil(randn(75,3))]; % create a bunch of dipoles 
+%     D = [D;d+ceil(randn(75,3))]; % create a bunch of dipoles
 % end
 % IDX = limo_clusterica('erp',A,'spec',B, 'dip',D);
 %
@@ -104,7 +104,7 @@ for m=1:2:length(varargin)
         % Scalp map [ic,64*64] and take abs(corr) for polarity inversion
         [n,d1,d2]=size(cell2mat(varargin(m+1)));
         if d1~=d2
-            error('scalp maps must be square matrices');
+            error('Scalp Maps must be square matrices');
         else
             data = cell2mat(varargin(m+1));
             disp('clustering components using scalp maps')
@@ -126,7 +126,7 @@ for m=1:2:length(varargin)
         % if only position, cluster now
         if size(data,2) == 3
             M = D ./ (max(D(:))); clear D
-        % if otientation compute the angles
+            % if orientation compute the angles
         elseif size(data,2) == 6
             pairs = nchoosek([1:size(data,1)],2);
             S = eye(size(data,1));
@@ -149,8 +149,9 @@ disp('computing intersection of clusters')
 % similar components should have similar time courses, spectra, ersp, and
 % itc so we can take the mean similarity matrix and cluster this one
 MM = [];
+dim1 = size(cell2mat(varargin(2)),1);
 for m=1:2:length(varargin)
-    if strcmpi(varargin{m},'erp') || strcmpi(varargin{m},'spec') strcmpi(varargin{m},'ersp')
+    if any([strcmpi(varargin{m},'erp'), strcmpi(varargin{m},'spec'), strcmpi(varargin{m},'ersp'),strcmpi(varargin{m},'itc')])
         if isempty(MM)
             MM = varargin{m+1};
         else
@@ -162,7 +163,7 @@ end
 if ~isempty(MM)
     IDX{1} = apcluster(MM,median(MM));
 else
-    IDX{1} = NaN(size(data,1),1);
+    IDX{1} = NaN(dim1,1);
 end
 
 % similar components should also have similar origin & orientation and scalp
@@ -181,7 +182,7 @@ end
 if ~isempty(MM)
     IDX{2} = apcluster(MM,median(MM));
 else
-    IDX{2} = NaN(size(data,1),1);
+    IDX{2} = NaN(dim1,1);
 end
 
 % update output
@@ -192,17 +193,17 @@ end
 for i=1:2
     out = unique(IDX{i});
     for v=1:length(out)
-        IDX{1}(IDX{1}==(out(v))) = v;
+        IDX{i}(IDX{i}==(out(v))) = v;
     end
 end
 
 % the final clustering is thus
 if ~isnan(IDX{1}(1)) && ~isnan(IDX{2}(1))
     common = IDX{1} == IDX{2};
-    IDX{3} = NaN(size(data,1),1);
+    IDX{3} = NaN(dim1,1);
     IDX{3}(common) = IDX{1}(common);
 else
-    IDX{3} = NaN(size(data,1),1);
+    IDX{3} = NaN(dim1,1);
 end
 end
 
