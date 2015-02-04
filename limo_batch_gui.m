@@ -440,3 +440,21 @@ handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
 
+
+
+% --- Executes on button press in scalp_data.
+function scalp_data_Callback(hObject, eventdata, handles)
+% hObject    handle to scalp_data (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of scalp_data
+
+
+% --- Executes on button press in component_data.
+function component_data_Callback(hObject, eventdata, handles)
+% hObject    handle to component_data (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of component_data

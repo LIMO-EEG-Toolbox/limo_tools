@@ -74,3 +74,6 @@ if add_subplots == 1
     title('Orthogonality matrix','FontSize',14); xlabel('regressors');caxis([0 1+eps])
 end
 
+% if the matrix has been estimated we can also compute useful info
+% http://en.wikipedia.org/wiki/Variance_inflation_factor
+

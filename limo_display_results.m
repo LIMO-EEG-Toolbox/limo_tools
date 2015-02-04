@@ -236,12 +236,16 @@ if LIMO.Level == 1
                         % imagesc
                         ax(1) = subplot(3,3,[1 2 4 5 7 8]);
                         if strcmp(LIMO.Analysis,'Time')
-                            timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
-                            ratio =  timevect(2)-timevect(1); % (LIMO.data.end*1000 - LIMO.data.start*1000) / size(toplot,2);
+                            try
+                                timevect = LIMO.data.timevect;
+                            catch old_limo
+                                timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+                            end
+                            ratio =  (timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
                             if LIMO.data.start < 0
                                 frame_zeros = find(timevect == 0);
                                 if isempty(frame_zeros)
-                                    frame_zeros = round(abs(LIMO.data.start*1000) / ratio)+1;
+                                    frame_zeros = round(abs(LIMO.data.start) / ratio)+1;
                                 end
                             else
                                 frame_zeros = 1;
@@ -250,8 +254,13 @@ if LIMO.Level == 1
                             imagesc(timevect,1:size(toplot,1),scale);
                             
                         elseif strcmp(LIMO.Analysis,'Frequency')
-                            freqvect=LIMO.data.freqlist;
-                            frame_zeros = 1; ratio =  freqvect(2)-freqvect(1);
+                            try
+                                freqvect = LIMO.data.freqlist;
+                            catch old_way_on_freq
+                                freqvect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+                            end
+                            frame_zeros = 1; 
+                            ratio =  (freqvect(end)-freqvect(1)) / length(freqvect);
                             scale = toplot.*mask; scale(scale==0)=NaN;
                             imagesc(freqvect,1:size(toplot,1),scale);
                         end
@@ -274,12 +283,16 @@ if LIMO.Level == 1
                         if strcmp(LIMO.Analysis,'Time')
                             if strcmp(LIMO.Type,'Components')
                                 mytitle2 = sprintf('time course @ \n component %g', e);
-                            else
-                                mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            elseif strcmp(LIMO.Type,'Channels')
+                                mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
                             end
                             plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
                         elseif strcmp(LIMO.Analysis,'Frequency')
-                            mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                            if strcmp(LIMO.Type,'Components')
+                                mytitle2 = sprintf('power spectra @ \n component %g', e);
+                            elseif strcmp(LIMO.Type,'Channels')
+                                mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
+                            end
                             plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
                         end
                         title(mytitle2,'FontSize',12)
@@ -330,7 +343,11 @@ if LIMO.Level == 1
                                         
                                         subplot(3,3,9,'replace');
                                         plot(timevect,toplot(y,:),'LineWidth',3); grid on; axis tight
-                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,LIMO.data.chanlocs(e).urchan);
+                                        if strcmp(LIMO.Type,'Components')
+                                            mytitle2 = sprintf('time course @ \n component %g', y);
+                                        elseif strcmp(LIMO.Type,'Channels')
+                                            mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                                        end
                                         title(mytitle2,'FontSize',12);
                                         
                                     elseif strcmp(LIMO.Analysis,'Frequency')
@@ -340,16 +357,13 @@ if LIMO.Level == 1
                                         
                                         subplot(3,3,9,'replace');
                                         plot(freqvect,toplot(y,:),'LineWidth',3); grid on; axis tight
-                                        mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,LIMO.data.chanlocs(y).urchan);
+                                        if strcmp(LIMO.Type,'Components')
+                                            mytitle2 = sprintf('power spectra @ \n component %g', y);
+                                        elseif strcmp(LIMO.Type,'Channels')
+                                            mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                                        end
                                         title(mytitle2,'FontSize',12);
-                                        
                                     end
-                                    try
-                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.expected_chanlocs(y).labels,LIMO.data.expected_chanlocs(y).urchan);
-                                    catch ME
-                                        mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,LIMO.data.chanlocs(y).urchan);
-                                    end
-                                    title(mytitle2,'FontSize',12)
                                 end
                             end
                         end
