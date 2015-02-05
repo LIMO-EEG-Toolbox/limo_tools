@@ -53,6 +53,7 @@ handles.end                 = [];
 handles.lowf                = [];
 handles.highf               = [];
 handles.Analysis            = [];
+handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'WLS';
 handles.bootstrap           = 0;
@@ -83,17 +84,14 @@ delete(handles.figure1); return
 %% Callbacks
 
 %-------------------------
-%         IMPORT
+%         IMPORT_DATA
 %------------------------
 
 % load a data set -- EEG 
 % ---------------------------------------------------------------
-function Import_data_set_Callback(hObject, eventdata, handles)
+function Import_data_Callback(hObject, eventdata, handles)
+[FileName,PathName,FilterIndex]=uigetfile({'*.txt; *.mat; *.set'}, 'Pick sets or list', 'MultiSelect', 'on');
 
-[FileName,PathName,FilterIndex]=uigetfile({'*.txt','Text (*.txt)' ; ...
-        '*.mat','MAT-files (*.mat)'; '*set*', 'EEGLAB (EEG.set)'}, ...
-        'Pick sets or list', 'MultiSelect', 'on');
-    
 if FilterIndex ~= 0
     
     if iscell(FileName) % multiselect for .sets
@@ -218,6 +216,30 @@ guidata(hObject, handles);
 %---------------------------
 %      ANALYSIS
 % --------------------------
+% --- Executes on button press in scalp_data.
+function scalp_data_Callback(hObject, eventdata, handles)
+h = get(hObject,'Value');
+if h == 0
+    handles.type = '[]';
+    set(handles.component_data,'Enable','on')
+elseif h == 1
+    handles.type = 'Channels';
+    set(handles.component_data,'Enable','off')
+end
+guidata(hObject, handles);
+
+% --- Executes on button press in component_data.
+function component_data_Callback(hObject, eventdata, handles)
+h = get(hObject,'Value');
+if h == 0
+    handles.type = '[]';
+    set(handles.scalp_data,'Enable','on')
+elseif h == 1
+    handles.type = 'Components';
+    set(handles.scalp_data,'Enable','off')
+end
+guidata(hObject, handles);
+
 
 % type of analysis
 % --- Executes on selection change in type_of_analysis.
@@ -250,7 +272,7 @@ function method_Callback(hObject, eventdata, handles)
 contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -399,6 +421,7 @@ defaults.type_of_analysis  = handles.type_of_analysis;
 defaults.analysis          = handles.Analysis;  
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
+defaults.type              = handles.type;
 
 % -----------------------------------------
 % load the expected channel locations
@@ -442,19 +465,3 @@ limo_gui
 
 
 
-% --- Executes on button press in scalp_data.
-function scalp_data_Callback(hObject, eventdata, handles)
-% hObject    handle to scalp_data (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of scalp_data
-
-
-% --- Executes on button press in component_data.
-function component_data_Callback(hObject, eventdata, handles)
-% hObject    handle to component_data (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of component_data

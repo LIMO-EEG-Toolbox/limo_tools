@@ -17,7 +17,9 @@ function LIMO_files = limo_batch(varargin)
 %       model.cat_files: a cell array of categorial variable or variable files
 %       model.cont_files: a cell array of continuous variable or variable files
 %       model.defaults: specifiy the parameters to use for each subject
+%       model.defaults.type = 'Channels' or 'Components'
 %       model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
+%       model.defaults.method 'WLS' 'IRLS' 'OLS'
 %       model.defaults.fullfactorial 0/1
 %       model.defaults.zscore 0/1
 %       model.defaults.start starting time in ms
@@ -44,11 +46,12 @@ function LIMO_files = limo_batch(varargin)
 % execution engine for scientific workflows. Front. Neuroinform. 6:7.
 % doi: 10.3389/fninf.2012.00007
 %
-% Cyril Pernet and Nicolas Chauveau 2012
+% Cyril Pernet and Nicolas Chauveau 2012 wrote the version 1
 % CP 24-06-2013 updated to be even more automatic + fix for new designs
-% Cyril Pernet May 2014 - redesigned it using psom
-% -----------------------------
-% Copyright (C) LIMO Team 2014
+% Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
+% Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
+% ----------------------------------------------------------------------
+% Copyright (C) LIMO Team 2015
 
 
 opt.mode = 'session'; % run in the current session -- see psom for other options
@@ -182,21 +185,28 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
+
         if isfield(model,'type')
             pipeline(subject).import.opt.defaults.type = model.type;
         else
             pipeline(subject).import.opt.defaults.type = 'Channels';
         end
-
+        
+        if isfield(model,'method')
+            pipeline(subject).import.opt.defaults.method = model.method;
+        else
+            pipeline(subject).import.opt.defaults.method = 'WLS';
+        end
+        
         if nargin == 4
             mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
             root = [study_root filesep cell2mat(STUDY.names(subject))];
-            glm_name = ['GLM' num2str(STUDY.design_index) '_' model.type '_' model.defaults.analysis];
+            glm_name = ['GLM' num2str(STUDY.design_index) model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
             contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
             pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
-            glm_name = ['GLM_WLS_' model.defaults.analysis];    
+            glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         

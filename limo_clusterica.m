@@ -44,7 +44,7 @@ function IDX = limo_clusterica(varargin)
 % Arnaud Delorme, SCCN, INC, UCSD
 % Ramon Martinez-Cancino,INC, SCCN
 %% -----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 % default lag - that is we take the max corr allowing a bit of lag in time
 % frames or frequencies
