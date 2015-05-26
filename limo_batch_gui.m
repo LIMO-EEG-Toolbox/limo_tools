@@ -5,7 +5,7 @@ function varargout = limo_batch_gui(varargin)
 % Based on limo_import_tf
 % Cyril Pernet v1. May 2014
 % -----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 
 %% GUI stuffs
@@ -93,16 +93,19 @@ function Import_data_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile({'*.txt; *.mat; *.set'}, 'Pick sets or list', 'MultiSelect', 'on');
 
 if FilterIndex ~= 0
-    
     if iscell(FileName) % multiselect for .sets
         for f=1:size(FileName,2)
             if ~strcmp(FileName{f}(end-3:end),'.set')
-                errordlg('only multiple set files are allowed or a single .mat/.txt list')
+                errordlg('only set files are allowed or use a single .mat/.txt list')
                 return
             end
         end
         
-    else % use .mat or .txt
+    elseif ischar(FileName) % single subject
+        tmp = FileName; clear FileName;
+        FileName{1} = [PathName tmp]; clear tmp; % a single subject
+        
+    elseif strcmp(FileName(end-3:end),'.txt') ||  strcmp(FileName(end-3:end),'.mat') % use .mat or .txt
         
         if strcmp(FileName(end-3:end),'.txt')
             FileName = importdata(FileName);
@@ -122,6 +125,7 @@ if FilterIndex ~= 0
         end
     end
     handles.FileName = FileName;
+    
 end
 guidata(hObject, handles);
 
@@ -319,15 +323,20 @@ guidata(hObject, handles);
 function categorical_variable_input_Callback(hObject, eventdata, handles)
 
 [CatName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','on');
-if FilterIndex == 1 
-    if ischar(CatName) % NOT multiselect        
+if FilterIndex == 1
+    if ischar(CatName) % NOT multiselect
         if strcmp(CatName(end-3:end),'.txt')
-            CatName = importdata(CatName);
+            if ~isnumeric(importdata(CatName))
+                CatName = importdata(CatName);
+            else
+                tmp = CatName; clear CatName;
+                CatName{1} = [PathName tmp]; clear tmp; % a single subject
+            end
         elseif strcmp(CatName(end-3:end),'.mat')
             CatName = load([PathName CatName]);
             CatName = getfield(CatName,cell2mat(fieldnames(CatName)));
         end
-    
+        
         for f=1:size(CatName,1)
             if ~exist(CatName{f},'file')
                 errordlg(sprintf('%s \n file not found',CatName{f}));
@@ -364,14 +373,19 @@ function continuous_variable_input_Callback(hObject, eventdata, handles)
 
 [ContName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO continuous data','Multiselect','on');
 if FilterIndex == 1
-    if ischar(ContName) % NOT multiselect        
+    if ischar(ContName) % NOT multiselect
         if strcmp(ContName(end-3:end),'.txt')
-            ContName = importdata(ContName);
+            if ~isnumeric(importdata(ContName))
+                ContName = importdata(ContName);
+            else
+                tmp = ContName; clear ContName;
+                ContName{1} = [PathName tmp]; clear tmp; % a single subject
+            end
         elseif strcmp(ContName(end-3:end),'.mat')
             ContName = load([PathName ContName]);
             ContName = getfield(ContName,cell2mat(fieldnames(ContName)));
         end
-    
+        
         for f=1:size(ContName,1)
             if ~exist(ContName{f},'file')
                 errordlg(sprintf('%s \n file not found',ContName{f}));

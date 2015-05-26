@@ -17,7 +17,7 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 %
 % see also limo_batch 
 %% -----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 global EEG
 
@@ -64,12 +64,9 @@ if strcmp(defaults.analysis,'Time')
     end
     
     % start
-    if isempty(defaults.start)
+    if isempty(defaults.start) || defaults.start < min(timevect)
         LIMO.data.start = timevect(1);
         LIMO.data.trim1 = 1;    
-    elseif defaults.start < min(timevect)
-        error(['The earliest time possible is:',num2str(timevect(1)),'ms']);
-        return
     else
         [~,position]=min(abs(timevect - defaults.start));
         LIMO.data.start = timevect(position);
@@ -77,12 +74,9 @@ if strcmp(defaults.analysis,'Time')
     end
     
     % end
-    if isempty(defaults.end)
+    if isempty(defaults.end) || defaults.end > max(EEG.times)
         LIMO.data.start = timevect(end);
         LIMO.data.trim2 = length(timevect);    
-    elseif defaults.end > max(EEG.times)
-        error(['The latest time possible is:',num2str(EEG.times(end)),'ms']);
-        return
     else
         [~,position]=min(abs(EEG.times - defaults.end));
         LIMO.data.end = EEG.times(position);
@@ -98,12 +92,9 @@ elseif strcmp(defaults.analysis,'Frequency')
     end
 
     % start
-    if isempty(defaults.lowf)
+    if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
         LIMO.data.start = freqvect(1);
         LIMO.data.trim1 = 1;
-    elseif defaults.lowf < freqvect(1)
-        error(['The lowest frequency possible is:',num2str(freqvect(1))]);
-        return
     else
         [~,position] = min(abs(freqvect-defaults.lowf));
         LIMO.data.start = freqvect(position);
@@ -111,12 +102,9 @@ elseif strcmp(defaults.analysis,'Frequency')
     end
     
     % end
-    if isempty(defaults.highf)
+    if isempty(defaults.highf) || defaults.highf > freqvect(end)
         LIMO.data.end = freqvect(end);
         LIMO.data.trim2 = numel(freqvect);
-    elseif defaults.highf > freqvect(end)
-        error(['The highest frequency possible is:',num2str(freqvect(end))]);
-        return
     else
         [~,position] = min(abs(freqvect-defaults.highf));
         LIMO.data.end = freqvect(position);
@@ -137,12 +125,9 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     end
        
     % start
-    if isempty(defaults.start)
+    if isempty(defaults.start) || defaults.start < min(timevect)
         LIMO.data.start = timevect(1);
         LIMO.data.trim1 = 1;    
-    elseif defaults.start < min(timevect)
-        error(['The earliest time possible is:',num2str(timevect(1)),'ms']);
-        return
     else
         [~,position]=min(abs(timevect - defaults.start));
         LIMO.data.start = timevect(position);
@@ -150,12 +135,9 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     end
     
     % end
-    if isempty(defaults.end)
+    if isempty(defaults.end) || defaults.end > max(timevect)
         LIMO.data.end = timevect(end);
         LIMO.data.trim2 = length(timevect);    
-    elseif defaults.end > max(timevect)
-        error(['The latest time possible is:',num2str(timevect(end)),'ms']);
-        return
     else
         [~,position]=min(abs(timevect - defaults.end));
         LIMO.data.end = timevect(position);
@@ -165,12 +147,9 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     LIMO.data.tf_times = timevect(LIMO.data.trim1:LIMO.data.trim2);
 
     % start
-    if isempty(defaults.lowf)
+    if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
         LIMO.data.lowf = freqvect(1);
-        LIMO.data.trim_lowf = 1;
-    elseif defaults.lowf < freqvect(1)
-        error(['The lowest frequency possible is:',num2str(freqvect(1))]);
-        return
+        LIMO.data.trim_low_f = 1;
     else
         [~,position] = min(abs(freqvect-defaults.lowf));
         LIMO.data.lowf = freqvect(position);
@@ -178,12 +157,9 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     end
     
     % end
-    if isempty(defaults.highf)
+    if isempty(defaults.highf) || defaults.highf > freqvect(end)
         LIMO.data.highf = freqvect(end);
-        LIMO.data.trim_highf = length(freqvect);
-    elseif defaults.highf > freqvect(end)
-        error(['The highest frequency possible is:',num2str(freqvect(end))]);
-        return
+        LIMO.data.trim_high_f = length(freqvect);
     else
         [~,position] = min(abs(freqvect-defaults.highf));
         LIMO.data.hightf = freqvect(position);

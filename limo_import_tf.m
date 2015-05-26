@@ -111,13 +111,8 @@ if FilterIndex ~= 0
         handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
         
-        if isfield(EEG.etc,'tf_path') == 1
-           [filepath,tf_filename,ext]=fileparts(EEG.etc.tf_path);
-           if exist([tf_filename ext],'file') == 2
-               handles.tf_dir   = [pwd filesep tf_filename ext];
-           else
-               handles.tf_dir   = [handles.dir filesep EEG.etc.tf_path];
-           end
+        if isfield(EEG.etc,'datersp') == 1
+           handles.tf_dir = EEG.etc.datersp;
            cd(handles.dir)
            fprintf('Data set %s loaded \n',FileName); 
         else
@@ -470,14 +465,7 @@ LIMO.data.Cat                 = handles.Cat;
 LIMO.data.Cont                = handles.Cont; 
 
 if exist(handles.tf_dir,'file') == 2;
-    LIMO.data.tf_data_filepath    = EEG.etc.tf_path;
-else
-    warndlg2('The data associated to the .set were not found','missing data')
-    [f,p,ind] = uigetfile('*.mat','pick up your time frequency data');
-    if ind == 0
-        errordlg2('datafile not selected - LIMO EEG aborded'); return
-    end
-    LIMO.data.tf_data_filepath = [p f];
+    LIMO.data.tf_data_filepath    = handles.tf_dir;
 end
 
 LIMO.design.fullfactorial     = handles.fullfactorial;

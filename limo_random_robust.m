@@ -89,7 +89,7 @@ function limo_random_robust(varargin)
 % See also LIMO_TRIMCI LIMO_YUEN_TTEST LIMO_YUEND_TTEST LIMO_ROBUST_1WAY_ANOVA
 % LIMO_GLM1 LIMO_EEG(4) LIMO_EEG_TF(4) LIMO_REP_ANOVA LIMO_CREATE_BOOT_TABLE
 % -----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 % v1: Cyril Pernet and Guillaume Rousselet 24-08-2009
 % v2: Cyril Pernet 12-07-2010
@@ -113,7 +113,7 @@ function limo_random_robust(varargin)
 type = varargin{1};
 alpha = .05; % used for a basic computation like in t-test but data aren't thresholded here
 
-if ismember(type, [1])
+if type == 1
     tfce = varargin{5};
 else
     tfce = varargin{6};

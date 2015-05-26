@@ -18,9 +18,16 @@ function boot_table = limo_create_boot_table(data,nboot)
 % electrode
 %
 % Cyril Pernet v1 24-06-2013
-% ----------------------------
-% Copyright (C) LIMO Team 2014
+% v2 simple edit to specify up front Nmin
+% --------------------------------------
+% Copyright (C) LIMO Team 2015
 
+%% edit default
+Nmin = 6; % this is the minimum number of different trials/subjects 
+          % if too low, the variance is < 1 and thre stat values will be
+          % too high see Pernet et al. 2014
+
+%% start
 % check data for NaNs
 if size(data,1) == 1
     chdata=data(1,1,:); 
@@ -41,7 +48,7 @@ B=1;
 boot_index=zeros(size(data,3),nboot);
 while B~=nboot+1
     tmp = randi(size(data,3),size(data,3),1);
-    if length(unique(tmp)) >= 2 %% && min(sum(~isnan(chdata(:,tmp)),2)) >= 2; % at least 2 different observations per boot and data collected
+    if length(unique(tmp)) >= Nmin % at least Nmin different observations per boot 
         boot_index(:,B) = tmp;
         B=B+1;
     end

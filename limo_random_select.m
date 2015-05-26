@@ -27,7 +27,7 @@ function limo_random_select(varargin)
 % nboot the number of bootstrap to do (default = 0)
 % tfce 0/1 indicates to computes tfce or not (default = 0)
 % ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 % see also limo_random_robust, limo_expected_chanlocs
 % Cyril Pernet - Guillaume Rousselet v1 18-05-2009
@@ -88,7 +88,7 @@ if type == 1 || type == 4
 
     % get files
     % ---------
-    [Names,Paths,limo.data.data] = limo_get_files(' ');
+    [Names,Paths,limo.data.data] = limo_get_files;
     if isempty(Names)
         disp('no files selected')
         return

@@ -1,4 +1,15 @@
 function limo_batch_design_matrix(LIMOfile)
+
+% this function wrap aound the LIMOfile structure from the batch and
+% calls limo_design_matrix - of special interest is the ability to
+% rearrange data per components based on the study structure clustering
+% output - this allowing group statistics at the 2nd level. 
+%
+% Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
+% see also limo_batch 
+%% -----------------------------
+% Copyright (C) LIMO Team 2015
+
 global EEG
 
 load(LIMOfile);
@@ -164,8 +175,13 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             end
             Y = limo_concatcells(Y);
             clear EEG
+        elseif EEG.etc.datafiles.datersp % .mat file
+            Y = load(EEG.etc.datafiles.datersp);
+            if isstruct(Y)
+                Y = getfield(Y,cell2mat(fieldnames(Y)));
+            end
         else
-            error('the field EEG.etc.dattimef pointing to the data is missing')
+            error('no data found, the field EEG.etc.dattimef or EEG.etc.datersp pointing to the data is missing')
         end
     end
     

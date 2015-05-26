@@ -48,7 +48,7 @@ while go == 1
         for f=1:size(STUDY.datasetinfo,2)
             Names{f} = STUDY.datasetinfo(f).filename;
             Paths{f} = STUDY.datasetinfo(f).filepath;
-            Files{f}=[Paths{f} filesep Files{f}];
+            Files{f}=[Paths{f} filesep Names{f}];
         end
         index = f; go = 0;
     elseif strcmp(name(end-2:end),'txt')

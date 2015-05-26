@@ -89,7 +89,7 @@ if strcmp(quest,'One')
     end
     
     try
-        if strcmp([PathName FileName],[EEG.filepath filesep EEG.filename])
+        if strcmp([PathName filesep FileName],[EEG.filepath filesep EEG.filename])
             disp('Using Global variable EEG')
         else
             try

@@ -68,7 +68,7 @@ switch varargin{1}
             
             % ------------- prepare weight matrix -------------------------------------
             if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
-                W = ones(LIMO.data.size3D(1),LIMO.data.size3D(3));
+                W = ones(LIMO.data.size3D(1),LIMO.data.size4D(2),LIMO.data.size3D(3));
             elseif strcmp(LIMO.design.method,'IRLS')
                 W = zeros(size(Yr));
             end
@@ -98,14 +98,14 @@ switch varargin{1}
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
                     electrode = array(e); warning off;
-                    fprintf('analyzing electrode %g/%g \n',electrode,size(Yr,1));
+                    fprintf('analyzing channel %g/%g \n',electrode,size(Yr,1));
                     if LIMO.Level == 2
                         Y = squeeze(Yr(electrode,:,:));
                         index = find(~isnan(Y(1,:)));
                         Y = Y(:,index);
                         LIMO.design.X = X(index,:);
                         if size(LIMO.design.X,1) <= size(LIMO.design.X,2)
-                            fprintf('skipping electrode %g not enough data \n',electrode);
+                            fprintf('skipping channel %g not enough data \n',electrode);
                         else
                             model = limo_glm1(Y',LIMO); warning on;
                         end
@@ -134,9 +134,9 @@ switch varargin{1}
                     
                     % update the files to be stored on the disk
                     if strcmp(LIMO.design.method,'IRLS')
-                        W(electrode,:,index) = model.W;
+                        W(electrode,:,:,index) = model.W';
                     else
-                        W(electrode,index) = model.W;
+                        W(electrode,:,index) = model.W';
                     end
                     fitted_data = LIMO.design.X*model.betas;
                     Yhat(electrode,:,index) = fitted_data';

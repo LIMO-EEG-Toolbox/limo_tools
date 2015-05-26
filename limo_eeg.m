@@ -522,6 +522,11 @@ switch varargin{1}
                 % (limo_eeg(4) called via the results interface)
                 if ~exist('H0','dir')
                     boot_go = 1;
+                else
+                    ow = questdlg('overwrie H0?','limo check','yes','no','yes');
+                    if strcmp(ow,'yes')
+                        boot_go = 1;
+                    end
                 end
                 
                 if ~isfield(LIMO.data,'neighbouring_matrix')
@@ -546,7 +551,12 @@ switch varargin{1}
                 try
                     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
                     mkdir H0; load Yr;
-                    
+                    if size(Yr,1) == 1
+                        array = 1;
+                    else
+                        array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+                    end
+                
                     if LIMO.design.bootstrap > 599
                         nboot = LIMO.design.bootstrap;
                     end

@@ -114,7 +114,7 @@ STUDY.design.cell.filebase = name;
 
 %% compute
 [STUDY ALLEEG] = std_precomp(STUDY,ALLEEG,opt.datatype,in_options{:});
-
+clear STUDY
 
 %% save-delete data / update EEG.set file
 if strcmp(opt.datatype,'channels')
@@ -133,14 +133,14 @@ if strcmp(opt.datatype,'channels')
     end
     
     if strcmp(opt.spec,'on')
-        data = load('-mat',[name '.datspec']);
-        ALLEEG.etc.freqspec = data.freqs;
         if strcmp(opt.format,'matrix')
-            data = limo_struct2mat(data);
+            [data,ALLEEG.etc.freqspec] = limo_struct2mat([name '.datspec']);
             save([name '_datspec.mat'],'data'); clear data
             ALLEEG.etc.datafiles.datspec = [name '_datspec.mat'];
             delete([name '.datspec']);
         else
+            data = load('-mat',[name '.datspec']);
+            ALLEEG.etc.freqspec = data.freqs;
             ALLEEG.etc.datafiles.datspec = [name '.datspec'];
         end
     end
@@ -148,15 +148,15 @@ if strcmp(opt.datatype,'channels')
     
     if strcmp(opt.ersp,'on')
         disp('reading single trials ersp, be patient ..')
-        data = load('-mat',[name '.dattimef']);
-        ALLEEG.etc.timeersp = data.times;
-        ALLEEG.etc.freqersp = data.freqs;
         if strcmp(opt.format,'matrix')
-            data = limo_struct2mat(data);
+            [data,ALLEEG.etc.timeersp,ALLEEG.etc.freqersp] = limo_struct2mat([name '.dattimef']);
             save([name '_datersp.mat'],'data'); clear data
             ALLEEG.etc.datafiles.datersp = [name '_datersp.mat'];
             delete([name '.dattimef']);
         else
+            data = load('-mat',[name '.dattimef']);
+            ALLEEG.etc.timeersp = data.times;
+            ALLEEG.etc.freqersp = data.freqs;
             ALLEEG.etc.datafiles.datersp = [name '.dattimef'];
         end
     end
