@@ -27,7 +27,7 @@ end
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
         if isfield(EEG.etc.datafiles,'icaerp')
-            if strcmp(EEG.etc.datafiles.icaerp(end-3:end),'.mat')
+            if ~iscell(EEG.etc.datafiles.icaerp) && strcmp(EEG.etc.datafiles.icaerp(end-3:end),'.mat')
                 Y = load(EEG.etc.datafiles.icaerp);
                 if isstruct(Y)
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
@@ -71,7 +71,7 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         if isfield(EEG.etc,'datafiles.daterp')
-            if strcmp(EEG.etc.datafiles.daterp(end-3:end),'.mat')
+            if ~iscell(EEG.etc.datafiles.daterp) && strcmp(EEG.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEG.etc.datafiles.daterp);
                 if isstruct(Y)
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
@@ -94,7 +94,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     
     if strcmp(LIMO.Type,'Components')
         if isfield(EEG.etc.datafiles,'icaspec')
-            if strcmp(EEG.etc.datafiles.icaspec(end-3:end),'.mat')
+            if ~iscell(EEG.etc.datafiles.icaspec) && strcmp(EEG.etc.datafiles.icaspec(end-3:end),'.mat')
                 Y = load(EEG.etc.datafiles.icaspec);
                 if isstruct(Y)
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
@@ -159,7 +159,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
     disp('Time-Frequency implementation - loading tf data...');
     
     if strcmp(LIMO.Type,'Components')
-        if isfield(EEG.etc.datafiles,'icatimef')
+        if ~iscell(EEG.etc.datafiles.datspec) && isfield(EEG.etc.datafiles,'icatimef')
             for d=1:length(EEG.etc.datafiles.icatimef)
                 signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icatimef(d)));
                 if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
