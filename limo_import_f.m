@@ -53,6 +53,7 @@ end
 handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
+handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'WLS';
 handles.rate                = [];
@@ -218,10 +219,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
+contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -406,6 +407,7 @@ LIMO.design.bootstrap         = handles.bootstrap;
 LIMO.design.tfce              = handles.tfce;  
 LIMO.Level                    = 1;
 LIMO.Analysis                 = 'Frequency';
+LIMO.Type                     = handles.type;
 
 % set defaults
 if isempty(handles.trim_lowf)
@@ -415,7 +417,7 @@ else
 end
 
 if isempty(handles.trim_highf)
-    LIMO.data.trim2 = numel(EEG.etc.limo_psd_freqlist);
+    LIMO.data.trim2 = numel(handles.freqlist);
 else
     LIMO.data.trim2 = handles.trim_highf ;
 end
