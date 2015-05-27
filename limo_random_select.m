@@ -567,7 +567,7 @@ elseif type == 3
     limo.design.X = [];
     if strcmp(Analysis_type,'Full scalp analysis') || strcmp(Analysis_type,'1 electrode only')
 
-        [Names,Paths,limo.data.data] = limo_get_files(' ');
+        [Names,Paths,limo.data.data] = limo_get_files;
         if isempty(Names)
             return
         end
