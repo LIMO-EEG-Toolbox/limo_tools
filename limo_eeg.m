@@ -264,7 +264,7 @@ switch varargin{1}
             else % channels
                 if isfield(EEG.etc.datafiles,'datspec')
                     if iscell(EEG.etc.datafiles.datspec) && strcmp(EEG.etc.datafiles.datspec{1}(end-3:end),'.mat')
-                        Y = load(EEG.etc.datafiles.datspec);
+                        Y = load(EEG.etc.datafiles.datspec{1});
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end                        
