@@ -78,10 +78,11 @@ switch varargin{1}
         % if not called via the eeglab menu but via the matlab command window
         % show the GUI
         
+        disp(' ')
         disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,');
         disp('with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar,');
-        disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus.');
-        disp('These authors are thereafter referred as the LIMO Team');
+        disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus, Ramon Martinez-Cancino,');
+        disp('and Arnaud Delorme. These authors are thereafter referred as the LIMO Team');
         disp(' ')
         disp('LIMO_EEG  Copyright (C) 2015  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
@@ -262,7 +263,12 @@ switch varargin{1}
                 
             else % channels
                 if isfield(EEG.etc.datafiles,'datspec')
-                    if strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
+                    if iscell(EEG.etc.datafiles.datspec) && strcmp(EEG.etc.datafiles.datspec{1}(end-3:end),'.mat')
+                        Y = load(EEG.etc.datafiles.datspec);
+                        if isstruct(Y)
+                            Y = getfield(Y,cell2mat(fieldnames(Y)));
+                        end                        
+                    elseif strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
                         Y = load(EEG.etc.datafiles.datspec);
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
