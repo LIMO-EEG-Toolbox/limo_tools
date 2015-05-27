@@ -138,7 +138,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
         end
     else % channels
         if isfield(EEG.etc.datafiles,'datspec')
-            if strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
+            if ~iscell(EEG.etc.datafiles.datspec) && strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
                 Y = load(EEG.etc.datafiles.datspec);
                 if isstruct(Y)
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
