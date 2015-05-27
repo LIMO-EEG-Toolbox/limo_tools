@@ -51,13 +51,6 @@ varargout{1} = 'LIMO terminated';
 
 %% Callbacks
 
-% --- Executes on button press in first_level.
-function first_level_Callback(hObject, eventdata, handles)
-uiresume
-delete(handles.figure1)
-limo_batch;
-
-
 % --- Executes on selection change in import_menu.
 function import_menu_Callback(hObject, eventdata, handles)
 handles.import = get(hObject,'Value');
@@ -140,6 +133,3 @@ try
     matlabpool('close');
 end
 delete(handles.figure1)
-
-
-

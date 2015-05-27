@@ -162,7 +162,7 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
         LIMO.data.trim_high_f = length(freqvect);
     else
         [~,position] = min(abs(freqvect-defaults.highf));
-        LIMO.data.hightf = freqvect(position);
+        LIMO.data.highf = freqvect(position);
         LIMO.data.trim_high_f = position; 
     end
     

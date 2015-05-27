@@ -147,16 +147,20 @@ if FilterIndex == 1
     end
     
     % 2nd level 
+    nboot = 1000;
     if handles.LIMO.LIMO.Level == 2;
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
             if strncmp(FileName,'one_sample',10)
                 load Yr; limo_random_robust(1,Yr,eval(FileName(28:end-4)),nboot,handles.tfce); clear Yr;
+                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'two_samples',11)
                 load Y1r; load Y2r; limo_random_robust(2,Y1r,Y2r,eval(FileName(29:end-4)),nboot,handles.tfce); clear Y1r Y2r;
+                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'paired_samples',14)
                 load Y1r; load Y2r; limo_random_robust(3,Y1r,Y2r,eval(FileName(32:end-4)),nboot,handles.tfce); clear Y1r Y2r;
+                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'Repeated_measures',17)
-                msgbox('repeated measure ANOVA bootstrap is not availbale at this stage, please use the random effect GUI','action not performed','warn')
+                warndlg2('repeated measure ANOVA bootstrap is not availbale at this stage, please use the random effect GUI','action not performed')
             else
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                     limo_eeg_tf(4);
@@ -335,10 +339,7 @@ test = isempty(handles.p);
 if test == 1
     handles.p = 0.05;
 end
-% MCC_Choice_Callback(hObject, eventdata, handles)
 guidata(hObject, handles);
-
-
 
 % get the multiple comparisons correction method
 % ---------------------------------------------------------------
@@ -351,14 +352,12 @@ end
 
 function MCC_Choice_Callback(hObject, eventdata, handles)
 
-handles.MCC = get(hObject,'Value');  % 1 = None, 2 = 2D Cluster, 3 = 1D Cluster, 4 = T max, 5 = TFCE
+handles.MCC = get(hObject,'Value');  % 1 = None, 2 = Cluster, 3 = TFCE, 4 = T max
 test = isempty(handles.MCC);
 if test == 1
     handles.MCC = 1;
 end
 guidata(hObject, handles);
-
-
 
 
 % --- Executes during object creation, after setting all properties.

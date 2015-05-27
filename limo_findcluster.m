@@ -11,7 +11,7 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 % Use as
 %   [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, minnbchan)
 % or as
-%   [cluster, num] = limo_ft_findcluster(onoff, spatdimneighbstructmat, spatdimneighbselmat, minnbchan)
+%   [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, spatdimneighbselmat, minnbchan)
 % where
 %   onoff                   is a 3D boolean matrix with size N1xN2xN3
 %   spatdimneighbstructmat  defines the neighbouring channels/combinations, see below

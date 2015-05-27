@@ -58,7 +58,7 @@ switch varargin{1}
             
             Yr = limo_tf_4d_reshape(Yr); % reshape to 3D
             if sum(size(Yr) ~= LIMO.data.size3D)~=0; % confirm now shaped 3D
-                errordlg('Is 4D data reshaped correctly?','LIMO.data.size3D'); return
+                errordlg('4D data are not reshaped correctly!','LIMO.data.size3D'); return
             end
             
             Yhat = zeros(LIMO.data.size3D);
@@ -786,6 +786,3 @@ switch varargin{1}
         
 end
 
-if exist('parfor','file') ~=0
-    matlabpool close
-end

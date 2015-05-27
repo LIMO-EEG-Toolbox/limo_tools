@@ -326,8 +326,8 @@ function categorical_variable_input_Callback(hObject, eventdata, handles)
 if FilterIndex == 1
     if ischar(CatName) % NOT multiselect
         if strcmp(CatName(end-3:end),'.txt')
-            if ~isnumeric(importdata(CatName))
-                CatName = importdata(CatName);
+            if ~isnumeric(importdata([PathName CatName]))
+                CatName = importdata([PathName CatName]);
             else
                 tmp = CatName; clear CatName;
                 CatName{1} = [PathName tmp]; clear tmp; % a single subject
@@ -375,8 +375,8 @@ function continuous_variable_input_Callback(hObject, eventdata, handles)
 if FilterIndex == 1
     if ischar(ContName) % NOT multiselect
         if strcmp(ContName(end-3:end),'.txt')
-            if ~isnumeric(importdata(ContName))
-                ContName = importdata(ContName);
+            if ~isnumeric(importdata([PathName ContName]))
+                ContName = importdata([PathName ContName]);
             else
                 tmp = ContName; clear ContName;
                 ContName{1} = [PathName tmp]; clear tmp; % a single subject

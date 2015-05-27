@@ -44,8 +44,8 @@ scale              = handles.data3d.*handles.mask;
 scale(scale==0)    = NaN;
 handles.scale      = scale;
 handles.title      = varargin{4};
-handles.freqs_here = handles.LIMO.data.tf_freqs; % (handles.LIMO.data.trim_low_f:handles.LIMO.data.trim_high_f);
-handles.times_here = handles.LIMO.data.tf_times; % (handles.LIMO.data.trim1:handles.LIMO.data.trim2);
+handles.freqs_here = linspace(handles.LIMO.data.lowf,handles.LIMO.data.hightf,size(handles.data3d,2));
+handles.times_here = linspace(handles.LIMO.data.start,handles.LIMO.data.end,size(handles.data3d,3));
 handles.plot_sel   = 1;
 clear varargin scale
 
@@ -56,6 +56,9 @@ if (size(handles.data3d,4)) == 3
 end
 handles.maxv         = max(handles.data3d(:));
 handles.maxvi        = find(handles.data3d == handles.maxv);
+if length(handles.maxvi) ~= 1
+    handles.maxvi = handles.maxvi(1);
+end
 [handles.maxe, handles.maxf, handles.maxt] = ind2sub(size(handles.data3d), handles.maxvi);
 handles.clims        = [0 handles.maxv];  % Set the global default scale of the colour bar to be 0:max value
 handles.slider_sel   = handles.maxt; % 0.5
@@ -80,7 +83,7 @@ if strcmp(get(hObject,'Visible'),'off')
     cc=colormap(jet);cc(1,:)=[.9 .9 .9];colormap(cc);
     mytitle = sprintf('%s plotted at %g ms',handles.title, round(handles.times_here(handles.maxt)));
     title(mytitle,'fontsize',12);
-    set(gca, 'XTick',[1 freqp/4 freqp/2 3*freqp/4 freqp],'fontsize',12);
+    set(gca, 'XTick',[1 2 3 4 5 6],'fontsize',12);
     set(gca, 'XTickLabel',{round(handles.freqs_here(1)), round(handles.freqs_here(round(freqp/4))), round(handles.freqs_here(round(freqp/2))), round(handles.freqs_here(round(3*freqp/4))),round(handles.freqs_here(freqp))},'fontsize',12);
     xlabel('Frequency bin (Hz)','fontsize',12);
     ylabel('Electrodes','fontsize',12);

@@ -1,4 +1,3 @@
-
 function varargout = limo_import_tf(varargin)
 
 % import function for getting timefreq data into limo
@@ -58,7 +57,7 @@ handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.rate                = [];
 handles.trim1               = [];
 handles.trim2               = [];
@@ -71,13 +70,15 @@ handles.start               = 0;
 handles.end                 = 0;
 handles.lowf                = 0;
 handles.highf               = 0;
-handles.freqlist            = 0;
+handles.tf_times            = 0;
+handles.tf_freqs            = 0;
 handles.dir                 = [];
 handles.zscore              = 1;
 handles.fullfactorial       = 0;
 handles.dir                 = pwd;
 handles.bootstrap           = 0;
 handles.tfce                = 0;
+handles.out                 = [];
 
 guidata(hObject, handles);
 uiwait(handles.figure1);
@@ -85,8 +86,12 @@ uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_import_tf_OutputFcn(hObject, eventdata, handles) 
-varargout{1} = 'LIMO import terminated';
-
+if isempty(handles.out)
+    varargout{1} = 'LIMO import terminated';
+else
+    varargout{1} = handles.out;
+end
+delete(handles.figure1)
 
 %% Callbacks
 
@@ -107,14 +112,17 @@ if FilterIndex ~= 0
         handles.data_dir = PathName;
         handles.data     = FileName;
         handles.chanlocs = EEG.chanlocs;
-        handles.start    = EEG.xmin;  % For tf, we grab relevent numbers thru other means
-        handles.end      = EEG.xmax;
         handles.rate     = EEG.srate;
         
-        if isfield(EEG.etc,'datersp') == 1
-           handles.tf_dir = EEG.etc.datersp;
-           cd(handles.dir)
-           fprintf('Data set %s loaded \n',FileName); 
+        if isfield(EEG.etc,'timeersp') == 1 && isfield(EEG.etc,'freqersp') == 1
+            handles.start      = EEG.etc.timeersp(1);
+            handles.end        = EEG.etc.timeersp(end);
+            handles.lowf       = EEG.etc.freqersp(1);
+            handles.highf      = EEG.etc.freqersp(end);
+            handles.tf_times   = EEG.etc.timeersp;
+            handles.tf_freqs   = EEG.etc.freqersp;
+            cd(handles.dir)
+            fprintf('Data set %s loaded \n',FileName);
         else
             errordlg('Can''t load the data. Ensure that time-frequency information is stored in EEG.etc - see help.'); return
         end
@@ -138,19 +146,15 @@ end
 function Starting_point_Callback(hObject, eventdata, handles)
 global EEG 
 
-if isfield(EEG.etc,'tf_freqs') == 0
-    helpdlg(['Please import a time-frequency dataset above first']);
-end
-
 start = str2double(get(hObject,'String'));
-if start < EEG.etc.tf_times(1)
-    errordlg(['The earliest time possible is:',num2str(EEG.etc.tf_times(1)),'ms']);
+if start < EEG.etc.timeersp(1)
+    errordlg(['The earliest time possible is:',num2str(EEG.etc.timeersp(1)),'ms']);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.tf_times-start));
-    closest_start = EEG.etc.tf_times(ind);
+    [a1 ind] = min(abs(EEG.etc.timeersp-start));
+    closest_start = EEG.etc.timeersp(ind);
     if start ~= closest_start
-        helpdlg(['this will be adjusted to sampling rate, start at:',num2str(closest_start),'ms']);
+        warndlg2(['this will be adjusted to sampling rate, start at:',num2str(closest_start),'ms']);
     end
     handles.start   = closest_start;
     handles.trim1   = ind; % gives the 1st column to start the analysis
@@ -169,21 +173,20 @@ end
 
 function ending_point_Callback(hObject, eventdata, handles)
 global EEG 
-if isfield(EEG.etc,'tf_freqs') == 0
-    helpdlg(['Please import a time-frequency dataset above first']);
-end
-
 
 ending = str2double(get(hObject,'String'));
-if ending > EEG.etc.tf_times(end)
-    errordlg(['The latest time possible is:',num2str(EEG.etc.tf_times(end)),'ms']);
+if ending > EEG.etc.timeersp(end)
+    errordlg(['The latest time possible is:',num2str(EEG.etc.timeersp(end)),'ms']);
 else
-    
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.tf_times-ending));
-    closest_ending = EEG.etc.tf_times(ind);
+    if isnan(ending)
+        [a1 ind] = max(EEG.etc.timeersp);
+    else
+        [a1 ind] = min(abs(EEG.etc.timeersp-ending));
+    end
+    closest_ending = EEG.etc.timeersp(ind);
     if ending ~= closest_ending
-        helpdlg(['this will be adjusted to sampling rate, end at:',num2str(closest_ending),'ms']);
+        warndlg2(['this will be adjusted to sampling rate, end at:',num2str(closest_ending),'ms']);
     end
     handles.end   = closest_ending;
     handles.trim2 = ind; % gives the 1st column to start the analysis
@@ -201,20 +204,16 @@ end
 
 function low_freq_Callback(hObject, eventdata, handles)
 global EEG 
-if isfield(EEG.etc,'tf_freqs') == 0
-    helpdlg(['Please import a time-frequency dataset above first']);
-end
-
 
 lowf = str2double(get(hObject,'String'));
-if lowf < EEG.etc.tf_freqs(1)
-    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.tf_freqs(1))]);
+if lowf < EEG.etc.freqersp(1)
+    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.freqersp(1))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.tf_freqs-lowf));
-    closest_lowf = EEG.etc.tf_freqs(ind);
+    [a1 ind] = min(abs(EEG.etc.freqersp-lowf));
+    closest_lowf = EEG.etc.freqersp(ind);
     if lowf ~= closest_lowf
-        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
+        warndlg2(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
     end
     handles.lowf    = closest_lowf;
     handles.trim_lowf    = ind; % gives the 1st column to start the analysis
@@ -232,19 +231,20 @@ end
 
 function high_freq_Callback(hObject, eventdata, handles)
 global EEG 
-if isfield(EEG.etc,'tf_freqs') == 0
-    helpdlg(['Please import a time-frequency dataset above first']);
-end
 
 highf = str2double(get(hObject,'String'));
-if highf > EEG.etc.tf_freqs(end)
-    errordlg(['The highest frequency possible is:',num2str(EEG.etc.tf_freqs(end))]);
+if highf > EEG.etc.freqersp(end)
+    errordlg(['The highest frequency possible is:',num2str(handles.tf_freqs(end))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.tf_freqs-highf));
-    closest_highf = EEG.etc.tf_freqs(ind);
+    if isnan(highf)
+        [a1 ind] = max(EEG.etc.freqersp);
+    else
+        [a1 ind] = min(abs(EEG.etc.freqersp-highf));
+    end
+    closest_highf = EEG.etc.freqersp(ind);
     if highf ~= closest_highf
-        helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
+        warndlg2(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
     end
     handles.highf    = closest_highf;
     handles.trim_highf    = ind; % gives the 1st column to start the analysis
@@ -342,8 +342,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cat = load(FileName);
     else
-        load(FileName)
-        handles.Cat = eval(FileName(1:end-4));
+        cat = load(FileName);
+        handles.Cat = getfield(cat,cell2mat(fieldnames(cat)));
+        clear cat
     end
     
     % if there is more than one factor, allow factorial design
@@ -382,8 +383,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cont = load(FileName);
     else
-        load(FileName)
-        handles.Cont = eval(FileName(1:end-4));
+        cont = load(FileName);
+        handles.Cont = getfield(cont,cell2mat(fieldnames(cont)));
+        clear cont
     end
     
     % if the regressors are not zscored, allow option to leave it as such 
@@ -447,7 +449,7 @@ global EEG LIMO
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)
-web(['file://' which('limo_import.html')]);
+web(['file://' which('limo_importtf.html')]);
 cd (handles.dir)
 
 
@@ -464,13 +466,9 @@ LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont; 
 
-if exist(handles.tf_dir,'file') == 2;
-    LIMO.data.tf_data_filepath    = handles.tf_dir;
-end
-
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
-LIMO.design.method            = 'OLS';
+LIMO.design.method            = 'WLS';
 LIMO.design.type_of_analysis  = handles.type_of_analysis;  
 LIMO.design.bootstrap         = handles.bootstrap;  
 LIMO.design.tfce              = handles.tfce;  
@@ -485,12 +483,14 @@ else
 end
 
 if isempty(handles.trim_highf)
-    LIMO.data.trim_high_f = numel(EEG.etc.tf_freqs);
+    LIMO.data.trim_high_f = numel(handles.tf_freqs);
 else
     LIMO.data.trim_high_f = handles.trim_highf;
 end
 
-LIMO.data.tf_freqs = EEG.etc.tf_freqs(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
+LIMO.data.tf_freqs = handles.tf_freqs(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
+LIMO.data.lowf    = handles.lowf ;
+LIMO.data.highf   = handles.highf ;
 
 if isempty(handles.trim1)
     LIMO.data.trim1 = 1;
@@ -499,14 +499,14 @@ else
 end
 
 if isempty(handles.trim2)
-    LIMO.data.trim2 = numel(EEG.etc.tf_times);
+    LIMO.data.trim2 = numel(handles.tf_times);
 else
     LIMO.data.trim2 = handles.trim2;
 end
 
-LIMO.data.tf_times = EEG.etc.tf_times(LIMO.data.trim1:LIMO.data.trim2);
-LIMO.data.start = EEG.etc.tf_times(LIMO.data.trim1); % should match handles.start;
-LIMO.data.end = EEG.etc.tf_times(LIMO.data.trim2);; % should match handles.end ;
+LIMO.data.tf_times = handles.tf_times(LIMO.data.trim1:LIMO.data.trim2);
+LIMO.data.start    = handles.start;
+LIMO.data.end      = handles.end ;
 
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;
@@ -522,7 +522,6 @@ else
     save LIMO LIMO
     uiresume
     guidata(hObject, handles);
-    delete(handles.figure1)
 end
 
 % --- Executes on button press in Quit.
@@ -531,6 +530,6 @@ function Quit_Callback(hObject, eventdata, handles)
 
 clc
 uiresume
+handles.out = 'LIMO import aborded';
 guidata(hObject, handles);
-delete(handles.figure1)
 limo_gui

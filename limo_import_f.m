@@ -5,7 +5,7 @@ function varargout = limo_import_f(varargin)
 % information needed to process the data
 % cyril pernet 18-03-2009 v1
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2015
 
 
 %% GUI stuffs
@@ -54,7 +54,7 @@ handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.rate                = [];
 handles.start               = 0;
 handles.end                 = 0;
@@ -70,6 +70,7 @@ handles.fullfactorial       = 0;
 handles.dir                 = pwd;
 handles.bootstrap           = 0;
 handles.tfce                = 0;
+handles.out                  = [];
 
 guidata(hObject, handles);
 uiwait(handles.figure1);
@@ -77,8 +78,12 @@ uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_import_f_OutputFcn(hObject, eventdata, handles) 
-varargout{1} = 'LIMO import terminated';
-
+if isempty(handles.out)
+    varargout{1} = 'LIMO import terminated';
+else
+    varargout{1} = handles.out;
+end
+delete(handles.figure1)
 
 %% Callbacks
 
@@ -101,17 +106,13 @@ if FilterIndex ~= 0
         handles.chanlocs = EEG.chanlocs;
         handles.rate     = EEG.srate;
         
-        if isfield(EEG.etc,'limo_psd') == 1 && numel(size(EEG.etc.limo_psd)) == 3; % data are there
-            try
-            handles.start    = EEG.etc.limo_psd_freqlist(1);
-            handles.end      = EEG.etc.limo_psd_freqlist(end);
-            handles.freqlist = EEG.etc.limo_psd_freqlist;
-            catch list_issue
-                errordlg('Can''t find the field EEG.etc.limo_psd_freqlist - see help.');
-            end
+        if isfield(EEG.etc,'freqspec') == 1 
+            handles.start    = EEG.etc.freqspec(1);
+            handles.end      = EEG.etc.freqspec(end);
+            handles.freqlist = EEG.etc.freqspec;
             cd(handles.dir); fprintf('Data set %s loaded \n',FileName);
         else
-            errordlg('Can''t find the field EEG.etc.limo_psd - see help.'); return
+            errordlg('Can''t find the field EEG.etc.freqspec - see help.'); return
         end
     
     catch
@@ -135,12 +136,12 @@ if isfield(EEG.etc,'limo_psd_freqlist') == 0
 end
 
 lowf = str2double(get(hObject,'String'));
-if lowf < EEG.etc.limo_psd_freqlist(1)
-    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.limo_psd_freqlist(1))]);
+if lowf < EEG.etc.freqspec(1)
+    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.freqspec(1))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-lowf));
-    closest_lowf = EEG.etc.limo_psd_freqlist(ind);
+    [a1 ind] = min(abs(EEG.etc.freqspec-lowf));
+    closest_lowf = EEG.etc.freqspec(ind);
     if lowf ~= closest_lowf
         helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
     end
@@ -166,12 +167,12 @@ if isfield(EEG.etc,'limo_psd_freqlist') == 0
 end
 
 highf = str2double(get(hObject,'String'));
-if highf > EEG.etc.limo_psd_freqlist(end)
-    errordlg(['The highest frequency possible is:',num2str(EEG.etc.limo_psd_freqlist(end))]);
+if highf > EEG.etc.freqspec(end)
+    errordlg(['The highest frequency possible is:',num2str(EEG.etc.freqspec(end))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.limo_psd_freqlist-highf));
-    closest_highf = EEG.etc.limo_psd_freqlist(ind);
+    [a1 ind] = min(abs(EEG.etc.freqspec-highf));
+    closest_highf = EEG.etc.freqspec(ind);
     if highf ~= closest_highf
         helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
     end
@@ -274,8 +275,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cat = load(FileName);
     else
-        FileName = load(FileName);
-        handles.Cat = getfield(FileName,cell2mat(fieldnames(FileName)));
+        cat = load(FileName);
+        handles.Cat = getfield(cat,cell2mat(fieldnames(cat)));
+        clear cat
     end
     
     % if there is more than one factor, allow factorial design
@@ -314,8 +316,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cont = load(FileName);
     else
-        FileName = load(FileName);
-        handles.Cont = getfield(FileName,cell2mat(fieldnames(FileName)));
+        cont = load(FileName);
+        handles.Cont = getfield(cont,cell2mat(fieldnames(cont)));
+        clear cont
     end
     
     % if the regressors are not zscored, allow option to leave it as such 
@@ -379,7 +382,7 @@ global EEG LIMO
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)
-web(['file://' which('limo_import.html')]);
+web(['file://' which('limo_importf.html')]);
 cd (handles.dir)
 
 
@@ -395,8 +398,6 @@ LIMO.data.chanlocs            = handles.chanlocs;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont;  
-LIMO.data.start               = handles.start;
-LIMO.data.end                 = handles.end ;
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
 LIMO.design.method            = 'OLS';
@@ -420,6 +421,8 @@ else
 end
 
 LIMO.data.freqlist = handles.freqlist(LIMO.data.trim1:LIMO.data.trim2);
+LIMO.data.start    = handles.start;
+LIMO.data.end      = handles.end ;
 
 if isempty(handles.dir)
     LIMO.dir = handles.data_dir;
@@ -435,7 +438,6 @@ else
     save LIMO LIMO
     uiresume
     guidata(hObject, handles);
-    delete(handles.figure1)
 end
 
 
@@ -445,6 +447,6 @@ function Quit_Callback(hObject, eventdata, handles)
 
 clc
 uiresume
+handles.out = 'LIMO import aborded';
 guidata(hObject, handles);
-delete(handles.figure1)
 limo_gui

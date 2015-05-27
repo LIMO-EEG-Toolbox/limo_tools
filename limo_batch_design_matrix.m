@@ -21,17 +21,24 @@ if exist('EEG','var')
     end
 else
     disp('reloading data ..');
-    EEG=pop_loadset(LIMO.data.data);
+    EEG=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
 end
 
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
         if isfield(EEG.etc.datafiles,'icaerp')
-            for d=1:length(EEG.etc.datafiles.icaerp)
-                signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaerp(d)));
-                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+            if strcmp(EEG.etc.datafiles.icaerp(end-3:end),'.mat')
+                Y = load(EEG.etc.datafiles.icaerp);
+                if isstruct(Y)
+                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                end
+            else
+                for d=1:length(EEG.etc.datafiles.icaerp)
+                    signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaerp(d)));
+                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                end
+                signal = limo_concatcells(signal);
             end
-            signal = limo_concatcells(signal);
         else
             signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
         end
@@ -64,11 +71,18 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         if isfield(EEG.etc,'datafiles.daterp')
-            for d=1:length(EEG.etc.datafiles.daterp)
-                Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.daterp(d)));
-                if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+            if strcmp(EEG.etc.datafiles.daterp(end-3:end),'.mat')
+                Y = load(EEG.etc.datafiles.daterp);
+                if isstruct(Y)
+                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                end
+            else
+                for d=1:length(EEG.etc.datafiles.daterp)
+                    Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.daterp(d)));
+                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                end
+                Y = limo_concatcells(Y);
             end
-            Y = limo_concatcells(Y);
         else
             disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEG.data')
             Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
@@ -80,11 +94,18 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     
     if strcmp(LIMO.Type,'Components')
         if isfield(EEG.etc.datafiles,'icaspec')
-            for d=1:length(EEG.etc.datafiles.icaspec)
-                signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaspec(d)));
-                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+            if strcmp(EEG.etc.datafiles.icaspec(end-3:end),'.mat')
+                Y = load(EEG.etc.datafiles.icaspec);
+                if isstruct(Y)
+                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                end
+            else
+                for d=1:length(EEG.etc.datafiles.icaspec)
+                    signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaspec(d)));
+                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                end
+                signal = limo_concatcells(signal);
             end
-            signal = limo_concatcells(signal);
         else
             signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
         end
@@ -117,11 +138,18 @@ elseif strcmp(LIMO.Analysis,'Frequency')
         end
     else % channels
         if isfield(EEG.etc.datafiles,'datspec')
-            for d=1:length(EEG.etc.datafiles.datspec)
-                Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.datspec(d)));
-                if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+            if strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
+                Y = load(EEG.etc.datafiles.datspec);
+                if isstruct(Y)
+                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                end
+            else
+                for d=1:length(EEG.etc.datafiles.datspec)
+                    Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.datspec(d)));
+                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                end
+                Y = limo_concatcells(Y); clear EEG
             end
-            Y = limo_concatcells(Y); clear EEG
         else
             error('the field EEG.etc.datspec pointing to the data is missing')
         end

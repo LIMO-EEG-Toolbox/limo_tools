@@ -5,7 +5,7 @@ function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 %
 % FORMAT reshaped = limo_tf_4d_reshape(reshape_in)
 %
-% INPUT/OUTPUT 4D elec-freqs-times-N / 3D elec-freqs*times-N
+% INPUT/OUTPUT 4D elec-freqs-times-N / 3D elec-freqs*times-N (all freq at a given time point)
 %              3D elec-freqs*times-N / 4D elec-freqs-times-N
 %              
 % By default the function looks for the LIMO variable (either already used

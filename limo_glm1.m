@@ -71,8 +71,10 @@ if nargin == 2
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
-    if strcmp(varargin{2}.Analysis,'Time-Frequency') && strcmp(method,'WLS')
-        method = 'WLS-TF'; % trick for concatenated TF data
+    if strcmp(varargin{2}.Analysis,'Time-Frequency') 
+        if strcmp(method,'WLS')
+            method = 'WLS-TF'; % run weights per freq band
+        end
         n_freqs = varargin{2}.data.size4D(2);
         n_times = varargin{2}.data.size4D(3);
     end
@@ -118,7 +120,13 @@ E     = (Y'*R*Y);                                                          % SS 
 
 % compute Beta parameters and weights
 if strcmp(method,'OLS')
-    W = ones(size(Y,1),1);
+    
+    if strcmp(varargin{2}.Analysis,'Time-Frequency')
+        W = ones(n_freqs,size(X,1));
+    else
+        W = ones(size(Y,1),1);
+    end
+    
     if nb_continuous ~=0 && nb_factors == 0
         Betas = X\Y; % numerically more stable than pinv
     else
@@ -128,22 +136,31 @@ elseif strcmp(method,'WLS')
     [Betas,W] = limo_WLS(X,Y);
 elseif strcmp(method,'WLS-TF')
     % unpack the data
-    reshaped = nan(size(Y,1),n_freqs, n_times);
-    for param = 1:size(Y,1)
-        for tm = 1:n_times
-            this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
-            reshaped(param,:,tm) = Y(param,this_freq_start_index:this_freq_start_index+n_freqs-1);
-        end
+    [n_freq_times, N] = size(Y');
+    if n_freq_times ~= n_freqs*n_times
+        error('dimensions disagreement to reshape freq*time')
+    else
+        reshaped = nan(n_freqs, n_times, N);
     end
-    % get estimates per freq band
+
+    for tr = 1:N
+        for tm = 1:n_times
+            this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf 
+                eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+        end
+        reshaped(:,:,tr) = eft_3d;
+    end
+    
+     % get estimates per freq band
     Betas = NaN(size(X,2),n_freqs*n_times);
     W = NaN(n_freqs,size(X,1));
-    index1 = 1; index2 = n_times;
+    index1 = 1; 
     for f=1:n_freqs
-        [Betas(:,index1:index2),W(f,:)] = limo_WLS(X,squeeze(reshaped(:,f,:)));
-        index1=index2+1; index2=index2+n_times;
+        [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+        index1=index1+1; 
     end
     clear reshaped
+    
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
 end

@@ -24,16 +24,10 @@ if MCC == 2
         expected_chanlocs = LIMO.data.chanlocs;
         channeighbstructmat = LIMO.data.neighbouring_matrix;
         boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-        
-        
-       
-        for boot=1:nboot
-            
-            
+        parfor boot=1:nboot
             %boot_maxclustersum(boot) = andrews_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
             p_under_alpha = bootP(:,:,boot) <= p;
             bootM_f = bootM(:,:,boot);
-
             [posclusterslabelmat,nposclusters] = andrews_findcluster(p_under_alpha,channeighbstructmat,minnbchan);
             
             if nposclusters~=0

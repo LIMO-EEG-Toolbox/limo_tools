@@ -5,7 +5,7 @@ function varargout = limo_import_t(varargin)
 % information needed to process the data
 % cyril pernet 18-03-2009 v1
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2015
 
 
 %% GUI stuffs
@@ -69,13 +69,19 @@ handles.fullfactorial       = 0;
 handles.dir                 = pwd;
 handles.bootstrap           = 0;
 handles.tfce                = 0;
+handles.out                 = [];
 
 guidata(hObject, handles);
 uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_import_t_OutputFcn(hObject, eventdata, handles) 
-varargout{1} = 'LIMO import terminated';
+if isempty(handles.out)
+    varargout{1} = 'LIMO import terminated';
+else
+    varargout{1} = handles.out;
+end
+delete(handles.figure1)
 
 
 %% Callbacks
@@ -296,8 +302,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cat = load(FileName);
     else
-        load(FileName)
-        handles.Cat = eval(FileName(1:end-4));
+        cat = load(FileName);
+        handles.Cat = getfield(cat,cell2mat(fieldnames(cat)));
+        clear cat
     end
     
     % if there is more than one factor, allow factorial design
@@ -336,8 +343,9 @@ if FilterIndex == 1
     if strcmp(FileName(end-3:end),'.txt')
         handles.Cont = load(FileName);
     else
-        load(FileName)
-        handles.Cont = eval(FileName(1:end-4));
+        cont = load(FileName);
+        handles.Cont = getfield(cont,cell2mat(fieldnames(cont)));
+        clear cont
     end
     
     % if the regressors are not zscored, allow option to leave it as such 
@@ -422,8 +430,6 @@ else
     LIMO.data.sampling_rate       = handles.rate;
     LIMO.data.Cat                 = handles.Cat;
     LIMO.data.Cont                = handles.Cont;
-    LIMO.data.start               = handles.start;
-    LIMO.data.end                 = handles.end ;
     LIMO.Type                     = handles.type;
     
     if isempty(handles.trim1)
@@ -439,6 +445,8 @@ else
     end
     
     LIMO.data.timevect  = handles.timevect(LIMO.data.trim1:LIMO.data.trim2);
+    LIMO.data.start     = handles.start;
+    LIMO.data.end       = handles.end ;
     
     % LIMO.design
     LIMO.design.fullfactorial     = handles.fullfactorial;
@@ -466,7 +474,6 @@ else
         save LIMO LIMO
         uiresume
         guidata(hObject, handles);
-        delete(handles.figure1)
     end
 end
 
@@ -476,6 +483,6 @@ function Quit_Callback(hObject, eventdata, handles)
 
 clc
 uiresume
+handles.out = 'LIMO import aborded';
 guidata(hObject, handles);
-delete(handles.figure1)
 limo_gui

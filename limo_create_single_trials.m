@@ -134,8 +134,8 @@ if strcmp(opt.datatype,'channels')
     
     if strcmp(opt.spec,'on')
         if strcmp(opt.format,'matrix')
-            [data,ALLEEG.etc.freqspec] = limo_struct2mat([name '.datspec']);
-            save([name '_datspec.mat'],'data'); clear data
+            [data,trash,ALLEEG.etc.freqspec] = limo_struct2mat([name '.datspec']);
+            save([name '_datspec.mat'],'data'); clear data trash
             ALLEEG.etc.datafiles.datspec = [name '_datspec.mat'];
             delete([name '.datspec']);
         else
