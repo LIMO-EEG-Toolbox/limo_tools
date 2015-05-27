@@ -24,6 +24,8 @@ function [Names,Paths,Files] = limo_get_files(gp,filter)
 
 if nargin == 0
     gp = [];
+end
+if nargin <2
     filter = {'*.mat;*.txt'};
 end
 
@@ -52,7 +54,7 @@ while go == 1
         end
         index = f; go = 0;
     elseif strcmp(name(end-2:end),'txt')
-        group_files=textread([path name],'%s'); % ,'whitespace','');  % select a txt file listing all files
+        group_files=textread([path name],'%s','delimiter','');  % select a txt file listing all files
         for f=1:size(group_files,1)
             Files{f} = group_files{f};
             [Paths{f},NAME,EXT] = fileparts(group_files{f});
