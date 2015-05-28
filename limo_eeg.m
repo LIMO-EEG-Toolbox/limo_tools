@@ -453,12 +453,8 @@ switch varargin{1}
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
                     electrode = array(e); warning off;
-                    if strcmp(LIMO.Type,'Channels')
-                        fprintf('analyzing channel %g/%g \n',e,size(array,1));
-                    else
-                        fprintf('analyzing component %g/%g \n',e,size(array,1));
-                    end
                     if LIMO.Level == 2
+                        fprintf('analyzing channel %g/%g \n',e,size(array,1));
                         Y = squeeze(Yr(electrode,:,:));
                         index = find(~isnan(Y(1,:)));
                         Y = Y(:,index);
@@ -468,6 +464,11 @@ switch varargin{1}
                             index = [1:size(Y,2)];
                         end
                     else % level 1 we should not have any NaNs
+                        if strcmp(LIMO.Type,'Channels')
+                            fprintf('analyzing channel %g/%g \n',e,size(array,1));
+                        else
+                            fprintf('analyzing component %g/%g \n',e,size(array,1));
+                        end
                         index = [1:size(Yr,3)];
                         model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO);
                     end

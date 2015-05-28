@@ -54,7 +54,7 @@ if ~isempty(LIMO.design.X)
 else
     if strncmp(LIMO.design.name,'one sample',10)
         add_subplots = 0; image(ones(size(LIMO.data.data,2),1)); colormap(gray); caxis([0 1])
-        title('Design matrix','FontSize',14); ylabel('trials / subjects'); set(cga,'XTicks','1')
+        title('Design matrix','FontSize',14); ylabel('trials / subjects'); set(gca,'XTicks','1')
     end
 end
 

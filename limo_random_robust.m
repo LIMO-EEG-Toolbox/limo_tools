@@ -706,6 +706,7 @@ switch type
         
         % ------------------------------------------------
         % check the data structure
+        load LIMO
         for e=1:size(data,1)
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 tmp = isnan(data(e,1,1,:));
@@ -726,7 +727,6 @@ switch type
         
         % ------------------------------------------------
         % update the LIMO structure
-        load LIMO
         LIMO.data.Cat                = 0;
         LIMO.data.Cont               = regressors;
         LIMO.data.data_dir           = pwd;

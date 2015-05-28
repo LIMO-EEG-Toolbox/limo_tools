@@ -10,9 +10,9 @@ function out = limo_match_elec(c_elec,e_elec,a_beg,a_end,data)
 %   c_elec = chanlocs structure of current electrodes available for that
 %            subject
 %   e_elec = chanlocs structure of expected electrodes for all subjects
-%   a_beg  = first frame for the analysis (for Time-Frquwncy this is a
+%   a_beg  = first frame for the analysis (for Time-Frquency this is a
 %            vector with the 1st freq and 1st time)
-%   a_end  = last frame for the analysis (for Time-Frquwncy this is a
+%   a_end  = last frame for the analysis (for Time-Frquency this is a
 %            vector with the 1st freq and 1st time)
 %   data   = matrix electrodes * frames * data
 %            matrix electrodes * freq * time * data

@@ -308,7 +308,7 @@ if type == 1 || type == 4
                 end
             end
                        
-            if size(X,2)==1 && nboot ~= 599; 
+            if size(X,2)==1 && nboot < 599; 
                 limo.design.bootstrap = 599;
                 disp('nb of bootstrap adjusted to 599 for a simple regression'); 
             end
@@ -505,57 +505,56 @@ elseif type == 2
 
     % compute
     % --------
-    LIMO = limo; cd(limo.dir); 
-    % clear some memory
+    LIMO = limo; cd(limo.dir);  i=parameters;
+    % free some memory
     clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
-    for i=parameters  % note that it allows to perfom a series of two-sample t-testss
-        if strcmp(limo.Analysis,'Time-Frequency')
-            if strcmp(Analysis_type,'1 electrode only')
-                tmp = squeeze(data{1}(:,:,:,i(1),:));
-                tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
-                tmp_data1(1,:,:,:) = tmp; clear tmp
-                tmp = squeeze(data{2}(:,:,:,i,:));
-                tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
-                tmp_data2(1,:,:,:) = tmp; clear tmp
-            else
-                tmp_data1 = squeeze(data{1}(:,:,:,i(1),:));
-                tmp_data2 = squeeze(data{2}(:,:,:,i(2),:));
-            end
-            
-            if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
-                errordlg('file selection is corrupted, data sizes don''t match');
-                return
-            end
-            
+     
+    if strcmp(LIMO.Analysis,'Time-Frequency')
+        if strcmp(Analysis_type,'1 electrode only')
+            tmp = squeeze(data{1}(:,:,:,i(1),:));
+            tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+            tmp_data1(1,:,:,:) = tmp; clear tmp
+            tmp = squeeze(data{2}(:,:,:,i,:));
+            tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
+            tmp_data2(1,:,:,:) = tmp; clear tmp
         else
-            if strcmp(Analysis_type,'1 electrode only')
-                tmp = squeeze(data{1}(:,:,i,:));
-                tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-                tmp_data1(1,:,:) = tmp; clear tmp
-                tmp = squeeze(data{2}(:,:,i,:));
-                tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
-                tmp_data2(1,:,:) = tmp; clear tmp
-            else
-                tmp_data1 = squeeze(data{1}(:,:,i(1),:));
-                tmp_data2 = squeeze(data{2}(:,:,i(2),:));
-            end
-            
-            if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
-                errordlg('file selection is corrupted, data sizes don''t match');
-                return
-            end
+            tmp_data1 = squeeze(data{1}(:,:,:,i(1),:));
+            tmp_data2 = squeeze(data{2}(:,:,:,i(2),:));
         end
         
-        if strcmp(LIMO.Analysis,'Time-Frequency')
-            LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
-            LIMO.data.size4D = [size(tmp_data1,1) size(tmp_data1,2) size(tmp_data1,3) 5];
+        if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
+            errordlg('file selection is corrupted, data sizes don''t match');
+            return
         end
         
-        Y1r = tmp_data1; save Y1r Y1r, clear Y1r
-        Y2r = tmp_data2; save Y2r Y2r, clear Y2r 
-        LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
-        limo_random_robust(type,tmp_data1,tmp_data2,i,nboot,tfce)
+    else
+        if strcmp(Analysis_type,'1 electrode only')
+            tmp = squeeze(data{1}(:,:,i,:));
+            tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
+            tmp_data1(1,:,:) = tmp; clear tmp
+            tmp = squeeze(data{2}(:,:,i,:));
+            tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
+            tmp_data2(1,:,:) = tmp; clear tmp
+        else
+            tmp_data1 = squeeze(data{1}(:,:,i(1),:));
+            tmp_data2 = squeeze(data{2}(:,:,i(2),:));
+        end
+        
+        if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
+            errordlg('file selection is corrupted, data sizes don''t match');
+            return
+        end
     end
+    
+    if strcmp(LIMO.Analysis,'Time-Frequency')
+        LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
+        LIMO.data.size4D = [size(tmp_data1,1) size(tmp_data1,2) size(tmp_data1,3) 5];
+    end
+    
+    Y1r = tmp_data1; save Y1r Y1r, clear Y1r
+    Y2r = tmp_data2; save Y2r Y2r, clear Y2r
+    LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
+    limo_random_robust(type,tmp_data1,tmp_data2,i,nboot,tfce)
     delete data.mat
 
 
