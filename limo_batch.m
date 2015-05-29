@@ -115,7 +115,7 @@ if nargin == 0
             '*.mat','MAT-files (*.mat)'}, 'Pick a list of LIMO.mat files');
         if FilterIndex ~=0
             if strcmp(FileName(end-3:end),'.txt')
-                batch_contrast.LIMO_files = importdata(FileName);
+                batch_contrast.LIMO_files = importdata(fullfile(PathName, FileName));
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
                 batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
@@ -273,7 +273,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
         
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [root filesep glm_name filesep 'con_' num2str(c) '.mat'];
+            name{c} = [PathName filesep 'con_' num2str(c) '.mat'];
         end
         pipeline(subject).batch_contrast.files_out = name{1};
         LIMO_files.con{subject} = name;
