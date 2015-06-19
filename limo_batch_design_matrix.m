@@ -70,7 +70,7 @@ if strcmp(LIMO.Analysis,'Time')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEG.etc,'datafiles.daterp')
+        if isfield(EEG.etc.datafiles,'daterp')
             if ~iscell(EEG.etc.datafiles.daterp) && strcmp(EEG.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEG.etc.datafiles.daterp);
                 if isstruct(Y)
