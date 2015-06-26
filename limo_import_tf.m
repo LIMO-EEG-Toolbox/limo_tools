@@ -102,25 +102,25 @@ delete(handles.figure1)
 % load a data set -- EEG 
 % ---------------------------------------------------------------
 function Import_data_set_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data with TF data');
 if FilterIndex ~= 0
     try
         disp('loading TF EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset([PathName FileName]);
+        EEGLIMO=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
-        handles.chanlocs = EEG.chanlocs;
-        handles.rate     = EEG.srate;
+        handles.chanlocs = EEGLIMO.chanlocs;
+        handles.rate     = EEGLIMO.srate;
         
-        if isfield(EEG.etc,'timeersp') == 1 && isfield(EEG.etc,'freqersp') == 1
-            handles.start      = EEG.etc.timeersp(1);
-            handles.end        = EEG.etc.timeersp(end);
-            handles.lowf       = EEG.etc.freqersp(1);
-            handles.highf      = EEG.etc.freqersp(end);
-            handles.tf_times   = EEG.etc.timeersp;
-            handles.tf_freqs   = EEG.etc.freqersp;
+        if isfield(EEGLIMO.etc,'timeersp') == 1 && isfield(EEGLIMO.etc,'freqersp') == 1
+            handles.start      = EEGLIMO.etc.timeersp(1);
+            handles.end        = EEGLIMO.etc.timeersp(end);
+            handles.lowf       = EEGLIMO.etc.freqersp(1);
+            handles.highf      = EEGLIMO.etc.freqersp(end);
+            handles.tf_times   = EEGLIMO.etc.timeersp;
+            handles.tf_freqs   = EEGLIMO.etc.freqersp;
             cd(handles.dir)
             fprintf('Data set %s loaded \n',FileName);
         else
@@ -144,15 +144,15 @@ end
 
 
 function Starting_point_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 start = str2double(get(hObject,'String'));
-if start < EEG.etc.timeersp(1)
-    errordlg(['The earliest time possible is:',num2str(EEG.etc.timeersp(1)),'ms']);
+if start < EEGLIMO.etc.timeersp(1)
+    errordlg(['The earliest time possible is:',num2str(EEGLIMO.etc.timeersp(1)),'ms']);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.timeersp-start));
-    closest_start = EEG.etc.timeersp(ind);
+    [a1 ind] = min(abs(EEGLIMO.etc.timeersp-start));
+    closest_start = EEGLIMO.etc.timeersp(ind);
     if start ~= closest_start
         warndlg2(['this will be adjusted to sampling rate, start at:',num2str(closest_start),'ms']);
     end
@@ -172,19 +172,19 @@ end
 
 
 function ending_point_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 ending = str2double(get(hObject,'String'));
-if ending > EEG.etc.timeersp(end)
-    errordlg(['The latest time possible is:',num2str(EEG.etc.timeersp(end)),'ms']);
+if ending > EEGLIMO.etc.timeersp(end)
+    errordlg(['The latest time possible is:',num2str(EEGLIMO.etc.timeersp(end)),'ms']);
 else
     % Find a possible frequency bin close to the requested one
     if isnan(ending)
-        [a1 ind] = max(EEG.etc.timeersp);
+        [a1 ind] = max(EEGLIMO.etc.timeersp);
     else
-        [a1 ind] = min(abs(EEG.etc.timeersp-ending));
+        [a1 ind] = min(abs(EEGLIMO.etc.timeersp-ending));
     end
-    closest_ending = EEG.etc.timeersp(ind);
+    closest_ending = EEGLIMO.etc.timeersp(ind);
     if ending ~= closest_ending
         warndlg2(['this will be adjusted to sampling rate, end at:',num2str(closest_ending),'ms']);
     end
@@ -203,15 +203,15 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function low_freq_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 lowf = str2double(get(hObject,'String'));
-if lowf < EEG.etc.freqersp(1)
-    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.freqersp(1))]);
+if lowf < EEGLIMO.etc.freqersp(1)
+    errordlg(['The lowest frequency possible is:',num2str(EEGLIMO.etc.freqersp(1))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.freqersp-lowf));
-    closest_lowf = EEG.etc.freqersp(ind);
+    [a1 ind] = min(abs(EEGLIMO.etc.freqersp-lowf));
+    closest_lowf = EEGLIMO.etc.freqersp(ind);
     if lowf ~= closest_lowf
         warndlg2(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
     end
@@ -230,19 +230,19 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function high_freq_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 highf = str2double(get(hObject,'String'));
-if highf > EEG.etc.freqersp(end)
+if highf > EEGLIMO.etc.freqersp(end)
     errordlg(['The highest frequency possible is:',num2str(handles.tf_freqs(end))]);
 else
     % Find a possible frequency bin close to the requested one
     if isnan(highf)
-        [a1 ind] = max(EEG.etc.freqersp);
+        [a1 ind] = max(EEGLIMO.etc.freqersp);
     else
-        [a1 ind] = min(abs(EEG.etc.freqersp-highf));
+        [a1 ind] = min(abs(EEGLIMO.etc.freqersp-highf));
     end
-    closest_highf = EEG.etc.freqersp(ind);
+    closest_highf = EEGLIMO.etc.freqersp(ind);
     if highf ~= closest_highf
         warndlg2(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
     end
@@ -445,7 +445,7 @@ guidata(hObject, handles);
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)
@@ -457,7 +457,7 @@ cd (handles.dir)
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
   
 LIMO.data.data_dir            = handles.data_dir;
 LIMO.data.data                = handles.data;

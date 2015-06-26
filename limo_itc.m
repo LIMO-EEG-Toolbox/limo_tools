@@ -42,7 +42,7 @@ function limo_itc(varargin)
 opt.mode = 'session'; % run one after the other in the current matlab session
 opt.flag_pause = false;
 
-global EEG
+global EEGLIMO
 global LIMO
 
 %% what to do
@@ -69,17 +69,17 @@ for subject = 1:size(model.set_files,1)
     limo_itc_import_data(model.set_files{subject},model.cat_files,model.cont_files,model.defaults);
     load('ITC_analysis/LIMO.mat')
     LIMO.Analysis = 'ITC';
-    EEG=pop_loadset(LIMO.data.data);
+    EEGLIMO=pop_loadset(LIMO.data.data);
     cd 'ITC_analysis'
     
     
     disp('loading ITC data...');
     
     % Let's treat 2-condition ITC data like TF data with 2 trials
-    Yitc = EEG.etc.itc(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2);
+    Yitc = EEGLIMO.etc.itc(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2);
     
     
-    if size(Yitc,1)/EEG.nbchan == 2  % If double electrode count in ITC data, check for 2 now
+    if size(Yitc,1)/EEGLIMO.nbchan == 2  % If double electrode count in ITC data, check for 2 now
         disp('*** - Found double electrode count in ITC data - taking as two conditions')
         model.Ncond{subject} = 2;
         %model.info = strcat(model.info,' x2 electrode count in ITC data, taking as two conditions');
@@ -89,16 +89,16 @@ for subject = 1:size(model.set_files,1)
         end
         
 
-        Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),2);
-        Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
-        Y(:,:,:,2) = abs(Yitc(EEG.nbchan+1:end,:,:));
+        Y = nan(EEGLIMO.nbchan,size(Yitc,2),size(Yitc,3),2);
+        Y(:,:,:,1) = abs(Yitc(1:EEGLIMO.nbchan,:,:));
+        Y(:,:,:,2) = abs(Yitc(EEGLIMO.nbchan+1:end,:,:));
               
         % Load a 4D Y with ITC data
         LIMO.data.size4D= size(Y);
         LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         
         
-    elseif size(Yitc,1)/EEG.nbchan == 3  % If double electrode count in ITC data, check for 3 now
+    elseif size(Yitc,1)/EEGLIMO.nbchan == 3  % If double electrode count in ITC data, check for 3 now
         disp('*** - Found triple electrode count in ITC data - taking as three conditions')
         model.Ncond{subject} = 3;
         %model.info = strcat(model.info,' x3 electrode count in ITC data, taking as three conditions');
@@ -108,10 +108,10 @@ for subject = 1:size(model.set_files,1)
         end
         
 
-        Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),3);
-        Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
-        Y(:,:,:,2) = abs(Yitc(EEG.nbchan+1:EEG.nbchan*2,:,:));
-        Y(:,:,:,3) = abs(Yitc(EEG.nbchan*2+1:EEG.nbchan*3,:,:));
+        Y = nan(EEGLIMO.nbchan,size(Yitc,2),size(Yitc,3),3);
+        Y(:,:,:,1) = abs(Yitc(1:EEGLIMO.nbchan,:,:));
+        Y(:,:,:,2) = abs(Yitc(EEGLIMO.nbchan+1:EEGLIMO.nbchan*2,:,:));
+        Y(:,:,:,3) = abs(Yitc(EEGLIMO.nbchan*2+1:EEGLIMO.nbchan*3,:,:));
         
         
               
@@ -120,7 +120,7 @@ for subject = 1:size(model.set_files,1)
         LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         
         
-    elseif size(Yitc,1)/EEG.nbchan == 1
+    elseif size(Yitc,1)/EEGLIMO.nbchan == 1
         
         
          model.Ncond{subject} = 1;
@@ -130,8 +130,8 @@ for subject = 1:size(model.set_files,1)
             subject; error('Some subjects appear to have differing numbers of conditions')
         end
         model.info{subject} = '1 condition';
-        Y = nan(EEG.nbchan,size(Yitc,2),size(Yitc,3),1);
-        Y(:,:,:,1) = abs(Yitc(1:EEG.nbchan,:,:));
+        Y = nan(EEGLIMO.nbchan,size(Yitc,2),size(Yitc,3),1);
+        Y(:,:,:,1) = abs(Yitc(1:EEGLIMO.nbchan,:,:));
         
         
     else
@@ -222,10 +222,10 @@ if model.test_select{1} == 1
     
     tfce = model.defaults.tfce;
     if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
-        EEG.chanlocs = model.defaults.chanlocs;
+        EEGLIMO.chanlocs = model.defaults.chanlocs;
         neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
         neighbdis = str2num(neighbdis{1});
-        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEGLIMO,neighbdis);
     end
     
     
@@ -338,10 +338,10 @@ elseif model.test_select{1} == 2
     
     tfce = model.defaults.tfce;
     if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
-        EEG.chanlocs = model.defaults.chanlocs;
+        EEGLIMO.chanlocs = model.defaults.chanlocs;
         neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
         neighbdis = str2num(neighbdis{1});
-        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEGLIMO,neighbdis);
     end
     
     
@@ -469,10 +469,10 @@ elseif model.test_select{1} == 4 % Reg
     
     tfce = model.defaults.tfce;
     if tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') == 0  % Check we have neighb matrix. If not, create it.
-        EEG.chanlocs = model.defaults.chanlocs;
+        EEGLIMO.chanlocs = model.defaults.chanlocs;
         neighbdis = inputdlg('What neighbourhood distance should be used for TFCE neighbourhood matrix? (Perhaps 0.37 for 128 electrode systems)','Enter neighb distance',1,{'0.37'});
         neighbdis = str2num(neighbdis{1});
-        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEG,neighbdis);
+        [tmpneighbs, LIMO.data.neighbouring_matrix] = limo_get_channeighbstructmat(EEGLIMO,neighbdis);
     end
     
     

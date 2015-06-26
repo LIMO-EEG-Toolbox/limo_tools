@@ -439,7 +439,6 @@ guidata(hObject, handles);
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-global EEG LIMO 
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)

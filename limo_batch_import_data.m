@@ -19,14 +19,14 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 %% -----------------------------
 % Copyright (C) LIMO Team 2015
 
-global EEG
+global EEGLIMO
 
-EEG                          = pop_loadset(setfile);
+EEGLIMO                      = pop_loadset(setfile);
 [root,name,ext]              = fileparts(setfile); 
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
-LIMO.data.sampling_rate      = EEG.srate;
+LIMO.data.sampling_rate      = EEGLIMO.srate;
 LIMO.Analysis                = defaults.analysis;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
@@ -46,7 +46,7 @@ end
 if isfield(defaults,'chanlocs')
     LIMO.data.chanlocs = defaults.chanlocs;
 else
-    LIMO.data.chanlocs = EEG.chanlocs;
+    LIMO.data.chanlocs = EEGLIMO.chanlocs;
 end
 
 if isfield(defaults,'studyinfo')
@@ -56,11 +56,11 @@ end
 % update according to the type of data
 if strcmp(defaults.analysis,'Time') 
     
-    if ~isfield(EEG.etc,'timeerp')
+    if ~isfield(EEGLIMO.etc,'timeerp')
         disp('the fied EEG.etc.timeerp is missing using the default EEG.times');
-        timevect = EEG.times;
+        timevect = EEGLIMO.times;
     else
-        timevect = EEG.etc.timeerp;
+        timevect = EEGLIMO.etc.timeerp;
     end
     
     % start
@@ -74,21 +74,21 @@ if strcmp(defaults.analysis,'Time')
     end
     
     % end
-    if isempty(defaults.end) || defaults.end > max(EEG.times)
+    if isempty(defaults.end) || defaults.end > max(EEGLIMO.times)
         LIMO.data.start = timevect(end);
         LIMO.data.trim2 = length(timevect);    
     else
-        [~,position]=min(abs(EEG.times - defaults.end));
-        LIMO.data.end = EEG.times(position);
+        [~,position]=min(abs(EEGLIMO.times - defaults.end));
+        LIMO.data.end = EEGLIMO.times(position);
         LIMO.data.trim2 = position;
     end
     
 elseif strcmp(defaults.analysis,'Frequency') 
     
-    if ~isfield(EEG.etc,'freqspec')
+    if ~isfield(EEGLIMO.etc,'freqspec')
         error('can''t import spectrum the fied EEG.etc.freqspec (all freq computed) is missing')
     else
-        freqvect = EEG.etc.freqspec;
+        freqvect = EEGLIMO.etc.freqspec;
     end
 
     % start
@@ -115,13 +115,13 @@ elseif strcmp(defaults.analysis,'Frequency')
 
 elseif strcmp(defaults.analysis,'Time-Frequency')
     
-    if ~isfield(EEG.etc,'freqersp')
+    if ~isfield(EEGLIMO.etc,'freqersp')
         error('can''t import ersp the fied EEG.etc.freqsersp (all freq computed) is missing')
-    elseif ~isfield(EEG.etc,'timeersp')
+    elseif ~isfield(EEGLIMO.etc,'timeersp')
         error('can''t import ersp the fied EEG.etc.timeersp (all times computed) is missing')
     else
-        timevect = EEG.etc.timeersp;
-        freqvect = EEG.etc.freqersp;
+        timevect = EEGLIMO.etc.timeersp;
+        freqvect = EEGLIMO.etc.freqersp;
     end
        
     % start

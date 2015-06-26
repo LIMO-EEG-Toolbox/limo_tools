@@ -1,15 +1,15 @@
 function limo_eeg(varargin)
 
-% LIMO_EEG - start up and master function of the LIMO_EEG toolbox
+% LIMO_EEGLIMO - start up and master function of the LIMO_EEGLIMO toolbox
 % Calling this function brings up different GUIs.
 % Each time an option is used it calls subroutines.
 % In this function is also implemented the call to the GLM, creating files
 % etc .. see input
 %
-% LIMO_EEG is designed to perform a hierarchical LInear MOdeling of EEG data
+% LIMO_EEGLIMO is designed to perform a hierarchical LInear MOdeling of EEGLIMO data
 % All analyses can be performed with this toolbox but the visualization
-% relies heavily on EEGlab functions http://sccn.ucsd.edu/eeglab/
-% In addition, the data format is the one used by EEGlab.
+% relies heavily on EEGLIMOlab functions http://sccn.ucsd.edu/eeglab/
+% In addition, the data format is the one used by EEGLIMOlab.
 %
 % INPUT limo_eeg(value,option)
 %                 1 - load the GUI
@@ -22,7 +22,7 @@ function limo_eeg(varargin)
 %                 e.g. C = [1 1 -1 -1; 1 -1 1 -1]; limo_eeg(6,C) would do those
 %                 two contrasts for the data located in the current dir
 %
-% LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,
+% LIMO_EEGLIMO was primarily designed by Cyril Pernet and Guillaume Rousselet,
 % with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar, 
 % Luisa Frei, Ignacio Suay Mas and Marianne Latinus. These authors are thereafter
 % referred as the LIMO Team
@@ -59,7 +59,7 @@ addpath([root filesep 'external'])
 addpath([root filesep 'help'])
 
 % make these shared and available
-global EEG LIMO
+global EEGLIMO LIMO
 
 % in case data are already there
 if isempty(varargin);
@@ -91,7 +91,7 @@ switch varargin{1}
         disp(' ');
         disp('LIMO EEG Ref:')
         disp('Pernet, C.R., Chauveau, N., Gaspar, C., Rousselet, G.A. (2011).')
-        disp('LIMO EEG: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic data.')
+        disp('LIMO EEGLIMO: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic data.')
         disp('Computational Intelligence and Neuroscience, Volume 2011')
         disp(' ')
         limo_gui
@@ -102,7 +102,7 @@ switch varargin{1}
         % ------------------------------------------------------------------------
         %                       IMPORT
         % ------------------------------------------------------------------------
-        % the EEG data are not imported but path / name is saved in LIMO.mat
+        % the EEGLIMO data are not imported but path / name is saved in LIMO.mat
         % Cat and Cont are imported manually from a txt or mat file
         % Other informations are i) the starting time point (sec), ii) the method to
         % use (if multivariate stats have to be computed) and iii) the working
@@ -183,18 +183,18 @@ switch varargin{1}
         
         
         % Check data where specified and load
-        if exist('EEG','var')
-            if strcmp([LIMO.data.data_dir LIMO.data.data],[EEG.filepath filesep EEG.filename])
-                disp('Using Global variable EEG')
+        if exist('EEGLIMO','var')
+            if strcmp([LIMO.data.data_dir LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
+                disp('Using Global variable EEGLIMO')
             else
                 cd (LIMO.data.data_dir);
                 disp('reloading data ..');
-                EEG=pop_loadset(LIMO.data.data);
+                EEGLIMO=pop_loadset(LIMO.data.data);
             end
         else
             cd (LIMO.data.data_dir);
             disp('reloading data ..');
-            EEG=pop_loadset(LIMO.data.data);
+            EEGLIMO=pop_loadset(LIMO.data.data);
         end
         
         % Load either elec voltage over time, elec power over frequency, or
@@ -202,115 +202,115 @@ switch varargin{1}
         
         if strcmp(LIMO.Analysis,'Time')
             if strcmp(LIMO.Type,'Components')
-                if isfield(EEG.etc.datafiles,'icaerp')
-                    if ~iscell(EEG.etc.datafiles.icaerp) && strcmp(EEG.etc.datafiles.icaerp(end-3:end),'.mat')
-                        Y = load(EEG.etc.datafiles.icaerp);
+                if isfield(EEGLIMO.etc.datafiles,'icaerp')
+                    if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
+                        Y = load(EEGLIMO.etc.datafiles.icaerp);
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEG.etc.datafiles.icaerp)
-                            signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaerp(d)));
+                        for d=1:length(EEGLIMO.etc.datafiles.icaerp)
+                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
                             if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
                         end
                         signal = limo_concatcells(signal);
                     end
                 else
-                    signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
                 end
                 Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
 
             else % channels
-                if isfield(EEG.etc,'datafiles.daterp')
-                    if ~iscell(EEG.etc.datafiles.daterp) && strcmp(EEG.etc.datafiles.daterp(end-3:end),'.mat')
-                        Y = load(EEG.etc.datafiles.daterp);
+                if isfield(EEGLIMO.etc,'datafiles.daterp')
+                    if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
+                        Y = load(EEGLIMO.etc.datafiles.daterp);
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEG.etc.datafiles.daterp)
-                            Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.daterp(d)));
+                        for d=1:length(EEGLIMO.etc.datafiles.daterp)
+                            Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.daterp(d)));
                             if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
                         end
                         Y = limo_concatcells(Y);
                     end
                 else
-                    disp('the field EEG.etc.datafiles.daterp or .icaerp pointing to the data is missing - using EEG.data')
-                    Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+                    disp('the field EEGLIMO.etc.datafiles.daterp or .icaerp pointing to the data is missing - using EEGLIMO.data')
+                    Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
                 end
-                clear EEG
+                clear EEGLIMO
             end
             
         elseif strcmp(LIMO.Analysis,'Frequency')
             if strcmp(LIMO.Type,'Components')
-                if isfield(EEG.etc.datafiles,'icaspec')
-                    if ~iscell(EEG.etc.datafiles.icaspec) && strcmp(EEG.etc.datafiles.icaspec(end-3:end),'.mat')
-                        Y = load(EEG.etc.datafiles.icaspec);
+                if isfield(EEGLIMO.etc.datafiles,'icaspec')
+                    if ~iscell(EEGLIMO.etc.datafiles.icaspec) && strcmp(EEGLIMO.etc.datafiles.icaspec(end-3:end),'.mat')
+                        Y = load(EEGLIMO.etc.datafiles.icaspec);
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEG.etc.datafiles.icaspec)
-                            signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icaspec(d)));
+                        for d=1:length(EEGLIMO.etc.datafiles.icaspec)
+                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
                             if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
                         end
                         signal = limo_concatcells(signal);
                     end
                 else
-                    signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
                 end
                 Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
                 
             else % channels
-                if isfield(EEG.etc.datafiles,'datspec')
-                    if ~iscell(EEG.etc.datafiles.datspec) && strcmp(EEG.etc.datafiles.datspec(end-3:end),'.mat')
-                        Y = load(EEG.etc.datafiles.datspec);
+                if isfield(EEGLIMO.etc.datafiles,'datspec')
+                    if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
+                        Y = load(EEGLIMO.etc.datafiles.datspec);
                         if isstruct(Y)
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEG.etc.datafiles.datspec)
-                            Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.datspec(d)));
+                        for d=1:length(EEGLIMO.etc.datafiles.datspec)
+                            Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec(d)));
                             if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
                         end
-                        Y = limo_concatcells(Y); clear EEG
+                        Y = limo_concatcells(Y); clear EEGLIMO
                     end
                 else
-                    error('the field EEG.etc.datspec pointing to the data is missing')
+                    error('the field EEGLIMO.etc.datspec pointing to the data is missing')
                 end
             end
-            clear EEG
+            clear EEGLIMO
             
         elseif strcmp(LIMO.Analysis,'Time-Frequency')
             disp('Time-Frequency implementation - loading tf data...');
             
             if strcmp(LIMO.Type,'Components')
-                if isfield(EEG.etc.datafiles,'icatimef')
-                    for d=1:length(EEG.etc.datafiles.icatimef)
-                        signal{d} = load('-mat',cell2mat(EEG.etc.datafiles.icatimef(d)));
+                if isfield(EEGLIMO.etc.datafiles,'icatimef')
+                    for d=1:length(EEGLIMO.etc.datafiles.icatimef)
+                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
                         if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
                     end
                     signal = limo_concatcells(signal);
                 else
-                    signal = eeg_getdatact(EEG,'component',[1:length(EEG.icawinv)]);
+                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
                 end
                 Y = signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
 
             else % channels
-                if isfield(EEG.etc.datafiles,'dattimef')
-                    for d=1:length(EEG.etc.datafiles.dattimef)
-                        Y{d} = load('-mat',cell2mat(EEG.etc.datafiles.dattimef(d)));
+                if isfield(EEGLIMO.etc.datafiles,'dattimef')
+                    for d=1:length(EEGLIMO.etc.datafiles.dattimef)
+                        Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
                         if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
                     end
                     Y = limo_concatcells(Y);
-                    clear EEG
-                elseif EEG.etc.datafiles.datersp % .mat file
-                    Y = load(EEG.etc.datafiles.datersp);
+                    clear EEGLIMO
+                elseif EEGLIMO.etc.datafiles.datersp % .mat file
+                    Y = load(EEGLIMO.etc.datafiles.datersp);
                     if isstruct(Y)
                         Y = getfield(Y,cell2mat(fieldnames(Y)));
                     end
                 else
-                    error('no data found, the field EEG.etc.dattimef or EEG.etc.datersp pointing to the data is missing')
+                    error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
                 end
             end
             
@@ -318,7 +318,7 @@ switch varargin{1}
             LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         end
         
-        clear ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY 
+        clear ALLCOM ALLEEGLIMO CURRENTSET CURRENTSTUDY LASTCOM STUDY 
         cd (LIMO.dir) ; save LIMO LIMO
 
 

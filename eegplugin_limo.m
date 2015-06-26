@@ -10,8 +10,6 @@ function version = eegplugin_limo(fig,try_strings,catch_strings)
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
-global EEG
-
 version ='LIMO EEG 2.0';
 if nargin < 3
     error('eegplugin_limo requires 3 arguments');
@@ -34,5 +32,4 @@ uimenu(submenu,'Label', 'GUI','callback','limo_eeg');
 uimenu(submenu,'Label', '1st level analysis','callback','limo_batch');
 uimenu(submenu,'Label', '2nd level analysis','callback','limo_random_effect');
 uimenu(submenu,'Label', 'LIMO EEG results','callback','limo_results');
-
 uimenu(submenu,'Label', 'LIMO EEG tools','callback','limo_tools');  

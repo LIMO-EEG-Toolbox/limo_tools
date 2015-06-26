@@ -95,22 +95,22 @@ delete(handles.figure1)
 % load a data set -- EEG 
 % ---------------------------------------------------------------
 function Import_data_set_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
 if FilterIndex ~= 0    
     try
         disp('loading EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset([PathName FileName]);
+        EEGLIMO=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
-        handles.chanlocs = EEG.chanlocs;
-        handles.rate     = EEG.srate;
+        handles.chanlocs = EEGLIMO.chanlocs;
+        handles.rate     = EEGLIMO.srate;
         
-        if isfield(EEG.etc,'freqspec') == 1 
-            handles.start    = EEG.etc.freqspec(1);
-            handles.end      = EEG.etc.freqspec(end);
-            handles.freqlist = EEG.etc.freqspec;
+        if isfield(EEGLIMO.etc,'freqspec') == 1 
+            handles.start    = EEGLIMO.etc.freqspec(1);
+            handles.end      = EEGLIMO.etc.freqspec(end);
+            handles.freqlist = EEGLIMO.etc.freqspec;
             cd(handles.dir); fprintf('Data set %s loaded \n',FileName);
         else
             errordlg('Can''t find the field EEG.etc.freqspec - see help.'); return
@@ -131,18 +131,18 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function low_freq_Callback(hObject, eventdata, handles)
-global EEG 
-if isfield(EEG.etc,'limo_psd_freqlist') == 0
+global EEGLIMO 
+if isfield(EEGLIMO.etc,'limo_psd_freqlist') == 0
     helpdlg(['Please import a frequency dataset above first - check limo frequency help']);
 end
 
 lowf = str2double(get(hObject,'String'));
-if lowf < EEG.etc.freqspec(1)
-    errordlg(['The lowest frequency possible is:',num2str(EEG.etc.freqspec(1))]);
+if lowf < EEGLIMO.etc.freqspec(1)
+    errordlg(['The lowest frequency possible is:',num2str(EEGLIMO.etc.freqspec(1))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.freqspec-lowf));
-    closest_lowf = EEG.etc.freqspec(ind);
+    [a1 ind] = min(abs(EEGLIMO.etc.freqspec-lowf));
+    closest_lowf = EEGLIMO.etc.freqspec(ind);
     if lowf ~= closest_lowf
         helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_lowf),'Hz']);
     end
@@ -162,18 +162,18 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function high_freq_Callback(hObject, eventdata, handles)
-global EEG 
-if isfield(EEG.etc,'limo_psd_freqlist') == 0
+global EEGLIMO 
+if isfield(EEGLIMO.etc,'limo_psd_freqlist') == 0
     helpdlg(['Please import a frequency dataset above first - check limo frequency help']);
 end
 
 highf = str2double(get(hObject,'String'));
-if highf > EEG.etc.freqspec(end)
-    errordlg(['The highest frequency possible is:',num2str(EEG.etc.freqspec(end))]);
+if highf > EEGLIMO.etc.freqspec(end)
+    errordlg(['The highest frequency possible is:',num2str(EEGLIMO.etc.freqspec(end))]);
 else
     % Find a possible frequency bin close to the requested one
-    [a1 ind] = min(abs(EEG.etc.freqspec-highf));
-    closest_highf = EEG.etc.freqspec(ind);
+    [a1 ind] = min(abs(EEGLIMO.etc.freqspec-highf));
+    closest_highf = EEGLIMO.etc.freqspec(ind);
     if highf ~= closest_highf
         helpdlg(['this will be adjusted to the closest frequency bin:',num2str(closest_highf),'Hz']);
     end
@@ -379,7 +379,7 @@ guidata(hObject, handles);
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)
@@ -391,7 +391,7 @@ cd (handles.dir)
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
   
 LIMO.data.data_dir            = handles.data_dir;
 LIMO.data.data                = handles.data;

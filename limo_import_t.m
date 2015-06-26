@@ -93,21 +93,21 @@ delete(handles.figure1)
 % load a data set -- EEG 
 % ---------------------------------------------------------------
 function Import_data_set_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 [FileName,PathName,FilterIndex]=uigetfile('*.set','EEGLAB EEG epoch data');
 if FilterIndex ~= 0    
     try  
         disp('loading EEGLAB dataset. Please wait ...');
-        EEG=pop_loadset([PathName FileName]);
+        EEGLIMO=pop_loadset([PathName FileName]);
         handles.data_dir = PathName;
         handles.data     = FileName;
-        handles.chanlocs = EEG.chanlocs;
-        handles.rate     = EEG.srate;
-        if ~isfield(EEG.etc,'timeerp')
-            handles.timevect = EEG.times;
+        handles.chanlocs = EEGLIMO.chanlocs;
+        handles.rate     = EEGLIMO.srate;
+        if ~isfield(EEGLIMO.etc,'timeerp')
+            handles.timevect = EEGLIMO.times;
         else
-            handles.timevect = EEG.etc.timeerp;
+            handles.timevect = EEGLIMO.etc.timeerp;
         end
         handles.start = handles.timevect(1);
         handles.end = handles.timevect(end);
@@ -141,31 +141,31 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function Starting_point_Callback(hObject, eventdata, handles)
-global EEG  
+global EEGLIMO  
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
     v = handles.timevect(1);
 else
     if v == 0
-        v = EEG.times(max(find(EEG.times<0))+1);
+        v = EEGLIMO.times(max(find(EEGLIMO.times<0))+1);
         if v~=0
             disp('start at ~0 sec')
         end
     else
-        [value,position]=min(abs(EEG.times - v));
-        if v ~= EEG.times(position)
-            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEG.times(position)),'adjusting stating point');
+        [value,position]=min(abs(EEGLIMO.times - v));
+        if v ~= EEGLIMO.times(position)
+            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEGLIMO.times(position)),'adjusting stating point');
         end
-        v = EEG.times(position);
+        v = EEGLIMO.times(position);
     end
 end
 
-if v < EEG.times(1)
+if v < EEGLIMO.times(1)
     errordlg('error in the starting point input')
 else
     handles.start    = v;
-    handles.trim1    = find(EEG.times == v); % gives the 1st column to start the analysis
+    handles.trim1    = find(EEGLIMO.times == v); % gives the 1st column to start the analysis
 end
 
 guidata(hObject, handles);
@@ -180,31 +180,31 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function ending_point_Callback(hObject, eventdata, handles)
-global EEG 
+global EEGLIMO 
 
 v = str2double(get(hObject,'String'));
 if isempty(v)
     v = handles.timevect(end); 
 else
     if v == 0
-        v = EEG.times(max(find(EEG.times<0))+1);
+        v = EEGLIMO.times(max(find(EEGLIMO.times<0))+1);
         if v~=0
             disp('ends at ~0 sec')
         end
     else
-        [value,position]=min(abs(EEG.times - v));
-        if v ~= EEG.times(position)
-            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEG.times(position)),'adjusting stating point');
+        [value,position]=min(abs(EEGLIMO.times - v));
+        if v ~= EEGLIMO.times(position)
+            warndlg2(sprintf('this will be adjusted to sampling rate start at %g ms',EEGLIMO.times(position)),'adjusting stating point');
         end
-        v = EEG.times(position);
+        v = EEGLIMO.times(position);
     end
 end
 
-if v > EEG.times(end)
+if v > EEGLIMO.times(end)
     errordlg('error in the ending point input')
 else
     handles.end     = v; % in sec
-    handles.trim2   = find(EEG.times == v); % gives the last column to end the analysis
+    handles.trim2   = find(EEGLIMO.times == v); % gives the last column to end the analysis
 end
 
 guidata(hObject, handles);
@@ -405,7 +405,7 @@ guidata(hObject, handles);
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
 
 origin = which('limo_eeg'); origin = origin(1:end-10); 
 origin = sprintf('%shelp',origin); cd(origin)
@@ -417,7 +417,7 @@ cd (handles.dir)
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
-global EEG LIMO 
+global EEGLIMO LIMO 
 
 if isempty(handles.data)
     errordlg('no data were loaded','error')
@@ -439,7 +439,7 @@ else
     end
     
     if isempty(handles.trim2)
-        LIMO.data.trim2 = length(EEG.times);
+        LIMO.data.trim2 = length(EEGLIMO.times);
     else
         LIMO.data.trim2 = handles.trim2;
     end

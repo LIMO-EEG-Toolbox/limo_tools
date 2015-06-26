@@ -34,7 +34,7 @@ function channeighbstructmat = limo_expected_chanlocs(varargin)
 %% variables set as defaults
 min_subjects = 3; % we want at least 3 subjects per electrode
 
-global EEG
+global EEGLIMO
 current_dir = pwd;
 
 %% ask if data are from one subject or a set then get data
@@ -89,18 +89,18 @@ if strcmp(quest,'One')
     end
     
     try
-        if strcmp([PathName filesep FileName],[EEG.filepath filesep EEG.filename])
-            disp('Using Global variable EEG')
+        if strcmp([PathName filesep FileName],[EEGLIMO.filepath filesep EEGLIMO.filename])
+            disp('Using Global variable EEGLIMO')
         else
             try
-                EEG=pop_loadset([PathName filesep FileName]);
+                EEGLIMO=pop_loadset([PathName filesep FileName]);
             catch
-                EEG=pop_loadset([PathName FileName]);
+                EEGLIMO=pop_loadset([PathName FileName]);
             end
         end
-        expected_chanlocs = EEG.chanlocs;
+        expected_chanlocs = EEGLIMO.chanlocs;
         fprintf('Data set %s loaded \n',FileName);
-        [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEG,neighbourdist);
+        [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
         if sum(channeighbstructmat(:)) == 0
             msg = sprintf('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
             error(msg)
@@ -189,12 +189,12 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     % take the largest set as reference
     [nm,ref] = max(size_chanlocs);
     load(Files{ref})
-    EEG.xmin = LIMO.data.start;
-    EEG.xmax = LIMO.data.end;
-    EEG.pnts = length(LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end); % note only for LIMO v2 in msec
-    EEG.chanlocs = LIMO.data.chanlocs;
-    EEG.srate = LIMO.data.sampling_rate;
-    EEG.trials = size(LIMO.design.X,1);
+    EEGLIMO.xmin = LIMO.data.start;
+    EEGLIMO.xmax = LIMO.data.end;
+    EEGLIMO.pnts = length(LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end); % note only for LIMO v2 in msec
+    EEGLIMO.chanlocs = LIMO.data.chanlocs;
+    EEGLIMO.srate = LIMO.data.sampling_rate;
+    EEGLIMO.trials = size(LIMO.design.X,1);
     clear LIMO
     for c = 1:nm
         ref_chan_labs{c,1} = chan_labs{ref,c};
@@ -226,7 +226,7 @@ elseif strcmp(quest,'Set')   % from a set of subjects
                 load(Files{i}) % load LIMO to get chanlocs of chans to add
                 for j = 1:length(LIMO.data.chanlocs)
                     if ismember(LIMO.data.chanlocs(j).labels, new_chans)
-                        EEG.chanlocs = [EEG.chanlocs LIMO.data.chanlocs(j)];
+                        EEGLIMO.chanlocs = [EEGLIMO.chanlocs LIMO.data.chanlocs(j)];
                     end
                 end
                 
@@ -236,9 +236,9 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     
     % extra-check to remove external channel
     index = 1; remove = 0;
-    for i=1:size(EEG.chanlocs,2)
-        if strncmp(EEG.chanlocs(i).labels,'EX',2) || strncmp(EEG.chanlocs(i).labels,'ex',2)
-            fprintf('likely external channel detected %s\n',EEG.chanlocs(i).labels)
+    for i=1:size(EEGLIMO.chanlocs,2)
+        if strncmp(EEGLIMO.chanlocs(i).labels,'EX',2) || strncmp(EEGLIMO.chanlocs(i).labels,'ex',2)
+            fprintf('likely external channel detected %s\n',EEGLIMO.chanlocs(i).labels)
             answer = input('Do you want to remove it [Y/N]: ','s');
             if strncmp(answer,'Y',1) || strncmp(answer,'y',1)
                 remove(index) = i;
@@ -247,20 +247,20 @@ elseif strcmp(quest,'Set')   % from a set of subjects
         end
     end
     if remove ~=0
-        EEG.chanlocs(remove) = [];
+        EEGLIMO.chanlocs(remove) = [];
     end
     
     % remove low count
-    EEG.chanlocs(find(counter < min_subjects)) = [];
-    expected_chanlocs = EEG.chanlocs;
+    EEGLIMO.chanlocs(find(counter < min_subjects)) = [];
+    expected_chanlocs = EEGLIMO.chanlocs;
     
     % make up fake data
-    EEG.nbchan = length(EEG.chanlocs);
-    EEG.data = zeros(EEG.nbchan, EEG.pnts, EEG.trials);
+    EEGLIMO.nbchan = length(EEGLIMO.chanlocs);
+    EEGLIMO.data = zeros(EEGLIMO.nbchan, EEGLIMO.pnts, EEGLIMO.trials);
     cd (current_dir);
 
     % now we have 1 cap we can do as if we had a single subject to process
-    [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEG, neighbourdist);
+    [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO, neighbourdist);
     if sum(channeighbstructmat(:)) == 0
         msg = sprintf('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
         error(msg)
