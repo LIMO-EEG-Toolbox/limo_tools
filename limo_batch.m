@@ -149,11 +149,11 @@ else
     % batch_contrast
     if strcmp(option,'contrast only') || strcmp(option,'both')
         batch_contrast = varargin{3};
-        if ~isfield(contrast,'mat')
-            errordlg('the field contrast.mat is missing'); return
+        if ~isfield(batch_contrast,'mat')
+            errordlg('the field batch_contrast.mat is missing'); return
         end
         
-        if strcmp(option,'both') && ~isfield(contrast,'LIMO_files')
+        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
             for f=1:size(model.set_files,1)
                 [root,~,~] = fileparts(model.set_files{f});
                 folder = ['GLM_' model.defaults.analysis];
@@ -167,8 +167,8 @@ end
 if nargin == 4
     STUDY = varargin{4}; clear varargin{4};
     cd(STUDY.filepath); current =pwd;
-    mkdir('limo_batch_report'); 
-    mkdir(['LIMO_' STUDY.filename(1:end-6)]);
+    if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
+    if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
     study_root = [STUDY.filepath filesep ['LIMO_' STUDY.filename(1:end-6)]];
     LIMO_files.LIMO = study_root;
 else
@@ -216,7 +216,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         
         if nargin == 4
-            mkdir([study_root filesep cell2mat(STUDY.names(subject))]);
+            if exist([study_root filesep cell2mat(STUDY.names(subject))],'dir') ~= 7, mkdir([study_root filesep cell2mat(STUDY.names(subject))]); end
             root = [study_root filesep cell2mat(STUDY.names(subject))];
             glm_name = ['GLM' num2str(STUDY.design_index) model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 

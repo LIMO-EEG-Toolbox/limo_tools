@@ -70,7 +70,7 @@ if strcmp(LIMO.Analysis,'Time')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc,'datafiles.daterp')
+        if isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(Y)
