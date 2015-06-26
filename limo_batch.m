@@ -273,9 +273,9 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
         
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [PathName filesep 'con_' num2str(c) '.mat'];
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
         end
-        pipeline(subject).batch_contrast.files_out = name{1};
+        pipeline(subject).batch_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
     end
 end
