@@ -1,4 +1,4 @@
-function [dist out] = limo_pcout(x)
+function [dist,out] = limo_pcout(x)
 
 % LIMO_pcout Limo Principal Components Projection
 % This method uses simple properties of Principal Components to identify

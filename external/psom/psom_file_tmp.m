@@ -1,33 +1,25 @@
 function file_name = psom_file_tmp(ext)
-%
-% _________________________________________________________________________
-% SUMMARY PSOM_FILE_TMP
-%
 % Suggest a name of temporary file 
 %
 % SYNTAX:
 % FILE_NAME = PSOM_FILE_TMP(EXT)
 %
-% _________________________________________________________________________
 % INPUTS:
-%
-% EXT             (string) An extension for the file name
+%   EXT (string) An extension for the file name
 %
 % OUTPUTS:
-% 
-% A (full path) name for a temporary file.
+%   FILE_NAME (tring) A name for a temporary file with full path.
 %
-% _________________________________________________________________________
 % COMMENTS:
+%   The temporary files live in the temporary directory. This directory is by 
+%   default '/tmp/', but this can be changed using the variable GB_PSOM_TMP
+%   in the file PSOM_GB_VARS.
 %
-% The temporary files live in the temporary directory. This directory is by 
-% default '/tmp/', but this can be changed using the variable GB_PSOM_TMP
-% in the file PSOM_GB_VARS.
-%
-% Copyright (c) Pierre Bellec, Montreal Neurological Institute, 2008.
-% Maintainer : pbellec@bic.mni.mcgill.ca
+% Copyright (c) Pierre Bellec, Montreal Neurological Institute, 2008-2010.
+% Centre de recherche de l'institut de geriatrie de Montreal, Departement 
+% d'informatique et recherche operationnelle, Universite de Montreal, 2010-2014.
+% Maintainer : pierre.bellec@criugm.qc.ca
 % See licensing information in the code.
-% Keywords :
 
 % Permission is hereby granted, free of charge, to any person obtaining a copy
 % of this software and associated documentation files (the "Software"), to deal

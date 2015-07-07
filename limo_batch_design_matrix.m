@@ -47,7 +47,7 @@ if strcmp(LIMO.Analysis,'Time')
             try
                 STUDY = evalin('base','STUDY');
             catch
-                error('to run component clustering, you need the EEGLIMOLAB study loaded in the workspace with the clustering computed and saved')
+                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
             end
             nb_clusters = size(STUDY.cluster(1).child,2);
             nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
@@ -70,7 +70,7 @@ if strcmp(LIMO.Analysis,'Time')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc.datafiles,'daterp')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(Y)
@@ -84,7 +84,7 @@ if strcmp(LIMO.Analysis,'Time')
                 Y = limo_concatcells(Y);
             end
         else
-            disp('the field EEGLIMO.etc.datafiles.daterp pointing to the data is missing - using EEGLIMO.data')
+            disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEGLIMO.data')
             Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
         end
         clear EEGLIMO
@@ -137,7 +137,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc.datafiles,'datspec')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datspec')
             if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.datspec);
                 if isstruct(Y)
@@ -151,7 +151,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                 Y = limo_concatcells(Y); clear EEGLIMO
             end
         else
-            error('the field EEGLIMO.etc.datspec pointing to the data is missing')
+            error('the field EEG.etc.datspec pointing to the data is missing')
         end
     end
     
@@ -173,7 +173,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             try
                 STUDY = evalin('base','STUDY');
             catch
-                error('to run component clustering, you need the EEGLIMOLAB study loaded in the workspace with the clustering computed and saved')
+                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
             end
             nb_clusters = size(STUDY.cluster(1).child,2);
             nb_subjects = length(unique({STUDY.datasetinfo.subject}));
@@ -196,7 +196,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc.datafiles,'dattimef')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
             for d=1:length(EEGLIMO.etc.datafiles.dattimef)
                 Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
                 if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
@@ -209,7 +209,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 Y = getfield(Y,cell2mat(fieldnames(Y)));
             end
         else
-            error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
+            error('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
         end
     end
     

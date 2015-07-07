@@ -8,7 +8,7 @@ function model = limo_glm1(varargin)
 %
 % FORMAT:
 % model = limo_glm1(Y,LIMO)
-% model = limo_glm1(Y,X,nb_conditions,nb_interactions,nb_continuous,method)
+% model = limo_glm1(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,n_freqs,n_times)
 %
 % INPUTS:
 %   Y             = 2D matrix of EEG data with format trials x frames
@@ -19,6 +19,9 @@ function model = limo_glm1(varargin)
 %   nb_interactions = a vector indicating number of columns per interactions
 %   nb_continuous = number of covariates
 %   method        = 'OLS', 'WLS', 'IRLS' (bisquare)
+%   analysis type =  'Time', 'Frequency' or 'Time-Frequency'
+%   n_freqs       = the nb of frequency bins
+%   n_times       = the nb of time bins
 %
 % OUTPUTS:
 %   model.R2_univariate = the R2 of the model
@@ -59,8 +62,9 @@ function model = limo_glm1(varargin)
 %
 % Cyril Pernet v1 01-01-2011
 % Cyril Pernet v2 01-11-2011
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% Cyril Pernet v3 07-07-2015 (methods and analysis type)
+% ---------------------------------------------------------
+%  Copyright (C) LIMO Team 2015
 
 %% varagin
 
@@ -71,20 +75,25 @@ if nargin == 2
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
-    if strcmp(varargin{2}.Analysis,'Time-Frequency') 
+    Analysis        = varargin{2}.Analysis;
+    if strcmp(Analysis,'Time-Frequency') 
         if strcmp(method,'WLS')
             method = 'WLS-TF'; % run weights per freq band
         end
         n_freqs = varargin{2}.data.size4D(2);
         n_times = varargin{2}.data.size4D(3);
     end
-elseif nargin == 6
+    clear varargin
+elseif nargin == 9
     Y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
     nb_interactions = varargin{4};
     nb_continuous   = varargin{5};
     method          = varargin{6};
+    Analysis        = varargin{7};
+    n_freqs         = varargin{8};
+    n_times         = varargin{9};    
 else
     error('varargin error')
 end
@@ -121,7 +130,7 @@ E     = (Y'*R*Y);                                                          % SS 
 % compute Beta parameters and weights
 if strcmp(method,'OLS')
     
-    if strcmp(varargin{2}.Analysis,'Time-Frequency')
+    if strcmp(Analysis,'Time-Frequency')
         W = ones(n_freqs,size(X,1));
     else
         W = ones(size(Y,1),1);

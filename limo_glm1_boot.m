@@ -8,21 +8,31 @@ function model = limo_glm1_boot(varargin)
 %
 % FORMAT:
 % model = limo_glm1_boot(Y,LIMO,boot_table)
-% model = limo_glm1_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,boot_table)
+% model = limo_glm1_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,boot_table)
 %
-% INPUTS/OUPUTS: see limo_glm1
-%                boot_table is an optional argument - this is the
-%                resampling table - if one calls limo_glm1_boot to loop
-%                throughout electrodes, this might a good idea to provide
-%                such table so that the same resampling applies to each
-%                electrodes
+% INPUTS 
+%         Y = 2D matrix of EEG data with format trials x frames
+%         LIMO is a structure that contains information below
+%         X = 2 dimensional design matrix
+%         nb_conditions = a vector indicating the number of conditions per factor
+%         nb_interactions = a vector indicating number of columns per interactions
+%         nb_continuous = number of covariates
+%         method = 'OLS', 'WLS', 'IRLS' (bisquare)
+%         analysis type =  'Time', 'Frequency' or 'Time-Frequency'
+%         n_freqs is the nb of frequency bins
+%         n_times is the nb of time bins
+%         boot_table is an optional argument - this is the resampling table
+%                    if one calls limo_glm1_boot to loop throughout channels,
+%                    this might a good idea to provide such table so that 
+%                    the same resampling applies to each channel
 %
 % See also
 % LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG(4)
 %
 % Cyril Pernet v1 18-07-2012
-% -----------------------------
-%  Copyright (C) LIMO Team 2012
+% Cyril Pernet v2 07-07-2015 (methods and analysis type)
+% --------------------------------------------------------
+%  Copyright (C) LIMO Team 2015
 
 %% varagin
 nboot = 599; %
@@ -35,13 +45,23 @@ if nargin == 2 || nargin == 3
     nb_continuous   = varargin{2}.design.nb_continuous;
     z               = varargin{2}.design.zscore;
     method          = varargin{2}.design.method;
+    Analysis        = varargin(2).Analysis;
+    if strcmp(Analysis,'Time-Frequency')
+        if strcmp(method,'WLS')
+            method = 'WLS-TF'; % run weights per freq band
+        end
+        n_freqs = varargin{2}.data.size4D(2);
+        n_times = varargin{2}.data.size4D(3);
+    end
+    
     if nargin == 2
         boot_table = randi(size(Y,1),size(Y,1),nboot);
     elseif nargin == 3
         boot_table = varargin{3};
         nboot = size(boot_table,2);
     end
-elseif nargin == 7 || nargin == 8
+    
+elseif nargin == 10 || nargin == 11
     y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
@@ -49,10 +69,13 @@ elseif nargin == 7 || nargin == 8
     nb_continuous   = varargin{5};
     z               = varargin{6};
     method          = varargin{7};
-    if nargin == 7
+    Analysis        = varargin(8);
+    n_freqs         = varargin{9};
+    n_times         = varargin{10};
+    if nargin == 10
         boot_table = randi(size(Y,1),size(Y,1),nboot);
-    elseif nargin == 8
-        boot_table = varargin{8};
+    elseif nargin == 11
+        boot_table = varargin{11};
         nboot = size(boot_table,2);
     end
 else
@@ -64,6 +87,7 @@ nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
     nb_factors = 0;
 end
+
 
 % -----------
 %% Data check
@@ -152,6 +176,79 @@ for B = 1:nboot
         end
     end
     
+    
+    % ------------------------------
+    % Compute model parameters
+    % ------------------------------
+    
+    % total sum of squares, projection matrix for errors, residuals and betas
+    % -----------------------------------------------------------------------
+    T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
+    R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
+    E     = (Y'*R*Y);                                                          % SS Error
+    
+    % compute Beta parameters
+    if strcmp(method,'OLS')
+        if strcmp(Analysis,'Time-Frequency')
+            W = ones(n_freqs,size(X,1));
+        else
+            W = ones(size(Y,1),1);
+        end
+        
+        if nb_continuous ~=0 && nb_factors == 0
+            Betas = X\Y; % numerically more stable than pinv
+        else
+            Betas = pinv(X)*Y;
+        end
+        
+    elseif strcmp(method,'WLS')
+        [Betas,W] = limo_WLS(X,Y);
+    
+    elseif strcmp(method,'WLS-TF')
+        % unpack the data
+        [n_freq_times, N] = size(Y');
+        if n_freq_times ~= n_freqs*n_times
+            error('dimensions disagreement to reshape freq*time')
+        else
+            reshaped = nan(n_freqs, n_times, N);
+        end
+        
+        for tr = 1:N
+            for tm = 1:n_times
+                this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
+                eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+            end
+            reshaped(:,:,tr) = eft_3d;
+        end
+        
+        % get estimates per freq band
+        Betas = NaN(size(X,2),n_freqs*n_times);
+        W = NaN(n_freqs,size(X,1));
+        index1 = 1;
+        for f=1:n_freqs
+            [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+            index1=index1+1;
+        end
+        clear reshaped 
+    
+    elseif strcmp(method,'IRLS')
+        [Betas,W] = limo_IRLS(X,Y);
+    end
+    model.Betas(:,:,B) = Betas';
+    
+    % compute model R^2
+    % -----------------
+    C = eye(size(X,2));
+    C(:,size(X,2)) = 0;
+    C0 = eye(size(X,2)) - C*pinv(C);
+    X0 = X*C0;  % Reduced model
+    R0 = eye(size(Y,1)) - (X0*pinv(X0));
+    M  = R0 - R;  % Projection matrix onto Xc
+    H  = (Betas'*X'*M*X*Betas);  % SS Effect
+    Rsquare   = diag(H)./diag(T); % Variances explained
+    F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
+    p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
+    
     % ------------------------------
     % Compute F for dummy variables
     % ------------------------------
@@ -159,41 +256,6 @@ for B = 1:nboot
     % -------------------------
     if nb_factors == 1   %  1-way ANOVA
         % -------------------------
-        
-        % total sum of squares, projection matrix for errors, residuals and betas
-        % -----------------------------------------------------------------------
-        T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
-        R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
-        E     = (Y'*R*Y);                                                          % SS Error
-        
-        % compute Beta parameters
-        if strcmp(method,'OLS')
-            Betas = pinv(X)*Y;
-        elseif strcmp(method,'WLS')
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-               error('no implemented yet')
-               % get the break down of frames and iterate per freq bin
-               % then reassemple the matrix of Betas and Weight
-            else
-                [Betas,W] = limo_WLS(X,Y);
-            end
-        elseif strcmp(method,'IRLS')
-            [Betas,W] = limo_IRLS(X,Y);
-        end
-        model.Betas(:,:,B) = Betas';
-        
-        % compute model R^2
-        % -----------------
-        C = eye(size(X,2));
-        C(:,size(X,2)) = 0;
-        C0 = eye(size(X,2)) - C*pinv(C);
-        X0 = X*C0;  % Reduced model
-        R0 = eye(size(Y,1)) - (X0*pinv(X0));
-        M  = R0 - R;  % Projection matrix onto Xc
-        H  = (Betas'*X'*M*X*Betas);  % SS Effect
-        Rsquare   = diag(H)./diag(T); % Variances explained
-        F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-        p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
         
         % compute F for categorical variables
         % -----------------------------------
@@ -221,34 +283,6 @@ for B = 1:nboot
         % ------------------------------------------------
     elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
         % ------------------------------------------------
-        
-        % compute basic SS total, projection matrices and parameters
-        T        = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-        R        = eye(size(Y,1)) - (X*pinv(X));
-        E        = (Y'*R*Y);
-        % compute Beta parameters with weights
-        if strcmp(method,'OLS')
-            Betas = pinv(X)*Y;
-        elseif strcmp(method,'WLS')
-            [Betas,W] = limo_WLS(X,Y);
-        elseif strcmp(method,'IRLS')
-            [Betas,W] = limo_IRLS(X,Y);
-        end
-        model.Betas(:,:,B) = Betas';
-        
-        % --------------------
-        % compute model R^2
-        % --------------------
-        C = eye(size(X,2));
-        C(:,size(X,2)) = 0;
-        C0   = eye(size(X,2)) - C*pinv(C);
-        X0   = X*C0; % Reduced model (i.e. only intercept)
-        R0   = eye(size(Y,1)) - (X0*pinv(X0));
-        M    = R0 - R;      % M is the projection matrix onto Xc
-        H    = (Betas'*X'*M*X*Betas);   % SSCP Hypothesis (Effect)
-        Rsquare   = diag(H)./diag(T); % Variances explained per Y
-        F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-        p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
         
         % --------------------------------------
         % compute F and p values of each factor
@@ -292,35 +326,6 @@ for B = 1:nboot
     elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
         % ------------------------------------------------
         
-        % compute basic SS total, projection matrices and parameters
-        T        = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-        R        = eye(size(Y,1)) - (X*pinv(X));
-        E        = (Y'*R*Y);
-        % compute Beta parameters with weights
-        if strcmp(method,'OLS')
-            Betas = pinv(X)*Y;
-        elseif strcmp(method,'WLS')
-            [Betas,W] = limo_WLS(X,Y);
-        elseif strcmp(method,'IRLS')
-            [Betas,W] = limo_IRLS(X,Y);
-        end
-        model.Betas(:,:,B) = Betas';
-        
-        % --------------------
-        % compute model R^2
-        % --------------------
-        C = eye(size(X,2));
-        C(:,size(X,2)) = 0;
-        C0   = eye(size(X,2)) - C*pinv(C);
-        X0   = X*C0; % Reduced model (i.e. only intercept)
-        R0   = eye(size(Y,1)) - (X0*pinv(X0));
-        M    = R0 - R;      % M is the projection matrix onto Xc
-        H    = (Betas'*X'*M*X*Betas);   % SSCP Hypothesis (Effect)
-        Rsquare   = diag(H)./diag(T); % Variances explained per Y
-        F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-        p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
-        
-        
         % ---------------------------------------------------
         % start by ANOVA without interaction for main effects
         % ---------------------------------------------------
@@ -340,13 +345,12 @@ for B = 1:nboot
         
         % run same model as above
         R        = eye(size(Y,1)) - (x*pinv(x));
-        % compute Beta parameters with weights
-        if strcmp(method,'OLS')
-            betas = pinv(x)*Y;
-        elseif strcmp(method,'WLS')
-            [betas,W] = limo_WLS(x,Y);
-        elseif strcmp(method,'IRLS')
-            [betas,W] = limo_IRLS(x,Y);
+        % compute Beta parameters using previsouly found weights from the
+        % whole model
+        if strcmp(method,'IRLS')
+            betas = pinv(W*x)*(W*Y);
+        else
+            betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
         end
         
         eoi = zeros(1,size(x,2));
@@ -434,14 +438,11 @@ for B = 1:nboot
                 
                 % run same model as above
                 R  = eye(size(Y,1)) - (x*pinv(x));
-                if strcmp(method,'OLS')
-                    betas = pinv(x)*Y;
-                elseif strcmp(method,'WLS')
-                    [betas,W] = limo_WLS(x,Y);
-                elseif strcmp(method,'IRLS')
-                    [betas,W] = limo_IRLS(x,Y);
+                if strcmp(method,'IRLS')
+                    betas = pinv(Wx)*WY;
+                else
+                    betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
                 end
-                
                 
                 eoi = zeros(1,size(x,2));
                 eoi(start:(start-1+nb_interactions(f))) = start:(start-1+nb_interactions(f));
@@ -479,36 +480,7 @@ for B = 1:nboot
     % -----------------------------------
     
     if nb_continuous ~=0
-        
-        if nb_factors == 0
-            T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-            R     = eye(size(Y,1)) - (X*pinv(X));
-            E     = (Y'*R*Y);
-            % compute Beta parameters with weights Y was resampled, so
-            % resample W as well - however X unchanged so use W
-            if strcmp(method,'OLS')
-                Betas = pinv(X)*Y;
-            elseif strcmp(method,'WLS')
-                [Betas,W] = limo_WLS(X,Y);
-            elseif strcmp(method,'IRLS')
-                [Betas,W] = limo_IRLS(X,Y);
-            end
-            model.Betas(:,:,B) = Betas';
-            
-            % compute model R^2
-            % -----------------
-            C = eye(size(X,2));
-            C(:,size(X,2)) = 0;
-            C0 = eye(size(X,2)) - C*pinv(C);
-            X0 = X*C0;
-            R0 = eye(size(Y,1)) - (X0*pinv(X0));
-            M  = R0 - R;
-            H  = (Betas'*X'*M*X*Betas);
-            Rsquare   = diag(H)./diag(T);
-            F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-            p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
-        end
-        
+               
         if nb_factors == 0 && nb_continuous == 1 % simple regression
             model.continuous.F{B}  = F_Rsquare;
             model.continuous.p{B}  = p_Rsquare;

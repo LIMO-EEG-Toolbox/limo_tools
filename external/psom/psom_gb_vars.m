@@ -35,7 +35,7 @@ gb_psom_shell_options = '';
 gb_psom_mode = 'background'; 
 
 % Options for the execution mode of the pipeline manager
-gb_psom_mode_pm = 'session'; 
+gb_psom_mode_pm = 'background'; 
 
 % Options for the maximal number of jobs
 gb_psom_max_queued = 2;
@@ -55,7 +55,10 @@ gb_psom_init_matlab = '';
 gb_psom_path_search = '';
 
 % where to store temporary files
-gb_psom_tmp = [tempdir filesep]; 
+gb_psom_tmp = tempdir; 
+if ~strcmp(gb_psom_tmp(end),filesep)
+    gb_psom_tmp = [gb_psom_tmp filesep];
+end
 
 % How to open pdf files
 gb_psom_pdf_viewer = 'evince';
@@ -65,7 +68,7 @@ gb_psom_pdf_viewer = 'evince';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % PSOM version
-gb_psom_version = '1.0.2'; % PSOM release number
+gb_psom_version = '1.0.4'; % PSOM release number
 
 % Is the environment Octave or Matlab ?
 if exist('OCTAVE_VERSION','builtin')    
@@ -76,6 +79,18 @@ else
     gb_psom_language = 'matlab'; 
 end
 
+% Options to start matlab
+switch gb_psom_language
+    case 'matlab'
+        if ispc
+            gb_psom_opt_matlab = '-automation -nodesktop -singleCompThread -r';
+        else
+            gb_psom_opt_matlab = '-nosplash -nodesktop -singleCompThread -r';
+        end        
+    case 'octave'
+        gb_psom_opt_matlab = '--silent --eval';       
+end
+    
 % Get langage version
 if strcmp(gb_psom_language,'octave');
     gb_psom_language_version = OCTAVE_VERSION;

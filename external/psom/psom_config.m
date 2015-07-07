@@ -139,7 +139,7 @@ if isempty(opt.command_matlab)
     end
 end
 
-if ~ismember(opt.mode,{'session','background','batch','qsub','msub'})
+if ~ismember(opt.mode,{'session','background','batch','qsub','msub','condor'})
     error('%s is an unknown mode of pipeline execution. Sorry dude, I must quit ...',opt.mode);
 end
 

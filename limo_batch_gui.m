@@ -101,7 +101,7 @@ if FilterIndex ~= 0
             end
         end
         
-    elseif ischar(FileName) % single subject
+    elseif ischar(FileName) && strcmp(FileName(end-3:end),'.set') % single subject
         tmp = FileName; clear FileName;
         FileName{1} = [PathName tmp]; clear tmp; % a single subject
         
@@ -424,6 +424,12 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
   
+if isempty(handles.Analysis)
+        errordlg('choose a type of analysis to perfom','error')
+    return
+end
+
+defaults.analysis          = handles.Analysis;  
 defaults.fullfactorial     = handles.fullfactorial;
 defaults.zscore            = handles.zscore;
 defaults.start             = handles.start;
@@ -432,10 +438,10 @@ defaults.lowf              = handles.lowf;
 defaults.highf             = handles.highf;
 defaults.method            = handles.method;
 defaults.type_of_analysis  = handles.type_of_analysis;  
-defaults.analysis          = handles.Analysis;  
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
 defaults.type              = handles.type;
+
 
 % -----------------------------------------
 % load the expected channel locations
@@ -476,6 +482,3 @@ uiresume
 handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
-
-
-

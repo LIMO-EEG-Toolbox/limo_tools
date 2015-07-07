@@ -60,8 +60,8 @@ function [graph_deps,list_jobs,files_in,files_out,files_clean] = psom_build_depe
 % Empty file names, or file names equal to 'gb_niak_omitted' are ignored.
 %
 % Copyright (c) Pierre Bellec, Montreal Neurological Institute, 2008-2010.
-% Centre de recherche de l'institut de gériatrie de Montréal, département
-% d'informatique et de recherche opérationnelle, Université de Montréal,
+% Centre de recherche de l'institut de griatrie de Montral, dpartement
+% d'informatique et de recherche oprationnelle, Universit de Montral,
 % Canada, 2010-2012.
 % Maintainer : pierre.bellec@criugm.qc.ca
 % See licensing information in the code.
@@ -98,7 +98,7 @@ nb_jobs = length(list_jobs);
 
 %% Reorganizing inputs/outputs (for every job, convert input/output/clean
 %% into cell of strings)
-if flag_verbose
+if flag_verbose>1
     fprintf('       Reorganizing inputs/outputs ... ')
     tic
 end
@@ -112,7 +112,8 @@ for num_j = 1:nb_jobs
             files_in.(name_job) = {};
         end
     catch
-        fprintf('There was a problem with the input files of job %s\n',name_job)
+        fprintf('\n')
+        warning('There was a problem with the input files of job %s\n',name_job)
         errmsg = lasterror;
         rethrow(errmsg);
     end
@@ -145,8 +146,12 @@ for num_j = 1:nb_jobs
     end
 end
 
-if flag_verbose
+if flag_verbose>1
     fprintf('%1.2f sec\n       Analyzing job inputs/outputs, percentage completed : ',toc)
+    curr_perc = -1;
+    tic;
+elseif flag_verbose
+    fprintf('   Percentage completed : ')
     curr_perc = -1;
     tic;
 end

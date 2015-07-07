@@ -14,6 +14,10 @@ function flag_equal = psom_cmp_var(var1,var2,opt)
 %       between numerical variables, for them to be declared equal. 
 %    FLAG_SOURCE_ONLY (boolean, default false) if the flag is true, for 
 %       structures, test only equality for fields found in the source.
+%    FLAG_TEST_ALL (boolean, default false) if the flag is false, the tests
+%       are interrupted as soon as a difference is detected.
+%    FLAG_VERBOSE (boolean, default false) if the flag is true, print 
+%       which parts of the variable differ.
 %
 % _________________________________________________________________________
 % OUTPUTS:
@@ -52,9 +56,13 @@ function flag_equal = psom_cmp_var(var1,var2,opt)
 if nargin < 3
     opt.eps = eps;
     opt.flag_source_only = false;
+    opt.flag_verbose = false;
+    opt.verbose{1} = inputname(1);
+    opt.verbose{2} = inputname(2);
+    opt.flag_test_all = false;
 elseif isfield(opt,'gb_psom_tested')
 else
-    opt = psom_struct_defaults(opt,{'eps','flag_source_only'},{eps,false});
+    opt = psom_struct_defaults(opt,{'eps','flag_source_only','flag_verbose','verbose','flag_test_all'},{eps,false,false,{inputname(1),inputname(2)},false});
     opt.gb_psom_tested = true; % avoid checking the default options in recursive calls
 end
 
@@ -65,17 +73,25 @@ type_var2 = sub_type_var(var2);
 
 if ~strcmp(type_var1,type_var2)
     flag_equal = false;
-    return
+    if opt.flag_verbose
+        fprintf('%s and %s are not of the same type.\n',opt.verbose{1},opt.verbose{2})
+    end   
 else
     switch type_var1
 
         case 'char'
             flag_equal = strcmp(var1,var2);
-
+            if ~flag_equal && opt.flag_verbose
+                fprintf('The strings %s and %s are different.\n',opt.verbose{1},opt.verbose{2})
+            end
         case {'numeric','logical'}
             if min(size(var1) == size(var2)) == 0
                 flag_equal = false;
-                return
+                if opt.flag_verbose
+                    fprintf('The numerical arrays %s and %s do not have the same size.\n',opt.verbose{1},opt.verbose{2})
+                end
+            elseif isempty(var1)
+                flag_equal = true;
             else
                 var1 = var1(:);
                 var2 = var2(:);
@@ -83,7 +99,10 @@ else
                 flag_equal = false(size(var1));
                 flag_equal(mask_nan) = isnan(var2(mask_nan));
                 flag_equal(~mask_nan) = (abs(var1(~mask_nan) - var2(~mask_nan)) <= opt.eps)|((var1(~mask_nan)==Inf)&(var2(~mask_nan)==Inf))|((var1(~mask_nan)==-Inf)&(var2(~mask_nan)==-Inf));
-                flag_equal = min(flag_equal);                
+                flag_equal = min(flag_equal);
+                if ~flag_equal && opt.flag_verbose
+                    fprintf('The numerical arrays %s and %s have different values.\n',opt.verbose{1},opt.verbose{2})                    
+                end
             end
 
         case 'cell'
@@ -94,11 +113,16 @@ else
             else
                 var1 = var1(:);
                 var2 = var2(:);
-                flag_equal = true;
+                flag_equal = true;                
                 for num_e = 1:length(var1)
-                    if ~psom_cmp_var(var1{num_e},var2{num_e},opt)
-                        flag_equal = false;
-                        return
+                    opt_c = opt;
+                    opt_c.verbose{1} = sprintf('%s{%i}',opt.verbose{1},num_e);
+                    opt_c.verbose{2} = sprintf('%s{%i}',opt.verbose{2},num_e);
+                    if ~psom_cmp_var(var1{num_e},var2{num_e},opt_c)                    
+                        flag_equal = false;                        
+                        if ~opt.flag_test_all
+                            return
+                        end
                     end
                 end
             end
@@ -118,11 +142,15 @@ else
                 %% if there are more than one entry, loop over all entries
                 flag_equal = true;
                 for num_e = 1:length(var1)
-                    flag_equal = flag_equal&&psom_cmp_var(var1(num_e),var2(num_e),opt);
-                end
-                return
-            else
-                
+                    opt_c = opt;
+                    opt_c.verbose{1} = sprintf('%s(%i)',opt.verbose{1},num_e);
+                    opt_c.verbose{2} = sprintf('%s(%i)',opt.verbose{2},num_e);
+                    flag_equal = flag_equal&&psom_cmp_var(var1(num_e),var2(num_e),opt_c);
+                    if ~flag_equal && ~opt.flag_test_all
+                        return
+                    end
+                end                          
+            else                
                 %% compare field names
                 list_fields1 = fieldnames(var1);
                 list_fields2 = fieldnames(var2);
@@ -132,15 +160,23 @@ else
                 end
                 if (length(list_fields1)~=length(list_fields2)) || (length(unique([list_fields1 list_fields2]))~=length(list_fields1))
                     flag_equal = false;
+                    if opt.flag_verbose
+                        fprintf('The structures %s and %s do not have the same field names',opt.verbose{1},opt.verbose{2});
+                    end
                     return
                 end
 
                 %% Compare the values of all fields 
                 flag_equal = true;
-                for num_e = 1:length(list_fields1)      
-                    if ~psom_cmp_var(var1.(list_fields1{num_e}),var2.(list_fields1{num_e}),opt)
+                for num_e = 1:length(list_fields1)
+                    opt_c = opt;
+                    opt_c.verbose{1} = sprintf('%s.%s',opt.verbose{1},list_fields1{num_e});
+                    opt_c.verbose{2} = sprintf('%s.%s',opt.verbose{2},list_fields1{num_e});                    
+                    if ~psom_cmp_var(var1.(list_fields1{num_e}),var2.(list_fields1{num_e}),opt_c)
                         flag_equal = false;
-                        return
+                        if ~opt.flag_test_all
+                            return
+                        end
                     end
                 end
 

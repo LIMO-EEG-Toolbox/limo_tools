@@ -35,8 +35,8 @@ function [status,msg] = psom_clean(files_clean,opt)
 % COMMENTS
 %
 % Copyright (c) Pierre Bellec, Centre de recherche de l'institut de
-% gériatrie de Montréal, Département d'informatique et de recherche
-% opérationnelle, Université de Montréal, Canada, 2010-2012
+% griatrie de Montral, Dpartement d'informatique et de recherche
+% oprationnelle, Universit de Montral, Canada, 2010-2012
 % Maintainer : pierre.bellec@criugm.qc.ca
 % See licensing information in the code.
 
@@ -96,7 +96,7 @@ for num_f = 1:nb_files
         end    
     end
 end
-status = 1;
+status = 0;
 msg = '';
 
 if exist('OCTAVE_VERSION','builtin')

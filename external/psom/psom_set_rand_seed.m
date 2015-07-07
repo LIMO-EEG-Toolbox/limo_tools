@@ -38,8 +38,9 @@ function seed = psom_set_rand_seed(seed)
 % Copyright (c) Pierre Bellec, Montreal Neurological Institute, 2008-2010.
 % Centre de recherche de l'institut de Gériatrie de Montréal
 % Département d'informatique et de recherche opérationnelle
-% Université de Montréal, 2010-2012.
+% Université de Montréal, 2010-2014.
 % Maintainer : pierre.bellec@criugm.qc.ca
+% Patch submitted on 02/2014 by Cyril Pernet.
 % See licensing information in the code.
 % Keywords : random number generator, simulation
 
@@ -76,7 +77,11 @@ if exist('OCTAVE_VERSION','builtin')
     randn('state',seed); % Octave
 else
     try
-        RandStream.setDefaultStream(RandStream('mt19937ar','seed',seed)); % matlab 7.9+
+        try
+            RandStream.setGlobalStream(RandStream('mt19937ar','Seed',seed)); % matlab 8+
+        catch
+            RandStream.setDefaultStream(RandStream('mt19937ar','seed',seed)); % matlab 7.9+
+        end
     catch
         rand('state',seed);  % Matlab 5+
         randn('state',seed); % Matlab 5+
