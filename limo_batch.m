@@ -85,6 +85,7 @@ if nargin == 0
             return
         end
     end
+    
     % contrast
     if strcmp(option,'both')
         [FileName,PathName,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; ...
