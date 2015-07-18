@@ -70,45 +70,45 @@ re(find(re < 1e-5)) = 1e-5;
 r= resadj ./ repmat(tune.*re, size(Y,1),1);
 
 % % Compute new weights using Principal Component projection
-[W,out] = limo_pcout(r);
-WY = Y .* repmat(W,1,size(Y,2));
-WX = X .* repmat(W,1,size(X,2));
-b = pinv(WX)*WY;
+% [W,out] = limo_pcout(r);
+% WY = Y .* repmat(W,1,size(Y,2));
+% WX = X .* repmat(W,1,size(X,2));
+% b = pinv(WX)*WY;
   
 % iterate as to min res.
 % set a 100 iteration max
-% numiter = 0; iterlim = 100; 
-% oldRes=1; newRes=10;
-% 
-% while(max(abs(oldRes-newRes)) > (1E-4))
-%    
-%    numiter = numiter+1;
-%    oldRes = newRes;
-%    
-%    if (numiter>iterlim)
-%       warning('limo_WLS could not converge');
-%       break;
-%    end
-%    
-%    % Get residuals from previous fit
-%    res = Y - X*b;
-%    resadj = res .* repmat(adjfactor, 1, size(Y,2));
-% 
-%    %re - Robust Estimator
-%    % 0.6745 is the 0.75- quantile of the standard normal distribution
-%    % (makes the estimate unbiased)
-%    re = median(abs(resadj)) ./ 0.6745;
-%    re(find(re < 1e-5)) = 1e-5;
-%    r= resadj ./ repmat(tune.*re, size(Y,1),1);
-%    
-%    % Compute new weights using Principal Component projection
-%    [W,out] = limo_pcout(r);
-%    WY = Y .* repmat(W,1,size(Y,2));
-%    WX = X .* repmat(W,1,size(X,2));
-%    b = pinv(WX)*WY;
-%    
-%    % newRes= sum(sum(res.^2));
-%    newRes= sum(res(:).^2);
-% end
+numiter = 0; iterlim = 100; 
+oldRes=1; newRes=10;
+
+while(max(abs(oldRes-newRes)) > (1E-4))
+   
+   numiter = numiter+1;
+   oldRes = newRes;
+   
+   if (numiter>iterlim)
+      warning('limo_WLS could not converge');
+      break;
+   end
+   
+   % Get residuals from previous fit
+   res = Y - X*b;
+   resadj = res .* repmat(adjfactor, 1, size(Y,2));
+
+   %re - Robust Estimator
+   % 0.6745 is the 0.75- quantile of the standard normal distribution
+   % (makes the estimate unbiased)
+   re = median(abs(resadj)) ./ 0.6745;
+   re(find(re < 1e-5)) = 1e-5;
+   r= resadj ./ repmat(tune.*re, size(Y,1),1);
+   
+   % Compute new weights using Principal Component projection
+   [W,out] = limo_pcout(r);
+   WY = Y .* repmat(W,1,size(Y,2));
+   WX = X .* repmat(W,1,size(X,2));
+   b = pinv(WX)*WY;
+   
+   % newRes= sum(sum(res.^2));
+   newRes= sum(res(:).^2);
+end
 
 
