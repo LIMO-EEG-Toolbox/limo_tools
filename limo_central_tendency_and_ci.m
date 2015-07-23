@@ -45,8 +45,9 @@ function result=limo_central_tendency_and_ci(varargin)
 % 26-08-2010 - GAR: figure output
 % June/July 2013 - Fixed some bugs CP / thx to Benedikt Ehinger
 % Novembre 2013 - fixed further issues related to parameter selection CP / thx to Matt Craddock
+% version 2 - included within subjectg weighted mean + update for time frequency
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2015
 
 
 %% file selection and checkings

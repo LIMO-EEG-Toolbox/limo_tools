@@ -33,7 +33,6 @@ function [flag_failed,msg] = psom_run_script(cmd,script,opt,logs)
 %                       UNIX, start in WINDOWS.
 %        'qsub'       : remote execution using qsub (torque, SGE, PBS).
 %        'msub'       : remote execution using msub (MOAB)
-%        'bsub'       : remote execution using bsub (IBM)
 %        'condor'     : remote execution using condor
 %
 %    SHELL_OPTIONS
@@ -45,8 +44,8 @@ function [flag_failed,msg] = psom_run_script(cmd,script,opt,logs)
 %    QSUB_OPTIONS
 %        (string, GB_PSOM_QSUB_OPTIONS defined in PSOM_GB_VARS)
 %        This field can be used to pass any argument when submitting a
-%        job with bsub/qsub/msub. For example, '-q all.q@yeatman,all.q@zeus'
-%        will force bsub/qsub/msub to only use the yeatman and zeus
+%        job with qsub/msub. For example, '-q all.q@yeatman,all.q@zeus'
+%        will force qsub/msub to only use the yeatman and zeus
 %        workstations in the all.q queue. It can also be used to put
 %        restrictions on the minimum avalaible memory, etc.
 %
@@ -205,7 +204,7 @@ if nargin < 4
     logs = [];
 else
     list_fields   = { 'txt' , 'eqsub' , 'oqsub' , 'failed' , 'exit' };
-    if ismember(opt.mode,{'qsub','msub','bsub','condor'})
+    if ismember(opt.mode,{'qsub','msub','condor'})
         list_defaults = { NaN   , NaN     , NaN     , NaN    , ''     };
     else
         list_defaults = { NaN   , ''      , ''      , ''     , ''     };
@@ -214,13 +213,26 @@ else
 end
 
 %% Check that the execution mode exists
-if ~ismember(opt.mode,{'session','background','batch','qsub','msub','bsub','condor'})
+if ~ismember(opt.mode,{'session','background','batch','qsub','msub','condor'})
     error('%s is an unknown mode of command execution. Sorry dude, I must quit ...',opt.mode);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %% Generate the script %%
 %%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Generate some OS-appropriate options to start Matlab/Octave
+switch gb_psom_language
+    case 'matlab'
+        if ispc
+            opt_matlab = '-automation -nodesktop -r';
+        else
+            opt_matlab = '-nosplash -nodesktop -r';
+        end        
+    case 'octave'
+        opt_matlab = '--silent --eval';       
+end
+
 %% Set-up the search path for the job
 if ~strcmp(opt.mode,'session')&&~isempty(cmd)
     if (length(opt.path_search)>4)&&(strcmp(opt.path_search(end-3:end),'.mat'))
@@ -238,9 +250,13 @@ end
         
 %% Add an appropriate call to Matlab/Octave
 if ~isempty(cmd)            
-    instr_job = sprintf('"%s" %s "%s %s,exit"',opt.command_matlab,gb_psom_opt_matlab,opt.init_matlab,cmd);
+    instr_job = sprintf('"%s" %s "%s %s,exit"',opt.command_matlab,opt_matlab,opt.init_matlab,cmd);
     if ~isempty(logs)
-        instr_job = sprintf('%s >"%s" 2>&1\n',instr_job,logs.txt);
+        if opt.flag_debug
+            instr_job = sprintf('%s >"%s" 2>&1\n',instr_job,logs.txt);
+        else
+            instr_job = sprintf('%s >"%s"\n',instr_job,logs.txt);
+        end
     else
         instr_job = sprintf('%s\n',instr_job);
     end
@@ -328,14 +344,15 @@ switch opt.mode
     case 'background'
 
        if ispc
-            cmd_script = ['"' script '"']; 
+            cmd_script = ['"' script '"']; % /min instead of /b ?
        else
-            [~, ShPath] = system('which sh');
-            cmd_script = [ShPath(1:end-1) ' "' script '"'];
+            cmd_script = ['. "' script '"'];
        end
-       cmd_script = [cmd_script ' 2>&1']; % Redirect the error stream to standard output
-       
+
        if opt.flag_debug
+           if strcmp(gb_psom_language,'octave')
+               cmd_script = [cmd_script ' 2>&1']; % In octave, the error stream is lost. Redirect it to standard output
+           end
            msg = sprintf('    The script is executed using the command :\n%s\n\n',cmd_script);
            fprintf('%s',msg);
            if ~isempty(opt.file_handle)
@@ -371,10 +388,10 @@ switch opt.mode
         end
         [flag_failed,msg] = system(instr_batch);    
         
-    case {'qsub','msub','condor','bsub'}
+    case {'qsub','msub','condor'}
         script_submit = [gb_psom_path_psom 'psom_submit.sh'];
         switch opt.mode
-            case {'qsub','msub','bsub'}
+            case {'qsub','msub'}
                 sub = opt.mode;
             case 'condor'
                 sub = [gb_psom_path_psom 'psom_condor.sh'];
@@ -389,12 +406,7 @@ switch opt.mode
         else
             name_job = opt.name_job;
         end
-        switch opt.mode
-            case 'bsub'
-                instr_qsub = sprintf('%s%s %s %s',sub,qsub_logs,opt.qsub_options,['\"' script '\"']);     
-            otherwise
-                instr_qsub = sprintf('%s%s -N %s %s %s',sub,qsub_logs,name_job,opt.qsub_options,['\"' script '\"']);     
-        end
+        instr_qsub = sprintf('%s%s -N %s %s %s',sub,qsub_logs,name_job,opt.qsub_options,['\"' script '\"']);            
         if ~isempty(logs)
             instr_qsub = [script_submit ' "' instr_qsub '" ' logs.failed ' ' logs.exit ' ' logs.oqsub ];
         end

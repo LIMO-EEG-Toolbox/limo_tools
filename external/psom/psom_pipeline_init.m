@@ -102,11 +102,15 @@ function [file_pipeline,flag_start] = psom_pipeline_init(pipeline,opt)
 %     
 %    FLAG_PAUSE
 %        (boolean, default false) If FLAG_PAUSE is true, the pipeline
-%        initialization will pause before writting the logs.
+%        initialization may pause in some situations, i.e. before
+%        writting an update of a pipeline (and incidentally flush old
+%        outputs) and before starting a pipeline if some necessary input
+%        files are missing. This lets the user an opportunity to cancel
+%        the pipeline execution before anything is written on the disk.
 %
 %    FLAG_VERBOSE
-%        (integer 0, 1 or 2, default 1) No verbose (0), standard 
-%        verbose (1), a lot of verbose, useful for debugging (2). 
+%        (boolean, default true) if the flag is true, then the function
+%        prints some infos during the processing.
 %
 % _________________________________________________________________________
 % OUTPUTS:
@@ -254,7 +258,7 @@ end
 %% Options
 gb_name_structure = 'opt';
 gb_list_fields    = { 'path_search'       , 'flag_pause' , 'flag_update' , 'restart' , 'path_logs' , 'command_matlab' , 'flag_verbose' , 'type_restart' };
-gb_list_defaults  = { gb_psom_path_search , false        , true          , {}        , NaN         , ''               , 1              , 'substring'    };
+gb_list_defaults  = { gb_psom_path_search , true         , true          , {}        , NaN         , ''               , true           , 'substring'    };
 psom_set_defaults
 name_pipeline = 'PIPE';
 
@@ -276,8 +280,14 @@ hat_qsub_o = sprintf('\n\n*****************\nOUTPUT QSUB\n*****************\n');
 hat_qsub_e = sprintf('\n\n*****************\nERROR QSUB\n*****************\n');
 
 %% Print a small banner for the initialization
-if flag_verbose 
-    fprintf('\nLogs will be stored in %s\n',path_logs);
+if flag_verbose
+    msg_line1 = sprintf('The pipeline description is now being prepared for execution.');
+    msg_line2 = sprintf('The following folder will be used to store logs and status :');
+    msg_line3 = sprintf('%s',path_logs);
+    size_msg = max([size(msg_line1,2),size(msg_line2,2),size(msg_line3,2)]);
+    msg = sprintf('%s\n%s\n%s',msg_line1,msg_line2,msg_line3);
+    stars = repmat('*',[1 size_msg]);
+    fprintf('\n%s\n%s\n%s\n',stars,msg,stars);
 end
 
 %% Generate file names 
@@ -299,12 +309,12 @@ nb_jobs = length(list_jobs);
 %% Stage 1: Build the dependency graph and check the viability of the pipeline %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if flag_verbose>1
+if flag_verbose
     fprintf('Examining the dependencies of the pipeline ...\n');
 end
 
 %% Remove empty jobs
-if flag_verbose>1
+if flag_verbose
     fprintf('    Removing empty jobs ...\n');
 end
 
@@ -315,7 +325,7 @@ for num_j = 1:nb_jobs
 end
 
 %% Check that all jobs have a "command" field
-if flag_verbose>1
+if flag_verbose
     fprintf('    Checking that all jobs are associated with a command ...\n');
 end
 for num_j = 1:nb_jobs
@@ -325,15 +335,13 @@ for num_j = 1:nb_jobs
 end
 
 %% Generate dependencies
-if flag_verbose>1
+if flag_verbose
     fprintf('    Generating dependencies ...\n');
-elseif flag_verbose ==1
-    fprintf('Generating dependencies ...\n');
 end
 [graph_deps,list_jobs,files_in,files_out,files_clean] = psom_build_dependencies(pipeline,opt.flag_verbose);
 
 %% Check if some outputs were not generated twice
-if flag_verbose>1
+if flag_verbose
     fprintf('    Checking if some outputs were not generated twice ...\n');
 end
 [flag_ok,list_files_failed,list_jobs_failed] = psom_is_files_out_ok(files_out);
@@ -358,7 +366,7 @@ if ~flag_ok
 end
 
 %% Check for cycles
-if flag_verbose>1
+if flag_verbose
     fprintf('    Checking if the graph of dependencies is acyclic ...\n');
 end
 [flag_dag,list_vert_cycle] = psom_is_dag(graph_deps);
@@ -381,7 +389,7 @@ end
 flag_old_pipeline = psom_exist(file_jobs);
 
 if flag_old_pipeline
-    if flag_verbose>1
+    if flag_verbose
         fprintf('\nLoading previous pipeline ...\n');
     end
 end
@@ -405,7 +413,7 @@ all_logs_old = sub_load_old(file_logs);
 profile_old = sub_load_old(file_profile);
 
 %% Update the status of the jobs using the tag files that can be found
-if flag_verbose>1
+if flag_verbose
     fprintf('    Cleaning up job status ...\n');
 end
 job_status = cell(size(list_jobs));
@@ -450,7 +458,7 @@ flag_restart = false([1 length(job_status)]);
 flag_start = false([1 length(job_status)]);
 flag_start(ismember(job_status_old,{'none','failed','exit'})) = true;
 if flag_verbose
-    fprintf('Setting up the to-do list ...\n');
+    fprintf('\nSetting up the to-do list. The following jobs will be executed ...\n');
 end
 lmax = 0;
 for num_j = 1:nb_jobs
@@ -467,38 +475,34 @@ for num_j = 1:nb_jobs
     if strcmp(job_status_old{num_j},'failed')||strcmp(job_status_old{num_j},'exit')
         flag_restart_job = true;
         if flag_verbose
-            fprintf('   %s%s(failed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
+            fprintf('    %s%s(failed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
         end
     else
         %% If an old pipeline exists, check if the job has been modified
         if isfield(pipeline_old,name_job)
             if opt.flag_update
                 flag_same = psom_cmp_var(pipeline_old.(name_job),pipeline.(name_job));
-                if ~flag_same&&(flag_verbose>1)
-                    fprintf('   %s%s(changed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
+                if ~flag_same&&flag_verbose
+                    fprintf('    %s%s(changed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
                 end
             else
                 flag_same = true;
                 if (num_j == 1)&&flag_verbose
-                    fprintf('   The OPT.FLAG_UPDATE is off, jobs are not going to be checked for updates.\n');
+                    fprintf('    The OPT.FLAG_UPDATE is off, jobs are not going to be checked for updates.\n');
                 end
             end
             if flag_same && strcmp(job_status_old{num_j},'none')
-                if flag_verbose>1
-                    fprintf('   %s%s(new)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
-                end
+                fprintf('    %s%s(new)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
                 flag_restart_job = true;
             elseif flag_same && (strcmp(job_status_old{num_j},'submitted')|strcmp(job_status_old{num_j},'running'))
-                if flag_verbose>1
-                    fprintf('   %s%s(submission failed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
-                end
+                fprintf('    %s%s(submission failed)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
                 flag_restart_job = true;
             end
             flag_restart_job = flag_restart_job||~flag_same;
         else
             flag_restart_job = true;
-            if flag_verbose>1
-                fprintf('   %s%s(new)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
+            if flag_verbose
+                fprintf('    %s%s(new)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
             end
         end
         
@@ -513,7 +517,7 @@ for num_j = 1:nb_jobs
         end
         if flag_force&&~flag_restart(num_j)
             if flag_verbose
-                fprintf('   %s%s(manual restart)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
+                fprintf('    %s%s(manual restart)\n',name_job,repmat(' ',[1 lmax-length(name_job)]))
             end
             flag_restart_job = true;
         end
@@ -536,8 +540,8 @@ for num_j = 1:nb_jobs
             list_add = find(mask_new_restart2&~mask_new_restart);
             if ~isempty(list_add)
                 for num_a = 1:length(list_add)
-                    if flag_verbose>1
-                        fprintf('   %s%s(child of a restarted job)\n',list_jobs{list_add(num_a)},repmat(' ',[1 lmax-length(list_jobs{list_add(num_a)})]))
+                    if flag_verbose
+                        fprintf('    %s%s(child of a restarted job)\n',list_jobs{list_add(num_a)},repmat(' ',[1 lmax-length(list_jobs{list_add(num_a)})]))
                     end
                 end
             end            
@@ -576,10 +580,10 @@ while flag_miss
             flag_restart(ind_idle(num_j)) = true;
         end
     end
-    if (flag_verbose>1) && any(mask_new_restart)
+    if flag_verbose && any(mask_new_restart)
         list_new = find(mask_new_restart);
         for num_n = 1:length(list_new)
-            fprintf('   %s%s(produce necessary files)\n',list_jobs{list_new(num_n)},repmat(' ',[1 lmax-length(list_jobs{list_new(num_n)})]))
+            fprintf('    %s%s(produce necessary files)\n',list_jobs{list_new(num_n)},repmat(' ',[1 lmax-length(list_jobs{list_new(num_n)})]))
         end         
     end
     flag_miss = any(mask_new_restart);
@@ -592,8 +596,8 @@ while flag_miss
         list_add = find(mask_new_restart2&~mask_new_restart);
         if ~isempty(list_add)
             for num_a = 1:length(list_add)
-                if flag_verbose>1
-                    fprintf('   %s%s(child of a restarted job)\n',list_jobs{list_add(num_a)},repmat(' ',[1 lmax-length(list_jobs{list_add(num_a)})]))
+                if flag_verbose
+                    fprintf('    %s%s(child of a restarted job)\n',list_jobs{list_add(num_a)},repmat(' ',[1 lmax-length(list_jobs{list_add(num_a)})]))
                 end
             end
         end                       
@@ -612,7 +616,7 @@ end
 job_status = repmat({'none'},[nb_jobs 1]);
 
 if flag_old_pipeline           
-    if flag_verbose>1
+    if flag_verbose
         fprintf('Initializing the new status (keeping finished jobs "as is")...\n');
     end
 end
@@ -622,24 +626,17 @@ flag_finished = flag_finished & ~flag_restart;
 job_status(flag_finished) = repmat({'finished'},[sum(flag_finished) 1]);
 
 if ~any(ismember(job_status,'none'))
-    fprintf('All jobs are already completed. Bye for now !\n')
+    fprintf('All jobs are already completed, there is nothing to do. Bye for now !\n')
     flag_start = false;
     return    
 else
     flag_start = true;
-    if flag_verbose
-        if any(flag_finished)
-            fprintf('   I found %i job(s) to do, and %i job(s) already completed.\n',sum(ismember(job_status,'none')),sum(ismember(job_status,'finished')));
-        else
-            fprintf('   I found %i job(s) to do.\n',sum(ismember(job_status,'none')));
-        end
-    end
 end
 
 
 %% Check if all the files necessary to complete each job of the pipeline 
 %% can be found
-if flag_verbose>1
+if flag_verbose
     fprintf('Checking if all the files necessary to complete the pipeline can be found ...\n');
 end
 all_in = psom_files2cell(rmfield(files_in,list_jobs(flag_finished)));
@@ -647,7 +644,6 @@ all_out = psom_files2cell(files_out);
 files_necessary = all_in(~ismember(all_in,all_out));
 mask_missing = false(length(files_necessary),1);
 flag_OK = true;
-files_necessary = unique(files_necessary);
 for num_f = 1:length(files_necessary)
     if ~psom_exist(files_necessary{num_f})
         if flag_OK
@@ -661,9 +657,10 @@ end
 
 if ~flag_OK
     if flag_pause
-        fprintf('\n!!! The input files of some jobs were found missing.\n');                    
+        fprintf('\n!!! The input files of some jobs were found missing.\nPress CTRL-C now if you do not wish to run the pipeline or any key to continue anyway...\n');        
+        pause        
     else
-        warning('The input files of some jobs were found missing !');
+        warning('\n!!! The input files of some jobs were found missing.\n');
     end
 end
 
@@ -671,19 +668,19 @@ end
 %% Stage 4: Save the pipeline description in the logs folder %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if flag_verbose>1
+if flag_verbose
     fprintf('\nSaving the pipeline description in the logs folder ...\n');
 end
 
 if flag_pause
-    fprintf('Press CTRL-C now to cancel or press any key to continue.\n');   
+    fprintf('Any old description of the pipeline is going to be flushed (except for the log files of finished jobs).\nPress CTRL-C now to cancel or press any key to continue.\n');   
     pause
 end
 
 %% Create logs folder
 
 if ~exist(path_logs,'dir')
-    if flag_verbose>1
+    if flag_verbose
         fprintf('    Creating the logs folder ...\n');
     end
 
@@ -695,7 +692,7 @@ if ~exist(path_logs,'dir')
 end
 
 %% Creating output folders
-if flag_verbose>1
+if flag_verbose        
     fprintf('    Creating output folders ...\n')        
 end        
 
@@ -712,30 +709,30 @@ for num_p = 1:length(path_all)
 end        
 
 %% Removing old outputs
-if flag_verbose>1      
+if flag_verbose        
     fprintf('    Removing old outputs ...\n')        
 end        
 for num_j = 1:length(list_jobs)        
     job_name = list_jobs{num_j};        
     list_files = unique(files_out.(job_name));        
-    if ~flag_finished(num_j)&&(~isfield(pipeline.(job_name),'ispipeline')||~pipeline.(job_name).ispipeline)
+    if ~flag_finished(num_j)        
         for num_f = 1:length(list_files)        
-            if psom_exist(list_files{num_f})     
-                psom_clean(list_files{num_f},struct('flag_verbose',false));        
+            if psom_exist(list_files{num_f});        
+                psom_clean(list_files{num_f});        
             end        
         end        
     end        
 end
 
 %% Create a .lock file 
-if flag_verbose>1
+if flag_verbose
     fprintf('    Creating a ''lock'' file %s ...\n',file_pipe_running);
 end
 str_now = datestr(clock);
 save(file_pipe_running,'str_now');
 
 %% Save the jobs
-if flag_verbose>1
+if flag_verbose
     fprintf('    Saving the individual ''jobs'' file %s ...\n',file_jobs);
 end
 
@@ -755,7 +752,7 @@ else
 end
 
 %% Save the dependencies
-if flag_verbose>1
+if flag_verbose
     fprintf('    Saving the pipeline dependencies in %s...\n',file_pipeline);
 end
 
@@ -775,7 +772,7 @@ path_work = path_search;
 save(file_pipeline,'history','graph_deps','list_jobs','files_in','files_out','path_work')
 
 %% Save the status
-if flag_verbose>1
+if flag_verbose
     fprintf('    Saving the ''status'' file %s ...\n',file_status);
 end
 
@@ -797,7 +794,7 @@ end
 copyfile(file_status,file_status_backup,'f');
 
 %% Save the logs 
-if flag_verbose>1
+if flag_verbose
     fprintf('    Saving the ''logs'' file %s ...\n',file_logs);
 end
 
@@ -829,7 +826,7 @@ end
 copyfile(file_logs,file_logs_backup,'f'); 
 
 %% Save the profile
-if flag_verbose>1
+if flag_verbose
     fprintf('    Saving the ''profile'' file %s ...\n',file_profile);
 end
 profile = struct();
@@ -858,32 +855,36 @@ end
 copyfile(file_profile,file_profile_backup,'f');
 
 %% Clean up the log folders from old tag and log files
-if flag_verbose>1
+if flag_verbose
     fprintf('    Cleaning up old tags and logs from the logs folders ...\n')
 end
 
 if psom_exist(file_news_feed)
-    psom_clean(file_news_feed,struct('flag_verbose',false));
+    psom_clean(file_news_feed);
 end
-list_ext = { 'running' , 'failed' , 'finished' , 'exit' , 'kill' , ...
- 'heartbeat.mat' , 'log' , 'oqsub' , 'eqsub' , 'profile.mat' };
-
-for num_ext = 1:length(list_ext)
-    list_files = dir([path_logs filesep '*.' list_ext{num_ext}]);
-    if ~isempty(list_files)
-        psom_clean({list_files.name},struct('flag_verbose',false));
-    end
-end
+delete([path_logs filesep '*.running']);
+delete([path_logs filesep '*.failed']);
+delete([path_logs filesep '*.finished']);
+delete([path_logs filesep '*.exit']);
+delete([path_logs filesep '*.log']);
+delete([path_logs filesep '*.oqsub']);
+delete([path_logs filesep '*.eqsub']);
+delete([path_logs filesep '*.profile.mat']);
 
 if exist([path_logs 'tmp'],'dir')
-    [status,msg] = psom_clean([path_logs 'tmp'],struct('flag_verbose',false));
-    if status
+    if strcmp(gb_psom_language,'octave')
+        instr_rm = ['rm -rf ' path_logs 'tmp'];
+        [succ,msg] = system(instr_rm);
+    else
+        [succ,msg] = rmdir([path_logs 'tmp'],'s');        
+    end
+    if ~succ
         warning('Could not remove the temporary folder %s. Check for permissions.',[path_logs 'tmp']);
     end            
 end
 
 %% Done !
-if flag_verbose>1
+if flag_verbose
     fprintf('\nThe pipeline has been successfully initialized !\n')
 end
 

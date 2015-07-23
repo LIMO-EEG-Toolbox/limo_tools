@@ -49,6 +49,7 @@ handles.ica_spec   = 'off';
 handles.ica_ersp   = 'off';
 handles.ica_itc    = 'off';
 handles.subjects   = [];
+handles.MAT        = 0;
 guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
@@ -107,6 +108,11 @@ if h == 1; handles.ica_itc = 'on'; else  handles.scalp_itc = 'off'; end
 guidata(hObject, handles);
 
 % -------------------------------------------------------------------------
+% --- Executes on button press in MATsave.
+function MATsave_Callback(hObject, eventdata, handles)
+handles.MAT = get(hObject,'Value');
+guidata(hObject, handles);
+
 % --- Executes on button press in load_data.
 function load_data_Callback(hObject, eventdata, handles)
 [~,~,handles.subjects]=limo_get_files([],{'*.txt;*.set;*.study'});
@@ -129,6 +135,12 @@ if isnumeric(handles.ica_spec);   handles.ica_spec   = 'off'; end
 if isnumeric(handles.ica_ersp);   handles.ica_ersp   = 'off'; end
 if isnumeric(handles.ica_itc);    handles.ica_itc    = 'off'; end
 
+if handles.MAT == 0
+    format = 'cell';
+else
+    format = 'matrix';
+end;
+
 N = size(handles.subjects,2);
 for s=1:N
     subject_set = handles.subjects{s};
@@ -136,7 +148,7 @@ for s=1:N
     
     if strcmp(handles.scalp_erp,'on') || strcmp(handles.scalp_spec,'on') || ...
             strcmp(handles.scalp_ersp,'on') || strcmp(handles.scalp_itc,'on')
-        options = {'format','matrix', 'datatype', 'channels', ...
+        options = {'format',format, 'datatype', 'channels', ...
             'erp',handles.scalp_erp,'spec',handles.scalp_spec, ...
             'ersp',handles.scalp_ersp,'itc',handles.scalp_itc,...
             'rmicacomps','on', 'erpparams',[],'specparams',[],'erspparams',[], ...
@@ -147,7 +159,7 @@ for s=1:N
     
     if strcmp(handles.ica_erp,'on') || strcmp(handles.scalp_spec,'on') || ...
             strcmp(handles.scalp_ersp,'on') || strcmp(handles.scalp_itc,'on')
-        options = {'format','matrix', 'datatype', 'ica', ...
+        options = {'format',format, 'datatype', 'ica', ...
             'erp',handles.ica_erp,'spec',handles.ica_spec, ...
             'ersp',handles.ica_ersp,'itc',handles.ica_itc,...
             'rmicacomps','on', 'erpparams',[],'specparams',[],'erspparams',[], ...
@@ -174,4 +186,6 @@ function Quit_Callback(hObject, eventdata, handles)
 clc
 uiresume
 delete(handles.figure1)
+
+
 

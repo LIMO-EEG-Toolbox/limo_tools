@@ -58,9 +58,6 @@ addpath([root filesep 'external' filesep 'psom'])
 addpath([root filesep 'external'])
 addpath([root filesep 'help'])
 
-% make these shared and available
-global EEGLIMO LIMO
-
 % in case data are already there
 if isempty(varargin);
     varargin={1};
@@ -184,7 +181,7 @@ switch varargin{1}
         
         % Check data where specified and load
         if exist('EEGLIMO','var')
-            if strcmp([LIMO.data.data_dir LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
+            if strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
                 disp('Using Global variable EEGLIMO')
             else
                 cd (LIMO.data.data_dir);
