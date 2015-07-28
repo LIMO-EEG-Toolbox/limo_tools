@@ -28,10 +28,11 @@ function tfce_score = limo_tfce(varargin)
 % of event-related brain potentials/fields: a simulation study
 % Journal Of Neuroscience Method - submitted
 %
-% Cyril Pernet v3 03-04-2014
+% Cyril Pernet v4 28-07-2015
 % fixed indices / got the loop faster / 
+% use limo_findcluster which is faster
 % --------------------------------------
-% Copyright (C) LIMO Team 2010
+% Copyright (C) LIMO Team 2015
 
 
 % precision max = 200; % define how many thresholds between min t/F map and
@@ -340,7 +341,7 @@ switch type
                         if isempty(channeighbstructmat)
                             [clustered_map, num] = bwlabel((data > h),4);
                         else
-                            [clustered_map, num] = limo_ft_findcluster((data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((data > h), channeighbstructmat,2);
                         end
                         
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead
@@ -377,7 +378,7 @@ switch type
                         if isempty(channeighbstructmat)
                             [clustered_map, num] = bwlabel((pos_data > h),4);
                         else
-                            [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
                         end
                         
                         extent_map = zeros(x,y);
@@ -398,7 +399,7 @@ switch type
                         if isempty(channeighbstructmat)
                             [clustered_map, num] = bwlabel((neg_data > h),4);
                         else
-                            [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
                         end
                         
                         extent_map = zeros(x,y);
@@ -452,7 +453,7 @@ switch type
                             if isempty(channeighbstructmat)
                                 [clustered_map, num] = bwlabel((tmp_data > h),4);
                             else
-                                [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
+                                [clustered_map, num] = limo_findcluster((tmp_data > h), channeighbstructmat,2);
                             end
                             
                             extent_map = zeros(x,y);
@@ -505,7 +506,7 @@ switch type
                             if isempty(channeighbstructmat)
                                 [clustered_map, num] = bwlabel((pos_data > h),4);
                             else
-                                [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                                [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
                             end
                             
                             extent_map = zeros(x,y);
@@ -524,7 +525,7 @@ switch type
                             if isempty(channeighbstructmat)
                                 [clustered_map, num] = bwlabel((neg_data > h),4);
                             else
-                                [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                                [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
                             end
                             
                             extent_map = zeros(x,y);
@@ -590,7 +591,7 @@ switch type
                     for h=min(data(:)):increment:max(data(:))
                         if updatebar ==1; waitbar(index/nsteps); end
                         try
-                            [clustered_map, num] = limo_ft_findcluster((data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((data > h), channeighbstructmat,2);
                         catch
                             [clustered_map,num] = bwlabel((data > h)); % this allow continuous mapping
                         end
@@ -627,7 +628,7 @@ switch type
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         if updatebar ==1; waitbar(index/nsteps); end
                         try
-                            [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
                         catch
                             [clustered_map,num] = bwlabel((pos_data > h));
                         end
@@ -647,7 +648,7 @@ switch type
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         if updatebar ==1; waitbar((hindex+index)/nsteps); end
                         try
-                            [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                            [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
                         catch
                             [clustered_map,num] = bwlabel((neg_data > h));
                         end
@@ -700,7 +701,7 @@ switch type
                             
                             for h=min(tmp_data(:)):increment:max(tmp_data(:))
                                 try
-                                    [clustered_map, num] = limo_ft_findcluster((tmp_data > h), channeighbstructmat,2);
+                                    [clustered_map, num] = limo_findcluster((tmp_data > h), channeighbstructmat,2);
                                 catch
                                     [clustered_map,num] = bwlabel((tmp_data > h));
                                 end
@@ -752,7 +753,7 @@ switch type
                             pos_tfce = NaN(x,y,z,l); index = 1;
                             for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                                 try
-                                    [clustered_map, num] = limo_ft_findcluster((pos_data > h), channeighbstructmat,2);
+                                    [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
                                 catch
                                     [clustered_map,num] = bwlabel((pos_data > h));
                                 end
@@ -770,7 +771,7 @@ switch type
                             neg_tfce = NaN(x,y,z,l); index = 1;
                             for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                                 try
-                                    [clustered_map, num] = limo_ft_findcluster((neg_data > h), channeighbstructmat,2);
+                                    [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
                                 catch
                                     [clustered_map,num] = bwlabel((neg_data > h));
                                 end

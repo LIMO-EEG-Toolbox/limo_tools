@@ -1,56 +1,48 @@
 function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, varargin)
 
-% LIMO_FINDCLUSTER is a refactoring of LIMO_FT_FINDCLUSTER with the same
-% functionality and some optimisations for speed.
-% spm_bwlabel is now used preferentially if availiable
-% calls to ismember rearranged and replaced with ismembc
-
 % LIMO_FINDCLUSTER returns all connected clusters in a 3 dimensional matrix
 % with a connectivity of 6.
 %
-% Use as
-%   [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, minnbchan)
-% or as
-%   [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, spatdimneighbselmat, minnbchan)
-% where
-%   onoff                   is a 3D boolean matrix with size N1xN2xN3
-%   spatdimneighbstructmat  defines the neighbouring channels/combinations, see below
-%   minnbchan               the minimum number of neighbouring channels/combinations
-%   spatdimneighbselmat     is a special neighbourhood matrix that is used for selecting
-%                           channels/combinations on the basis of the minnbchan criterium
+% FORMAT: [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat)
+%         [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, minnbchan)
+%         [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, spatdimneighbselmat, minnbchan)
+%
+% INPUT: onoff is a 3D boolean matrix with size N1xN2xN3 (typically T/F values > threshold)
+%        spatdimneighbstructmat  defines the neighbouring channels/combinations, see below
+%        spatdimneighbselmat is a special neighbourhood matrix that is used for selecting
+%                            channels/combinations on the basis of the minnbchan criterium
+%        minnbchan the minimum number of neighbouring channels/combinations
 %
 % The neighbourhood structure for the first dimension is specified using
 % spatdimneighbstructmat, which is a 2D (N1xN1) matrix. Each row and each column corresponds
 % to a channel (combination) along the first dimension and along that row/column, elements
 % with "1" define the neighbouring channel(s) (combinations). The first dimension of
-% onoff should correspond to the channel(s) (combinations).
-% The lower triangle of spatdimneighbstructmat, including the diagonal, is
-% assumed to be zero.
+% onoff should correspond to the channel(s) (combinations). The lower triangle of 
+% spatdimneighbstructmat, including the diagonal, is assumed to be zero.
 %
-% See also BWSELECT, BWLABELN (image processing toolbox)
-% and SPM_CLUSTERS .
-
-% Copyright (C) 2004, Robert Oostenveld
+% OUTPUT: cluster is the map of clusters with their respective label
+%         num is the number of cluster
 %
-% This file is part of FieldTrip, see http://www.ru.nl/neuroimaging/fieldtrip
-% for the documentation and details.
+% This file is taken from FieldTrip, 
+% see <http://www.ru.nl/neuroimaging/fieldtrip> for the documentation and details.
 %
 %    FieldTrip is free software: you can redistribute it and/or modify
 %    it under the terms of the GNU General Public License as published by
 %    the Free Software Foundation, either version 3 of the License, or
 %    (at your option) any later version.
-%
-%    FieldTrip is distributed in the hope that it will be useful,
-%    but WITHOUT ANY WARRANTY; without even the implied warranty of
-%    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%    GNU General Public License for more details.
-%
-%    You should have received a copy of the GNU General Public License
-%    along with FieldTrip. If not, see <http://www.gnu.org/licenses/>.
+%    % Copyright (C) 2004, Robert Oostenveld
 %
 % $Id: findcluster.m 952 2010-04-21 18:29:51Z roboos $
-% renamed for integration in LIMO toolbox: GAR, University of Glasgow, June
-% 2010 -- edit Marianne Latinus adding spm_bwlabel
+% reused as limo_ft_findluster for integration in LIMO toolbox: GAR, 
+% University of Glasgow, June 2010 
+% Edit Marianne Latinus adding spm_bwlabel, June 2013
+% limo_findcluster is a refactoring of limo_ft_findcluster with the same functionality
+% and some optimisations for speed. spm_bwlabel is now used preferentially if availiable
+% calls to ismember rearranged and replaced with ismembc 
+% Andrew Stewart, August 2014
+%
+% --------------------------------------
+% Copyright (C) LIMO Team 2015
 
 
 spatdimlength = size(onoff, 1);
@@ -89,7 +81,6 @@ if minnbchan>0
         onoff(remove)=0;
     end;
 end;
-
 
 % for each channel (combination), find the connected time-frequency clusters
 labelmat = zeros(size(onoff));
