@@ -23,7 +23,7 @@ function boot_table = limo_create_boot_table(data,nboot)
 % Copyright (C) LIMO Team 2015
 
 %% edit default
-Nmin = 6; % this is the minimum number of different trials/subjects 
+Nmin = 3; % this is the minimum number of different trials/subjects 
           % if too low, the variance is < 1 and thre stat values will be
           % too high see Pernet et al. 2014
 
@@ -46,6 +46,9 @@ end
 % create boot_table
 B=1;
 boot_index=zeros(size(data,3),nboot);
+if size(data,3)-1 <= Nmin
+    error(['Not enough subjects in dataset - need at least ' num2str(Nmin+2) ' subjects']);
+end;
 while B~=nboot+1
     tmp = randi(size(data,3),size(data,3),1);
     if length(unique(tmp)) >= Nmin % at least Nmin different observations per boot 
@@ -56,9 +59,13 @@ end
 clear chdata tmp
 
 % loop per electrode, if no nan use boot_index else change it
-array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3)-3);
+if size(data,1) > 1
+    array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3)-3);
+else
+    array = [1];
+end;
 for e = 1:size(array,1)
- electrode = array(e);
+    electrode = array(e);
     tmp = squeeze(data(electrode,:,:)); % 2D
     Y = tmp(:,find(~isnan(tmp(1,:)))); % remove NaNs
     bad_subjects = find(isnan(tmp(1,:)));
