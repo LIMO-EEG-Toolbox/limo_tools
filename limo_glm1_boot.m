@@ -8,7 +8,7 @@ function model = limo_glm1_boot(varargin)
 %
 % FORMAT:
 % model = limo_glm1_boot(Y,LIMO,boot_table)
-% model = limo_glm1_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,boot_table)
+% model = limo_glm1_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,n_freqs,n_times,boot_table)
 %
 % INPUTS 
 %         Y = 2D matrix of EEG data with format trials x frames

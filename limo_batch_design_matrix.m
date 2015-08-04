@@ -11,7 +11,6 @@ function limo_batch_design_matrix(LIMOfile)
 % Copyright (C) LIMO Team 2015
 
 global EEGLIMO
-
 load(LIMOfile);
 if exist('EEGLIMO','var')
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
@@ -70,7 +69,7 @@ if strcmp(LIMO.Analysis,'Time')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
+        try isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(Y)
@@ -83,7 +82,7 @@ if strcmp(LIMO.Analysis,'Time')
                 end
                 Y = limo_concatcells(Y);
             end
-        else
+        catch 
             disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEGLIMO.data')
             Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
         end

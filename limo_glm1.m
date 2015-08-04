@@ -58,7 +58,7 @@ function model = limo_glm1(varargin)
 % Yandell, B.S. 1997. Practical Data Analysis For Designed Experiments. Chapman & Hall
 %
 % See also
-% LIMO_DESIGN_MATRIX, LIMO_PCOUT, LIMO_IRLS, LIMO_EEG
+% LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG
 %
 % Cyril Pernet v1 01-01-2011
 % Cyril Pernet v2 01-11-2011
