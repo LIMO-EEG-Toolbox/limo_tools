@@ -88,16 +88,8 @@ if strcmp(quest,'One')
         end
     end
     
-    try
-        if strcmp([PathName filesep FileName],[EEGLIMO.filepath filesep EEGLIMO.filename])
-            disp('Using Global variable EEGLIMO')
-        else
-            try
-                EEGLIMO=pop_loadset([PathName filesep FileName]);
-            catch
-                EEGLIMO=pop_loadset([PathName FileName]);
-            end
-        end
+ %   try
+         EEGLIMO=pop_loadset('filename', fullfile(PathName, FileName));
         expected_chanlocs = EEGLIMO.chanlocs;
         fprintf('Data set %s loaded \n',FileName);
         [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
@@ -110,9 +102,9 @@ if strcmp(quest,'One')
             save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
             fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
         end
-    catch ME
-        errordlg('pop_loadset eeglab issue','error');
-    end
+%    catch ME
+%        errordlg('pop_loadset eeglab issue','error');
+%    end
     
     
 elseif strcmp(quest,'Set')   % from a set of subjects
