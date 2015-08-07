@@ -1,4 +1,4 @@
-function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
+function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 
 % This function displays various results
 % The arguments specify cases for the
@@ -19,6 +19,10 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
 %               1=None, 2= Cluster, 3=TFCE, 4=T max
 %   LIMO      = LIMO structure
 %   flag      = indicates to allow surfing the figure (1) or not (0)
+% 
+% OPTIONAL INPUTS  (Usage: {''key'', value, ... })
+% 'channels' : Provide the index of the channel to be used.
+% 'regressor': Provide the index of the regressor to be used.
 %
 % Although the function is mainly intented to be used via the GUI, some figures
 % can be generated automatically, for instance limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
@@ -44,6 +48,19 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag)
 % ----------------------------------
 %  Copyright (C) LIMO Team 2010
 
+try
+    options = varargin;
+    if ~isempty( varargin ),
+        for i = 1:2:numel(options)
+            g.(options{i}) = options{i+1};
+        end
+    else g = []; end;
+catch
+    disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
+end;
+
+try g.channels;    catch, g.channels  = [];          end; % No default values
+try g.regressor;   catch, g.regressor = [];          end; % No default values
 
 cd(PathName)
 load (FileName);
@@ -722,8 +739,12 @@ if LIMO.Level == 1
             
             % which variable(s) to plot
             % ----------------------
-            input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2));
-            regressor = inputdlg(input_title,'Plotting option');
+            if isempty(g.regressor)
+                input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2));
+                regressor = inputdlg(input_title,'Plotting option');
+            else
+                regressor = g.regressor;
+            end
             if isempty(regressor); disp('selection aborded'); return; end
             try regressor = sort(eval(cell2mat(regressor)));
                 if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
@@ -762,7 +783,11 @@ if LIMO.Level == 1
             
             % which electrode/frequency to plot
             % --------------------------------
-            electrode = inputdlg('which electrode to plot','Plotting option');
+            if isempty(g.channels)
+                electrode = inputdlg('which electrode to plot','Plotting option');
+            else
+                electrode = g.channels;
+            end
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 disp('loading the 4D data ...')
                 frequency = inputdlg('which Frequency to plot','Plotting option');
