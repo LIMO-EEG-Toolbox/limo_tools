@@ -3,6 +3,13 @@ function varargout = limo_contrast_manager(varargin)
 % GUI to create / review contrasts
 % created using GUIDE
 %
+% Usage:
+% 1- limo_display_results   (Call the GUI. The file LIMO.mat file must be selected afterwards)
+% 2- limo_display_results(PathtoFile) Will call the main GUI and load the LIMO.mat
+%    file. PathtoFile must be the full or the relative path to the LIMO.mat
+%    file. File name must be provided in the path too.  
+%    i.e PathtoFile = '/Users/username/WORK/LIMO.mat'
+%
 % In display_matrix_CreateFcn --> load LIMO.mat and display X
 % In New_Contrast_Callback --> test new contrast
 % In Done_Callback --> update LIMO.contrast and run new contrast
@@ -19,6 +26,7 @@ function varargout = limo_contrast_manager(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+global limofile
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -28,7 +36,11 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
+    if exist(varargin{1},'file') == 2 && ~isempty(strfind(varargin{1},'LIMO.mat'))
+        limofile = varargin{1};
+    else
+        gui_State.gui_Callback = str2func(varargin{1});
+    end
 end
 
 if nargout
@@ -56,6 +68,7 @@ handles.F   = 0;
 handles.X   = [];
 handles.output = hObject;
 guidata(hObject,handles);
+set(hObject,'Tag','figure_limo_contrast_manager');
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
@@ -70,7 +83,13 @@ varargout{1} = 'contrast done';
 function display_matrix_CreateFcn(hObject, eventdata, handles)
 global LIMO handles
 
-[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+if isempty(handles.limofile)
+    [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+else
+    [PathName,FileName] = fileparts(handles.limofile);
+    if isempty(PathName), PathName = pwd; end
+    FilterIndex = 1;
+end
 if FilterIndex ==0
     clear all; 
     varargout{1} = 'contrast cancelled';
@@ -205,7 +224,15 @@ end
 % --- Previous Contrast
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global LIMO handles limofile
+
+if exist('limofile','var') == 1 && ~isempty(limofile)
+    handles.limofile = limofile;
+else
+    handles.limofile = [];
+end
+clear global limofile
+
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -244,8 +271,8 @@ end
 handles.output = hObject;
 guidata(hObject,handles)
 
-  
 
+  
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 global handles
 
@@ -418,17 +445,20 @@ if ~isempty(handles.C);
     
     uiresume
     guidata(hObject, handles);
-    close all
-    limo_results
+    close(get(hObject,'Parent'));
+    if isempty(handles.limofile)
+        limo_results;
+    end
 end
 
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
-
 clc; uiresume
 guidata(hObject, handles);
-close; limo_results
+close(get(hObject,'Parent')); 
 
-
+if isempty(handles.limofile)
+    limo_results;
+end
