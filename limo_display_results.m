@@ -545,9 +545,9 @@ if LIMO.Level == 1
                 EEG.trials = 1;
                 EEG.chanlocs = LIMO.data.chanlocs;
                 if strcmp(LIMO.Analysis,'Time')
-                    EEG.xmin = LIMO.data.start;
-                    EEG.xmax = LIMO.data.end;
-                    EEG.times = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+                    EEG.xmin = LIMO.data.start/1000;% in sec
+                    EEG.xmax = LIMO.data.end/1000;  % in sec
+                    EEG.times = LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000; % in sec
                 else strcmp(LIMO.Analysis,'Frequency')
                     EEG.xmin = LIMO.data.freqlist(1);
                     EEG.xmax = LIMO.data.freqlist(end);
@@ -659,16 +659,18 @@ if LIMO.Level == 1
                         EEG.pnts = size(EEG.data,2);
                         EEG.nbchan = size(EEG.data,1);
                         EEG.setname = sprintf('semi partial coef R2 values variable %g',b);
-                        EEG.pnts = size(EEG.data,2);
-                        EEG.xmin = LIMO.data.start;
-                        EEG.xmax = LIMO.data.end;
-                        EEG.times = timevect;
+                        EEG.pnts  = size(EEG.data,2);
+                        EEG.times = LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000;
                         EEG.trials = 1;
                         EEG.chanlocs = LIMO.data.chanlocs;
                         EEG.nbchan = size(EEG.data,1);
                         if strcmp(LIMO.Analysis,'Time')
+                            EEG.xmin = LIMO.data.start/1000;
+                            EEG.xmax = LIMO.data.end/1000;
                             pop_topoplot(EEG);
                         else
+                            EEG.xmin = LIMO.data.freqlist(1);
+                            EEG.xmax = LIMO.data.freqlist(end);
                             N = size(EEG.freq,2); figure;
                             for f=1:N
                                 if N<=6
@@ -1574,9 +1576,9 @@ elseif LIMO.Level == 2
                     EEG.chanlocs = LIMO.data.chanlocs;
                     EEG.nbchan = size(EEG.data,1);
                     if strcmp(LIMO.Analysis,'Time')
-                        EEG.xmin = LIMO.data.start;
-                        EEG.xmax = LIMO.data.end;
-                        EEG.times =  (LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000); % in sec;
+                        EEG.xmin = LIMO.data.start/1000; % in sec
+                        EEG.xmax = LIMO.data.end/1000;   % in sec 
+                        EEG.times =  (LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000); % in sec;
                         pop_topoplot(EEG);
                     elseif strcmp(LIMO.Analysis,'Frequency')
                         EEG.xmin = LIMO.data.freqlist(1);
@@ -2499,9 +2501,9 @@ elseif strcmp(LIMO.Level,'LI')
             EEG.data = M.*mask;
             EEG.setname = 'Lateralization Map';
             EEG.pnts = size(EEG.data,2);
-            EEG.xmin = LIMO.data.start;
-            EEG.xmax = LIMO.data.end;
-            EEG.times =  (LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000); % in sec;
+            EEG.xmin = LIMO.data.start/1000; % in sec
+            EEG.xmax = LIMO.data.end/1000;   % in sec
+            EEG.times =  (LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000); % in sec;
             EEG.trials = 1;
             EEG.chanlocs = LIMO.data.chanlocs;
             EEG.nbchan = size(EEG.data,1);
@@ -2510,7 +2512,7 @@ elseif strcmp(LIMO.Level,'LI')
         end
         
     elseif Type == 3
-        disp('no ERP Plots to Lateraliztion'); % we could but nobody asked for it
+        disp('no ERP Plots to Lateralization'); % we could but nobody asked for it
     end
 end % closes if LIMO.level
 end % closes the function
