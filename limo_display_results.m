@@ -23,6 +23,7 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % OPTIONAL INPUTS  (Usage: {''key'', value, ... })
 % 'channels' : Provide the index of the channel to be used.
 % 'regressor': Provide the index of the regressor to be used.
+% 'plot3type': Type of plots to show when 'Type' is 3. Select between {'Original', 'Modeled', 'Adjusted'}
 %
 % Although the function is mainly intented to be used via the GUI, some figures
 % can be generated automatically, for instance limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
@@ -59,8 +60,9 @@ catch
     disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
 end;
 
-try g.channels;    catch, g.channels  = [];          end; % No default values
-try g.regressor;   catch, g.regressor = [];          end; % No default values
+try g.channels;   catch, g.channels  = [];  end; % No default values
+try g.regressor;  catch, g.regressor = [];  end; % No default values
+try g.plot3type;  catch, g.plot3type = [];  end; % No default values
 
 cd(PathName)
 load (FileName);
@@ -763,7 +765,11 @@ if LIMO.Level == 1
             
             % which ERP to make
             % ------------------
-            extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+            if isempty(g.plot3type) && ~any(strcmp(g.plot3type,{'Original','Modelled','Adjusted'}))
+                extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+            else
+                extra = g.plot3type;
+            end
             if isempty(extra)
                 return;
             elseif strcmp(extra,'Original')
