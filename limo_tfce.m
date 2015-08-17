@@ -20,20 +20,22 @@ function tfce_score = limo_tfce(varargin)
 %
 % References
 %
+% Pernet, C., Latinus, M., Nichols, T.E., & Rousselet, G.A. (2015)
+% Cluster-based computational methods for mass univariate analyses
+% of event-related brain potentials/fields: a simulation study
+% Journal Of Neuroscience Method 250, Pages 85–93
+% <10.1016/j.jneumeth.2014.08.003>
+%
 % Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP. 
 % figshare. http://dx.doi.org/10.6084/m9.figshare.1008325 
 %
-% Pernet, C., Latinus, M., Nichols, T.E., & Rousselet, G.A.
-% Cluster-based computational methods for mass univariate analyses
-% of event-related brain potentials/fields: a simulation study
-% Journal Of Neuroscience Method - submitted
-%
 % Cyril Pernet v4 28-07-2015
 % fixed indices / got the loop faster / 
-% use limo_findcluster which is faster
+% V5 20-08-2015
+% use limo_findcluster which is faster (clustering speed x60)
+% changed the integration from a loop to hist - thx to Bruno Giordano
 % --------------------------------------
 % Copyright (C) LIMO Team 2015
-
 
 % precision max = 200; % define how many thresholds between min t/F map and
 % max t/F map --> needed as sometime under H0 some values can be
@@ -67,6 +69,11 @@ channeighbstructmat = varargin{3};
 clear varargin
 
 %% start tcfe
+
+disp('you are using TFCE as validated in Pernet et al. (2015)'
+disp('Cluster-based computational methods for mass univariate analyses')
+disp('of event-related brain potentials/fields: a simulation study')
+disp('Journal Of Neuroscience Method 250, Pages 85–93')
 
 switch type
     
@@ -116,10 +123,11 @@ switch type
                         if updatebar ==1; waitbar(index/nsteps); end
                         [clustered_map, num] = bwlabel((data > h));
                         extent_map = zeros(1,x); % same as cluster map but contains extent value instead
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %    idx = clustered_map(:) == i;
+                        %    extent_map(idx) = sum(idx);
+                        % end
                         tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -148,10 +156,11 @@ switch type
                         if updatebar ==1; waitbar(index/nsteps); end
                         [clustered_map, num] = bwlabel((pos_data > h));
                         extent_map = zeros(1,x); 
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %     idx = clustered_map(:) == i;
+                        %    extent_map(idx) = sum(idx);
+                        % end
                         pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -164,10 +173,11 @@ switch type
                         if updatebar ==1; waitbar((hindex+index)/nsteps); end
                         [clustered_map, num] = bwlabel((neg_data > h));
                         extent_map = zeros(1,x); 
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %    idx = clustered_map(:) == i;
+                        %    extent_map(idx) = sum(idx);
+                        % end
                         neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -214,10 +224,11 @@ switch type
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             [clustered_map, num] = bwlabel((tmp_data > h));
                             extent_map = zeros(1,x); 
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
                             tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -262,10 +273,11 @@ switch type
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             [clustered_map, num] = bwlabel((pos_data > h));
                             extent_map = zeros(1,x); 
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
                             pos_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -276,10 +288,11 @@ switch type
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             [clustered_map, num] = bwlabel((neg_data > h));
                             extent_map = zeros(1,x); 
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
                             neg_tfce(1,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -345,10 +358,11 @@ switch type
                         end
                         
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx); 
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %    idx = clustered_map(:) == i;
+                        %     extent_map(idx) = sum(idx); 
+                        % end
                         tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -382,10 +396,11 @@ switch type
                         end
                         
                         extent_map = zeros(x,y);
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %     idx = clustered_map(:) == i;
+                        %     extent_map(idx) = sum(idx);
+                        % end
                         pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -403,10 +418,11 @@ switch type
                         end
                         
                         extent_map = zeros(x,y);
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %     idx = clustered_map(:) == i;
+                        %     extent_map(idx) = sum(idx);
+                        % end
                         neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -457,10 +473,11 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %    idx = clustered_map(:) == i;
+                            %    extent_map(idx) = sum(idx);
+                            % end
                             tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -510,10 +527,11 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
                             pos_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -529,10 +547,11 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            for i=1:num
-                                idx = clustered_map(:) == i;
-                                extent_map(idx) = sum(idx);
-                            end
+                            extent_map = integrate(cluster_map,extent_map);
+                            % for i=1:num
+                            %    idx = clustered_map(:) == i;
+                            %    extent_map(idx) = sum(idx);
+                            % end
                             neg_tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                             index = index +1;
                         end
@@ -595,11 +614,13 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((data > h)); % this allow continuous mapping
                         end
+                        
                         extent_map = zeros(x,y,z);
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %    idx = clustered_map(:) == i;
+                        %    extent_map(idx) = sum(idx);
+                        % end
                         tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -632,11 +653,13 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((pos_data > h));
                         end
-                        extent_map = zeros(x,y,z); 
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        
+                        extent_map = zeros(x,y,z);
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %     idx = clustered_map(:) == i;
+                        %     extent_map(idx) = sum(idx);
+                        % end
                         pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -652,11 +675,13 @@ switch type
                         catch
                             [clustered_map,num] = bwlabel((neg_data > h));
                         end
-                        extent_map = zeros(x,y,z); 
-                        for i=1:num
-                            idx = clustered_map(:) == i;
-                            extent_map(idx) = sum(idx);
-                        end
+                        
+                        extent_map = zeros(x,y,z);
+                        extent_map = integrate(cluster_map,extent_map);
+                        % for i=1:num
+                        %     idx = clustered_map(:) == i;
+                        %     extent_map(idx) = sum(idx);
+                        % end
                         neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
                     end
@@ -705,11 +730,13 @@ switch type
                                 catch
                                     [clustered_map,num] = bwlabel((tmp_data > h));
                                 end
+                                
                                 extent_map = zeros(x,y,z);
-                                for i=1:num
-                                    idx = clustered_map(:) == i;
-                                    extent_map(idx) = sum(idx);
-                                end
+                                extent_map = integrate(cluster_map,extent_map);
+                                % for i=1:num
+                                %     idx = clustered_map(:) == i;
+                                %     extent_map(idx) = sum(idx);
+                                % end
                                 tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                                 index = index +1;
                             end
@@ -757,11 +784,13 @@ switch type
                                 catch
                                     [clustered_map,num] = bwlabel((pos_data > h));
                                 end
+                                
                                 extent_map = zeros(x,y,z);
-                                for i=1:num
-                                    idx = clustered_map(:) == i;
-                                    extent_map(idx) = sum(idx);
-                                end
+                                extent_map = integrate(cluster_map,extent_map);
+                                % for i=1:num
+                                %     idx = clustered_map(:) == i;
+                                %     extent_map(idx) = sum(idx);
+                                % end
                                 pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                                 index = index +1;
                             end
@@ -775,11 +804,13 @@ switch type
                                 catch
                                     [clustered_map,num] = bwlabel((neg_data > h));
                                 end
+                                
                                 extent_map = zeros(x,y,z);
-                                for i=1:num
-                                    idx = clustered_map(:) == i;
-                                    extent_map(idx) = sum(idx);
-                                end
+                                extent_map = integrate(cluster_map,extent_map);
+                                % for i=1:num
+                                %     idx = clustered_map(:) == i;
+                                %     extent_map(idx) = sum(idx);
+                                % end
                                 neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
                                 index = index +1;
                             end
@@ -792,3 +823,19 @@ switch type
                 
         end
 end
+
+%% faster integration a la Bruno Giordano
+function extent_map = integrate(cluster_map,extent_map)
+
+cluster_map=cluster_map(:);
+nv=histc(cluster_map,0:num);
+[~,idxall]=sort(cluster_map,'ascend');
+idxall(1:nv(1))=[];
+nv(1)=[];
+ends=cumsum(nv);
+inis=ends-nv+1;
+for i=1:num
+    idx=idxall(inis(i):ends(i));
+    extent_map(idx)=nv(i);
+end
+     

@@ -49,6 +49,10 @@ else
     LIMO.data.chanlocs = EEGLIMO.chanlocs;
 end
 
+if isfield(defaults,'neighbouring_matrix')
+    LIMO.data.neighbouring_matrix = defaults.neighbouring_matrix;
+end
+
 if isfield(defaults,'studyinfo')
     LIMO.data.studyinfo = defaults.studyinfo; % same as STUDY.design(design_index).variable;
 end

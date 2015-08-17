@@ -4,7 +4,7 @@ function LIMO_files = limo_batch(varargin)
 % select directories and files - possibly enter contrasts of
 % interests and let it run. The batch relies on PSOM (see Ref)
 % see opt.mode for parallel computing on grid using qsub or msub
-% <https://code.google.com/p/psom/wiki/ConfigurationPsom>
+% <https://github.com/PSOM>
 %
 % FORMAT limo_batch
 % limo_batch(option,model,contrast)
@@ -20,6 +20,7 @@ function LIMO_files = limo_batch(varargin)
 %       model.defaults.type = 'Channels' or 'Components'
 %       model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
 %       model.defaults.method 'WLS' 'IRLS' 'OLS'
+%       model.defaults.type_of_analysis 'univariate' or 'multivariate'
 %       model.defaults.fullfactorial 0/1
 %       model.defaults.zscore 0/1
 %       model.defaults.start starting time in ms
@@ -28,7 +29,7 @@ function LIMO_files = limo_batch(varargin)
 %       model.defaults.highf ending point in Hz
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
-%       model.defaults.channloc common channel locations (necessary if bootstrap = 1)
+%       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
 %       contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
@@ -59,8 +60,6 @@ function LIMO_files = limo_batch(varargin)
 % import - calls limo_batch_import_data
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
-
-
 
 opt.mode = 'session'; % run in the current session -- see psom for other options
 opt.max_queued = Inf; % with a maximum of possible sessions
@@ -153,15 +152,6 @@ else
         if ~isfield(batch_contrast,'mat')
             errordlg('the field batch_contrast.mat is missing'); return
         end
-        
-        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
-            for f=1:size(model.set_files,1)
-                [root,~,~] = fileparts(model.set_files{f});
-                folder = ['GLM_' model.defaults.analysis];
-                batch_contrast.LIMO_files{f} = [root filesep folder filesep 'LIMO.mat'];
-            end
-            batch_contrast.LIMO_files = batch_contrast.LIMO_files';
-        end
     end
 end
 
@@ -216,6 +206,13 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             pipeline(subject).import.opt.defaults.method = 'WLS';
         end
         
+        if isfield(model.defaults,'type_of_analysis')
+            pipeline(subject).import.opt.defaults.type_of_analysis = model.defaults.type_of_analysis;
+        else
+            pipeline(subject).import.opt.defaults.type_of_analysis = 'Mass-univariate';
+        end
+        
+        
         if nargin == 4
             if exist([study_root filesep cell2mat(STUDY.names(subject))],'dir') ~= 7, mkdir([study_root filesep cell2mat(STUDY.names(subject))]); end
             root = [study_root filesep cell2mat(STUDY.names(subject))];
@@ -228,6 +225,11 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
+        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
+                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+            batch_contrast.LIMO_files = batch_contrast.LIMO_files';
+        end
+
         if ~isempty(model.cat_files)
             pipeline(subject).import.opt.cat = model.cat_files{subject};
         else
@@ -265,18 +267,18 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
     
     for subject = 1:size(batch_contrast.LIMO_files,1)
         command = 'limo_batch_contrast(files_in,opt.C)';
-        pipeline(subject).batch_contrast.command = command;
-        pipeline(subject).batch_contrast.files_in = batch_contrast.LIMO_files{subject};
+        pipeline(subject).n_contrast.command = command;
+        pipeline(subject).n_contrast.files_in = batch_contrast.LIMO_files{subject};
         if iscell(batch_contrast.mat)
-            pipeline(subject).batch_contrast.opt.C = cell2mat(batch_contrast.mat);
+            pipeline(subject).n_contrast.opt.C = cell2mat(batch_contrast.mat);
         else
-            pipeline(subject).batch_contrast.opt.C = batch_contrast.mat;
+            pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
         end
         
         for c=1:size(batch_contrast.mat,1)
             name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
         end
-        pipeline(subject).batch_contrast.files_out = name; % name{1};
+        pipeline(subject).n_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
     end
 end
@@ -363,5 +365,7 @@ if failed == 0
 else
     disp('LIMO batch done, some errors where detected see report')
 end
+disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
+disp('The Pipeline System for Octave and Matlab. Front. Neuroinform. 6:7')
 
 

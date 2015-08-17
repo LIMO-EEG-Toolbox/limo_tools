@@ -45,7 +45,7 @@ if nargin == 2 || nargin == 3
     nb_continuous   = varargin{2}.design.nb_continuous;
     z               = varargin{2}.design.zscore;
     method          = varargin{2}.design.method;
-    Analysis        = varargin(2).Analysis;
+    Analysis        = varargin{2}.Analysis;
     if strcmp(Analysis,'Time-Frequency')
         if strcmp(method,'WLS')
             method = 'WLS-TF'; % run weights per freq band
