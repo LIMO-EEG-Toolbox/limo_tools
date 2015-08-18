@@ -265,7 +265,7 @@ end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
     
-    for subject = 1:size(batch_contrast.LIMO_files,1)
+    for subject = 1:length(batch_contrast.LIMO_files)
         command = 'limo_batch_contrast(files_in,opt.C)';
         pipeline(subject).n_contrast.command = command;
         pipeline(subject).n_contrast.files_in = batch_contrast.LIMO_files{subject};
