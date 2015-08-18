@@ -69,7 +69,7 @@ elseif nargin == 10 || nargin == 11
     nb_continuous   = varargin{5};
     z               = varargin{6};
     method          = varargin{7};
-    Analysis        = varargin(8);
+    Analysis        = varargin{8};
     n_freqs         = varargin{9};
     n_times         = varargin{10};
     if nargin == 10

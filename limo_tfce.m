@@ -7,14 +7,14 @@ function tfce_score = limo_tfce(varargin)
 % INPUT tfce_score = limo_tfce(type,data,channeighbstructmat)
 %       tfce_score = limo_tfce(type,data,channeighbstructmat,updatebar,E,H,dh)
 %
-%       type = 1 for 1D data (one channel ERP or Power), 
-%              2 for 2D data (ERP, Power, a single freq*time map), 
+%       type = 1 for 1D data (one channel ERP or Power),
+%              2 for 2D data (ERP, Power, a single freq*time map),
 %              3 for 3D data (ERSP)
 %       data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
 %       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, siwtch to bwlabel = freq*time map
 %       updatebar is a flag (default = 1) to produce a waitbar
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
-%       
+%
 %
 % OUPUT tfce_score is a map of scores
 %
@@ -26,11 +26,11 @@ function tfce_score = limo_tfce(varargin)
 % Journal Of Neuroscience Method 250, Pages 85–93
 % <10.1016/j.jneumeth.2014.08.003>
 %
-% Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP. 
-% figshare. http://dx.doi.org/10.6084/m9.figshare.1008325 
+% Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP.
+% figshare. http://dx.doi.org/10.6084/m9.figshare.1008325
 %
 % Cyril Pernet v4 28-07-2015
-% fixed indices / got the loop faster / 
+% fixed indices / got the loop faster /
 % V5 20-08-2015
 % use limo_findcluster which is faster (clustering speed x60)
 % changed the integration from a loop to hist - thx to Bruno Giordano
@@ -49,7 +49,7 @@ elseif nargin == 3 || nargin == 4
     if nargin == 3
         updatebar = 1;
     else
-       updatebar = varargin{4};    
+        updatebar = varargin{4};
     end
     E = 0.5;
     H = 2;
@@ -70,10 +70,6 @@ clear varargin
 
 %% start tcfe
 
-disp('you are using TFCE as validated in Pernet et al. (2015)'
-disp('Cluster-based computational methods for mass univariate analyses')
-disp('of event-related brain potentials/fields: a simulation study')
-disp('Journal Of Neuroscience Method 250, Pages 85–93')
 
 switch type
     
@@ -81,7 +77,7 @@ switch type
     case{1}  % 1D data -- needs to be updated (doesn't work)
         % ---------------------------------------------------------------------
         
-        if isvector(data) 
+        if isvector(data)
             [~,x]=size(data);
             subtype = 1;
         else
@@ -91,7 +87,7 @@ switch type
         
         switch subtype
             
-            case{1}
+            case{1}                
                 % ------- tfce real data -----------
                 
                 % define increment size forced by dh
@@ -115,7 +111,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(1,x,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -123,7 +119,7 @@ switch type
                         if updatebar ==1; waitbar(index/nsteps); end
                         [clustered_map, num] = bwlabel((data > h));
                         extent_map = zeros(1,x); % same as cluster map but contains extent value instead
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %    idx = clustered_map(:) == i;
                         %    extent_map(idx) = sum(idx);
@@ -141,7 +137,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -155,8 +151,8 @@ switch type
                     for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                         if updatebar ==1; waitbar(index/nsteps); end
                         [clustered_map, num] = bwlabel((pos_data > h));
-                        extent_map = zeros(1,x); 
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = zeros(1,x);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %     idx = clustered_map(:) == i;
                         %    extent_map(idx) = sum(idx);
@@ -172,8 +168,8 @@ switch type
                     for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                         if updatebar ==1; waitbar((hindex+index)/nsteps); end
                         [clustered_map, num] = bwlabel((neg_data > h));
-                        extent_map = zeros(1,x); 
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = zeros(1,x);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %    idx = clustered_map(:) == i;
                         %    extent_map(idx) = sum(idx);
@@ -197,7 +193,7 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -208,7 +204,7 @@ switch type
                         data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 
+                            if precision > 200
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -217,14 +213,14 @@ switch type
                             increment = data_range *dh;
                         end
                         
-                        index = 1; 
+                        index = 1;
                         tfce = NaN(1,x,length(min(tmp_data(:)):increment:max(tmp_data(:))));
                         % fprintf('estimating tfce under H0 boot %g \n',boot)
                         
                         for h=min(tmp_data(:)):increment:max(tmp_data(:))
                             [clustered_map, num] = bwlabel((tmp_data > h));
-                            extent_map = zeros(1,x); 
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = zeros(1,x);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %     idx = clustered_map(:) == i;
                             %     extent_map(idx) = sum(idx);
@@ -238,7 +234,7 @@ switch type
                     
                 else
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -252,7 +248,7 @@ switch type
                         data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 
+                            if precision > 200
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -272,8 +268,8 @@ switch type
                         pos_tfce = NaN(1,x,l); index = 1;
                         for h=min(pos_data(:)):pos_increment:max(pos_data(:))
                             [clustered_map, num] = bwlabel((pos_data > h));
-                            extent_map = zeros(1,x); 
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = zeros(1,x);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %     idx = clustered_map(:) == i;
                             %     extent_map(idx) = sum(idx);
@@ -287,8 +283,8 @@ switch type
                         neg_tfce = NaN(1,x,l); index = 1;
                         for h=min(neg_data(:)):neg_increment:max(neg_data(:))
                             [clustered_map, num] = bwlabel((neg_data > h));
-                            extent_map = zeros(1,x); 
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = zeros(1,x);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %     idx = clustered_map(:) == i;
                             %     extent_map(idx) = sum(idx);
@@ -328,7 +324,7 @@ switch type
                 data_range = range(data(:));
                 if data_range > 1
                     precision = round(data_range / dh);
-                    if precision > 200 
+                    if precision > 200
                         increment = data_range / 200;
                     else
                         increment = data_range / precision;
@@ -345,7 +341,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(x,y,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -358,10 +354,10 @@ switch type
                         end
                         
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %    idx = clustered_map(:) == i;
-                        %     extent_map(idx) = sum(idx); 
+                        %     extent_map(idx) = sum(idx);
                         % end
                         tfce(:,:,index) = (extent_map.^E).*h^H.*increment;
                         index = index +1;
@@ -376,7 +372,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -396,7 +392,7 @@ switch type
                         end
                         
                         extent_map = zeros(x,y);
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %     idx = clustered_map(:) == i;
                         %     extent_map(idx) = sum(idx);
@@ -418,7 +414,7 @@ switch type
                         end
                         
                         extent_map = zeros(x,y);
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %     idx = clustered_map(:) == i;
                         %     extent_map(idx) = sum(idx);
@@ -442,7 +438,7 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -453,7 +449,7 @@ switch type
                         data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 
+                            if precision > 200
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -473,7 +469,7 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %    idx = clustered_map(:) == i;
                             %    extent_map(idx) = sum(idx);
@@ -487,7 +483,7 @@ switch type
                     
                 else
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -501,7 +497,7 @@ switch type
                         data_range = range(tmp_data(:));
                         if data_range > 1
                             precision = round(data_range / dh);
-                            if precision > 200 
+                            if precision > 200
                                 increment = data_range / 200;
                             else
                                 increment = data_range / precision;
@@ -527,7 +523,7 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %     idx = clustered_map(:) == i;
                             %     extent_map(idx) = sum(idx);
@@ -547,7 +543,7 @@ switch type
                             end
                             
                             extent_map = zeros(x,y);
-                            extent_map = integrate(cluster_map,extent_map);
+                            extent_map = integrate(clustered_map,num,extent_map);
                             % for i=1:num
                             %    idx = clustered_map(:) == i;
                             %    extent_map(idx) = sum(idx);
@@ -585,7 +581,7 @@ switch type
                 data_range = range(data(:));
                 if data_range > 1
                     precision = round(data_range / dh);
-                    if precision > 200 
+                    if precision > 200
                         increment = data_range / 200;
                     else
                         increment = data_range / precision;
@@ -602,7 +598,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(x,y,z,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     
@@ -616,7 +612,7 @@ switch type
                         end
                         
                         extent_map = zeros(x,y,z);
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %    idx = clustered_map(:) == i;
                         %    extent_map(idx) = sum(idx);
@@ -634,7 +630,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     
@@ -655,7 +651,7 @@ switch type
                         end
                         
                         extent_map = zeros(x,y,z);
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %     idx = clustered_map(:) == i;
                         %     extent_map(idx) = sum(idx);
@@ -677,7 +673,7 @@ switch type
                         end
                         
                         extent_map = zeros(x,y,z);
-                        extent_map = integrate(cluster_map,extent_map);
+                        extent_map = integrate(clustered_map,num,extent_map);
                         % for i=1:num
                         %     idx = clustered_map(:) == i;
                         %     extent_map(idx) = sum(idx);
@@ -701,135 +697,136 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
                     for boot=1:b
-                            if updatebar ==1; waitbar(boot/b); end
-                            tmp_data = squeeze(data(:,:,:,boot));
-                            % define increment size
-                            data_range = range(tmp_data(:));
-                            if data_range > 1
-                                precision = round(data_range / dh);
-                                if precision > 200
-                                    increment = data_range / 200;
-                                else
-                                    increment = data_range / precision;
-                                end
+                        if updatebar ==1; waitbar(boot/b); end
+                        tmp_data = squeeze(data(:,:,:,boot));
+                        % define increment size
+                        data_range = range(tmp_data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200
+                                increment = data_range / 200;
                             else
-                                increment = data_range *dh;
+                                increment = data_range / precision;
                             end
-                            
-                            index = 1; tfce = NaN(x,y,z,length(min(tmp_data(:)):increment:max(tmp_data(:))));
-                            % fprintf('estimating tfce under H0 boot %g \n',boot)
-                            
-                            for h=min(tmp_data(:)):increment:max(tmp_data(:))
-                                try
-                                    [clustered_map, num] = limo_findcluster((tmp_data > h), channeighbstructmat,2);
-                                catch
-                                    [clustered_map,num] = bwlabel((tmp_data > h));
-                                end
-                                
-                                extent_map = zeros(x,y,z);
-                                extent_map = integrate(cluster_map,extent_map);
-                                % for i=1:num
-                                %     idx = clustered_map(:) == i;
-                                %     extent_map(idx) = sum(idx);
-                                % end
-                                tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
-                                index = index +1;
-                            end
-                            tfce_score(:,:,:,boot) = nansum(tfce,4);
+                        else
+                            increment = data_range *dh;
                         end
+                        
+                        index = 1; tfce = NaN(x,y,z,length(min(tmp_data(:)):increment:max(tmp_data(:))));
+                        % fprintf('estimating tfce under H0 boot %g \n',boot)
+                        
+                        for h=min(tmp_data(:)):increment:max(tmp_data(:))
+                            try
+                                [clustered_map, num] = limo_findcluster((tmp_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((tmp_data > h));
+                            end
+                            
+                            extent_map = zeros(x,y,z);
+                            extent_map = integrate(clustered_map,num,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
+                            tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
+                            index = index +1;
+                        end
+                        tfce_score(:,:,:,boot) = nansum(tfce,4);
+                    end
                     try close(f); end
                     
                 else
                     
-                    if updatebar ==1; 
+                    if updatebar ==1;
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
                     for boot=1:b
-                            
-                            if updatebar ==1; waitbar(boot/b); end
-                            % fprintf('estimating tfce under H0 for boot %g \n',boot)
-                            tmp_data = squeeze(data(:,:,:,boot));
-                            
-                            % define increment size
-                            data_range = range(tmp_data(:));
-                            if data_range > 1
-                                precision = round(data_range / dh);
-                                if precision > 200
-                                    increment = data_range / 200;
-                                else
-                                    increment = data_range / precision;
-                                end
+                        
+                        if updatebar ==1; waitbar(boot/b); end
+                        % fprintf('estimating tfce under H0 for boot %g \n',boot)
+                        tmp_data = squeeze(data(:,:,:,boot));
+                        
+                        % define increment size
+                        data_range = range(tmp_data(:));
+                        if data_range > 1
+                            precision = round(data_range / dh);
+                            if precision > 200
+                                increment = data_range / 200;
                             else
-                                increment = data_range *dh;
+                                increment = data_range / precision;
                             end
-                            
-                            pos_data = (tmp_data > 0).*tmp_data;
-                            neg_data = abs((tmp_data < 0).*tmp_data);
-                            clear tmp_data
-                            
-                            % select a height, obtain cluster map, obtain extent map
-                            % then tfce score for that height
-                            l = length(min(pos_data(:)):increment:max(pos_data(:)));
-                            pos_increment = (max(pos_data(:)) - min(pos_data(:))) / l;
-                            pos_tfce = NaN(x,y,z,l); index = 1;
-                            for h=min(pos_data(:)):pos_increment:max(pos_data(:))
-                                try
-                                    [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
-                                catch
-                                    [clustered_map,num] = bwlabel((pos_data > h));
-                                end
-                                
-                                extent_map = zeros(x,y,z);
-                                extent_map = integrate(cluster_map,extent_map);
-                                % for i=1:num
-                                %     idx = clustered_map(:) == i;
-                                %     extent_map(idx) = sum(idx);
-                                % end
-                                pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
-                                index = index +1;
-                            end
-                            
-                            l = length(min(neg_data(:)):increment:max(neg_data(:)))-1;
-                            neg_increment = (max(neg_data(:)) - min(neg_data(:))) / l;
-                            neg_tfce = NaN(x,y,z,l); index = 1;
-                            for h=min(neg_data(:)):neg_increment:max(neg_data(:))
-                                try
-                                    [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
-                                catch
-                                    [clustered_map,num] = bwlabel((neg_data > h));
-                                end
-                                
-                                extent_map = zeros(x,y,z);
-                                extent_map = integrate(cluster_map,extent_map);
-                                % for i=1:num
-                                %     idx = clustered_map(:) == i;
-                                %     extent_map(idx) = sum(idx);
-                                % end
-                                neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
-                                index = index +1;
-                            end
-                            
-                            % compute final score
-                            tfce_score(:,:,:,boot) = nansum(pos_tfce,4)+nansum(neg_tfce,4);
+                        else
+                            increment = data_range *dh;
                         end
+                        
+                        pos_data = (tmp_data > 0).*tmp_data;
+                        neg_data = abs((tmp_data < 0).*tmp_data);
+                        clear tmp_data
+                        
+                        % select a height, obtain cluster map, obtain extent map
+                        % then tfce score for that height
+                        l = length(min(pos_data(:)):increment:max(pos_data(:)));
+                        pos_increment = (max(pos_data(:)) - min(pos_data(:))) / l;
+                        pos_tfce = NaN(x,y,z,l); index = 1;
+                        for h=min(pos_data(:)):pos_increment:max(pos_data(:))
+                            try
+                                [clustered_map, num] = limo_findcluster((pos_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((pos_data > h));
+                            end
+                            
+                            extent_map = zeros(x,y,z);
+                            extent_map = integrate(clustered_map,num,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
+                            pos_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
+                            index = index +1;
+                        end
+                        
+                        l = length(min(neg_data(:)):increment:max(neg_data(:)))-1;
+                        neg_increment = (max(neg_data(:)) - min(neg_data(:))) / l;
+                        neg_tfce = NaN(x,y,z,l); index = 1;
+                        for h=min(neg_data(:)):neg_increment:max(neg_data(:))
+                            try
+                                [clustered_map, num] = limo_findcluster((neg_data > h), channeighbstructmat,2);
+                            catch
+                                [clustered_map,num] = bwlabel((neg_data > h));
+                            end
+                            
+                            extent_map = zeros(x,y,z);
+                            extent_map = integrate(clustered_map,num,extent_map);
+                            % for i=1:num
+                            %     idx = clustered_map(:) == i;
+                            %     extent_map(idx) = sum(idx);
+                            % end
+                            neg_tfce(:,:,:,index) = (extent_map.^E).*h^H.*increment;
+                            index = index +1;
+                        end
+                        
+                        % compute final score
+                        tfce_score(:,:,:,boot) = nansum(pos_tfce,4)+nansum(neg_tfce,4);
+                    end
                     try close(f); end
                 end
                 
         end
 end
+end
 
 %% faster integration a la Bruno Giordano
-function extent_map = integrate(cluster_map,extent_map)
+function extent_map = integrate(clustered_map,num,extent_map)
 
-cluster_map=cluster_map(:);
-nv=histc(cluster_map,0:num);
-[~,idxall]=sort(cluster_map,'ascend');
+clustered_map=clustered_map(:);
+nv=histc(clustered_map,0:num);
+[~,idxall]=sort(clustered_map,'ascend');
 idxall(1:nv(1))=[];
 nv(1)=[];
 ends=cumsum(nv);
@@ -838,4 +835,5 @@ for i=1:num
     idx=idxall(inis(i):ends(i));
     extent_map(idx)=nv(i);
 end
-     
+end
+

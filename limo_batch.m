@@ -326,31 +326,31 @@ end
 % save as txt file the list of .set, Betas, LIMO and con
 if exist('STUDY','var')
     cd(LIMO_files.LIMO)
-    cell2csv('EEGLAB_set.txt',model.set_files)
+    cell2csv(['EEGLAB_set_' glm_name '.txt'],model.set_files)
 else
     cd(current)
 end
 
 if strcmp(option,'model specification') || strcmp(option,'both')
-    cell2csv('LIMO_files.txt', LIMO_files.mat(find(~remove_limo),:))
-    cell2csv('Beta_files.txt', LIMO_files.Beta(find(~remove_limo),:))
+    cell2csv(['LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
+    cell2csv(['Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
 end
 
 if isfield(LIMO_files,'con')
     for c=1:size(batch_contrast.mat,1)
         index = 1;
         for subject = 1:N
-            name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+            name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '_' glm_name '.mat'];
             index = index + 1;
         end
         name = name';
-        cell2csv('con_files.txt', name(find(~remove_con),:));
+        cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
     end   
 end
 
 % save the report from psom
 cd([current filesep 'limo_batch_report'])
-cell2csv('batch_report.txt', report')
+cell2csv(['batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
