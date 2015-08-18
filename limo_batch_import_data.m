@@ -79,11 +79,11 @@ if strcmp(defaults.analysis,'Time')
     
     % end
     if isempty(defaults.end) || defaults.end > max(EEGLIMO.times)
-        LIMO.data.start = timevect(end);
+        LIMO.data.end   = timevect(end);
         LIMO.data.trim2 = length(timevect);    
     else
         [~,position]=min(abs(EEGLIMO.times - defaults.end));
-        LIMO.data.end = EEGLIMO.times(position);
+        LIMO.data.end = timevect(position);
         LIMO.data.trim2 = position;
     end
     
