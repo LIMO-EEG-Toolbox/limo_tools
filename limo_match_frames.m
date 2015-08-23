@@ -1,11 +1,13 @@
-function [first_frame,last_frame,subj_chanlocs,channeighbstructmat] = limo_match_frames(Paths)
+function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,limo] = match_frames(Paths,limo)
+
 
 % once we have a series of files to assemble, we need to collect information 
 % to match the frames across subjects
 %
-% FORMAT: [first_frame,last_frame,subj_chanlocs,channeighbstructmat] = limo_match_frames(Paths)
+% FORMAT: [first_frame,last_frame,subj_chanlocs,channeighbstructmat] = limo_match_frames(Paths,limo)
 %
 % INPUT: Paths the full paths of files to assenble ; use to read the LIMO.mat
+%        limo a LIMO.mat structure to be updated 
 %
 % OUTPUTS: first_frame last _frame returns the beginning and end in terms of
 %          indices ; for time-frequency these are vectors with time st then frequency
@@ -13,12 +15,12 @@ function [first_frame,last_frame,subj_chanlocs,channeighbstructmat] = limo_match
 %          channeighbstructmat is cell of all subject neighbouringhood matrices (if any)
 % if the structure limo is set as global, then it is also updated the reflect the
 % smallest interval(s) across subjects, which is used for the second leve analysis
+%
+% Cyril Pernet v2 August 2015
 % ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2015
 
-% Cyril Pernet v1 May 2014
 
-global limo
 channeighbstructmat = []; ME = [];
 
 disp('match frames between subjects ...')
@@ -157,7 +159,7 @@ if strcmp(Analysis,'Frequency')
         freqlist = cell2mat(freqlist');
     catch list_issue
         assignin('base','freqlist',freqlist)
-        error('the resolution of frequency lists doesn''t match between subjects')
+        error('the resolution of frequency lists doesn''t match between subjects, check your workspace for details')
     end
     limo.data.freqlist = mean(freqlist,1);
     limo.data.start    = limo.data.freqlist(1);
@@ -169,7 +171,7 @@ elseif strcmp(Analysis,'Time-Frequency')
         tf_times = cell2mat(tf_times');
         tf_freqs = cell2mat(tf_freqs');
     catch list_issue
-        error('the resolution of time/frequency lists doesn''t match between subjects')
+        error('the resolution of time/frequency lists doesn''t match between subjects, check your workspace for details')
     end
     limo.data.tf_times = mean(tf_times,1);
     limo.data.tf_freqs = mean(tf_freqs,1);

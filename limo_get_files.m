@@ -17,9 +17,10 @@ function [Names,Paths,Files] = limo_get_files(gp,filter)
 % OUTPUT Names , Paths, Full File names are returned as cells
 %
 % Cyril Pernet 25-08-09
-% Ncolas Chauveau 07-04-11 - allows txt files
+% Nicolas Chauveau 07-04-11 - allows txt files
 % CP update for filter and additional format 01-21-2015
-% -------------------------------------------------
+% Arnaud Delorme fixed delimiters and added study option June 2015
+% --------------------------------------------------------------
 %  Copyright (C) LIMO Team 2015
 
 if nargin == 0

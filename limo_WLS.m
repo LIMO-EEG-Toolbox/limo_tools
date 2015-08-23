@@ -26,8 +26,9 @@ function [b,W] = limo_WLS(X,Y,varargin)
 % see also LIMO_PCOUT LIMO_IRLS
 %
 % Cyril Pernet v2 January 2014
+% v3 July 2015 incliude an iterative framework (not validated)
 % -----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2015
 
 %% input check
 if  nargin < 2      
@@ -94,7 +95,7 @@ elseif strcmpi(method,'iterative')
     numiter = 0; iterlim = 100;
     oldRes=1; newRes=10;
     
-    while(max(abs(oldRes-newRes)) > (1E-4))
+    while(sum(abs(oldRes-newRes)) > cols*(1E-4)) % on average it is small
         
         numiter = numiter+1;
         oldRes = newRes;

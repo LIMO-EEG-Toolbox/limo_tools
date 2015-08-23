@@ -50,17 +50,17 @@ if MCC ~= 1
         disp('Nonparametric statistical testing of EEG- and MEG-data.')
         disp('Journal of Neuroscience Methods, 164, 177-190')
         disp(' ');
-        disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2014).')
+        disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2015).')
         disp('Cluster-based computational methods for mass univariate analyses')
         disp('of event-related brain potentials/fields: A simulation study.')
-        disp('Journal of Neuroscience methods')
+        disp('Journal of Neuroscience methods,250,83-95')
         
     elseif MCC == 3
         disp('Ref for TFCE:')
-        disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2014).')
+        disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2015).')
         disp('Cluster-based computational methods for mass univariate analyses')
         disp('of event-related brain potentials/fields: A simulation study.')
-        disp('Journal of Neuroscience methods')
+        disp('Journal of Neuroscience methods,250,83-95')
     end
 else
     fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6));

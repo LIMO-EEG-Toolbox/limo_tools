@@ -31,7 +31,7 @@ function [b w] = limo_IRLS(X,Y,tune)
 %    
 % Ignacio Suay Mas
 % -----------------------------
-% Copyright (C) LIMO Team 2012
+% Copyright (C) LIMO Team 2015
 
 if  nargin < 2      
     error(message('Too Few Inputs'));      
