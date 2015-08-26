@@ -4,7 +4,7 @@ function varargout = limo_random_effect(varargin)
 % Created using GUIDE 
 % Cyril Pernet 25-08-2009 v1
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2015
 
 %% GUI stuffs
 % -------------------------

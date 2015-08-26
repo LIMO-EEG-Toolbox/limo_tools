@@ -6,7 +6,7 @@ function limo_plots(expected_chanlocs)
 %
 % Cyril Pernet v1 25-May-2010
 % -----------------------------
-% Copyright (C) LIMO Team 2010
+% Copyright (C) LIMO Team 2015
 
 current_dir = pwd;
 if nargin == 0

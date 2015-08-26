@@ -469,10 +469,10 @@ elseif nargin == 1
             if strcmp(Q,'Evaluate single conditions')
                 for j=length(parameters)
                     if parameters(j) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
-                        index = LIMO.design.X(:,parameters(j))==1);
+                        index = LIMO.design.X(:,parameters(j))==1;
                         if strcmp(weighted_mean,'yes')
                             for electrode=1:size(Yr,1)
-                                tmp =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
+                                tmp(electrode,:,:) =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
                             end
                         else
                             tmp =  squeeze(Yr(:,:,index)); % retain those trials only
@@ -510,7 +510,7 @@ elseif nargin == 1
                     index = find(sum(LIMO.design.X(:,parameters)==1,2)); % find all trials from selected columns 
                     if strcmp(weighted_mean,'yes')
                         for electrode=1:size(Yr,1)
-                            tmp =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
+                            tmp(electrode,:,:) =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
                         end
                     else
                         tmp =  squeeze(Yr(:,:,index)); % retain those trials only
@@ -576,7 +576,7 @@ if ~isempty(data)
     if nargout ==0
         name = cell2mat(inputdlg('save as [?]','name option'));
         if ~isempty(name)
-            newname = sprintf('%s_%s',name,Estimator1);
+            newname = sprintf('%s_single_subjects_%s',name,Estimator1);
             save (newname,'data');
         end
     end
@@ -602,13 +602,12 @@ if ~isempty(data)
             if nargin == 3
                 newname = sprintf('%s_Mean',name);
             else
-                newname = sprintf('%s_%s_Mean',name,Estimator1);
+                newname = sprintf('%s_Mean_of_%s',name,Estimator1);
             end
             save (newname,'M');
         else
             result = M;
         end
-        data=M;
     end
     
     % --------------------------------------------------------------
@@ -630,13 +629,12 @@ if ~isempty(data)
             if nargin == 3
                 newname = sprintf('%s_Trimmed_mean',name);
             else
-                newname = sprintf('%s_%s_Trimmed_mean',name,Estimator1);
+                newname = sprintf('%s_Trimmed_mean_of_%s',name,Estimator1);
             end
             save ([newname],'TM');
         else
             result = TM;
         end
-        data=TM;
     end
     
     % -----------------------------------------------------
@@ -658,13 +656,12 @@ if ~isempty(data)
             if nargin == 3
                 newname = sprintf('%s_Mid_decile_Harrell_David',name);
             else
-                newname = sprintf('%s_%s_Mid_decile_Harrell_David',name,Estimator1);
+                newname = sprintf('%s_Mid_decile_Harrell_David_of_%s',name,Estimator1);
             end
             save ([newname],'HD');
         else
             result = HD;
         end
-        data=HD;
     end
     
     % -------------------------------------------------
@@ -686,46 +683,13 @@ if ~isempty(data)
             if nargin == 3
                 newname = sprintf('%s_Median',name);
             else
-                newname = sprintf('%s_%s_Median',name,Estimator1);
+                newname = sprintf('%s_Median_of_%s',name,Estimator1);
             end
             save ([newname],'Med');
         else
             result = Med;
         end
-        data=Med;
     end
-end
-
-% -------------------------------------------------
-% plot data ---------------------------------------
-if nargout ==0 && ~isempty(data(:))
-    Xf = linspace(max(start),min(stop),size(data,2)); % make time vector
-    if strcmp(Analysis_type,'1 electrode only')
-        for k = 1:size(data,3)
-            figure('color','w','NumberTitle','off');hold on
-            title([myestimator,' of parameter ',num2str(k),' @ elec ',expected_chanlocs(1).labels],'FontSize',14)
-            plot(Xf,squeeze(data(:,:,k,2)),'k','LineWidth',2)
-            plot(Xf,squeeze(data(:,:,k,1)),'r','LineWidth',2)
-            plot(Xf,squeeze(data(:,:,k,3)),'r','LineWidth',2)
-            set(gca,'LineWidth',2,'FontSize',12); box on; grid on
-        end
-    else
-        for k = 1:size(data,3)
-            toplot=squeeze(data(:,:,k,2));
-            figure('color','w','NumberTitle','off');hold on
-            timtopo(toplot, expected_chanlocs,'limits',[Xf(1) Xf(end) 0 0],'title',[myestimator,' of parameter ',num2str(k)]);
-            figure('color','w','NumberTitle','off');hold on
-            [E,F]=find(toplot==max(toplot(:)));
-            title([myestimator,' of parameter ',num2str(k),' @ elec ',expected_chanlocs(E).labels],'FontSize',14)
-            plot(Xf,squeeze(data(E,:,k,2)),'k','LineWidth',2)
-            fillhandle = patch([Xf fliplr(Xf)], [squeeze(data(E,:,k,1)),fliplr(squeeze(data(E,:,k,3)))], [1 0 0]);
-            set(fillhandle,'EdgeColor',[1 0 0],'FaceAlpha',0.2,'EdgeAlpha',1);%set edge color
-            plot(Xf,squeeze(data(E,:,k,1)),'r','LineWidth',2)
-            plot(Xf,squeeze(data(E,:,k,3)),'r','LineWidth',2)
-           set(gca,'LineWidth',2,'FontSize',12);box on; grid on
-        end
-    end
-    % -------------------------------------------------
 elseif isempty(data(:))    
     warndlg('computed central tendency is empty','nothing obtained')
 end
