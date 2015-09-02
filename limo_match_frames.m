@@ -1,4 +1,4 @@
-function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,limo] = match_frames(Paths,limo)
+function [first_frame,last_frame,subj_chanlocs,limo] = match_frames(Paths,limo)
 
 
 % once we have a series of files to assemble, we need to collect information 
@@ -20,8 +20,7 @@ function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,limo] = match
 % ---------------------------------------------------------
 %  Copyright (C) LIMO Team 2015
 
-
-channeighbstructmat = []; ME = [];
+current = pwd; ME = [];
 
 disp('match frames between subjects ...')
 % check Paths format
@@ -180,6 +179,7 @@ elseif strcmp(Analysis,'Time-Frequency')
     limo.data.end      = limo.data.tf_times(end);
     limo.data.high_f   = limo.data.tf_freqs(end);
 end
+cd(current)
 
 
 

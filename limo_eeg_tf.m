@@ -44,7 +44,7 @@ switch varargin{1}
                 cd (dir_path); load LIMO.mat;
             end
         end
-        cd (LIMO.dir);
+        cd(LIMO.dir);
         
         % ---------------- univariate analysis ------------------
         % --------------------------------------------------------

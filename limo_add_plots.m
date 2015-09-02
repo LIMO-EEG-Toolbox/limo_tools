@@ -15,23 +15,24 @@ while out == 0
 
 %% Data selection
 % ------------------
-[file,path,index]=uigetfile('*mat','Select 4D file for ERP or Power');
+[file,path,index]=uigetfile('*mat','Select Central tendency file');
 if index == 0
     out = 1; return
 else
     data = load(sprintf('%s%s',path,file));
-    if isfield(data,'M')
+    data = getfield(data,cell2mat(fieldnames(data)));
+    if isfield(data,'Mean')
         name{turn} = 'Mean';
-        tmp = data.M;
-    elseif isfield(data,'TM')
+        tmp = data.Mean;
+    elseif isfield(data,'trimmed_mean')
         name{turn} = 'Trimmed Mean';
-        tmp = data.TM;
-    elseif isfield(data,'Med')
+        tmp = data.trimmed_mean;
+    elseif isfield(data,'Median')
         name{turn} = 'Median';
-        tmp = data.Med;
-    elseif isfield(data,'HD')
+        tmp = data.Median;
+    elseif isfield(data,'Harrell_Davis')
         name{turn} = 'Harrell-Davis';
-        tmp = data.HD;
+        tmp = data.Harrell_Davis;
     elseif isfield(data,'data')
         if ~isempty(strfind(file, 'Mean'))
             name{turn} = 'Subjects'' Means';
@@ -52,6 +53,7 @@ else
     end
 end
 
+limo = data.limo;
 clear data
 if size(tmp,3) == 1
     Data = squeeze(tmp(:,:,1,:));
@@ -60,7 +62,17 @@ else
     if isempty(v)
         out = 1; return
     else
-        Data = squeeze(tmp(:,:,eval(cell2mat(v)),:));
+        try
+            v = str2num(cell2mat(v));
+        catch
+            v =eval(cell2mat(v));
+        end
+        
+        if length(v)>1
+            errordlg2('only 1 parameter value expected')
+        else
+            Data = squeeze(tmp(:,:,v,:));
+        end
     end
 end
 clear tmp
@@ -73,8 +85,10 @@ if turn == 1
     
     % timing info
     % ----------
-    [file,locpath,ind]=uigetfile('.mat','Select any LIMO with right timing info');
-    if ind == 0
+
+    try
+        timevect = limo.data.start:(1000/limo.data.sampling_rate):limo.data.end;  % in msec
+    catch
         v = inputdlg('enter time interval by hand e.g. [0:0.5:200]');
         if isempty(v)
             return
@@ -90,9 +104,6 @@ if turn == 1
                 timevect = 1:size(Data,2);
             end
         end
-    else
-        cd(locpath); load LIMO; cd(current);
-        timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;  % in msec
     end
 end
     

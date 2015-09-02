@@ -16,7 +16,7 @@ if exist('EEGLIMO','var')
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
         cd (LIMO.data.data_dir);
         disp('reloading data ..');
-        EEGLIMO=pop_loadset(LIMO.data.data);
+        EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
     end
 else
     disp('reloading data ..');
@@ -155,7 +155,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
-    disp('Time-Frequency implementation - loading tf data...');
+    disp('Time-Frequency implementation - loading tf data, be patient ...');
     
     if strcmp(LIMO.Type,'Components')
         if ~iscell(EEGLIMO.etc.datafiles.datspec) && isfield(EEGLIMO.etc.datafiles,'icatimef')
@@ -201,17 +201,21 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
             end
             Y = limo_concatcells(Y);
-            clear EEGLIMO
-        elseif EEGLIMO.etc.datafiles.datersp % .mat file
-            Y = load(EEGLIMO.etc.datafiles.datersp);
-            if isstruct(Y)
-                Y = getfield(Y,cell2mat(fieldnames(Y)));
+        elseif isfield(EEGLIMO.etc.datafiles,'datersp')
+            [~,~,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
+            if strcmp(ext,'.dattimef')
+                [Y,TimeVect,FreqVect] = limo_struct2mat(EEGLIMO.etc.datafiles.datersp);
+            else
+                Y = load(EEGLIMO.etc.datafiles.datersp);
+                if isstruct(Y)
+                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                end
             end
         else
             error('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
         end
     end
-    
+    clear EEGLIMO
     LIMO.data.size4D= size(Y);
     LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
 end

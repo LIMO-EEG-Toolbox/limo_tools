@@ -1,21 +1,25 @@
-function limo_CheckWeight(varargin)
+function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 
-% general function designed to look at the weights computed for eacc trial
+% general function designed to look at the weights computed for each trial
 % at the each channel for each subject
 %
 % FORMAT limo_CheckWeight(list_of_LIMO.mat,options)
 %
-% INPUT list_of_LIMO.mat simple txt file listing were the LIMO.mat to llok
-%                        at are located (or actual variable for that list)
+% INPUT list_of_LIMO.mat empty [] calls a gui to select a txt file
+%                        txt file listing where the LIMO.mat are located
+%                        cell array listing where the LIMO.mat are located
 %
-%       options 'plot deciles' since weights are between 0 and 1,
+%       expected_chanlocs the default channel locations for all subject
+%
+%       options 'plot rank' since weights are between 0 and 1,
 %                it computes the average response for each decile
 %               'test difference' compute an OLS between the good trials
-%               weights = 1/0.9 and the bad ones weights 0/0.1
+%               weights = 1/0.9 and the outliers (by reverse engineering
+%               the weights to outlier detection)
 %               'check bias' check that the weights are distributed across
 %               trials in a uniform manner, i.e. that not one conditions is
 %               more affected than another which would bias the results, but
-%               also indicate that something is going on ion the data
+%               also indicate that something is going on in the data
 % 
 % OUTPUT creates a folder called 'Weights_checking' with the different
 %        results in it
@@ -23,5 +27,120 @@ function limo_CheckWeight(varargin)
 % Cyril Pernet 21-08-2015
 % -----------------------------
 % Copyright (C) LIMO Team 2015
+
+%% if no input do it all
+if nargin == 0
+    limo = struct('plotrank','on','testdifference','on','checkbias','on');
+    [~,~,LIMO_files] = limo_get_files([],'*txt','choose a list of LIMO files');
+    [to_load,path] = uigetfile2('*mat','load chanlocs'); chan = load([path to_load]);
+    limo.data.expected_chanlocs = chan.expected_chanlocs; 
+    limo.data.neighbouring_matrix =  chan.channeighbstructmat; 
+end
+
+%% input checks
+if isempty(LIMO_files)
+    [~,~,LIMO_files] = limo_get_files([],'*txt','choose a list of LIMO files');
+elseif ischar(LIMO_files)
+    files=textread(LIMO_files,'%s','delimiter','');  % select a txt file listing all files
+    clear LIMO_files
+    for f=1:size(files,1)
+        LIMO_files{f} = files{f};
+    end
+end
+
+% those files are there?
+for f=1:length(LIMO_files)
+    if ~exist(LIMO_files{f},'file');
+        error([LIMO_files{f} ' doesn''t exist'])
+    end
+    
+    [limo_paths{f},name,ext]=fileparts(LIMO_files{f});
+    if ~strcmp([name ext],'LIMO.mat');
+        error([LIMO_files{f} ' is not a LIMO.mat file'])
+    end
+    
+    load(LIMO_files{f});
+    if f==1
+        limo.Analysis = LIMO.Analysis; 
+    else
+        if limo.Analysis ~= LIMO.Analysis
+            error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
+        end
+    end
+end
+
+if isempty(expected_chanlocs)
+    [to_load,path] = uigetfile2('*mat','load chanlocs'); chan = load([path to_load]);
+    limo.data.expected_chanlocs = chan.expected_chanlocs; 
+    limo.data.neighbouring_matrix =  channeighbstructmat; 
+end
+
+if ~isempty(varargin)
+    limo = struct('plotrank','off','testdifference','off','checkbias','off');
+    for n=1:length(varargin)
+        if strcmpi(varargin{n},'plot rank')
+            limo.plotrank = 'on';
+        end
+        
+        if strcmpi(varargin{n},'test difference')
+            limo.testdifference = 'on';
+        end
+        
+        if strcmpi(varargin{n},'check bias')
+            limo.checkbias = 'on';
+        end
+    end
+end
+
+%% compute
+[first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
+if strcmp(limo.plotrank,'on')
+    data = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),10,length(LIMO_files));
+end
+
+for f=1:length(LIMO_files)
+    fprintf('reading data subject %g\n',f)
+    
+    if strcmp(limo.plotrank,'on') || strcmp(limo.testdifference,'on')
+        load(LIMO_files{f}); W{f} = LIMO.design.weights;
+        load([LIMO.dir filesep 'Yr.mat']);
+        if strcmpi(limo.Analysis,'Time-Frequency')
+            disp('to do')
+        else
+            array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+            tmp = NaN(size(Yr,1),size(Yr,2),10);
+            for e=1:length(array)
+                for w=1:10
+                    index = logical((W{f}(e,:) >((w/10)-1)) .* (W{f}(e,:) <=(w/10)));
+                    tmp(e,:,w) = mean(Yr(e,:,index),3);
+                end
+            end
+            data(:,:,:,f) = limo_match_elec(subj_chanlocs(f).chanlocs,chan.expected_chanlocs,first_frame(f),last_frame(f),tmp);
+        end
+    end
+    
+    % save using the same format as limo_central_tendency, then call 
+    % lkimo_add_plots to make the figure
+    
+    
+    
+    if strcmp(limo.plotrank,'on')
+        if numel(size(W{f})) == 2
+            [nelec,ntrial]=size(W{f});
+            for n=1:nelec
+            Rank{f}(n,:) = prctile(W{f}(n,:),[0:10]);
+            end
+        elseif numel(size(W{f})) == 3
+            [nelec,nfreq,ntrial]=size(W{f});
+        end
+        
+        
+    end
+    
+end
+
+
+
+
 
 

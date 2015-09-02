@@ -6,7 +6,7 @@ function [out,TimeVect,FreqVect] = limo_struct2mat(in)
 % FORMAT Matrix = limo_struct2mat(Structure)
 %
 % INPUT Structure is char pointing to a structure or
-%       a strcture containing cells of channels or components
+%       a structure containing cells of channels or components
 %       such files are usually called e.g. xxxx.icaerp xxxx.datersp
 % OUTPUT Matrix is a matrix of data, and possibly the associated time and
 %        frequency vectors

@@ -1,8 +1,8 @@
-function [Names,Paths,Files] = limo_get_files(gp,filter)
+function [Names,Paths,Files] = limo_get_files(varargin)
 
 % routine to get multifiles from different directories
 %
-% FORNMAT [Names,Paths,Files] = limo_get_files(gp,filter)
+% FORNMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
 %
 % INPUT can be left empty, in the case ask for .mat or .txt
 %       gp  is a simple numerical value, so the selection question reminds
@@ -13,6 +13,9 @@ function [Names,Paths,Files] = limo_get_files(gp,filter)
 %              supported formats are .mat .txt .set .study
 %              default is {'*.mat;*.txt'}
 %              e.g. [Names,Paths,Files] = limo_get_files([],{'*.set'})
+%      title a default question dialogue is 'select a subject file or list
+%            file' with possible the gp number inserted, but this can be
+%            customized here
 %
 % OUTPUT Names , Paths, Full File names are returned as cells
 %
@@ -23,19 +26,21 @@ function [Names,Paths,Files] = limo_get_files(gp,filter)
 % --------------------------------------------------------------
 %  Copyright (C) LIMO Team 2015
 
-if nargin == 0
-    gp = [];
-end
-if nargin <2
-    filter = {'*.mat;*.txt'};
-end
+%% defaults and inputs
+gp = [];
+title = ['select a subject file or list file'];
+filter = {'*.mat;*.txt'};
+
+if nargin>=1; gp = varargin{1}; end
+if nargin>=2; filter = varargin{2}; end
+if nargin==3; title = varargin{3}; end
 
 go = 1; index = 1;
 while go == 1
     if ~isempty(gp)
         [name,path] = uigetfile(filter,['select a subject file',num2str(index),' ',gp,' or list file']);
     else
-        [name,path] = uigetfile(filter,['select a subject file or list file']);
+        [name,path] = uigetfile(filter,title);
     end
     
     if name == 0
