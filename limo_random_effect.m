@@ -247,7 +247,11 @@ function Chan_loc_Callback(hObject, eventdata, handles)
 [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
 if whatsup == 1
     load (sprintf('%s\%s',chan_path,chan_file))
-    test = eval(chan_file(1:end-4));
+    if exist('expected_chanlocs','var') == 1
+        test = expected_chanlocs;
+    else
+        test = eval(chan_file(1:end-4));
+    end
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
              && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && sum(channeighbstructmat(:)) ~= 0
