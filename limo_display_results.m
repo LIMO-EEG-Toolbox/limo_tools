@@ -1643,7 +1643,11 @@ elseif LIMO.Level == 2
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 if size(data,1) > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         tmp = squeeze(data(:,:,:,4));
                         [electrode,freq_index,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
@@ -1679,7 +1683,11 @@ elseif LIMO.Level == 2
                 
             else % Time or Freq or ITC
                 if size(data,1) > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         [v,e] = max(data(:,:,4)); [v,c]=max(v); electrode = e(c);
                     else
@@ -1815,7 +1823,11 @@ elseif LIMO.Level == 2
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 if size(data,1) > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         tmp = squeeze(data(:,:,:,1));
                         [electrode,freq_index,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
@@ -1851,7 +1863,11 @@ elseif LIMO.Level == 2
                 
             else % Time or Freq
                 if size(data,1) > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         [v,e] = max(data(:,:,4)); [v,c]=max(v); electrode = e(c);
                     else
@@ -2129,7 +2145,11 @@ elseif LIMO.Level == 2
                 [e,f,d]=size(Rep_ANOVA);
                 
                 if e > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         [v,e] = max(Rep_ANOVA(:,:,1)); [v,c]=max(v); electrode = e(c);
                     else
@@ -2234,7 +2254,11 @@ elseif LIMO.Level == 2
                 
                 % check electrode to plot
                 if e > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         clear electrode; [v,e] = max(Rep_ANOVA_Gp_effect(:,:,1)); [v,c]=max(v); electrode = e(c);
                     else
@@ -2356,7 +2380,11 @@ elseif LIMO.Level == 2
                 [e,f,d]=size(Rep_ANOVA_Interaction_with_gp);
                 
                 if e > 1
-                    electrode = inputdlg('which electrode to plot','Plotting option');
+                    if isempty(g.channels)
+                        electrode = inputdlg('which electrode to plot','Plotting option');
+                    else
+                        electrode = g.channels;
+                    end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
                         [v,e] = max(Rep_ANOVA_Interaction_with_gp(:,:,1)); [v,c]=max(v); electrode = e(c);
                     else
