@@ -523,7 +523,8 @@ elseif strncmp(FileName,'ess_',4)
     
 elseif strncmp(FileName,'one_sample',10)
     
-    effect_nb = eval(FileName(28:end-4));
+    try effect_nb = eval(FileName(28:end-4)); end
+
     if size(one_sample,1)>1
         M = squeeze(one_sample(:,:,4)); % T values
     else

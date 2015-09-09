@@ -15,6 +15,7 @@ function limo_random_select(varargin)
 % FORMAT
 % limo_random_select(type,expected_chanlocs)
 % limo_random_select(type,expected_chanlocs,nboot,tfce)
+% limo_random_select(type,expected_chanlocs,nboot,tfce,options)
 %
 % INPUT
 % type = 1 for a one sample t-test
@@ -26,40 +27,41 @@ function limo_random_select(varargin)
 % (this file can be created with via limo_tools)
 % nboot the number of bootstrap to do (default = 0)
 % tfce 0/1 indicates to computes tfce or not (default = 0)
+% options a bunch of string based options for programmers
 % ---------------------------------------------------------
 % Copyright (C) LIMO Team 2015
 
-% see also limo_random_robust, limo_expected_chanlocs
-% Cyril Pernet - Guillaume Rousselet v1 18-05-2009
-% Cyril Pernet v3 20-05-2010
-% Cyril Pernet 22-04-2011 fixed the repeated ANOVA (thx to Nicolas) and added tfce
-% Mariane Latinus 2013 - Update for tfce + some fixes
-% Cyril Pernet changed Regression / ANOVA to get structure handled within limo_random_effect May 2013
-% Add fix from Marlene Poncet for N by N repeated measures - July 2013
-% Update for 'Frequency' and 'Time-Frequency' Cyril Pernet May 2014
-
 
 %% take the inputs and load some parameters
+Analysis_type = []; % 'Full scalp analysis' or '1 electrode only'
 nboot = 0;
 tfce  = 0;
 
 if nargin < 1
     error('not enough arguments');
-elseif nargin <= 4
+else
     type              = varargin{1};
     expected_chanlocs = varargin{2};
-    if nargin == 4
+    if nargin > 4
         nboot         = varargin{3};
         tfce          = varargin{4};
     end
-else
-   error('too many arguments');    
+    
+    if nargin >4
+        for in = 5:nargin
+            if strcmpi(varargin{in},'Analysis_type')
+                Analysis_type = varargin{in};
+            end
+        end
+    end
 end
 
 
-Analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
 if isempty(Analysis_type)
-    return
+    Analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
+    if isempty(Analysis_type)
+        return
+    end
 end
 
 % check chanlocs and nboot

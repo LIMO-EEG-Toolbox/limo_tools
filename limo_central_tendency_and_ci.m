@@ -37,8 +37,10 @@ function result=limo_central_tendency_and_ci(varargin)
 %         result is a structure with the fields 'subject' and 'central'
 %         if not called, the equivalent of the results fields are saved on the drive
 %         result.subjects returns the estimator1 computed per subject DIM [channel freq/time parameter subject]
-%         result.central returns the estimator 2 computed across subjects DIM [channel freq/time parameter 3]
+%         result.estimator2 returns the estimator 2 computed across subjects DIM [channel freq/time parameter 3]
 %                        the last dim is 3 for low CI bound, estimator value, high CI bound
+%                estimator2 van be Median, Harrell_Davis, trimmed_mean, or mean
+%                        
 %         if empty files are created on the drive (typically when called via GUI)
 %         for single subject the fomat is channel, freq/time, parameters, subjects
 %         for the group it's a structure data.estimator2 name and data.limo
@@ -102,10 +104,6 @@ elseif nargin == 6
         expected_chanlocs = expected_chanlocs(selected_electrodes);
     end
     
-    if nargout == 0
-        answer = questdlg('do you want to save individual estimates too?','saving option','yes','no','yes');
-    end
-
     % match frames
     % -------------
     limo.data.neighbouring_matrix = expected_chanlocs;
@@ -376,9 +374,7 @@ elseif nargin == 1
         if strcmp(Estimator1,'All') || strcmp(Estimator1,'Mean')
             weighted_mean = questdlg('do you want to use weights to compute means?','saving option','yes','no','yes');
         end
-        
-        answer = questdlg('do you want to save individual estimates too?','saving option','yes','no','yes');
-        
+                
         % match frames
         % -------------
      limo.data.neighbouring_matrix = expected_chanlocs;
@@ -527,6 +523,9 @@ if ~isempty(data)
             Data.data = data; Data.limo = limo;
             save (newname,'Data'); clear Data
         end
+    else
+        result.subjects = data;
+        result.limo = limo;
     end
     
     disp('processing data across subjects ..')
@@ -558,7 +557,7 @@ if ~isempty(data)
             Data.limo = limo;
             save (newname,'Data');
         else
-            result.central = M;
+            result.mean = M;
         end
     end
     
@@ -587,7 +586,7 @@ if ~isempty(data)
             Data.limo = limo;
             save (newname,'Data');
         else
-            result.central = TM;
+            result.trimmed_mean= TM;
         end
     end
     
@@ -616,7 +615,7 @@ if ~isempty(data)
             Data.limo = limo;
             save ([newname],'Data');
         else
-            result.central = HD;
+            result.Harrell_Davis = HD;
         end
     end
     
@@ -645,7 +644,7 @@ if ~isempty(data)
             Data.limo = limo;
             save ([newname],'Data');
         else
-            result.central = Med;
+            result.Median = Med;
         end
     end
 elseif isempty(data(:))    
