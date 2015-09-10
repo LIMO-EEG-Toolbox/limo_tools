@@ -149,9 +149,9 @@ function One_Sample_t_test_Callback(hObject, eventdata, handles)
 
 if test_chan_loc(handles)
     if handles.b == 0
-        limo_random_select(1,handles.chan_file)
+        limo_random_select(1,handles.chan_file);
     else
-        limo_random_select(1,handles.chan_file,handles.b,handles.tfce)
+        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce);
     end
 end
 
@@ -162,9 +162,9 @@ function Two_Samples_t_test_Callback(hObject, eventdata, handles)
 
 if test_chan_loc(handles)
     if handles.b == 0
-        limo_random_select(2,handles.chan_file)
+        limo_random_select(2,handles.chan_file);
     else
-        limo_random_select(2,handles.chan_file,handles.b,handles.tfce)
+        limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce);
     end
 end
 
@@ -178,7 +178,7 @@ if test_chan_loc(handles)
     if handles.b == 0
         limo_random_select(3,handles.chan_file)
     else
-        limo_random_select(3,handles.chan_file,handles.b,handles.tfce)
+        limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce)
     end
 end
 
@@ -192,7 +192,7 @@ if test_chan_loc(handles)
     if handles.b == 0
         limo_random_select(4,handles.chan_file)
     else
-        limo_random_select(4,handles.chan_file,handles.b,handles.tfce)
+        limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce)
     end
 end
 
@@ -207,7 +207,7 @@ if test_chan_loc(handles)
     if handles.b == 0
         limo_random_select(5,handles.chan_file)
     else
-        limo_random_select(5,handles.chan_file,handles.b,handles.tfce)
+        limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce)
     end
 end
 
