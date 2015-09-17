@@ -32,6 +32,7 @@ function th = limo_ecluster_make(bootf,bootp,alphav)
 % Luisa Frei, 4 Nov 2011: fixed bug in all electrode ouput
 % Marianne Latinus adding spm_bwlabel 2012
 % Cyril Pernet - removed some useless computations to speed things up, June 2014
+% GAR - commented out last line which crashed the function - September 2015
 % ----------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2014
 %
@@ -106,5 +107,5 @@ elseif ndims(bootf)==2 % 1 electrode * time/freq
 else
     error('ecluster_make: bootf should be 2D or 3D')
 end
-th.elec = th.elec(1:size(bootf,1));
+% th.elec = th.elec(1:size(bootf,1));
 
