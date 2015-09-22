@@ -186,6 +186,3 @@ function Quit_Callback(hObject, eventdata, handles)
 clc
 uiresume
 delete(handles.figure1)
-
-
-

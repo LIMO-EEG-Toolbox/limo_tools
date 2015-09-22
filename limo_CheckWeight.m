@@ -161,36 +161,100 @@ for f=1:length(LIMO_files)
         end
         
         if f==length(LIMO_files)
-            clear Data; Data.data = difference; Data.limo = limo; 
+            clear Data; Data.data = difference; Data.limo = limo;
             save subjects_outlier_difference Data; clear difference
+            
             % stats
             disp('Conputing t-test being good and ad trials')
             one_sample = NaN(size(Data.data,1), size(Data.data,2), 5);
-            [one_sample(:,:,1),one_sample(:,:,3),~,sd,n,one_sample(:,:,4),one_sample(:,:,5)] = limo_ttest(1,Data.data,0,0.5);
-            one_sample(:,:,2) = sd./sqrt(n); save ('one_sample_outliers','one_sample', '-v7.3');
-            H0_one_sample=limo_ttest_permute(Data.data,1000); mkdir('H0'); 
+            [one_sample(:,:,4),one_sample(:,:,1),~,one_sample(:,:,2),one_sample(:,:,5),~,one_sample(:,:,3)]=limo_trimci(Data.data);
+            save ('one_sample_ttest_outliers','one_sample', '-v7.3');
+            
+            nboot = 1000;
+            H0_one_sample = NaN(size(Data.data,1), size(Data.data,2),2,nboot); % stores T and p values for each boot under H0
+            centered_data = Data.data - repmat(limo_trimmed_mean(Data.data),[1 1 size(Data.data,3)]);
+            boot_table = limo_create_boot_table(Data.data,nboot);
+            for electrode = 1:size(Data.data,1)
+                fprintf('bootstrapping electrode %g\n',electrode)
+                tmp = centered_data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+                parfor b=1:nboot
+                    [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                end
+                
+                for b=1:nboot
+                    H0_one_sample(electrode,:,1,b) = t{b};
+                    H0_one_sample(electrode,:,2,b) = p{b};
+                end
+            end
             save (['H0', filesep, 'H0_one_sample_outliers'],'H0_one_sample','-v7.3');
-            LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000; 
-            LIMO.design.electrode = []; save LIMO LIMO
+            LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
+            LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
+        end
+    end
+    
+    if strcmp(limo.checkbias,'on')
+        if LIMO.design.nb_conditions == 0
+            sprintf('skipping bias test, there are no conditions, subject %g \n',f);
+        else
+            if LIMO.design.nb_interactions ~= 0
+                tmpX = LIMO.design.X(:,sum(LIMO.design.nb_conditions):(size(LIMO.design.X,2)-LIMO.design.nb_continuous));
+            elseif LIMO.design.nb_interactions == 0 && length(LIMO.design.nb_conditions)>1
+                [tmpX,~] = limo_make_interactions(LIMO.design.X, LIMO.design.nb_conditions);
+            else
+                tmpX = LIMO.design.X(:,1:LIMO.design.nb_conditions);
+            end
+            % tmpX is always a matrix with one column per condition, no
+            % matter the design - we want to know if the weights are
+            % distributed equally
+            if strcmpi(limo.Analysis,'Time-Frequency')
+                % LIMO.data.4d
+                tmp = NaN(size(W{f},1),size(Res,2),size(tmpX,2));
+            else
+                tmp = NaN(size(W{f},1),size(tmpX,2));
+                for e=1:size(Yr,1)
+                    for expected=1:size(chan.expected_chanlocs,2)
+                        if strcmp(LIMO.data.chanlocs(e).labels,chan.expected_chanlocs(expected).labels)
+                            bias(expected,:,f) = mean(W(e,:,Xcell),3);
+                        end
+                    end
+                end
+            end
+            
+%             if f==length(LIMO_files)
+%                 clear Data; Data.data = difference; Data.limo = limo;
+%                 save subjects_outlier_difference Data; clear difference
+%                 
+%                 % stats
+%                 disp('Conputing t-test being good and ad trials')
+%                 one_sample = NaN(size(Data.data,1), size(Data.data,2), 5);
+%                 [one_sample(:,:,4),one_sample(:,:,1),~,one_sample(:,:,2),one_sample(:,:,5),~,one_sample(:,:,3)]=limo_trimci(Data.data);
+%                 save ('one_sample_ttest_outliers','one_sample', '-v7.3');
+%                 
+%                 nboot = 1000;
+%                 H0_one_sample = NaN(size(Data.data,1), size(Data.data,2),2,nboot); % stores T and p values for each boot under H0
+%                 centered_data = Data.data - repmat(limo_trimmed_mean(Data.data),[1 1 size(Data.data,3)]);
+%                 boot_table = limo_create_boot_table(Data.data,nboot);
+%                 for electrode = 1:size(Data.data,1)
+%                     fprintf('bootstrapping electrode %g\n',electrode)
+%                     tmp = centered_data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+%                     parfor b=1:nboot
+%                         [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+%                     end
+%                     
+%                     for b=1:nboot
+%                         H0_one_sample(electrode,:,1,b) = t{b};
+%                         H0_one_sample(electrode,:,2,b) = p{b};
+%                     end
+%                 end
+%                 save (['H0', filesep, 'H0_one_sample_outliers'],'H0_one_sample','-v7.3');
+%                 LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
+%                 LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
+%             end
+    
         end
     end
 end
 
-%$ bias
-% needs to match electrode for W
-% if LIMO.design.nb_conditions == 0
-%     sprintf('skipping difference test, there are no conditions, subject %g \n',f);
-% else
-%     if LIMO.design.nb_interactions ~= 0
-%         tmpX = LIMO.design.X(:,sum(LIMO.design.nb_conditions):(size(LIMO.design.X,2)-LIMO.design.nb_continuous));
-%     elseif LIMO.design.nb_interactions == 0 && length(LIMO.design.nb_conditions)>1
-%         [tmpX,~] = limo_make_interactions(LIMO.design.X, LIMO.design.nb_conditions);
-%     else
-%         tmpX = LIMO.design.X(:,1:LIMO.design.nb_conditions);
-%     end
-%     tmpX = [tmpX ones(size(tmpX,1),1)];
-%     B(:,:,f) = pinv(tmpX)*W{f}';
-% end
 
 
 
