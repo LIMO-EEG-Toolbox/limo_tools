@@ -48,7 +48,6 @@ Nf = size(orif,2); % time frames
 if isfield(th, 'max') 
 
     sigcluster.max_mask = zeros(Ne,Nf);
-    sigcluster.max_pvalues = zeros(Ne,Nf);
     ME = [];
     
     for E = 1:Ne % for each electrode or frequency
@@ -74,7 +73,6 @@ end
 if isfield(th, 'elec') 
 
     sigcluster.elec_mask = zeros(Ne,Nf);
-    sigcluster.elec_pvalues = zeros(Ne,Nf);
     ME = [];
     try
         [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters
@@ -88,7 +86,7 @@ if isfield(th, 'elec')
 
     for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
         if sum(abs(orif(L==C))) >= th.elec;
-            sigcluster.elec(L==C)=1; % flag clusters above threshold
+            sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
         end
     end
 end
