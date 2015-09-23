@@ -52,6 +52,7 @@ function [Ty,diff,CI,p,tcrit,df,ori_mask,boot_mask,cluster_mask]=limo_yuen_ttest
 % CI output: GAR, University of Glasgow, June 2010
 % Bootstrap, cluster, LIMO version: GAR, University of Glasgow, July 2010
 % Debugging of various output variables: Luisa Frei, University of Glasgow, October 2011
+% Updated calls to limo_yuen_ttest: GAR, Sept 2015 
 %
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
