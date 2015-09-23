@@ -86,7 +86,7 @@ hi = nboot-lo;
 %% t-tests on original data
 
 fprintf('limo_boot_yuen_ttest: t-tests on original data...\n')
-[ori_Ty,ori_diff,ori_CI,ori_p,ori_tcrit,ori_df]=limo_yuen_ttest(a,b,percent,alpha);
+[ori_Ty,ori_diff,se,ori_CI,ori_p,ori_tcrit,ori_df]=limo_yuen_ttest(a,b,percent,alpha);
 ori_mask = ori_p<=alpha;
 
 %% centre data
