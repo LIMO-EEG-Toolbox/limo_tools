@@ -105,7 +105,7 @@ boot_p = boot_t;
 for bb = 1:nboot % bootstrap loop
     
     fprintf('limo_boot_yuen_ttest: bootstrap %i / %i...\n',bb,nboot)
-    [boot_t(:,:,bb),diff,CI,boot_p(:,:,bb),tcrit,df] = ...
+    [boot_t(:,:,bb),diff,se,CI,boot_p(:,:,bb),tcrit,df] = ...
         limo_yuen_ttest(ca(:,:,boot_index_a(:,bb)),cb(:,:,boot_index_b(:,bb)),percent,alpha);
     
 end % bootstrap loop
