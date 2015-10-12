@@ -272,7 +272,11 @@ if type == 1 || type == 4
         
         for i=parameters
             cd(LIMO.dir);
-            if length(parameters) > 1
+            if length(parameters) > 1 && i == parameters(1)
+                dir_name = sprintf('parameter_%g',i);
+                mkdir(dir_name); cd(dir_name);
+            elseif length(parameters) > 1 && i ~= parameters(1)
+                cd ..
                 dir_name = sprintf('parameter_%g',i);
                 mkdir(dir_name); cd(dir_name);
             end
@@ -378,7 +382,11 @@ if type == 1 || type == 4
         
         for i=parameters
             cd(LIMO.dir);
-            if length(parameters) > 1
+            if length(parameters) > 1 && i == parameters(1)
+                dir_name = sprintf('parameter_%g',i);
+                mkdir(dir_name); cd(dir_name);
+            elseif length(parameters) > 1 && i ~= parameters(1)
+                cd ..
                 dir_name = sprintf('parameter_%g',i);
                 mkdir(dir_name); cd(dir_name);
             end
