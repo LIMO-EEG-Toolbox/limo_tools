@@ -1052,9 +1052,9 @@ if LIMO.Level == 1
                     
                     x = squeeze(ci(i,1,:)); y = squeeze(ci(i,2,:));
                     if strcmp(LIMO.Analysis,'Frequency')
-                        fillhandle = patch([freqvect fliplr(freqvect)], [x' fliplr(y')], colorOrder(i,:));
+                        fillhandle = patch([reshape(freqvect, 1, numel(freqvect)) fliplr(reshape(freqvect, 1, numel(freqvect)))], [x' fliplr(y')], colorOrder(i,:));
                     else
-                        fillhandle = patch([timevect fliplr(timevect)], [x',fliplr(y')], colorOrder(i,:));
+                        fillhandle = patch([reshape(timevect, 1, numel(timevect)) fliplr(reshape(timevect, 1, numel(timevect)))], [x',fliplr(y')], colorOrder(i,:));
                     end
                     set(fillhandle,'EdgeColor',colorOrder(i,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);
                 end
