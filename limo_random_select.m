@@ -72,19 +72,6 @@ g = finputcheck(varargin, { 'nboot'          'integer'  []                      
 if isstr(g), error(g); end; 
 clear  chanfile maxchan_indx;
 
-% Check dimension of limofiles input
-if ~isempty(g.limofiles)
-    if ismember(type,[1 3])
-        if length(g.limofiles) ~= 1
-            error(['limo_random_select error: Only one path must be provided if type = ' num2str(type)]);
-        end
-    elseif ismember(type,[2 4 5]) % Check with cyril how many files need each test 3
-        if length(g.limofiles) == 1 
-            error(['limo_random_select error: More than one path must be provided if type = ' num2str(type)]);
-        end 
-    end
-end
-
 % Check Analysis Type
 if isempty(g.analysis_type)
     g.analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
@@ -97,6 +84,9 @@ end
 
 % check chanlocs and g.nboot
 global limo
+ if ~isempty(g.folderpath)
+     cd(g.folderpath);
+ end
 limo.dir = pwd;
 
 if ~isempty (expected_chanlocs)
@@ -123,8 +113,12 @@ if type == 1 || type == 4
     % ---------
     if isempty(g.limofiles)
         [Names,Paths,limo.data.data] = limo_get_files;
-    else
+    % Case for path to the files
+    elseif size(g.limofiles{1},1) == 1 
         [Names,Paths,limo.data.data] = limo_get_files([],[],[],g.limofiles{1});
+    % Case when all paths are provided
+    elseif size(g.limofiles{1},1) > 1   
+        [Names,Paths,limo.data.data] = breaklimofiles(g.limofiles{1}); 
     end
     
     if isempty(Names)
@@ -273,11 +267,15 @@ if type == 1 || type == 4
         for i=parameters
             cd(LIMO.dir);
             if length(parameters) > 1 && i == parameters(1)
-                dir_name = sprintf('parameter_%g',i);
+                foldername = 'parameter_%g';
+                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
+                dir_name = sprintf(foldername,i);
                 mkdir(dir_name); cd(dir_name);
             elseif length(parameters) > 1 && i ~= parameters(1)
                 cd ..
-                dir_name = sprintf('parameter_%g',i);
+                foldername = 'parameter_%g';
+                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
+                dir_name = sprintf(foldername,i);
                 mkdir(dir_name); cd(dir_name);
             end
             LIMO.dir = pwd;
@@ -383,11 +381,15 @@ if type == 1 || type == 4
         for i=parameters
             cd(LIMO.dir);
             if length(parameters) > 1 && i == parameters(1)
-                dir_name = sprintf('parameter_%g',i);
+                foldername = 'parameter_%g';
+                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
+                dir_name = sprintf(foldername,i);
                 mkdir(dir_name); cd(dir_name);
             elseif length(parameters) > 1 && i ~= parameters(1)
                 cd ..
-                dir_name = sprintf('parameter_%g',i);
+                foldername = 'parameter_%g';
+                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
+                dir_name = sprintf(foldername,i);
                 mkdir(dir_name); cd(dir_name);
             end
             
@@ -432,8 +434,12 @@ elseif type == 2
         for gp = 1:2
             if isempty(g.limofiles)
                 [Names{gp},Paths{gp},limo.data.data{gp}] = limo_get_files([' gp' num2str(gp)]);
-            else
+            % Case for path to the files
+            elseif size(g.limofiles{gp},1) == 1
                 [Names{gp},Paths{gp},limo.data.data{gp}] = limo_get_files([],[],[],g.limofiles{gp});
+            % Case when all paths are provided
+            elseif size(g.limofiles{gp},1) > 1
+                [Names{gp},Paths{gp},limo.data.data{gp}] = breaklimofiles(g.limofiles{gp});
             end
             if isempty(Names{gp})
                 return
@@ -509,11 +515,11 @@ elseif type == 2
         % -----------------------------------------------------------------
         disp('gathering data ...');
         subject_nb = 1;
-        for g = 1:gp
+        for igp = 1:gp
             index = 1;
-            for i=1:size(Paths{g},2) % for each subject per group
-                load(cell2mat(limo.data.data{g}(i)));
-                name = str2mat(cell2mat(Names{g}(i)));
+            for i=1:size(Paths{igp},2) % for each subject per group
+                load(cell2mat(limo.data.data{igp}(i)));
+                name = str2mat(cell2mat(Names{igp}(i)));
                 try
                     tmp = eval(name(1:end-4));
                 catch
@@ -560,14 +566,14 @@ elseif type == 2
                         end
                     end
                 else
-                    fprintf('subject %g of group %g discarded, channel description and data size don''t match',i, g); disp(' ')
+                    fprintf('subject %g of group %g discarded, channel description and data size don''t match',i, igp); disp(' ')
                 end
                 
                 clear tmp
                 subject_nb = subject_nb + 1;
             end
             
-            data{g} = tmp_data;
+            data{igp} = tmp_data;
             clear tmp tmp_data
         end
     end
@@ -637,8 +643,12 @@ elseif type == 3
     if strcmp(g.analysis_type,'Full scalp analysis') || strcmp(g.analysis_type,'1 electrode only')
         if isempty(g.limofiles)
             [Names,Paths,limo.data.data] = limo_get_files;
-        else
+        % Case for path to the files
+        elseif size(g.limofiles{1},1) == 1
             [Names,Paths,limo.data.data] = limo_get_files([],[],[],g.limofiles{1});
+        % Case when all paths are provided
+        elseif size(g.limofiles{1},1) > 1
+            [Names,Paths,limo.data.data] = breaklimofiles(g.limofiles{1});
         end
         if isempty(Names)
             return
@@ -662,8 +672,12 @@ elseif type == 3
             
             if isempty(g.limofiles)
                 [Names{2},Paths{2},limo.data.data{2}] = limo_get_files([' gp2']);
-            else
+            % Case for path to the files
+            elseif size(g.limofiles{2},1) == 1
                 [Names{2},Paths{2},limo.data.data{2}] = limo_get_files([],[],[],g.limofiles{2});
+            % Case when all paths are provided
+            elseif size(g.limofiles{2},1) > 1
+                [Names{2},Paths{2},limo.data.data{2}] = breaklimofiles(g.limofiles{2});
             end
             
             if isempty(Names{2})
@@ -983,8 +997,12 @@ elseif type == 5
             for i=1:prod(gp_nb)
                 if isempty(g.limofiles)
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
-                else
+                % Case for path to the files
+                elseif size(g.limofiles{i},1) == 1
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
+                % Case when all paths are provided
+                elseif size(g.limofiles{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
                 end
                 if isempty(Names{cell_nb}); return; end
                 if isempty(g.parameters)
@@ -1004,9 +1022,12 @@ elseif type == 5
             for i=1:prod(gp_nb)
                 if isempty(g.limofiles)
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' con file gp ',num2str(i)]);
-                else
+                % Case for path to the files
+                elseif size(g.limofiles{i},1) == 1
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
-                    count = count+1;
+                % Case when all paths are provided
+                elseif size(g.limofiles{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
                 end
                 if isempty(Names{cell_nb}); return; end
                 parameters(i) = 1;
@@ -1273,8 +1294,12 @@ elseif type == 5
             for i=1:gp_nb
                 if isempty(g.limofiles)
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
-                else
+                % Case for path to the files
+                elseif size(g.limofiles{i},1) == 1
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
+                % Case when all paths are provided
+                elseif size(g.limofiles{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
                 end
                 if isempty(Names{cell_nb}); return; end
                 if isempty(g.parameters)
@@ -1297,8 +1322,12 @@ elseif type == 5
                     for k=1:factor_nb(j)
                         if isempty(g.limofiles)
                             [names{k},paths{k},full_names{k}] = limo_get_files([' gp ',num2str(i),' factor ',num2str(j),' level ',num2str(k)]);
-                        else
-                            [names{k},paths{k},full_names{k}] = llimo_get_files([],[],[],g.limofiles{num2str(i),num2str(j),num2str(k)});
+                        % Case for path to the files
+                        elseif size(g.limofiles{num2str(i),num2str(j),num2str(k)},1) == 1
+                            [names{k},paths{k},full_names{k}] = limo_get_files([],[],[],g.limofiles{num2str(i),num2str(j),num2str(k)});
+                        % Case when all paths are provided
+                        elseif size(g.limofiles{num2str(i),num2str(j),num2str(k)},1) > 1
+                            [names{k},paths{k},full_names{k}] = breaklimofiles(g.limofiles{num2str(i),num2str(j),num2str(k)});
                         end
                         if isempty(names{k}); return; end
                         N = N + size(names{cell_nb},2);
@@ -1709,6 +1738,12 @@ elseif strcmp(Analysis,'Time-Frequency')
     limo.data.high_f   = limo.data.tf_freqs(end);
 end
 end
-
+function [Names,Paths,Files] = breaklimofiles(cellfiles)
+for ifiles = 1:size(cellfiles,1)
+    [Paths{ifiles} filename ext] = fileparts(cellfiles{ifiles});
+    Names{ifiles} = [filename ext];
+    Files{ifiles} = fullfile(Paths{ifiles},[filename ext]);
+end
+end
 
 
