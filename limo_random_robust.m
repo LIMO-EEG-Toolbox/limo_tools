@@ -1,4 +1,4 @@
-function limo_random_robust(varargin)
+function filepath = limo_random_robust(varargin)
 
 % This function makes the result files for the random effects of various tests
 % as well as organizes and makes files for boostrap. Tt is interfaced with
@@ -7,6 +7,7 @@ function limo_random_robust(varargin)
 % functions like limo_ttest to perform the actual computation.
 %
 % FORMAT limo_random_robust(test,data,label,nboot,tfce)
+%        filepath = limo_random_robust(test,data,label,nboot,tfce);
 %
 % INPUTS --- note that a LIMO.mat is also expected in the current directory
 %            see limo_random_select
@@ -85,6 +86,9 @@ function limo_random_robust(varargin)
 % 5 ANCOVA
 %
 % 6 Repeated measure ANOVA
+%
+% filepath - Path to the contrast result file. Mainly for EEGALB functionality to
+%            allow loading test directly.
 %
 % See also LIMO_TRIMCI LIMO_YUEN_TTEST LIMO_YUEND_TTEST LIMO_ROBUST_1WAY_ANOVA
 % LIMO_GLM1 LIMO_EEG(4) LIMO_EEG_TF(4) LIMO_REP_ANOVA LIMO_CREATE_BOOT_TABLE
@@ -175,6 +179,7 @@ switch type
             one_sample = limo_tf_4d_reshape(one_sample);
         end
         save ([name],'one_sample', '-v7.3')
+        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
         
         % ------------------------------------------------
         % Bootstrap
@@ -366,6 +371,7 @@ switch type
             two_samples = limo_tf_4d_reshape(two_samples);
         end
         save ([name],'two_samples', '-v7.3')
+        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
         
         % ------------------------------------------------
         % compute the null
@@ -563,6 +569,7 @@ switch type
             paired_samples = limo_tf_4d_reshape(paired_samples);
         end
         save ([name],'paired_samples', '-v7.3')
+        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
         
         % ------------------------------------------------
         if nboot > 0
@@ -759,6 +766,7 @@ switch type
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
             save LIMO LIMO
+            if nargout ~= 0, filepath = fullfile(pwd,'LIMO.mat'); end
             clear data regressors files
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 limo_eeg_tf(4)
@@ -1103,7 +1111,7 @@ switch type
             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                 Rep_ANOVA = limo_tf_4d_reshape(Rep_ANOVA);
             end
-            save([name],'Rep_ANOVA', '-v7.3');
+            save([name],'Rep_ANOVA', '-v7.3'); if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
         end
         
         if type == 3 || type ==4
@@ -1115,9 +1123,11 @@ switch type
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     Rep_ANOVA_Interaction_with_gp = limo_tf_4d_reshape(Rep_ANOVA_Interaction_with_gp);
                 end
-                save([name],'Rep_ANOVA_Interaction_with_gp', '-v7.3'); clear Rep_ANOVA_Interaction_with_gp;
+                save([name],'Rep_ANOVA_Interaction_with_gp', '-v7.3'); clear Rep_ANOVA_Interaction_with_gp; if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
             end
             save Rep_ANOVA_Gp_effect Rep_ANOVA_Gp_effect -v7.3; % always only 1 effect
+            if nargout ~= 0, filepath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
+
         end
         
         % ----------------------------------------------------------------
