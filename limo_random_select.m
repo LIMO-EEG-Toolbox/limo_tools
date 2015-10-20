@@ -1,4 +1,4 @@
-function limo_random_select(type,expected_chanlocs,varargin)
+function filepath = limo_random_select(type,expected_chanlocs,varargin)
 
 % This function is used to combine parameters computed at the 1st level
 % using limo_glm1. Whereas in limo_glm1 observations are assumed independent
@@ -45,6 +45,10 @@ function limo_random_select(type,expected_chanlocs,varargin)
 %                     directory
 % Note: If the values of the parameters without default values are not
 %       provided, a window will pop asking for the value.
+%
+% OUTPUT
+% filepath - Path to the contrast result file. Mainly for EEGALB functionality to
+%            allow loading test directly.
 %
 % ---------------------------------------------------------
 % Copyright (C) LIMO Team 2015
@@ -305,7 +309,8 @@ if type == 1 || type == 4
             
             LIMO.design.method = 'Trimmed means'; save LIMO LIMO
             Yr = tmp_data; save Yr Yr, clear Yr % just to be consistent with name
-            limo_random_robust(type,tmp_data,i,g.nboot,g.tfce)
+            tmpname = limo_random_robust(type,tmp_data,i,g.nboot,g.tfce);
+            if nargout ~= 0, filepath{i} = tmpname; end
         end
         
         
@@ -418,7 +423,8 @@ if type == 1 || type == 4
 
             % compute
             save LIMO LIMO; clear LIMO ;
-            limo_random_robust(type,tmp_data,X,i,g.nboot,g.tfce)
+            tmpname = limo_random_robust(type,tmp_data,X,i,g.nboot,g.tfce);
+            if nargout ~= 0, filepath{i} = tmpname; end
         end
     end
 
@@ -630,7 +636,8 @@ elseif type == 2
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
     LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
-    limo_random_robust(type,tmp_data1,tmp_data2,i,g.nboot,g.tfce)
+    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,i,g.nboot,g.tfce);
+    if nargout ~= 0, filepath = tmpname; end
     delete data.mat
 
 
@@ -940,7 +947,8 @@ elseif type == 3
     
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
-    limo_random_robust(type,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce)
+    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
+    if nargout ~= 0, filepath = tmpname; end
     
     % -----------------------------------
     %%  Various sorts of ANOVAs/ANCOVAs
@@ -1254,9 +1262,9 @@ elseif type == 5
         % do the analysis
         Yr = tmp_data; clear tmp_data; save Yr Yr
         if isempty(Cont); Cont = 0; end
-        limo_random_robust(type,Yr,Cat,Cont,g.nboot,g.tfce)
+        tmpname = limo_random_robust(type,Yr,Cat,Cont,g.nboot,g.tfce);
+        if nargout ~= 0, filepath = tmpname; end
         
-            
     else
         % ---------------------------------------------------------------------
         %              Repeated measure ANOVA
@@ -1476,7 +1484,8 @@ elseif type == 5
         LIMO = limo; cd(limo.dir); save LIMO LIMO
         Yr = tmp_data; save Yr Yr;
         clear Betas LIMO Yr channeighbstructmat data expected_chanlocs Names Paths limo subj_chanlocs
-        limo_random_robust(type+1,tmp_data,gp,factor_nb,g.nboot,g.tfce)
+        tmpname = limo_random_robust(type+1,tmp_data,gp,factor_nb,g.nboot,g.tfce);
+        if nargout ~= 0, filepath = tmpname; end
     end
 end % closes type
 
