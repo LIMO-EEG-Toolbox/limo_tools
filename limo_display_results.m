@@ -1635,7 +1635,7 @@ elseif LIMO.Level == 2
             % H0 file dim = (electrodes,frames,[t, p],nboot)
             
             if strncmp(FileName,'one_sample',10); data = one_sample; clear one_sample;
-            elseif strncmp(FileName,'two_samples',11); data = two_samples; clesr two_samples
+            elseif strncmp(FileName,'two_samples',11); data = two_samples; clear two_samples
             elseif  strncmp(FileName,'paired_samples',14);  data = paired_samples; clear paired_samples
             elseif  strncmp(FileName,'con',4); data = con; clear con
             elseif  strncmp(FileName,'ess',4); data = ess; clear ess
