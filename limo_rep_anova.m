@@ -2,13 +2,13 @@ function result = limo_rep_anova(varargin)
 
 % result = limo_rep_anova(data,gp,factors)
 %
-% This function computes repeated measures ANOVAs. Unlike standard ANOVAs, we use a 
-% multivariate framework which accounts for the correlation
+% This function computes repeated measures ANOVAs. Unlike standard ANOVAs, 
+% we use a multivariate framework which accounts for the correlation
 % across measures. One advantage of this approach is that one does not 
 % have to account for sphericity and thus it saves a lot of computational time.
-% In short we simply either run a T2 on the repeated measures or a MANOVA (generalized 
-% T2 on transformed data). The code implements equations described in:
-% Rencher (2002) Methods of multivariate analysis John Wiley.
+% In short we simply either run a T2 on the repeated measures or a MANOVA 
+% (generalized T2 on transformed data). The code implements equations described 
+% in:bRencher (2002) Methods of multivariate analysis John Wiley.
 %
 % INPUT
 %
@@ -180,9 +180,14 @@ switch type
         df           = p-1; 
         dfe          = n-p+1; 
         y            = squeeze(nanmean(Data,2)); % these are the means to compare
-        for time = 1:size(Data,1)
-            Tsquare(time)      = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
+        if size(Data,1) == 1 %% no time or freq dim
+            Tsquare = n*(C*y)'*inv(C*squeeze(S(1,:,:))*C')*(C*y);   % Hotelling Tsquare
+        else
+            for time = 1:size(Data,1)
+                Tsquare(time)      = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
+            end
         end
+        
         result.F     = ( dfe / ((n-1)*df) ) * Tsquare; 
         result.p     = 1 - fcdf(result.F, df, dfe);
 

@@ -1,0 +1,148 @@
+
+PMID- 21403915
+OWN - NLM
+STAT- MEDLINE
+DA  - 20110315
+DCOM- 20120213
+LR  - 20140821
+IS  - 1687-5273 (Electronic)
+VI  - 2011
+DP  - 2011
+TI  - LIMO EEG: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic
+      data.
+PG  - 831409
+LID - 10.1155/2011/831409 [doi]
+AB  - Magnetic- and electric-evoked brain responses have traditionally been analyzed by
+      comparing the peaks or mean amplitudes of signals from selected channels and
+      averaged across trials. More recently, tools have been developed to investigate
+      single trial response variability (e.g., EEGLAB) and to test differences between 
+      averaged evoked responses over the entire scalp and time dimensions (e.g., SPM,
+      Fieldtrip). LIMO EEG is a Matlab toolbox (EEGLAB compatible) to analyse evoked
+      responses over all space and time dimensions, while accounting for single trial
+      variability using a simple hierarchical linear modelling of the data. In
+      addition, LIMO EEG provides robust parametric tests, therefore providing a new
+      and complementary tool in the analysis of neural evoked responses.
+FAU - Pernet, Cyril R
+AU  - Pernet CR
+AD  - Division of Clinical Neurosciences, SFC Brain Imaging Research Centre, SINAPSE
+      Collaboration, University of Edinburgh, Western General Hospital, Edinburgh EH4
+      2XU, UK. cyril.pernet@ed.ac.uk
+FAU - Chauveau, Nicolas
+AU  - Chauveau N
+FAU - Gaspar, Carl
+AU  - Gaspar C
+FAU - Rousselet, Guillaume A
+AU  - Rousselet GA
+LA  - eng
+PT  - Journal Article
+PT  - Research Support, Non-U.S. Gov't
+DEP - 20110221
+PL  - United States
+TA  - Comput Intell Neurosci
+JT  - Computational intelligence and neuroscience
+JID - 101279357
+SB  - IM
+MH  - Brain/*physiology
+MH  - Electroencephalography/*methods
+MH  - Evoked Potentials/*physiology
+MH  - Humans
+MH  - *Linear Models
+MH  - *Signal Processing, Computer-Assisted
+MH  - Software/*standards
+PMC - PMC3049326
+OID - NLM: PMC3049326
+EDAT- 2011/03/16 06:00
+MHDA- 2012/02/14 06:00
+CRDT- 2011/03/16 06:00
+PHST- 2010/09/21 [received]
+PHST- 2010/11/23 [revised]
+PHST- 2010/12/31 [accepted]
+PHST- 2011/02/21 [epublish]
+AID - 10.1155/2011/831409 [doi]
+PST - ppublish
+SO  - Comput Intell Neurosci. 2011;2011:831409. doi: 10.1155/2011/831409. Epub 2011 Feb
+      21.
+
+
+PMID- 25128255
+OWN - NLM
+STAT- In-Process
+DA  - 20150613
+LR  - 20150808
+IS  - 1872-678X (Electronic)
+IS  - 0165-0270 (Linking)
+VI  - 250
+DP  - 2015 Jul 30
+TI  - Cluster-based computational methods for mass univariate analyses of event-related
+      brain potentials/fields: A simulation study.
+PG  - 85-93
+LID - 10.1016/j.jneumeth.2014.08.003 [doi]
+LID - S0165-0270(14)00287-8 [pii]
+AB  - BACKGROUND: In recent years, analyses of event related potentials/fields have
+      moved from the selection of a few components and peaks to a mass-univariate
+      approach in which the whole data space is analyzed. Such extensive testing
+      increases the number of false positives and correction for multiple comparisons
+      is needed. METHOD: Here we review all cluster-based correction for multiple
+      comparison methods (cluster-height, cluster-size, cluster-mass, and threshold
+      free cluster enhancement - TFCE), in conjunction with two computational
+      approaches (permutation and bootstrap). RESULTS: Data driven Monte-Carlo
+      simulations comparing two conditions within subjects (two sample Student's
+      t-test) showed that, on average, all cluster-based methods using permutation or
+      bootstrap alike control well the family-wise error rate (FWER), with a few
+      caveats. CONCLUSIONS: (i) A minimum of 800 iterations are necessary to obtain
+      stable results; (ii) below 50 trials, bootstrap methods are too conservative;
+      (iii) for low critical family-wise error rates (e.g. p=1%), permutations can be
+      too liberal; (iv) TFCE controls best the type 1 error rate with an attenuated
+      extent parameter (i.e. power<1).
+CI  - Crown Copyright (c) 2014. Published by Elsevier B.V. All rights reserved.
+FAU - Pernet, C R
+AU  - Pernet CR
+AD  - Centre for Clinical Brain Sciences, Neuroimaging Sciences, University of
+      Edinburgh, Edinburgh, UK. Electronic address: cyril.pernet@ed.ac.uk.
+FAU - Latinus, M
+AU  - Latinus M
+AD  - Institut de Neurosciences de la Timone UMR 7289, Aix Marseille Universite, CNRS, 
+      13385 Marseille, France.
+FAU - Nichols, T E
+AU  - Nichols TE
+AD  - Department of Statistics, Warwick University, Coventry, UK.
+FAU - Rousselet, G A
+AU  - Rousselet GA
+AD  - Institute of Neuroscience and Psychology, University of Glasgow, Glasgow, UK.
+LA  - eng
+GR  - 100309/Wellcome Trust/United Kingdom
+GR  - BB/K01420X/1/Biotechnology and Biological Sciences Research Council/United
+      Kingdom
+GR  - BB/K014218/1/Biotechnology and Biological Sciences Research Council/United
+      Kingdom
+PT  - Journal Article
+PT  - Research Support, Non-U.S. Gov't
+DEP - 20140813
+PL  - Netherlands
+TA  - J Neurosci Methods
+JT  - Journal of neuroscience methods
+JID - 7905558
+SB  - IM
+PMC - PMC4510917
+OID - NLM: PMC4510917
+OTO - NOTNLM
+OT  - Cluster-based statistics
+OT  - ERP
+OT  - Family-wise error rate
+OT  - Monte-Carlo simulations
+OT  - Multiple comparison correction
+OT  - Threshold free cluster enhancement
+EDAT- 2014/08/17 06:00
+MHDA- 2014/08/17 06:00
+CRDT- 2014/08/17 06:00
+PHST- 2014/05/26 [received]
+PHST- 2014/07/16 [revised]
+PHST- 2014/08/05 [accepted]
+PHST- 2014/08/13 [aheadofprint]
+AID - S0165-0270(14)00287-8 [pii]
+AID - 10.1016/j.jneumeth.2014.08.003 [doi]
+PST - ppublish
+SO  - J Neurosci Methods. 2015 Jul 30;250:85-93. doi: 10.1016/j.jneumeth.2014.08.003.
+      Epub 2014 Aug 13.
+
+

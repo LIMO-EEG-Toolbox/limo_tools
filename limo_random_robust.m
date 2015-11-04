@@ -1051,11 +1051,19 @@ switch type
             electrode = array(e);
             fprintf('analyse electrode %g/%g\n ...', electrode,size(data,1));
             tmp = squeeze(data(electrode,:,:,:));
-            Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
-            gp = gp_vector(find(~isnan(tmp(1,:,1))),:);
+            if size(data,2) == 1
+                Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
+                gp = gp_vector(find(~isnan(Y(1,:,1))),:);
+                Y = Y(:,find(~isnan(Y(1,:,1))),:);
+            else
+                Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                gp = gp_vector(find(~isnan(tmp(1,:,1))),:);
+            end
+            
             if type == 3 || type == 4
                 XB = X(find(~isnan(tmp(1,:,1))),:);
             end
+            
             if type == 1
                 if strcmp(LIMO.design.method,'Trimmed Mean')
                     result = limo_robust_rep_anova(Y,gp,factor_levels,C); % trimmed means
@@ -1203,8 +1211,8 @@ switch type
             clear Rep_ANOVA_Gp_effect tmp_Rep_ANOVA_Interaction_with_gp
         end
         
-        % now do the bootstrap and tfce
-        % -----------------------------
+        % now do the bootstrap and tfce under H0
+        % -------------------------------------
         if nboot > 0
             bootex = 1;
             name = 'Rep_ANOVA';
@@ -1269,11 +1277,19 @@ switch type
                     for e = 1:length(array)
                         electrode = array(e);
                         tmp = squeeze(centered_data(electrode,:,boot_table{electrode}(:,B),:));
-                        Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                        gp = gp_vector(find(~isnan(tmp(1,:,1))));
+                        if size(centered_data,2) == 1
+                            Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
+                            gp = gp_vector(find(~isnan(Y(1,:,1))),:);
+                            Y = Y(:,find(~isnan(Y(1,:,1))),:);
+                        else
+                            Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                            gp = gp_vector(find(~isnan(tmp(1,:,1))));
+                        end
+                        
                         if type == 3 || type == 4
                             XB = X(find(~isnan(tmp(1,:,1))));
                         end
+                        
                         if type == 1
                             if strcmp(LIMO.design.method,'Trimmed Mean')
                                 result = limo_robust_rep_anova(Y,gp,factor_levels,C);

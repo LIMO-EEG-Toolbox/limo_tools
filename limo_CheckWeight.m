@@ -13,14 +13,14 @@ function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 %
 %       options 'plot rank' on/off since weights are between 0 and 1,
 %                it computes the average response for each decile
-%               'test difference' on/off compute an OLS between the good 
-%               trials weights = 1/0.9 and the outliers (by reverse 
+%               'test difference' on/off compute an OLS between the good
+%               trials weights = 1/0.9 and the outliers (by reverse
 %               engineering the weights to outlier detection)
-%               'check bias' on/off check that the weights are distributed 
+%               'check bias' on/off check that the weights are distributed
 %               across trials in a uniform manner, i.e. that not one conditions
 %               is more affected than another which would bias the results, but
 %               also indicate that something is going on in the data
-% 
+%
 % OUTPUT creates a folder called 'Weights_checking' with the different
 %        results in it
 %
@@ -34,8 +34,8 @@ limo = struct('plotrank','on','testdifference','on','checkbias','on');
 if nargin == 0
     [~,~,LIMO_files] = limo_get_files([],'*txt','choose a list of LIMO files');
     [to_load,path] = uigetfile2('expected_chanlocs.mat','load chanlocs'); chan = load([path to_load]);
-    limo.data.chanlocs = chan.expected_chanlocs; 
-    limo.data.neighbouring_matrix =  chan.channeighbstructmat; 
+    limo.data.chanlocs = chan.expected_chanlocs;
+    limo.data.neighbouring_matrix =  chan.channeighbstructmat;
 end
 
 %% input checks
@@ -62,7 +62,7 @@ for f=1:length(LIMO_files)
     
     load(LIMO_files{f});
     if f==1
-        limo.Analysis = LIMO.Analysis; 
+        limo.Analysis = LIMO.Analysis;
     else
         if limo.Analysis ~= LIMO.Analysis
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
@@ -72,8 +72,8 @@ end
 
 if ~isfield(limo,'data')
     [to_load,path] = uigetfile2('*mat','load chanlocs'); chan = load([path to_load]);
-    limo.data.chanlocs = chan.expected_chanlocs; 
-    limo.data.neighbouring_matrix =  channeighbstructmat; 
+    limo.data.chanlocs = chan.expected_chanlocs;
+    limo.data.neighbouring_matrix =  channeighbstructmat;
 end
 
 if ~isempty(varargin)
@@ -99,7 +99,7 @@ if strcmp(limo.plotrank,'on')
     if strcmpi(limo.Analysis,'Time-Frequency')
         data = NaN(size(chan.expected_chanlocs,2),(limo.data.highf-limo.data.lowf+1),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3),size(data,4));
-    else        
+    else
         data = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3));
     end
@@ -108,9 +108,9 @@ end
 for f=1:length(LIMO_files)
     fprintf('reading data subject %g\n',f)
     load(LIMO_files{f}); W{f} = LIMO.design.weights;
+    load([LIMO.dir filesep 'Yr.mat']);
     
     if strcmp(limo.plotrank,'on')
-        load([LIMO.dir filesep 'Yr.mat']);
         if strcmpi(limo.Analysis,'Time-Frequency')
             array = find(~isnan(Yr(:,1,1,1))); % skip empty electrodes
             tmp = NaN(size(Yr,1),size(Yr,2),size(Yr,3),10);
@@ -137,12 +137,12 @@ for f=1:length(LIMO_files)
         % limo_add_plots to make the figure - only parameters and subjedcts are
         % reversed because we want to plot per subjects and not per parameters
         if f==length(LIMO_files)
-            clear Data; Data.data = data; Data.limo = limo; 
+            clear Data; Data.data = data; Data.limo = limo;
             save subjects_weighted_data Data
         end
-    end
+    end % close rank computation
     
-    % is there a difference between the outlier trials and the best trials 
+    % is there a difference between the outlier trials and the best trials
     if strcmp(limo.testdifference,'on')
         if strcmpi(limo.Analysis,'Time-Frequency')
             array = find(~isnan(Yr(:,1,1,1))); % skip empty electrodes
@@ -162,10 +162,11 @@ for f=1:length(LIMO_files)
         
         if f==length(LIMO_files)
             clear Data; Data.data = difference; Data.limo = limo;
+            mkdir('trial_differences'); cd('trial_differences'); 
             save subjects_outlier_difference Data; clear difference
             
             % stats
-            disp('Conputing t-test being good and ad trials')
+            disp('Computing t-test between good and bad trials across all conditions')
             one_sample = NaN(size(Data.data,1), size(Data.data,2), 5);
             [one_sample(:,:,4),one_sample(:,:,1),~,one_sample(:,:,2),one_sample(:,:,5),~,one_sample(:,:,3)]=limo_trimci(Data.data);
             save ('one_sample_ttest_outliers','one_sample', '-v7.3');
@@ -186,11 +187,12 @@ for f=1:length(LIMO_files)
                     H0_one_sample(electrode,:,2,b) = p{b};
                 end
             end
-            save (['H0', filesep, 'H0_one_sample_outliers'],'H0_one_sample','-v7.3');
+            mkdir('H0'); save (['H0', filesep, 'H0_one_sample_ttest_outliers'],'H0_one_sample','-v7.3');
             LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
             LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
+            cd ..; clear LIMO;  load(LIMO_files{f});
         end
-    end
+    end % close test difference
     
     if strcmp(limo.checkbias,'on')
         if LIMO.design.nb_conditions == 0
@@ -210,51 +212,49 @@ for f=1:length(LIMO_files)
                 % LIMO.data.4d
                 tmp = NaN(size(W{f},1),size(Res,2),size(tmpX,2));
             else
-                tmp = NaN(size(W{f},1),size(tmpX,2));
-                for e=1:size(Yr,1)
-                    for expected=1:size(chan.expected_chanlocs,2)
+                tmp = NaN(size(chan.expected_chanlocs,2),size(tmpX,2));
+                for expected=1:size(chan.expected_chanlocs,2)
+                    for e=1:size(W{f},1)
                         if strcmp(LIMO.data.chanlocs(e).labels,chan.expected_chanlocs(expected).labels)
-                            bias(expected,:,f) = mean(W(e,:,Xcell),3);
+                            for c=1:size(tmpX,2)
+                                tmp(expected,c) = mean(W{f}(e,logical(tmpX(:,c))));
+                            end
                         end
                     end
                 end
             end
-            
-%             if f==length(LIMO_files)
-%                 clear Data; Data.data = difference; Data.limo = limo;
-%                 save subjects_outlier_difference Data; clear difference
-%                 
-%                 % stats
-%                 disp('Conputing t-test being good and ad trials')
-%                 one_sample = NaN(size(Data.data,1), size(Data.data,2), 5);
-%                 [one_sample(:,:,4),one_sample(:,:,1),~,one_sample(:,:,2),one_sample(:,:,5),~,one_sample(:,:,3)]=limo_trimci(Data.data);
-%                 save ('one_sample_ttest_outliers','one_sample', '-v7.3');
-%                 
-%                 nboot = 1000;
-%                 H0_one_sample = NaN(size(Data.data,1), size(Data.data,2),2,nboot); % stores T and p values for each boot under H0
-%                 centered_data = Data.data - repmat(limo_trimmed_mean(Data.data),[1 1 size(Data.data,3)]);
-%                 boot_table = limo_create_boot_table(Data.data,nboot);
-%                 for electrode = 1:size(Data.data,1)
-%                     fprintf('bootstrapping electrode %g\n',electrode)
-%                     tmp = centered_data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
-%                     parfor b=1:nboot
-%                         [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
-%                     end
-%                     
-%                     for b=1:nboot
-%                         H0_one_sample(electrode,:,1,b) = t{b};
-%                         H0_one_sample(electrode,:,2,b) = p{b};
-%                     end
-%                 end
-%                 save (['H0', filesep, 'H0_one_sample_outliers'],'H0_one_sample','-v7.3');
-%                 LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
-%                 LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
-%             end
-    
         end
-    end
+        Bias{f} = tmp;
+        
+        if f==length(LIMO_files)
+            try 
+                Bias = cell2mat(Bias); 
+                Bias = reshape(Bias,size(chan.expected_chanlocs,2),size(Bias,2)/f,f);
+            catch SizeIssue
+               disp('the computed bias matrices are in the workspace');  assignin('base','Bias',Bias); 
+               error('It is likely not all subjects have the same number of conditions, conversion from cell to mat impossible')
+            end
+                
+            % stats
+            disp('Testing for bias across all conditions')
+            LIMO = limo; mkdir('Bias testing'); 
+            cd('Bias testing'); LIMO.data_dir = pwd;
+            LIMO.data.data = LIMO_files; LIMO.data.start = 1;
+            LIMO.data.end = 1; LIMO.data.trim1 = 0; LIMO.data.trim2 = 0; 
+            LIMO.design.electrode = chan.expected_chanlocs;
+            LIMO.design.neighbouring_matrix = chan.channeighbstructmat;
+            LIMO.Level = 2; LIMO.design.bootstrap =1000; save LIMO LIMO; 
+            
+            factor_nb = size(Bias,2);
+            Yr = NaN(size(Bias,1),1,size(Bias,3),factor_nb);
+            for e=1:size(Bias,1)
+                Yr(e,1,:,:)=squeeze(Bias(e,:,:))';
+            end
+            save Yr Yr; clear Bias
+            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,1000,0);
+        end
+    end % close bias
 end
-
 
 
 
