@@ -2011,8 +2011,8 @@ elseif LIMO.Level == 2
             figure;set(gcf,'Color','w')
             if sum(regressor <= categorical) == length(regressor)
                 for i=1:size(average,1)
-                    if LIMO.analysis_flag == 1
-                        timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+                    if strcmp(LIMO.Analysis,'Time')
+                        timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;
                         plot(timevect,squeeze(average(i,:)),'LineWidth',1.5); hold on
                         xlabel('Time in ms','FontSize',14)
                         ylabel('Amplitude (A.U.)','FontSize',14)
@@ -2042,7 +2042,7 @@ elseif LIMO.Level == 2
                             load(name); [M, mask, mytitle2] = limo_stat_values(1,name,p,MCC,LIMO,choice);
                             sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                             h = axis;
-                            if LIMO.analysis_flag == 1
+                            if strcmp(LIMO.Analysis,'Time')
                                 plot(timevect,sig.*h(3),'r*','LineWidth',2)
                             else
                                 plot(freqvect,sig.*h(3),'r*','LineWidth',2)
@@ -2209,11 +2209,11 @@ elseif LIMO.Level == 2
                 c = avg + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
                 b = avg - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
                 
-                if LIMO.analysis_flag == 1
-                    timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in ms
+                if strcmp(LIMO.Analysis,'Time')
+                    timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;
                     plot(timevect,avg,'LineWidth',3);
                     fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
-                elseif LIMO.analysis_flag == 2
+                elseif 
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     plot(freqvect,avg,'LineWidth',3);
                     fillhandle = patch([freqvect fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
@@ -2335,11 +2335,11 @@ elseif LIMO.Level == 2
                 end
                 
                 figure;set(gcf,'Color','w')
-                if LIMO.analysis_flag == 1
-                    timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
+                if strcmp(LIMO.Analysis,'Time')
+                    timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
                     plot(timevect,Effect,'LineWidth',3);
                     fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
-                elseif LIMO.analysis_flag == 2
+                elseif 
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                     plot(freqvect,Effect,'LineWidth',3);
                     fillhandle = patch([freqvectt fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
@@ -2446,18 +2446,19 @@ elseif LIMO.Level == 2
                 
                 figure;set(gcf,'Color','w')
                 df = rank(C);
+                    timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
                 for gp = 1:LIMO.design.nb_conditions
                     index = find(LIMO.data.Cat==gp);
                     dfe = size(Data,2)-length(index)+1;
                     if gp==1
-                        if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis,'Time')
                             plot(timevect,avg(gp,:),'LineWidth',3);
                         elseif LIMO.analysis_flag == 2
                             plot(freqvect,avg(gp,:),'LineWidth',3);
                         end
                         colorOrder = get(gca, 'ColorOrder');
                     else
-                        if LIMO.analysis_flag == 1
+                        if strcmp(LIMO.Analysis,'Time')
                             plot(timevect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
                         else
                             plot(freqvect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
@@ -2465,11 +2466,11 @@ elseif LIMO.Level == 2
                     end
                     c = avg(gp,:,:) + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
                     b = avg(gp,:,:) - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
-                    if LIMO.analysis_flag == 1
+                    if strcmp(LIMO.Analysis,'Time')
                         fillhandle = patch([timevect fliplr(timevect)], [c,fliplr(b)], colorOrder(gp,:));
                         xlabel('Time in ms','FontSize',14)
                         ylabel('Amplitude (A.U.)','FontSize',14)
-                    elseif LIMO.analysis_flag == 2
+                    elseif 
                         fillhandle = patch([freqvect fliplr(freqvect)], [c,fliplr(b)], colorOrder(gp,:));
                         xlabel('Frequency in Hz','FontSize',14)
                         ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -2481,9 +2482,9 @@ elseif LIMO.Level == 2
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis,'Time')
                     plot(timevect,sig.*h(3),'r.','MarkerSize',20)
-                elseif LIMO.analysis_flag == 2
+                elseif 
                     plot(freqvect,sig.*h(3),'r.','MarkerSize',20)
                 end
                 set(gca,'FontSize',14,'layer','top');

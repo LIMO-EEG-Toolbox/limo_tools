@@ -35,7 +35,7 @@ function result = limo_contrast(varargin)
 % See also limo_glm1, limo_results, limo_contrast_manager
 %
 % Cyril Pernet v4 26/09/2010
-% updated 21-16-3013
+% updated 21-16-2013
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
@@ -430,6 +430,9 @@ switch type
         
         Yr = varargin{1};
         LIMO = varargin{2};
+        if LIMO.Level == 1
+            error('1st level Analysis detected - limo_contrast line 434 wrong case');
+        end
         gp_values = LIMO.design.nb_conditions;
         index = size(LIMO.contrast,2);
         C = LIMO.contrast{index}.C;
