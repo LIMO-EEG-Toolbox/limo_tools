@@ -601,7 +601,7 @@ elseif strncmp(FileName,'one_sample',10)
     
 elseif strncmp(FileName,'two_samples',11)
     
-    effect_nb = eval(FileName(29:end-4));
+    %effect_nb = eval(FileName(29:end-4));
     if size(two_samples,1)>1
         M = squeeze(two_samples(:,:,4)); % T values
     else
@@ -679,7 +679,7 @@ elseif strncmp(FileName,'two_samples',11)
     
 elseif strncmp(FileName,'paired_samples',14)
     
-    effect_nb = eval(FileName(32:end-4));
+    %effect_nb = eval(FileName(32:end-4));
     if size(paired_samples,1)>1
         M = squeeze(paired_samples(:,:,4)); % T values
     else
