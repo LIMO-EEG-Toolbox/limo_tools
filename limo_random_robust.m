@@ -740,7 +740,7 @@ switch type
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
-        LIMO.design.method           = 'OLS'; %'IRLS';
+        LIMO.design.method           = 'IRLS'; %'OLS';
         
         answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
         if isempty(answer)

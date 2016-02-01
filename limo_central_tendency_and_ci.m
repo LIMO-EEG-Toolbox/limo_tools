@@ -533,19 +533,22 @@ if ~isempty(data)
     if nargout == 1; results.limo = limo; end
     
     if strcmp(Estimator2,'Mean') || strcmp(Estimator2,'All')
-        myestimator='Mean';
         disp('Compute the Mean estimator and 95% CI ...')
+        index = 1; h = waitbar(0,'computing','name','% done');
         M = NaN(size(data,1),size(data,2),size(data,3),3);
         for k = 1:size(data,3)
             for electrode =1:size(data,1)
+                waitbar(index/(size(data,3)*size(data,1)));
+                index = index+1;
                 tmp = squeeze(data(electrode,:,k,:));
                 Y = tmp(:,find(~isnan(tmp(1,:))));
-                [m,dfe,ci,sd,n,t,p] = limo_ttest(1,Y,0,0.05);
-                M(electrode,:,k,2) = m;
-                M(electrode,:,k,1) = ci(:,1);
-                M(electrode,:,k,3) = ci(:,2);
+                [est,ci] = limo_central_estimator(Y,'mean');
+                M(electrode,:,k,1) = ci(1,:);
+                M(electrode,:,k,2) = est;
+                M(electrode,:,k,3) = ci(2,:);
             end
         end
+        close(h);
         
         if nargout ==0
             if nargin == 3
@@ -563,18 +566,22 @@ if ~isempty(data)
     
     % --------------------------------------------------------------
     if strcmp(Estimator2,'Trimmed mean') || strcmp(Estimator2,'All')
-        myestimator='20% trimmed mean';
         disp('Compute 20% Trimmed Mean estimator and 95% CI ...')
+        index = 1; h = waitbar(0,'computing','name','% done');
         TM = NaN(size(data,1),size(data,2),size(data,3),3);
         for k=1:size(data,3)
-            if size(data,1) == 1;
-                tmp_data = NaN(1,size(data,2),size(data,4));
-                tmp_data(1,:,:) = squeeze(data(:,:,k,:));
-            else
-                tmp_data = squeeze(data(:,:,k,:));
+            for electrode =1:size(data,1)
+                waitbar(index/(size(data,3)*size(data,1)));
+                index = index+1;
+                tmp = squeeze(data(electrode,:,k,:));
+                Y = tmp(:,find(~isnan(tmp(1,:))));
+                [est,ci] = limo_central_estimator(Y,'trimmed mean');
+                TM(electrode,:,k,1) = ci(1,:);
+                TM(electrode,:,k,2) = est;
+                TM(electrode,:,k,3) = ci(2,:);
             end
-            TM(:,:,k,:)=limo_trimmed_mean(tmp_data,20,5/100);
         end
+        close(h);
         
         if nargout ==0
             if nargin == 3
@@ -592,18 +599,22 @@ if ~isempty(data)
     
     % -----------------------------------------------------
     if strcmp(Estimator2,'HD') || strcmp(Estimator2,'All')
-        myestimator='Harrell-Davis';
         disp('Compute Harrell-Davis estimator and 95% CI ...')
         HD = NaN(size(data,1),size(data,2),size(data,3),3);
-        for k=1:size(data,3)
-            if size(data,1) == 1;
-                tmp_data = NaN(1,size(data,2),size(data,4));
-                tmp_data(1,:,:) = squeeze(data(:,:,k,:));
-            else
-                tmp_data = squeeze(data(:,:,k,:));
+        index = 1; h = waitbar(0,'computing','name','% done');
+         for k=1:size(data,3)
+            for electrode =1:size(data,1)
+                waitbar(index/(size(data,3)*size(data,1)));
+                index = index+1;
+                tmp = squeeze(data(electrode,:,k,:));
+                Y = tmp(:,find(~isnan(tmp(1,:))));
+                [est,ci] = limo_central_estimator(Y,'HD');
+                HD(electrode,:,k,1) = ci(1,:);
+                HD(electrode,:,k,2) = est;
+                HD(electrode,:,k,3) = ci(2,:);
             end
-            HD(:,:,k,:)=limo_harrell_davis(tmp_data,.5,100);
         end
+        close(h);
         
         if nargout ==0
             if nargin == 3
@@ -621,18 +632,22 @@ if ~isempty(data)
     
     % -------------------------------------------------
     if strcmp(Estimator2,'Median') || strcmp(Estimator2,'All')
-        myestimator='Median';
         disp('Compute Median estimator and 95% CI ...')
+        index = 1; h = waitbar(0,'computing','name','% done');
         Med = NaN(size(data,1),size(data,2),size(data,3),3);
         for k=1:size(data,3)
-            if size(data,1) == 1;
-                tmp_data = NaN(1,size(data,2),size(data,4));
-                tmp_data(1,:,:) = squeeze(data(:,:,k,:));
-            else
-                tmp_data = squeeze(data(:,:,k,:));
+            for electrode =1:size(data,1)
+                 waitbar(index/(size(data,3)*size(data,1)));
+                index = index+1;
+               tmp = squeeze(data(electrode,:,k,:));
+                Y = tmp(:,find(~isnan(tmp(1,:))));
+                [est,ci] = limo_central_estimator(Y,'median');
+                Med(electrode,:,k,1) = ci(1,:);
+                Med(electrode,:,k,2) = est;
+                Med(electrode,:,k,3) = ci(2,:);
             end
-            Med(:,:,k,:)=limo_median(tmp_data,100);
         end
+        close(h);
         
         if nargout ==0
             if nargin == 3

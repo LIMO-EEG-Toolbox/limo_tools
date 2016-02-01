@@ -48,7 +48,7 @@ function limo_eeg(varargin)
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
 % ------------------------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2016
 
 % make sure paths are ok
 local_path = which('limo_eeg');
@@ -671,7 +671,7 @@ switch varargin{1}
                         if LIMO.Level == 2
                             Y = squeeze(Yr(electrode,:,:));
                             index = find(~isnan(Y(1,:)));
-                            model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,boot_table{electrode});
+                            model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
                         else
                             % index = [1:size(Yr,3)];
                             model = limo_glm1_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);

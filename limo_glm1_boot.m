@@ -145,11 +145,13 @@ if nb_continuous == 0
         end
     end
     clear y
+else
+    centered_y = y; design = X;
 end
 
 % compute for each bootstrap
 % ---------------------------
-for B = 1:nboot
+parfor B = 1:nboot
     % fprintf('boot n %g\n',B)
     
     % create data under H0
@@ -214,6 +216,7 @@ for B = 1:nboot
         end
         
         for tr = 1:N
+            eft_3d = nan(n_freqs,n_times);
             for tm = 1:n_times
                 this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
                 eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
@@ -234,7 +237,7 @@ for B = 1:nboot
     elseif strcmp(method,'IRLS')
         [Betas,W] = limo_IRLS(X,Y);
     end
-    model.Betas(:,:,B) = Betas';
+    BETASB(:,:,B) = Betas';
     
     % compute model R^2
     % -----------------
@@ -277,8 +280,8 @@ for B = 1:nboot
             pval_conditions = 1 - fcdf(F_conditions(:), df_conditions, (size(Y,1)-rank(X)));
         end
         
-        model.conditions.F{B}  = F_conditions;
-        model.conditions.p{B}  = pval_conditions;
+        F_CONDVALUES{B}  = F_conditions;
+        p_CONDVALUES{B}  = pval_conditions;
         
         % ------------------------------------------------
     elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
@@ -318,8 +321,9 @@ for B = 1:nboot
                 eoni = find(eoni - eoi);
             end
         end
-        model.conditions.F{B}  = F_conditions;
-        model.conditions.p{B}  = pval_conditions;
+        
+        F_CONDVALUES{B}  = F_conditions;
+        p_CONDVALUES{B}  = pval_conditions;
         
         
         % ------------------------------------------------
@@ -379,9 +383,10 @@ for B = 1:nboot
                 eoni = find(eoni - eoi);
             end
         end
-        model.conditions.F{B}  = F_conditions;
-        model.conditions.p{B}  = pval_conditions;
-        
+
+        F_CONDVALUES{B}  = F_conditions;
+        p_CONDVALUES{B}  = pval_conditions;
+
         % ---------------------------
         % now deal with interactions
         % ---------------------------
@@ -399,63 +404,61 @@ for B = 1:nboot
             Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
             
             % get interactions
-            start = size(Main_effects,2)+1;
-            for i=1:length(nb_interactions)
-                I{i} = X(:,start:(start+nb_interactions(i)-1));
-                start = start+nb_interactions(i);
+           for i=1:length(nb_interactions)
+                I = X(:,start_interaction:(start_interaction+nb_interactions(i)-1));
+                start_interaction = start_interaction+nb_interactions(i);
             end
-            start = size(Main_effects,2)+1;
             
             % check interaction levels
-            index = 1;
+            start = size(Main_effects,2)+1;
+            start_interaction = size(Main_effects,2)+1;
             for n=2:nb_factors
                 combinations = nchoosek([1:nb_factors],n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
-                for c = 1:size(combinations,1)
-                    interaction{index} = combinations(c,:);
-                    index = index + 1;
-                end
-            end
-            
-            add = 0; start_at_I = 1;
-            % run substituting and/or incrementing parts of X
-            for f = 1:length(nb_interactions)
-                
-                % re-define X with interactions
-                test = size(interaction{f},2);
-                if test == 2
-                    x = [Main_effects I{f} Cov_and_Mean];
-                    add = add+1;
-                else
-                    if add == test
-                        for a = start_at_I:add
-                            Main_effects = [Main_effects I{a}];
+                for f = 1:size(combinations,1)
+                    interaction = combinations(f,:);
+                    I = X(:,start_interaction:(start_interaction+nb_interactions(i)-1));
+                    start_interaction = start_interaction+nb_interactions(i);
+                    
+                    add = 0; start_at_I = 1;
+                    % run substituting and/or incrementing parts of X
+                    
+                    % re-define X with interactions
+                    test = size(interaction,2);
+                    if test == 2
+                        x = [Main_effects I Cov_and_Mean];
+                        add = add+1;
+                    else
+                        if add == test
+                            for a = start_at_I:add
+                                Main_effects = [Main_effects I{a}];
+                            end
+                            start = size(Main_effects,2)+1;
+                            start_at_I = add+1;
                         end
-                        start = size(Main_effects,2)+1;
-                        start_at_I = add+1;
+                        x = [Main_effects I{f} Cov_and_Mean];
                     end
-                    x = [Main_effects I{f} Cov_and_Mean];
+                    
+                    % run same model as above
+                    R  = eye(size(Y,1)) - (x*pinv(x));
+                    if strcmp(method,'IRLS')
+                        betas = pinv(Wx)*WY;
+                    else
+                        betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
+                    end
+                    
+                    eoi = zeros(1,size(x,2));
+                    eoi(start:(start-1+nb_interactions(f))) = start:(start-1+nb_interactions(f));
+                    eoni = [1:size(x,2)];
+                    eoni = find(eoni - eoi);
+                    
+                    C = eye(size(x,2));
+                    C(:,eoni) = 0;
+                    C0   = eye(size(x,2)) - C*pinv(C);
+                    X0   = x*C0;
+                    R0   = eye(size(Y,1)) - (X0*pinv(X0));
+                    M    = R0 - R;
+                    HI(f,:) = diag((betas'*x'*M*x*betas))';
                 end
-                
-                % run same model as above
-                R  = eye(size(Y,1)) - (x*pinv(x));
-                if strcmp(method,'IRLS')
-                    betas = pinv(Wx)*WY;
-                else
-                    betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
-                end
-                
-                eoi = zeros(1,size(x,2));
-                eoi(start:(start-1+nb_interactions(f))) = start:(start-1+nb_interactions(f));
-                eoni = [1:size(x,2)];
-                eoni = find(eoni - eoi);
-                
-                C = eye(size(x,2));
-                C(:,eoni) = 0;
-                C0   = eye(size(x,2)) - C*pinv(C);
-                X0   = x*C0;
-                R0   = eye(size(Y,1)) - (X0*pinv(X0));
-                M    = R0 - R;
-                HI(f,:) = diag((betas'*x'*M*x*betas))';
             end
             
             % get appropriate df and F/p values
@@ -470,8 +473,10 @@ for B = 1:nboot
                 pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), (size(Y,1)-rank(X)));
             end
         end
-        model.interactions.F{B}  = F_interactions;
-        model.interactions.p{B}  = pval_interactions;
+        
+        F_INTERVALUES{B}  = F_interactions;
+        p_INTERVALUES{B}  = pval_interactions;
+
     end
     
     
@@ -482,8 +487,8 @@ for B = 1:nboot
     if nb_continuous ~=0
                
         if nb_factors == 0 && nb_continuous == 1 % simple regression
-            model.continuous.F{B}  = F_Rsquare;
-            model.continuous.p{B}  = p_Rsquare;
+            F_CONTVALUES{B}  = F_Rsquare;
+            p_CONTVALUES{B}  = p_Rsquare;
             
         else  % ANCOVA
             
@@ -504,17 +509,38 @@ for B = 1:nboot
                 F_continuous(n,:) = (diag(H)./(rank(C))) ./ (diag(E)/(size(Y,1)-rank(X)));
                 pval_continuous(n,:) = 1 - fcdf(F_continuous(n,:), 1, (size(Y,1)-rank(X)));
             end
-            model.continuous.F{B}  = F_continuous';
-            model.continuous.p{B}  = pval_continuous';
+            
+            F_CONTVALUES{B}  = F_continuous';
+            p_CONTVALUES{B}  = pval_continuous';
         end
     end
     
     % ----------------------------
     %% update the model structure
     % ----------------------------
-    model.R2{B} = Rsquare;
-    model.F{B} = F_Rsquare;
-    model.p{B} = p_Rsquare;
+    MODELR2{B} = Rsquare;
+    MODELF{B} = F_Rsquare;
+    MODELp{B} = p_Rsquare;
+end
+
+model.R2 = MODELR2;
+model.F = MODELF;
+model.p = MODELp;
+model.Betas = BETASB;
+
+try
+    model.conditions.F = F_CONDVALUES;
+    model.conditions.p  = p_CONDVALUES;
+end
+
+try
+    model.interactions.F = F_INTERVALUES;
+    model.interactions.p = p_INTERVALUES;
+end
+
+try
+    model.continuous.F = F_CONTVALUES;
+    model.continuous.p = p_CONTVALUES;
 end
 
 end

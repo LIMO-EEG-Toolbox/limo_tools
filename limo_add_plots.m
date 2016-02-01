@@ -22,9 +22,9 @@ while out == 0
         data = load(sprintf('%s%s',path,file));
         data = getfield(data,cell2mat(fieldnames(data)));
         % the last dim of data.xxx if 3 (low CI, estimator, high CI)
-        if isfield(data,'Mean')
+        if isfield(data,'mean') 
             name{turn} = 'Mean';
-            tmp = data.Mean;
+            tmp = data.mean;
         elseif isfield(data,'trimmed_mean')
             name{turn} = 'Trimmed Mean';
             tmp = data.trimmed_mean;
@@ -46,9 +46,17 @@ while out == 0
             elseif ~isempty(strfind(file, 'Median'))
                 name{turn} = 'Subjects'' Medians';
             else
-                name{turn} = file;
                 if strcmpi(file,'subjects_weighted_data.mat')
                     name{turn} = 'Data plotted per weight';
+                else
+                    underscores = strfind(file, '_');
+                    if ~isempty(underscores)
+                        file(underscores) = ' ';
+                    end
+                    
+                    ext = strfind(file, '.');
+                    file(max(ext):end) = [];
+                    name{turn} = file;
                 end
             end
             subjects_plot = 1;
@@ -118,11 +126,18 @@ while out == 0
     if size(Data,1) == 1
         Data = squeeze(Data(1,:,:));
     else
-        e = inputdlg(['which electgrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
-        if isempty(e)
-            return
+        electrode = inputdlg(['which electgrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
+        if strcmp(electrode,'') 
+            tmp = Data(:,:,2); 
+            if abs(max(tmp(:))) > abs(min(tmp(:)))
+                [electrode,~,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+            else
+                [electrode,~,~] = ind2sub(size(tmp),find(tmp==min(tmp(:))));
+            end
+            if length(electrode) ~= 1; electrode = electrode(1); end; 
+            Data = squeeze(Data(electrode,:,:)); fprintf('ploting channel %g\n',electrode)
         else
-            Data = squeeze(Data(eval(cell2mat(e)),:,:));
+            Data = squeeze(Data(eval(cell2mat(electrode)),:,:));
         end
     end
     
@@ -164,7 +179,10 @@ while out == 0
         colorindex = 1;
     end
     
-    if subjects_plot == 1; out =1; return; end
-    
+    if subjects_plot == 1; 
+        out =1; return; 
+    else
+        pause(1);
+    end
 end
-
+    
