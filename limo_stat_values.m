@@ -38,6 +38,8 @@ p         = varargin{3}; % p value
 MCC       = varargin{4}; % multiple comparison option
 LIMO      = varargin{5}; % LIMO.mat
 
+if strcmp(LIMO.Type,'Components') && MCC ~= 1, MCC = 4; end;
+
 load (FileName);
 M = []; mask =[]; mytitle=[];
 c = clock; disp(' ');
