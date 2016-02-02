@@ -27,6 +27,7 @@ function filepath = limo_random_select(type,expected_chanlocs,varargin)
 % (this file can be created with via limo_tools)
 %
 % Optional inputs:
+%  'type'           - 'ica' or 'chan'
 %  'nboot'          - the number of bootstrap to do (default = 0)
 %  'tfce'           - 0/1 indicates to computes tfce or not (default = 0)
 %  'analysis_type'  - |'fullchan'|'singlechan'| Type of analysis to perform. (no default)
@@ -72,6 +73,7 @@ g = finputcheck(varargin, { 'nboot'          'integer'  []                      
                             'regfile'        'string'   ''                             '' ;     % Path to regressor files
                             'folderprefix'   'string'   ''                             '' ;     % Prefix for folder to save 
                             'folderpath'     'string'   ''                             '' ;     % Path to folder to save
+                            'type'           'string'   {'chan','ica'}             'chan' ;     % Type of measure ['ica', 'chan']
                             'parameters'     'cell'     {}                             {} ;});  % Parameters to analyze (one cell p/group)
 if isstr(g), error(g); end; 
 clear  chanfile maxchan_indx;
