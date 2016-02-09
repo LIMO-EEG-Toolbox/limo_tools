@@ -52,7 +52,7 @@ parfor boot=1:Nb
     elseif strcmpi(estimator,'HD')
         bb(:,boot) = limo_harrell_davis(resample,.5);
     elseif strcmpi(estimator,'median')
-        bb(:,boot) = median(resample);
+        bb(:,boot) = median(resample,2);
     end
 end
 
@@ -64,6 +64,7 @@ for frame = 1:size(Y,1)
     tmp = sorted_data(frame,:);
     ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
     [~,index]=find(ciWidth == min(ciWidth)); % densest centile
+    if length(index) > 1; index = index(1); end % many similar values
     HDI(1,frame) = tmp(index);
     HDI(2,frame) = tmp(index+upper_centile);
 end

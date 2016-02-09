@@ -71,21 +71,29 @@ function filepath = limo_random_robust(varargin)
 % write on the disk matrices correponding to the test (Yr and LIMO.mat are generated in limo_random_select,
 % and for Regression, ANOVA, the LIMO.mat structure is updated)
 %
-% 1 sample t-test: one_sample_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-% boot_one_sample_X (electrodes, frames, [T values under H0, p values under H0], nboot)
+% 1 one_sample_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_one_sample_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
 %
-% 2 sample t-test: two_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-% boot_two_samples_X (electrodes, frames, [T values under H0, p values under H0], nboot)
+% 2 two_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_two_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
 %
-% 3 paired t-test:
+% 3 paired_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_paired_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
 %
-% 4 regression: regression_parameter_X (electrodes, frames [time, freq or freq-time], [F p values])
+% 4 R2 (electrodes, frames [time, freq or freq-time], [F p values])
+%   H0_R2 (electrodes, frames, [F p], nboot)
+%   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
+%   H0_Covariate_effect_X (electrodes, frames, [F p], nboot)
 %
-% 5 ANOVA
+% 5 Condition_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
+%   H0_Condition_effect_X (electrodes, frames, [F p], nboot)
+%   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
+%   H0_Covariate_effect_X (electrodes, frames, [F p], nboot)
 %
-% 5 ANCOVA
-%
-% 6 Repeated measure ANOVA
+% 6 Rep_ANOVA_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
+%   Rep_ANOVA_Gp_effect (electrodes, frames [time, freq or freq-time], [F p values])
+%   Rep_ANOVA_Interaction_gp_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
+%   H0_XXXXX same as above, including nboot on the last dimension
 %
 % filepath - Path to the contrast result file. Mainly for EEGALB functionality to
 %            allow loading test directly.
@@ -170,7 +178,7 @@ switch type
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
             end
             [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2),one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
-            % [one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
+            %[one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
             % one_sample(electrode,:,2) = sd./sqrt(n);
             clear tmp Y
         end

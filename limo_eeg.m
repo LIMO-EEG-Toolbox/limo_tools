@@ -785,9 +785,8 @@ switch varargin{1}
                     end
                     
                     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-                    mkdir TFCE;
-                    PCT_test = ver('distcomp');
-
+                    mkdir TFCE; PCT_test = ver('distcomp');
+                    
                     % R2
                     load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
                     if size(R2,1) == 1
@@ -932,7 +931,7 @@ switch varargin{1}
                                 if ~isempty(PCT_test)
                                     tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
                                     parfor b=1:nboot
-                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
                                     end
                                 else
                                     tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);

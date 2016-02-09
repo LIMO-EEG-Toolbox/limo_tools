@@ -20,12 +20,6 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 % EXAMPLE: 200 time frames x 5 groups of 20 subjects
 %          Y = randn(200,100);
 %          X = kron(eye(5),ones(20,1));
-%          that is
-%          X1 = [ones(20,1);zeros(80,1)];
-%          X2 = [zeros(20,1);ones(20,1);zeros(60,1)];
-%          X3 = [zeros(40,1);ones(20,1);zeros(40,1)];
-%          X4 = [zeros(60,1);ones(20,1);zeros(20,1)];
-%          X5 = [zeros(80,1);ones(20,1)];
 %          X = [X1 X2 X3 X4 X5];
 %
 % Cyril Pernet v1 11/06/2013

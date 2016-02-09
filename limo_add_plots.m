@@ -28,9 +28,9 @@ while out == 0
         elseif isfield(data,'trimmed_mean')
             name{turn} = 'Trimmed Mean';
             tmp = data.trimmed_mean;
-        elseif isfield(data,'Median')
+        elseif isfield(data,'median')
             name{turn} = 'Median';
-            tmp = data.Median;
+            tmp = data.median;
         elseif isfield(data,'Harrell_Davis')
             name{turn} = 'Harrell-Davis';
             tmp = data.Harrell_Davis;
@@ -69,9 +69,13 @@ while out == 0
     
     limo = data.limo;
     clear data
-    if size(tmp,3) == 1
+    if size(tmp,1) == 1 && size(tmp,3) == 1% only 1 channel and 1 variable
+        D = squeeze(tmp(:,:,1,:));
+        Data = nan(1,size(tmp,2),size(tmp,4));
+        Data(1,:,:) = D; clear D;
+    elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
         Data = squeeze(tmp(:,:,1,:));
-    else
+    else 
         v = inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option');
         if isempty(v)
             out = 1; return
@@ -85,7 +89,13 @@ while out == 0
             if length(v)>1
                 errordlg2('only 1 parameter value expected')
             else
-                Data = squeeze(tmp(:,:,v,:));
+                if size(tmp,1) == 1 && size(tmp,3) > 1
+                    D = squeeze(tmp(:,:,v,:));
+                    Data = nan(1,size(tmp,2),size(tmp,4));
+                    Data(1,:,:) = D; clear D;
+                else
+                    Data = squeeze(tmp(:,:,v,:));
+                end
             end
         end
     end
@@ -144,6 +154,7 @@ while out == 0
     % finally plot
     % ---------------
     figure(plotfig)
+    % subplot(3,2,[1 2 3 4])
     if turn==1
         if subjects_plot == 1
             plot(timevect,Data,'LineWidth',2); 

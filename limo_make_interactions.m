@@ -14,6 +14,11 @@ function [tmpX interactions] = limo_make_interactions(x, nb_conditions)
 % -------------------------------------------------
 %  Copyright (C) LIMO Team 2015
 
+if nb_conditions == 0
+    disp('number of condition = 0')
+    tmpX = []; interactions = [];
+    return
+end
 
 % get each part of x for the right factors
 nb_factors = size(nb_conditions,2);

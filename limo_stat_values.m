@@ -779,11 +779,11 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
         mask = PVAL <= p;
         M = PVAL;
         if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-            mytitle = sprintf('Rep ANOVA Interaction: \n uncoorected threshold');
+            mytitle = sprintf('Rep ANOVA Interaction: \n uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-            mytitle = sprintf('Rep ANOVA Gp effect: \n uncoorected threshold');
+            mytitle = sprintf('Rep ANOVA Gp effect: \n uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA',9)
-            mytitle = sprintf('Rep ANOVA: \n uncoorected threshold');
+            mytitle = sprintf('Rep ANOVA: \n uncorrected threshold');
         end
         
         

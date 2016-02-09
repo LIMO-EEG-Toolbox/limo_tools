@@ -35,7 +35,7 @@ function tfce_score = limo_tfce(varargin)
 % use limo_findcluster which is faster (clustering speed x60)
 % changed the integration from a loop to hist - thx to Bruno Giordano
 % --------------------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2016
 
 % precision max = 200; % define how many thresholds between min t/F map and
 % max t/F map --> needed as sometime under H0 some values can be

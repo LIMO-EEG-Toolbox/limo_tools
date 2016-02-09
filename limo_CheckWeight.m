@@ -241,7 +241,8 @@ for f=1:length(LIMO_files)
             cd('Bias testing'); LIMO.data_dir = pwd;
             LIMO.data.data = LIMO_files; LIMO.data.start = 1;
             LIMO.data.end = 1; LIMO.data.trim1 = 0; LIMO.data.trim2 = 0; 
-            LIMO.design.electrode = chan.expected_chanlocs;
+            % LIMO.design.electrode = chan.expected_chanlocs;
+            LIMO.design.electrode = [];
             LIMO.design.neighbouring_matrix = chan.channeighbstructmat;
             LIMO.Level = 2; LIMO.design.bootstrap =1000; save LIMO LIMO; 
             
@@ -255,6 +256,6 @@ for f=1:length(LIMO_files)
         end
     end % close bias
 end
-
+disp('analysis done - plot results')
 
 

@@ -38,6 +38,7 @@ else
     option = [];
 end
 
+reduced_dim = 0;
 if length(size(data)) ==2
     tmp = zeros(2,size(data,1),size(data,2));
     tmp(1,:,:) = data; tmp(2,:,:) = data;

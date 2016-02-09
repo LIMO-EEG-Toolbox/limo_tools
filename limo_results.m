@@ -239,6 +239,41 @@ if FilterIndex == 1
                     tfce_H0_paired_samples = limo_tfce(x,squeeze(H0_paired_samples(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
                     save(['H0', filesep, tfce_H0_name],'tfce_H0_paired_samples'); clear tfce_H0_paired_samples;
                 end
+            elseif strncmp(FileName,'Covariate_effect',16)
+                if size(Covariate_effect,1) == 1
+                    tfce_score(1,:) = limo_tfce(1,squeeze(Covariate_effect(:,:,1)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                else
+                    tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                end
+                tfce_name = sprintf('tfce_%s',FileName); save(['tfce', filesep, tfce_name],'tfce_score');
+                clear Covariate_effect tfce_score; 
+                
+                cd('H0'); fprintf('Creating H0 Covariate TFCE scores \n');
+                name = sprintf('H0_Covariate_effect_%s.mat',FileName(18:end-4));
+                load(name); PCT_test = ver('distcomp');
+                if size(H0_Covariate_effect,1) == 1
+                    if ~isempty(PCT_test)
+                        tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),handles.LIMO.LIMO.design.bootstrap);
+                        parfor b=1:nboot
+                            tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),handles.LIMO.LIMO.data.neighbouring_matrix,0);
+                        end
+                    else
+                        tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    end
+                else
+                    if ~isempty(PCT_test)
+                        tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),handles.LIMO.LIMO.design.bootstrap);
+                        parfor b=1:nboot
+                            tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),handles.LIMO.LIMO.data.neighbouring_matrix,0);
+                        end
+                    else
+                        tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
+                    end
+                end
+                full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score'); cd ..
+                clear H0_Covariate_effect tfce_H0_score; 
+                        
+                            
             elseif strncmp(FileName,'Repeated_measures',17)
                 msgbox('repeated measure ANOVA tfce is not availbale at this stage, please use the random effect GUI','action not performed','warn')
             else
