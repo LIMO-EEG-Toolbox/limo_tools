@@ -32,14 +32,19 @@ if strcmp(LIMO.Analysis,'Time')
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
                 end
             else
-                for d=1:length(EEGLIMO.etc.datafiles.icaerp)
-                    signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
-                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                try
+                    signal = load('-mat',EEGLIMO.etc.datafiles.icaerp);
+                    if isstruct(signal); signal  = limo_struct2mat(signal); end
+                catch
+                    for d=1:length(EEGLIMO.etc.datafiles.icaerp)
+                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
+                        if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                    end
                 end
                 signal = limo_concatcells(signal);
             end
         else
-            signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
+            signal = eeg_getdatact(EEGLIMO,'component',[1:size(EEGLIMO.icawinv,2)]);
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
         if isfield(LIMO.data,'cluster')
@@ -99,9 +104,14 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                     Y = getfield(Y,cell2mat(fieldnames(Y)));
                 end
             else
-                for d=1:length(EEGLIMO.etc.datafiles.icaspec)
-                    signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
-                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                try
+                    signal = load('-mat',EEGLIMO.etc.datafiles.icaspec);
+                    if isstruct(signal); signal  = limo_struct2mat(signal); end
+                catch
+                    for d=1:length(EEGLIMO.etc.datafiles.icaspec)
+                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
+                        if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                    end
                 end
                 signal = limo_concatcells(signal);
             end
@@ -159,9 +169,14 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
     
     if strcmp(LIMO.Type,'Components')
         if ~iscell(EEGLIMO.etc.datafiles.datspec) && isfield(EEGLIMO.etc.datafiles,'icatimef')
-            for d=1:length(EEGLIMO.etc.datafiles.icatimef)
-                signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
-                if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
+            try
+                signal = load('-mat',EEGLIMO.etc.datafiles.icatimef);
+                if isstruct(signal); signal  = limo_struct2mat(signal); end
+            catch
+                for d=1:length(EEGLIMO.etc.datafiles.icaspec)
+                    signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
+                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                end
             end
             signal = limo_concatcells(signal);
         else

@@ -206,14 +206,19 @@ switch varargin{1}
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEGLIMO.etc.datafiles.icaerp)
-                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
-                            if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                        try
+                            signal = load('-mat',EEGLIMO.etc.datafiles.icaerp);
+                            if isstruct(signal); signal  = limo_struct2mat(signal); end
+                        catch
+                            for d=1:length(EEGLIMO.etc.datafiles.icaerp)
+                                signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
+                                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                            end
                         end
                         signal = limo_concatcells(signal);
                     end
                 else
-                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
+                    signal = eeg_getdatact(EEGLIMO,'component',[1:size(EEGLIMO.icawinv,2)]);
                 end
                 Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
 
@@ -247,9 +252,14 @@ switch varargin{1}
                             Y = getfield(Y,cell2mat(fieldnames(Y)));
                         end
                     else
-                        for d=1:length(EEGLIMO.etc.datafiles.icaspec)
-                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
-                            if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                         try
+                            signal = load('-mat',EEGLIMO.etc.datafiles.icaspec);
+                            if isstruct(signal); signal  = limo_struct2mat(signal); end
+                        catch
+                            for d=1:length(EEGLIMO.etc.datafiles.icaspec)
+                                signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
+                                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                            end
                         end
                         signal = limo_concatcells(signal);
                     end
@@ -283,9 +293,14 @@ switch varargin{1}
             
             if strcmp(LIMO.Type,'Components')
                 if isfield(EEGLIMO.etc.datafiles,'icatimef')
-                    for d=1:length(EEGLIMO.etc.datafiles.icatimef)
-                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
-                        if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
+                    try
+                        signal = load('-mat',EEGLIMO.etc.datafiles.icatimef);
+                        if isstruct(signal); signal  = limo_struct2mat(signal); end
+                    catch
+                        for d=1:length(EEGLIMO.etc.datafiles.icaspec)
+                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
+                            if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                        end
                     end
                     signal = limo_concatcells(signal);
                 else
@@ -419,13 +434,6 @@ switch varargin{1}
             if strcmp(LIMO.design.status,'to do')
                 load Yr; load Yhat; load Res; load R2; load Betas;
                 
-                % ------------- prepare weight matrix  -------------------------------------
-                if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
-                    W = ones(size(Yr,1),size(Yr,3));
-                elseif strcmp(LIMO.design.method,'IRLS')
-                    W = zeros(size(Yr));
-                end
-                
                 % ------------ prepare condition/covariates -------------------
                 if LIMO.design.nb_conditions ~=0
                     tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
@@ -446,6 +454,23 @@ switch varargin{1}
                     array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
                 end
                 
+                % ------------- prepare weight matrix  -------------------------------------
+                try 
+                    [dist,out] = limo_pcout(squeeze(Yr(array(1),:,:))');
+                catch pcout_error
+                    if strcmp(pcout_error,'Principal Component Projection cannot be computed, more observations than variables are needed')
+                        LIMO.design.method = 'OLS';
+                        disp('Cannot use WLS, not enough observations - switching to OLS')
+                    end
+                end
+                
+                if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                    W = ones(size(Yr,1),size(Yr,3));
+                elseif strcmp(LIMO.design.method,'IRLS')
+                    W = zeros(size(Yr));
+                end
+
+                % ------------ run limo_glm1 per electrodes ---------------------------
                 update = 1;
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
