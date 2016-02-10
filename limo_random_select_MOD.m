@@ -14,7 +14,7 @@ function filepath = limo_random_select(type,expected_chanlocs,varargin)
 %
 % FORMAT
 % limo_random_select(type,expected_chanlocs)
-% limo_random_select(type,expected_chanlocs,'nboot',100,'tfce',1)
+% limo_random_select(type,expected_chanlocs,'nboot',1000,'tfce',1)
 % limo_random_select(type,expected_chanlocs,'nboot',nbootval,'tfce',tfceval,'analysis_type','singlechan','electrode',2,'parameters',{[1:3]});
 %
 % INPUT
@@ -51,6 +51,8 @@ function filepath = limo_random_select(type,expected_chanlocs,varargin)
 % filepath - Path to the contrast result file. Mainly for EEGALB functionality to
 %            allow loading test directly.
 %
+% Cyril Pernet - The University of Edinburgh
+% Ramon Martinez-Cancino - UC San Diego
 % ---------------------------------------------------------
 % Copyright (C) LIMO Team 2015
 
@@ -79,6 +81,7 @@ g = finputcheck(varargin, { 'nboot'          'integer'  []                      
                             'type'           'string'   {'Channels','Components'}      'Channels' ;     % Type of measure ['ica', 'chan']
                             'parameters'     'cell'     {}                             {} ;})     ;     % Parameters to analyze (one cell p/group)
 if isstr(g), error(g); end; 
+
 clear  chanfile maxchan_indx;
 
 % Check Analysis Type

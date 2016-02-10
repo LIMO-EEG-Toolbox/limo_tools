@@ -44,6 +44,7 @@ guidata(hObject, handles);
 % define handles used for the save callback
 handles.b = 1000;
 handles.tfce = 0;
+handles.ica  = 0;
 handles.chan_file = [];
 guidata(hObject, handles);
 % uiwait(handles.figure1);
@@ -69,8 +70,8 @@ if go == 1;
     guidata(hObject, handles);
 end
 
-% --- Executes on button press in togglebutton10.
-function togglebutton10_Callback(hObject, eventdata, handles)
+% --- Executes on button press in data_plot.
+function data_plot_Callback(hObject, eventdata, handles)
 
 limo_add_plots;
 guidata(hObject, handles);
@@ -97,7 +98,7 @@ end
  
 
 %-------------------------------
-%         Bootstrap parameter
+%         Parameters parameter
 %------------------------------
 
 % get the number of bootstraaps
@@ -137,6 +138,18 @@ end
 guidata(hObject, handles);
 
 
+% --- Executes on button press in IC_analysis.
+function IC_analysis_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.ica = 1;
+    disp('Analysis of ICs is on');
+elseif M == 0
+    handles.ica = 0;
+    disp('Analysis of ICs is off');
+end
+guidata(hObject, handles);
+
 
 %-------------------------
 %         TESTS_PANEL
@@ -147,11 +160,11 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function One_Sample_t_test_Callback(hObject, eventdata, handles)
 
-if test_chan_loc(handles)
-    if handles.b == 0
-        limo_random_select(1,handles.chan_file);
+if test_chan_loc(handles) 
+    if handles.ica == 0
+        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
     else
-        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce);
+        limo_random_select(1,[],'nboot',handles.b,'tfce',handles.tfce,'type','Components');
     end
 end
 
@@ -296,3 +309,6 @@ if isempty(handles.chan_file)
 else
     go = 1;
 end
+
+
+

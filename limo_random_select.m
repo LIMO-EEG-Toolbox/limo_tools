@@ -51,6 +51,8 @@ function filepath = limo_random_select(type,expected_chanlocs,varargin)
 % filepath - Path to the contrast result file. Mainly for EEGALB functionality to
 %            allow loading test directly.
 %
+% Cyril Pernet - The University of Edinburgh
+% Ramon Martinez-Cancino - UC San Diego
 % ---------------------------------------------------------
 % Copyright (C) LIMO Team 2015
 
