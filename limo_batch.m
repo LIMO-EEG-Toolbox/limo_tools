@@ -61,7 +61,7 @@ function LIMO_files = limo_batch(varargin)
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
 
-opt.mode = 'session'; % run in the current session -- see psom for other options
+opt.mode = 'background'; % run in the backgroud -- see psom for other options
 opt.max_queued = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
 opt.flag_pause = false; % don't bother asking to start jobs

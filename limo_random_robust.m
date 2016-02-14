@@ -121,15 +121,15 @@ function filepath = limo_random_robust(varargin)
 % trimmed means when possible
 
 
-%% inputs checks for tfce
+%% inputs checks 
+filepath = pwd;
 type = varargin{1};
-alpha = .05; % used for a basic computation like in t-test but data aren't thresholded here
-
 if type == 1
     tfce = varargin{5};
 else
     tfce = varargin{6};
 end
+alpha = .05; % used for a basic computation like in t-test but data aren't thresholded here
 
 %% start
 
@@ -155,10 +155,10 @@ switch type
         for e=1:size(data,1)
             tmp = isnan(data(e,1,:));
             if length(tmp) == sum(isnan(tmp))
-                errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             end
         end
@@ -336,23 +336,23 @@ switch type
         % ------------------------------------------------
         % check the data structure
         if size(data1,1) ~= size(data2,1)
-            error('groups have a different number of electrodes - use a common cap for this analysis')
+            error(['groups have a different number of ' LIMO.Type])
         end
         
         for e=1:size(data1,1)
             tmp = isnan(data1(e,1,:));
             tmp2 = isnan(data2(e,1,:));
             if length(tmp) == sum(isnan(tmp))
-                errordlg(['electrode ' num2str(e) ' is empty in group 1 - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 1 - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg(['electrode ' num2str(e) ' has less than 3 subjects in group 1 - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 1 - analysis aborded']);
                 return
             elseif length(tmp2) == sum(isnan(tmp2))
-                errordlg(['electrode ' num2str(e) ' is empty in group 2 - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 2 - analysis aborded']);
                 return
             elseif (length(tmp2) - sum(isnan(tmp2))) < 3
-                errordlg(['electrode ' num2str(e) ' has less than 3 subjects in group 2 - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 2 - analysis aborded']);
                 return
             end
         end
@@ -538,20 +538,20 @@ switch type
         % ------------------------------------------------
         % check the data structure
         if size(data1,1) ~= size(data2,1)
-            error('samples have a different number of electrodes - not a paired t-tests')
+            error(['samples have a different number of ' LIMO.Type ',not a paired t-tests'])
         end
         
         for e=1:size(data1,1)
             tmp = isnan(data1(e,1,:));
             tmp2 = isnan(data2(e,1,:));
             if length(tmp) ~= length(isnan(tmp2))
-                errordlg(['electrode ' num2str(e) ' has unpaired data - analysis aborded, not a paired t-test']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has unpaired data - analysis aborded, not a paired t-test']);
                 return
             elseif length(tmp) == sum(isnan(tmp))
-                errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             end
         end
@@ -730,13 +730,13 @@ switch type
             end
             
             if length(tmp) == sum(isnan(tmp))
-                errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg(['electrode ' num2str(e) ' has less than 3 subjects - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 6
-                warndlg(['electrode ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
+                warndlg([LIMO.Type ' ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
             end
         end
         
@@ -810,7 +810,7 @@ switch type
             end
             
             if length(tmp) == sum(isnan(tmp))
-                errordlg(['electrode ' num2str(e) ' is empty - analysis aborded, check you expected chanloc']);
+                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             end
         end
@@ -1439,8 +1439,4 @@ switch type
         disp('Repeated Measures ANOVA done')
 end
 
-% close parallel processing
-% if exist('parfor','file') ~=0
-%     matlabpool close
-% end
 

@@ -446,7 +446,7 @@ defaults.type              = handles.type;
 % -----------------------------------------
 % load the expected channel locations
 % -----------------------------------------
-if handles.bootstrap == 1
+if handles.bootstrap == 1 && ~strcmp(handles.type,'Components') 
     [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
     if whatsup == 1
         load (sprintf('%s%s',chan_path,chan_file))

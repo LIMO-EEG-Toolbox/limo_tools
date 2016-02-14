@@ -1,4 +1,4 @@
-function [est,HDI] = limo_central_estimator(Y,estimator,prob_coverage)
+function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 
 % routine to compute high density intervals based on bayesian bootstrap
 % estimates ie bayes bootstrap the data, compute the estimator, get the CI
@@ -11,6 +11,7 @@ function [est,HDI] = limo_central_estimator(Y,estimator,prob_coverage)
 %
 % OUTPUT est is the estimator
 %        ci is the high density interval
+%        bb is a vector of (Bayes) bootstraped estimators 
 %
 % Guillaume ROusselet & Cyril Pernet January 2016
 % ------------------------------------------
