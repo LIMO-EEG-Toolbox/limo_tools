@@ -7,8 +7,8 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 %
 % INPUTS:
 %       Y is a 2D matrix, e.g. time frames x participants
-%       estimator is 'mean', 'tm', 'hd' or 'median'
-%       prob_coverage is the probability coverage- default 0.95
+%       estimator is 'mean', 'tm', 'hd' or 'median' - default if 20% trimmed mean (tm)
+%       prob_coverage is the probability coverage - default 0.95
 %
 % OUTPUT est is the estimator
 %        ci is the high density interval
@@ -29,7 +29,7 @@ if nargin == 2
     prob_coverage = 0.95;
 elseif nargin == 1
     prob_coverage = 0.95;
-    estimator = 'tm';
+    estimator = 'tm'; % trimmed mean
 end
 
 % compute the estimator
@@ -68,12 +68,13 @@ sorted_data = sort(bb,2); % sort bootstrap estimates
 upper_centile = floor(prob_coverage*size(sorted_data,2)); % upper bound
 nCIs = size(sorted_data,2) - upper_centile;
 HDI = zeros(2,size(Y,1));
-for frame = 1:size(Y,1)
-    tmp = sorted_data(frame,:);
-    ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
-    [~,index] = find(ciWidth == min(ciWidth)); % densest centile
-    if length(index) > 1; index = index(1); end % many similar values
-    HDI(1,frame) = tmp(index);
-    HDI(2,frame) = tmp(index+upper_centile);
-end
+ci = 1:nCIs;
+ciWidth = sorted_data(:,ci+upper_centile) - sorted_data(:,ci); % all centile distances
+[~,J] = min(ciWidth,[],2);
+r = size(sorted_data,1);
+I = (1:r)';
+index = I+r.*(J-1); % linear index
+HDI(1,:) = sorted_data(index);
+index = I+r.*(J+upper_centile-1); % linear index
+HDI(2,:) = sorted_data(index);
 
