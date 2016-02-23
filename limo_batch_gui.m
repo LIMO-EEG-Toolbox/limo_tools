@@ -440,7 +440,7 @@ defaults.method            = handles.method;
 defaults.type_of_analysis  = handles.type_of_analysis;  
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
-defaults.type              = handles.type;
+defaults.type              = handles.type; % model.defaults.type
 
 
 % -----------------------------------------

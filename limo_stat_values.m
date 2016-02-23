@@ -1061,7 +1061,7 @@ function [mask,p_val] = max_correction(M,bootM,p)
 % p = threshold to apply
 
 nboot = size(bootM,3);
-for boot=1:nboot
+parfor boot=1:nboot
     data = squeeze(bootM(:,:,boot));
     maxM(boot) = max(data(:)); % collect highest absolute value in space and time for each boot
 end

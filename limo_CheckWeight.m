@@ -63,10 +63,15 @@ for f=1:length(LIMO_files)
     load(LIMO_files{f});
     if f==1
         limo.Analysis = LIMO.Analysis;
+        limo.Type = LIMO.Type;
     else
         if limo.Analysis ~= LIMO.Analysis
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
         end
+        
+        if limo.Type ~= LIMO.Type
+            error('Looks like different type of analyses (Channels/Components) are mixed up')
+        end    
     end
 end
 
@@ -163,7 +168,7 @@ for f=1:length(LIMO_files)
         if f==length(LIMO_files)
             clear Data; Data.data = difference; Data.limo = limo;
             mkdir('trial_differences'); cd('trial_differences'); 
-            save subjects_outlier_difference Data; clear difference
+            save Yr Data; clear difference
             
             % stats
             disp('Computing t-test between good and bad trials across all conditions')
@@ -242,7 +247,7 @@ for f=1:length(LIMO_files)
             LIMO.data.data = LIMO_files; LIMO.data.start = 1;
             LIMO.data.end = 1; LIMO.data.trim1 = 0; LIMO.data.trim2 = 0; 
             % LIMO.design.electrode = chan.expected_chanlocs;
-            LIMO.design.electrode = [];
+            LIMO.design.electrode = []; LIMO.design.name = 'Rep_ANOVA';
             LIMO.design.neighbouring_matrix = chan.channeighbstructmat;
             LIMO.Level = 2; LIMO.design.bootstrap =1000; save LIMO LIMO; 
             

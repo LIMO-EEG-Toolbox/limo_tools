@@ -318,7 +318,11 @@ else
         ylabel('Electrodes','FontSize',14);
         for i = 1:length(LIMO.data.chanlocs)
             if LIMO.Level == 2
-                label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
+                try
+                    label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
+                catch
+                    label_electrodes{i} = i;
+                end
             else
                 try
                     label_electrodes{i} = LIMO.data.chanlocs(i).labels;

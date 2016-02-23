@@ -181,7 +181,7 @@ end
 function Two_Samples_t_test_Callback(hObject, eventdata, handles)
 
 if handles.ica == 1
-    limo_random_select(2,[],'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
@@ -194,7 +194,7 @@ end
 function Paired_t_test_Callback(hObject, eventdata, handles)
 
 if handles.ica == 1
-    limo_random_select(3,[],'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
@@ -206,7 +206,7 @@ end
 function Regression_Callback(hObject, eventdata, handles)
 
 if handles.ica == 1
-    limo_random_select(4,[],'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
@@ -219,7 +219,7 @@ end
 function ANOVA_Callback(hObject, eventdata, handles)
 
 if handles.ica == 1
-    limo_random_select(5,[],'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
