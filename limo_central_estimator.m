@@ -30,7 +30,7 @@ if nargin == 2
     prob_coverage = 0.95;
 elseif nargin == 1
     prob_coverage = 0.95;
-    estimator = 'tm';
+    estimator = 'Trimmed mean';
 end
 
 % compute the estimator
