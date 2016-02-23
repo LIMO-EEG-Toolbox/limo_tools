@@ -1,5 +1,6 @@
 function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 
+<<<<<<< HEAD
 % Compute a data estimator and its highest density intervals (HDI) based 
 % on bayesian bootstrap estimates.
 %
@@ -8,17 +9,36 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 % INPUTS Y is a 2D matrix, e.g. time frames x participants
 %        estimator is 'Mean', 'Trimmed mean', 'HD' (Mid-decile Harell-Davis) or 'Median'
 %        prob_coverage is the probability coverage- default 0.95%
+=======
+% Compute highest density intervals (HDI) based on bayesian bootstrap
+% estimates.
+%
+% FORMAT [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage);
+%
+% INPUTS:
+%       Y is a 2D matrix, e.g. time frames x participants
+%       estimator is 'mean', 'tm', 'hd' or 'median'
+%       prob_coverage is the probability coverage- default 0.95
+>>>>>>> origin/master
 %
 % OUTPUT est is the estimator
 %        ci is the high density interval
 %        bb is a vector of (Bayes) bootstraped estimators 
 %
+<<<<<<< HEAD
+=======
+% Guillaume Rousselet & Cyril Pernet January 2016
+%
+>>>>>>> origin/master
 % Bayesian bootstrap implementation based on orignal R code from Rasmus Baath:
 % http://www.sumsar.net/blog/2015/07/easy-bayesian-bootstrap-in-r/
 % HDI implementation based on original R code HDIofMCMC from John K. Kruschke:
 % https://github.com/boboppie/kruschke-doing_bayesian_data_analysis/blob/master/1e/HDIofMCMC.R
+<<<<<<< HEAD
 %
 % Guillaume Rousselet & Cyril Pernet January 2016
+=======
+>>>>>>> origin/master
 % ------------------------------------------
 % Copyright (C) LIMO Team 2016
 
@@ -28,28 +48,36 @@ if nargin == 2
     prob_coverage = 0.95;
 elseif nargin == 1
     prob_coverage = 0.95;
-    estimator = 'Trimmed mean';
+    estimator = 'tm';
 end
 
 % compute the estimator
 if strcmpi(estimator,'mean')
     est = mean(Y,2);
-elseif strcmpi(estimator,'trimmed mean')
+elseif strcmpi(estimator,'tm')
     est = limo_trimmed_mean(Y,20);
-elseif strcmpi(estimator,'HD')
+elseif strcmpi(estimator,'hd')
     est = limo_harrell_davis(Y,.5);
 elseif strcmpi(estimator,'median')
     est = median(Y,2);
 end
 
+<<<<<<< HEAD
 % sample with replcaement from Dirichlet
 % sampling = number of observations, e.g. participants
 n=size(Y,2); 
 bb = zeros(size(Y,1),Nb);
 parfor boot=1:Nb % bootstrap loop
+=======
+% sample with replacement from Dirichlet
+n = size(Y,2); % Dirichlet sampling = number of observations, e.g. participants
+% n = 1000; % in some situations it might be beneficial to sample more observations
+bb = zeros(size(Y,1),Nb);
+parfor boot = 1:Nb % bootstrap loop
+>>>>>>> origin/master
     theta = exprnd(1,[n,1]);
     weigths = theta ./ repmat(sum(theta,1),n,1);
-    resample= (datasample(Y',n,'Replace',true,'Weights',weigths))';
+    resample = (datasample(Y',n,'Replace',true,'Weights',weigths))';
     
     % compute the estimator
     if strcmpi(estimator,'mean')
@@ -67,6 +95,7 @@ sorted_data = sort(bb,2); % sort bootstrap estimates
 upper_centile = floor(prob_coverage*size(sorted_data,2)); % upper bound
 nCIs = size(sorted_data,2) - upper_centile;
 HDI = zeros(2,size(Y,1));
+<<<<<<< HEAD
 
 % for frame = 1:size(Y,1)
 %     tmp = sorted_data(frame,:);
@@ -88,4 +117,14 @@ HDI(1,:) = sorted_data(index);
 index = I+r.*(J+upper_centile-1); % linear index
 HDI(2,:) = sorted_data(index);
 
+=======
+for frame = 1:size(Y,1)
+    tmp = sorted_data(frame,:);
+    ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
+    [~,index] = find(ciWidth == min(ciWidth)); % densest centile
+    if length(index) > 1; index = index(1); end % many similar values
+    HDI(1,frame) = tmp(index);
+    HDI(2,frame) = tmp(index+upper_centile);
+end
+>>>>>>> origin/master
 
