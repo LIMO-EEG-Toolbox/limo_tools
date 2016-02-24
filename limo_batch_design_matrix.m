@@ -56,7 +56,8 @@ if strcmp(LIMO.Analysis,'Time')
             nb_clusters = size(STUDY.cluster(1).child,2);
             nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            current_subject = find(cellfun(@strcmp, {STUDY.datasetinfo.filepath}',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
@@ -128,7 +129,8 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             nb_clusters = size(STUDY.cluster(1).child,2);
             nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            current_subject = find(cellfun(@strcmp, {STUDY.datasetinfo.filepath}',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
@@ -192,7 +194,8 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             nb_clusters = size(STUDY.cluster(1).child,2);
             nb_subjects = length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            current_subject = find(cellfun(@strcmp, {STUDY.datasetinfo.filepath}',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
@@ -254,5 +257,25 @@ LIMO.design.status = 'to do';
 save LIMO LIMO; clear Y
 
 end
+% -------------------------------------------------------------------------
+function file_fullpath = rel2fullpath(studypath,filepath)
+% Return full path if 'filepath' is a relative path. The output format will
+% fit the one of 'filepath'. That means that if 'filepath' is a cell array,
+% then the output will a cell array too, and the same if is a string.
 
+nit = 1; if iscell(filepath), nit = length(filepath);end
 
+for i = 1:nit
+    if iscell(filepath),pathtmp = filepath{i}; else pathtmp = filepath; end
+    if strfind(pathtmp(end),filesep), pathtmp = pathtmp(1:end-1); end % Getting rid of filesep at the end
+    if strfind(pathtmp,['.' filesep])
+        if iscell(filepath),
+            file_fullpath{i} = fullfile(studypath,pathtmp(3:end));
+        else
+            file_fullpath = fullfile(studypath,pathtmp(3:end));
+        end
+    else
+        file_fullpath = pathtmp;
+    end
+end
+end
