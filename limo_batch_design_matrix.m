@@ -57,7 +57,8 @@ if strcmp(LIMO.Analysis,'Time')
             nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
             dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            data_dir = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
@@ -130,7 +131,8 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
             dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            data_dir = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
@@ -195,7 +197,8 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             nb_subjects = length(unique({STUDY.datasetinfo.subject}));
             Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
             dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({LIMO.data.data_dir(1:end)},nb_subjects,1)));
+            data_dir = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
             subject_name = {STUDY.datasetinfo(current_subject).subject};
             newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
