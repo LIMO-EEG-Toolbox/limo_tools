@@ -33,7 +33,7 @@ function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
 % edit Marianne Latinus adding spm_bwlabel
 % Cyril Pernet Edited for return p values + compatible time frequency  
 % ---------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2016
 %
 % See also limo_ecluster_make limo_tfcluster_make
 
@@ -51,14 +51,12 @@ if isfield(th, 'max')
     ME = [];
     
     for E = 1:Ne % for each electrode or frequency
-        try
-            [L,NUM] = bwlabeln(orip(E,:)<=alpha_value); % find clusters 
-        catch ME
-            try
-                [L,NUM] = spm_bwlabel(double(orip(E,:)<=alpha_value), 6);
-            catch ME
-                errordlg('You need either the Image Processing Toolbox or SPM in your path'); return
-            end
+        if exist('spm_bwlabel','file') == 3
+            [L,NUM] = spm_bwlabel(double(orip(E,:)<=alpha_value), 6); % find clusters
+        elseif exist('bwlabel','file') == 2
+            [L,NUM] = bwlabeln(orip(E,:)<=alpha_value);
+        else
+            errordlg('You need either the Image Processing Toolbox or SPM in your path'); return
         end
         
         for C = 1:NUM % for each cluster compute cluster sums & compare to bootstrap threshold
