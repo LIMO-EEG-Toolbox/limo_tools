@@ -1,6 +1,6 @@
 function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, varargin)
 
-% LIMO_FINDCLUSTER returns all connected clusters in a 3 dimensional matrix
+% limo_findcluster returns all connected clusters in a 3 dimensional matrix
 % with a connectivity of 6.
 %
 % FORMAT: [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat)
@@ -33,16 +33,15 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 %    % Copyright (C) 2004, Robert Oostenveld
 %
 % $Id: findcluster.m 952 2010-04-21 18:29:51Z roboos $
-% reused as limo_ft_findluster for integration in LIMO toolbox: GAR, 
-% University of Glasgow, June 2010 
+% reused as limo_ft_findluster for integration in LIMO toolbox: GAR, University of Glasgow, June 2010 
 % Edit Marianne Latinus adding spm_bwlabel, June 2013
 % limo_findcluster is a refactoring of limo_ft_findcluster with the same functionality
 % and some optimisations for speed. spm_bwlabel is now used preferentially if availiable
-% calls to ismember rearranged and replaced with ismembc 
-% Andrew Stewart, August 2014
+% calls to ismember rearranged and replaced with ismembc
 %
+% Andrew Stewart, August 2014
 % --------------------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2016
 
 
 spatdimlength = size(onoff, 1);

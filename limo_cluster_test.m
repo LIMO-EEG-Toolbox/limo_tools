@@ -4,7 +4,7 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % sum of F values inside each cluster, and compares that sum to a threshold
 % sum of F values expected by chance.
 %
-% FORMAT: [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test2(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alpha)
+% FORMAT: [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 %
 % INPUTS: ori_f: 3D or 2D matrix of observed F values 
 %         ori_p: 3D or 2D matrix of observed P values 
@@ -21,14 +21,15 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %          maxclustersum_th = max cluster sum (1-alpha) bootstrap threshold
 %
 % See also limo~_getcluster_test limo_getclustersum
+% 
+% Guillaume Rousselet, University of Glasgow, June 2010
+% optional L & NUM outputs: GAR, Feb 2012
+% optional pval & maxclustersum_th outputs: GAR, Feb 2012
+% Cyril Pernet changed pval to be a map with NaN or the cluster p value May 2013
+% added a warping of NaN Mars 2014 
 % -------------------------------------------------
 %  Copyright (C) LIMO Team 2014
 
-% v1: GAR, University of Glasgow, June 2010
-% optional L & NUM outputs: GAR, Feb 2012
-% optional pval & maxclustersum_th outputs: GAR, Feb 2012
-% changed pval to be a map with NaN or the cluster p value CP May 2013
-% added a warping of NaN Mars 2014 CP
 
 if nargin<5;alphav=.05;end
 if nargin<4;minnbchan=2;end
@@ -65,8 +66,11 @@ if nargout>1 % get L NUM pval
         pval = NaN(size(L));
         for CL=1:length(CL_list)
             L(L==CL_list(CL))=CL;
-            p(CL)=1-sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot;
-            pval(L==CL_list(CL)) = p(CL);
+            p=1-sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot;
+            if p ==0
+                p = 1/nboot; 
+            end
+            pval(L==CL_list(CL)) = p;
         end
     else
         NUM=0;

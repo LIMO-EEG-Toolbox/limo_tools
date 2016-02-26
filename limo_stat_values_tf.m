@@ -109,7 +109,7 @@ if strcmp(FileName,'R2.mat')
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_R2(:,:,:,2,:)); % get all F values under H0
-            [mask,M] = max_correction(M,bootM,p);
+            [mask,M] = limo_max_correction(M,bootM,p);
             mytitle = sprintf('R^2 : correction by F max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -122,7 +122,7 @@ if strcmp(FileName,'R2.mat')
     elseif MCC == 3 % Stat max
         try cd('TFCE'); load('tfce_R2.mat'); cd ..
             cd('H0');load('tfce_H0_R2.mat'); cd ..
-            [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('R^2 : correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
@@ -169,7 +169,7 @@ elseif strncmp(FileName,'Condition_effect',16)
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Condition_effect(:,:,:,1,:)); % get all F values under H0
-            clear H0_Condition_effect; [mask,M] = max_correction(M,bootM,p);
+            clear H0_Condition_effect; [mask,M] = limo_max_correction(M,bootM,p);
             mytitle = sprintf('Condition %g: \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -181,7 +181,7 @@ elseif strncmp(FileName,'Condition_effect',16)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            clear H0_Condition_effect; [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            clear H0_Condition_effect; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Condition %g: \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
@@ -225,7 +225,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Covariate_effect(:,:,:,1,:)); % get all F values under H0
-            [mask,M] = max_correction(M,bootM,p);
+            [mask,M] = limo_max_correction(M,bootM,p);
             mytitle = sprintf('Covariate %g: \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -238,7 +238,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Covariate %g: \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
@@ -282,7 +282,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Interaction_effect(:,:,:,1,:)); % get all F values under H0
-            clear H0_Interaction_effect; [mask,M] = max_correction(M,bootM,p);
+            clear H0_Interaction_effect; [mask,M] = limo_max_correction(M,bootM,p);
             mytitle = sprintf('Interaction %g: \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -295,7 +295,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            clear H0_Interaction_effect; [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            clear H0_Interaction_effect; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Interaction %g: \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
@@ -339,7 +339,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
     elseif MCC == 4 % Stat max
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_semi_partial_coef(:,:,:,1,:)); % get all F values under H0
-            [mask,M] = max_correction(M,bootM,p);
+            [mask,M] = limo_max_correction(M,bootM,p);
             mytitle = sprintf('Semi partial coef %g: \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -351,7 +351,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            clear H0_semi partial coef; [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            clear H0_semi partial coef; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Semi partial coef %g: \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
@@ -396,7 +396,7 @@ elseif strncmp(FileName,'con_',4)
     elseif MCC == 4 % Stat max
         try load(MCC_data);
             bootT = squeeze(H0_con(:,:,:,2,:)); % take all T values under H0
-            [mask,M] = max_correction(abs(M),abs(bootT),p); % absolute T values
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % absolute T values
             mytitle = sprintf('Contrast T %g: correction by T max', effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -408,7 +408,7 @@ elseif strncmp(FileName,'con_',4)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Contrast T %g: correction using TFCE', effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
@@ -454,7 +454,7 @@ elseif strncmp(FileName,'ess_',4)
     elseif MCC == 4
         try cd H0; load(MCC_data);
             bootF  = squeeze(H0_ess(:,:,:,end-1,:)); clear H0_ess;
-            [mask,M] = max_correction(M,bootF,p); % absolute T values
+            [mask,M] = limo_max_correction(M,bootF,p); % absolute T values
             mytitle = sprintf('Contrast F %g: correction by F max', effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -466,7 +466,7 @@ elseif strncmp(FileName,'ess_',4)
     elseif MCC == 3 % Stat max
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
-            [mask,M] = max_correction(tfce_score,tfce_H0_score,p);
+            [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
             mytitle = sprintf('Contrast F %g: correction using TFCE', effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
@@ -525,7 +525,7 @@ elseif strncmp(FileName,'one_sample',10)
                 tmp = NaN(1,size(one_sample,2),size(one_sample,3),size(H0_one_sample,5));
                 tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
-            [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('One Sample t-test \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -539,7 +539,7 @@ elseif strncmp(FileName,'one_sample',10)
         tfce_data = sprintf('tfce%stfce_%s',filesep, FileName);
         try load(tfce_data);
             load(MCC_tfce_data)
-            [mask,M] = max_correction(tfce_one_sample, tfce_H0_one_sample,p);
+            [mask,M] = limo_max_correction(tfce_one_sample, tfce_H0_one_sample,p);
             mytitle = sprintf('One Sample t-test \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
@@ -599,7 +599,7 @@ elseif strncmp(FileName,'two_samples',11)
                 tmp = NaN(1,size(two_samples,2),size(two_samples,3),size(H0_two_samples,5));
                 tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
-            [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('Two Samples t-test \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -613,7 +613,7 @@ elseif strncmp(FileName,'two_samples',11)
         tfce_data = sprintf('tfce%stfce_%s',filesep, FileName);
         try load(tfce_data);
             load(MCC_tfce_data)
-            [mask,M] = max_correction(tfce_two_samples, tfce_H0_two_samples,p);
+            [mask,M] = limo_max_correction(tfce_two_samples, tfce_H0_two_samples,p);
             mytitle = sprintf('Two Samples t-test \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
@@ -673,7 +673,7 @@ elseif strncmp(FileName,'paired_samples',14)
                 tmp = NaN(1,size(paired_samples,2),size(paired_samples,3),size(H0_paired_samples,5));
                 tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
             end
-            [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             mytitle = sprintf('Paired Samples t-test \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
@@ -687,7 +687,7 @@ elseif strncmp(FileName,'paired_samples',14)
         tfce_data = sprintf('tfce%stfce_%s',filesep, FileName);
         try load(tfce_data);
             load(MCC_tfce_data)
-            [mask,M] = max_correction(tfce_paired_samples, tfce_H0_paired_samples,p);
+            [mask,M] = limo_max_correction(tfce_paired_samples, tfce_H0_paired_samples,p);
             mytitle = sprintf('Paired Samples t-test \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
@@ -809,7 +809,7 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                 end
             end
             
-            [mask,M] = max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                 mytitle = sprintf('Rep ANOVA Interaction: \n correction by T max');
             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
@@ -831,11 +831,11 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
             load(MCC_tfce_data)
             
             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                [mask,M] = max_correction(tfce_Rep_ANOVA_Interaction_with_gp, tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
+                [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Interaction_with_gp, tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                [mask,M] = max_correction(tfce_Rep_ANOVA_Gp_effect, tfce_H0_Rep_ANOVA_Gp_effect,p);
+                [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Gp_effect, tfce_H0_Rep_ANOVA_Gp_effect,p);
             elseif strncmp(FileName,'Rep_ANOVA',9)
-                [mask,M] = max_correction(tfce_Rep_ANOVA, tfce_H0_Rep_ANOVA,p);
+                [mask,M] = limo_max_correction(tfce_Rep_ANOVA, tfce_H0_Rep_ANOVA,p);
             end
             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                 mytitle = sprintf('Rep ANOVA Interaction: \n correction using TFCE');
@@ -983,35 +983,4 @@ if MCC == 2
     
 end
 end
-
-function [mask,p_val] = max_correction(M,bootM,p)
-% correction for multiple testing using the max stat value
-% note this works for bootstrapped data under H0 and for TFCE
-%
-% M = 3D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
-% bootM = 3D matrix of F values for data bootstrapped under H0
-% p = threshold to apply
-
-nboot = size(bootM,4);
-for boot=1:nboot
-    fprintf('reading boot data %g \n',boot);
-    data = squeeze(bootM(:,:,:,boot));
-    maxM(boot) = max(data(:)); % collect highest absolute value for each boot
-end
-
-U=round((1-p).*nboot);
-sortmaxM = sort(maxM); % sort bootstraps
-maxF_th = sortmaxM(U); % get threshold for each parameter
-mask = squeeze(M) >= maxF_th;
-% figure; imagesc(mask)
-for channel = 1:size(M,1)
-    for freq = 1:size(M,2)
-        for time = 1:size(M,3)
-            p_val(channel,freq,time) = 1-(sum(squeeze(M(channel,freq,time)) >=sortmaxM) / nboot);
-        end
-    end
-end
-
-end
-
 
