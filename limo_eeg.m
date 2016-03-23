@@ -53,10 +53,14 @@ function limo_eeg(varargin)
 % make sure paths are ok
 local_path = which('limo_eeg');
 root = fileparts(local_path);
-addpath([root filesep 'limo_cluster_functions'])
-addpath([root filesep 'external' filesep 'psom'])
-addpath([root filesep 'external'])
-addpath([root filesep 'help'])
+pathCell = regexp(path, pathsep, 'split');
+onPath = any(strcmp([root filesep 'help'], pathCell));
+if onPath == 0
+    addpath([root filesep 'external' filesep 'psom'])
+    addpath([root filesep 'external'])
+    addpath([root filesep 'help'])
+end
+
 
 % in case data are already there
 if isempty(varargin);

@@ -3,7 +3,8 @@
 % limo_chancluster_test finds clusters of significant F values, computes the
 % sum of F values inside each cluster, and compares that sum to a threshold
 % sum of F values expected by chance. This function works for low dimensional
-% data, i.e. no channel dimension
+% data - example of data in are ERP or power specrum vectors of F values, or
+% ERSP (time*freq). 
 %
 % FORMAT: [mask, pval] = limo_chancluster_test(ori_f,ori_p,boot_f,boot_p,p)
 %
