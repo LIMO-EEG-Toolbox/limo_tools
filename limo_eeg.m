@@ -129,12 +129,12 @@ switch varargin{1}
                     if ~isfield(LIMO.data,'neighbouring_matrix')
                         answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
                         if strcmp(answer,'Load')
-                            [file,path,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+                            [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
                             if whatsup == 0
                                 disp('selection aborded');
                                 return
                             else
-                                cd(path);
+                                cd(newpath);
                                 channeighbstructmat = load(file);
                                 channeighbstructmat = getfield(channeighbstructmat,cell2mat(fieldnames(channeighbstructmat)));
                                 cd(LIMO.dir);
@@ -173,11 +173,11 @@ switch varargin{1}
         try
             load LIMO
         catch
-            [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_path); load LIMO.mat;
+                cd (dir_newpath); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
@@ -420,11 +420,11 @@ switch varargin{1}
         try
             load('LIMO.mat');
         catch
-            [file,dir_path,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            [file,dir_newpath,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if ind ==0
                 return
             else
-                cd (dir_path); load LIMO.mat;
+                cd (dir_newpath); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
@@ -641,12 +641,12 @@ switch varargin{1}
                 if ~isfield(LIMO.data,'neighbouring_matrix')
                     answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
                     if strcmp(answer,'Load')
-                        [file,path,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+                        [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
                         if whatsup == 0
                             disp('selection aborded');
                             return
                         else
-                            cd(path); load(file); cd(LIMO.dir);
+                            cd(newpath); load(file); cd(LIMO.dir);
                         end
                     else
                         channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
@@ -1186,11 +1186,11 @@ switch varargin{1}
         try
             load('LIMO.mat');
         catch
-            [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_path); load LIMO.mat;
+                cd (dir_newpath); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
