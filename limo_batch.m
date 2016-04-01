@@ -37,9 +37,11 @@ function LIMO_files = limo_batch(varargin)
 %       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
 %
 % OUTPUT  LIMO a cell array of LIMO.mat (info about subjects' GLM)
-%         also generate a directory per subject with GLM results in it
+%         create a directory per subject with GLM results in it
+%         create a log file directory with the pipleine and logs
 %
-% see also limo_eeg limo_import_t limo_import_f limo_import_tf and psom in external folder
+% see also limo_eeg limo_import_t limo_import_f limo_import_tf 
+% see also psom in external folder
 %
 % Reference for pipeline engine
 % Bellec P, Lavoie-Courchesne S, Dickinson P, Lerch JP, Zijdenbos AP and Evans AC (2012)
@@ -301,6 +303,11 @@ if isfield(LIMO_files,'con')
     LIMO_files.con = LIMO_files.con';
     remove_con = zeros(1,N);
 end
+
+% ----------------------
+% before running the pipeline, save it (useful to re-run, simply calling
+% psom_run_pipeline)
+save([current filesep 'limo_batch_report' filesep limo_pipeline],pipeline)
 
 for subject = 1:N
     disp('--------------------------------')
