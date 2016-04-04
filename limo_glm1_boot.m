@@ -146,7 +146,7 @@ if nb_continuous == 0
     end
     clear y
 else
-    % centered_y = y;
+    centered_y = y;
     design = X;
 end
 
@@ -155,6 +155,8 @@ if nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
     for n=2:nb_factors
         increment(n-1) = size(nchoosek([1:nb_factors],n),1);
     end
+else
+    increment = [];
 end
 
 % compute for each bootstrap
@@ -164,17 +166,13 @@ parfor B = 1:nboot
     
     % create data under H0
     if nb_continuous == 0
-        % sample from the centered data in categorical designs
-        Y = centered_y(boot_table(:,B),:);
-        X = design(boot_table(:,B),:); % resample X as Y
-        
-    else
-        % sample and break the link between Y and (regression and AnCOVA designs)
-        Y = y(boot_table(:,B),:);
-        X = design;
+        % if just categorical variables, sample from the centered data and
+        % the design simultaneously - rezscore if needed
+        Y = centered_y(boot_table(:,B),:); % resample Y
+        X = design(boot_table(:,B),:); % resample X
         if z == 1 % rezscore the covariates
             N = nb_conditions + nb_interactions;
-            if N==0
+            if N==0 || isempty(N)
                 if sum(mean(X(:,1:end-1),1)) > 10e-15
                     X(:,1:end-1) = zscore(X(:,1:end-1));
                 end
@@ -184,6 +182,11 @@ parfor B = 1:nboot
                 end
             end
         end
+        
+    else
+        % sample and break the link between Y and X (regression and AnCOVA designs)
+        Y = y(boot_table(:,B),:); % resample
+        X = design; % stays the same
     end
     
     
@@ -474,8 +477,10 @@ parfor B = 1:nboot
         end
     end
     
-    F_INTERVALUES{B}  = F_interactions;
-    p_INTERVALUES{B}  = pval_interactions;
+    if nb_factors ~= 0
+        F_INTERVALUES{B}  = F_interactions;
+        p_INTERVALUES{B}  = pval_interactions;
+    end
     
     % -----------------------------------
     %% compute F for continuous variables

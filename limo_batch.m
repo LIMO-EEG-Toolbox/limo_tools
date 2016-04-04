@@ -307,7 +307,7 @@ end
 % ----------------------
 % before running the pipeline, save it (useful to re-run, simply calling
 % psom_run_pipeline)
-save([current filesep 'limo_batch_report' filesep limo_pipeline],pipeline)
+save([current filesep 'limo_batch_report' filesep 'limo_pipeline.mat'],'pipeline')
 
 for subject = 1:N
     disp('--------------------------------')

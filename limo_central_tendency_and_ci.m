@@ -50,8 +50,9 @@ function result=limo_central_tendency_and_ci(varargin)
 % June/July 2013 - Fixed some bugs CP / thx to Benedikt Ehinger
 % Novembre 2013 - fixed further issues related to parameter selection CP / thx to Matt Craddock
 % version 2 September 2015 - included within subject weighted mean + update for time frequency
+% version 3 February 2016 - updated calling limo_central_estimator for Bayesian CI
 % -----------------------------
-%  Copyright (C) LIMO Team 2015
+%  Copyright (C) LIMO Team 2016
 
 
 %% file selection and checkings
