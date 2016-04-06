@@ -159,6 +159,9 @@ end
 
 if nargin == 4
     STUDY = varargin{4}; clear varargin{4};
+    if isempty(STUDY.filepath)
+        STUDY.filepath =pwd;
+    end
     cd(STUDY.filepath); current =pwd;
     if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
     if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
