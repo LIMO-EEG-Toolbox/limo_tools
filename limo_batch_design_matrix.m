@@ -91,8 +91,9 @@ if strcmp(LIMO.Analysis,'Time')
             end
         catch 
             disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEGLIMO.data')
-            Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
+            Y = EEGLIMO.data; %Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
         end
+        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:); 
         clear EEGLIMO
     end
     
@@ -166,6 +167,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
         else
             error('the field EEG.etc.datspec pointing to the data is missing')
         end
+        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
@@ -235,6 +237,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         else
             error('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
         end
+        Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
     end
     clear EEGLIMO
     LIMO.data.size4D= size(Y);
