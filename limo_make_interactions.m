@@ -1,6 +1,6 @@
 function [tmpX interactions] = limo_make_interactions(x, nb_conditions)
-% routine copied from limo_design_matrix
-% allows to get the interaction terms
+
+% internal routine copied from limo_design_matrix to get the interaction terms
 %
 % FORMAT: [tmpX interactions] = limo_make_interactions(x, nb_conditions)
 % 
