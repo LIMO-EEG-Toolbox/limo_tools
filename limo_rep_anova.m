@@ -391,7 +391,7 @@ M    = R0 - R;    % M is the projection matrix onto Xc
 H    = (Betas'*X'*M*X*Betas);    % SS Hypothesis (Effect)
 
 if flag == 2
-    Eigen_values = limo_decomp(E,H);
+    [Eigen_vector, Eigen_values] = limo_decomp(E,H);
     p = size(Y,2); % = number of variables (dimension)
     vh = nb_gp - 1; % df = q above
     s = min(vh,p); % subspace in which mean Ys are located
