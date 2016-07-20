@@ -30,16 +30,17 @@ percent = 20/100; % defines the amount of trimming done
 nboot = 1000;
 alpha_level = 5/100;
 figure_flag = 1;
-if nargin < 3
+if nargin < 3 
     % data1
     [file,locpath,filter]=uigetfile('.mat','Select 1st dataset');
     if filter == 0
         return
     end
-    cd(locpath); D = load(file);
+    cd(locpath); 
+    D = load(file); D = D.Data;
     if isstruct(D)
         name = fieldnames(D);
-        tmp = sprintf('D.%s',cell2mat(name));
+        tmp = sprintf('D.%s',cell2mat(name(1)));
         data1 = eval(tmp);
     else
         data1 = D;    
@@ -53,10 +54,11 @@ if nargin < 3
     end
     % data2
     [file,locpath]=uigetfile('.mat','Select 1st dataset');
-    cd(locpath); D = load(file);
+    cd(locpath); 
+    D = load(file); D = D.Data;
     if isstruct(D)
         name = fieldnames(D);
-        tmp = sprintf('D.%s',cell2mat(name));
+        tmp = sprintf('D.%s',cell2mat(name(1)));
         data2 = eval(tmp);
     else
         data2 = D;
