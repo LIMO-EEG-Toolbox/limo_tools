@@ -1971,8 +1971,9 @@ elseif LIMO.Level == 2
                 dfe = size(Data,2)-size(Data,3)+1;
                 % c = avg + 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'))); % uses Bonferoni inequality
                 % b = avg - 2*(finv(p./(2*size(C,1)),df,dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C')));
-                c = avg + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
-                b = avg - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(time_or_freq,:,:))*C'));
+                bound = (abs(tinv(p./(2*size(C,1)),dfe)).*diag((sqrt(C*squeeze(S(time_or_freq,:,:))*C'))));
+                c = avg + repmat(bound', [length(avg),1]);
+                b = avg - repmat(bound', [length(avg),1]);
                 
                 if strcmp(LIMO.Analysis,'Time')
                     timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;
