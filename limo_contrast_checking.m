@@ -25,7 +25,11 @@ function go = limo_contrast_checking(varargin)
 % ------------------------------
 if nargin == 3
 
-    cd (varargin{:,1}); 
+    try
+        cd (varargin{:,1});
+    catch
+            disp('can''t CD, using current directory')
+    end
     load Yr; Y = Yr; clear Yr;
     
     X = varargin{:,2};

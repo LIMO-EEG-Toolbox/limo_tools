@@ -462,6 +462,14 @@ elseif strncmp(FileName,'ess_',4)
     
     start_at = max(strfind(FileName,'_'))+1;
     effect_nb = eval(FileName(start_at:end-4));
+    if ~exist('ess','var')
+        try
+            ess = eval(['ess' num2str(effect_nb)]);
+            clear(['ess' num2str(effect_nb)])
+        catch
+            ess = ess1; clear ess1
+        end
+    end
     M = squeeze(ess(:,:,end-1));
     MCC_data = sprintf('H0_ess_%g',effect_nb);
     

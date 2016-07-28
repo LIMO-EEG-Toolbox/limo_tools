@@ -439,7 +439,7 @@ switch type
         
         % [mean value, se, df, F, p])
         if gp_values == 1
-            ess = zeros(size(Yr,1),size(Yr,2),5); 
+            ess1 = zeros(size(Yr,1),size(Yr,2),5); 
             for electrode = 1:size(Yr,1)
                 fprintf('electrode %g \n',electrode); 
                 % Inputs
@@ -449,23 +449,27 @@ switch type
                 % mean, se, df
                 n = size(Y,2);
                 g=floor((20/100)*n); 
+%                 for time=1:size(Y,1)
+%                     [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
+%                     TD(time,:,:) = v((g+1):(n-g),:); % trimmed data 
+%                     ess1(electrode,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
+%                     v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
+%                     v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
+%                     [~,reorder] = sort(indices);
+%                     for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
+%                     S(time,:,:) = cov(SD); % winsorized covariance
+%                     ess1(electrode,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
+%                 end
                 for time=1:size(Y,1)
-                    [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
-                    TD(time,:,:) = v((g+1):(n-g),:); % trimmed data 
-                    ess(electrode,time,1) = nanmean(C*squeeze(TD(time,:,:))',2);
-                    v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
-                    v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
-                    [~,reorder] = sort(indices);
-                    for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
-                    S(time,:,:) = cov(SD); % winsorized covariance
-                    ess(electrode,time,2) = sqrt(C*squeeze(S(time,:,:))*C');
+                    ess1(electrode,time,1) = nanmean(C(1:size(Y,3))*squeeze(Y(time,:,:))',2);
+                    ess1(electrode,time,2) = sqrt(C(1:size(Y,3))*cov(squeeze(Y(time,:,:)))*C(1:size(Y,3))');
                 end
                 df  = rank(C); dfe = n-df;
-                ess(electrode,:,3) = dfe;
+                ess1(electrode,:,3) = dfe;
                 % F and p
-                result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C);
-                ess(electrode,:,4) = result.repeated_measure.F;
-                ess(electrode,:,5) = result.repeated_measure.p;
+                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                ess1(electrode,:,4) = result.F;
+                ess1(electrode,:,5) = result.p;
             end
         else
             ess1 = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
@@ -490,21 +494,21 @@ switch type
                 for time=1:size(Y,1)
                     [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
                     TD(time,:,:) = v((g+1):(n-g),:); % trimmed data 
-                    ess1(electrode,time,1) = nanmean(C*squeeze(TD(time,:,:))',2);
-                    I = zeros(1,1,n); I(1,1,:) = (C*squeeze(Y(time,:,:))')'; % interaction
+                    ess1(electrode,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
+                    I = zeros(1,1,n); I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
                     ess2(electrode,time,1) = limo_trimmed_mean(I);
                     v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
                     v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
                     [~,reorder] = sort(indices);
                     for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
                     S(time,:,:) = cov(SD); % winsorized covariance
-                    ess1(electrode,time,2) = sqrt(C*squeeze(S(time,:,:))*C');
+                    ess1(electrode,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
                     ess2(electrode,time,2) = NaN;
                 end
                 df  = rank(C); dfe = n-df;
                 ess1(electrode,:,3) = dfe;
                 % F and p values
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C,XB);
+                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
                 ess1(electrode,:,1,4) = result.repeated_measure.F;
                 ess1(electrode,:,1,5) = result.repeated_measure.p;
                 ess2(electrode,:,2,4) = result.interaction.F;
@@ -513,8 +517,10 @@ switch type
         end
         filename = sprintf('ess_repeated_measure_%g.mat',index);
         save ([filename], 'ess1');
-        filename = sprintf('ess_interaction_gp_repeated_measure_%g.mat',index);
+        if exist('ess2','var')
+            filename = sprintf('ess_interaction_gp_repeated_measure_%g.mat',index);
         save ([filename], 'ess2');
+        end
 end
 
 

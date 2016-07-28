@@ -1159,6 +1159,15 @@ elseif LIMO.Level == 2
                     toplot = squeeze(con(:,:,:,4));
                     assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'ess_',4);
+                    if ~exist('ess','var')
+                        effect_nb = eval(FileName(22:end-4));
+                        try
+                            ess = eval(['ess' num2str(effect_nb)]);
+                            clear(['ess' num2str(effect_nb)])
+                          catch
+                            ess = ess1; clear ess1
+                        end
+                    end
                     toplot = squeeze(ess(:,:,:,4));
                     assignin('base','F_values',toplot)
                 elseif strncmp(FileName,'Rep_ANOVA_Interaction',21);
@@ -1196,6 +1205,15 @@ elseif LIMO.Level == 2
                     toplot = squeeze(con(:,:,4));
                     assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'ess_',4);
+                    if ~exist('ess','var')
+                        effect_nb = eval(FileName(22:end-4));
+                        try
+                            ess = eval(['ess' num2str(effect_nb)]);
+                            clear(['ess' num2str(effect_nb)])
+                        catch
+                            ess = ess1; clear ess1
+                        end
+                    end
                     toplot = squeeze(ess(:,:,4));
                     assignin('base','F_values',toplot)
                 elseif strncmp(FileName,'Rep_ANOVA_Interaction',21);
