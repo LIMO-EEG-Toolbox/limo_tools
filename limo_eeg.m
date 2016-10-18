@@ -56,8 +56,9 @@ root = fileparts(local_path);
 pathCell = regexp(path, pathsep, 'split');
 onPath = any(strcmp([root filesep 'help'], pathCell));
 if onPath == 0
-    addpath([root filesep 'external' filesep 'psom'])
+    addpath([root filesep 'limo_cluster_functions'])
     addpath([root filesep 'external'])
+    addpath([root filesep 'external' filesep 'psom'])
     addpath([root filesep 'help'])
 end
 

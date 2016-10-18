@@ -441,7 +441,7 @@ try
     if nb_continuous ~=0; clear tmp_Covariate_effect; end
     
 catch FileError
-    sprintf(FileError)
+    sprintf('%s',FileError)
     error('error while memory mapping futur results')
 end
 

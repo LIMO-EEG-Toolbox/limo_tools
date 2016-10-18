@@ -40,7 +40,7 @@ current_dir = pwd;
 %% ask if data are from one subject or a set then get data
 % ---------------------------------------------------------
 if nargin == 0
-    quest = questdlg('Make the Expected Chanlocs file from 1 subject or search throughout a set of subjects?','Selection','Set','One','Cancel','Set');
+    quest = questdlg('Make the Group level Channel location file from 1 subject or search throughout a set of subjects?','Selection','Set','One','Cancel','Set');
     if strcmp(quest,'Cancel')
         return
     else
@@ -77,6 +77,7 @@ if isempty(neighbourdist)
     neighbourdist = eval(cell2mat(inputdlg('enter neighbourhood distance','neighbourhood distance'))); % 0.37 for biosemi 128;
 end
 
+
 %% from 1 subject
 % -----------------------
 if strcmp(quest,'One')
@@ -87,9 +88,9 @@ if strcmp(quest,'One')
             return
         end
     end
-    
+
  %   try
-         EEGLIMO=pop_loadset('filename', fullfile(PathName, FileName));
+        EEGLIMO=pop_loadset('filename', fullfile(PathName, FileName));
         expected_chanlocs = EEGLIMO.chanlocs;
         fprintf('Data set %s loaded \n',FileName);
         [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
