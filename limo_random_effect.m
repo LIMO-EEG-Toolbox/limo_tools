@@ -45,7 +45,17 @@ guidata(hObject, handles);
 handles.b = 1000;
 handles.tfce = 0;
 handles.ica  = 0;
-handles.chan_file = [];
+try S=evalin('base','STUDY');
+    handles.chan_file = S.design.limo.chanloc; clear S
+    fprintf('using study channel location file \n%s\n',handles.chan_file);
+catch
+    try
+        S=evalin('base','gp_level_chanlocs');
+        handles.chan_file = S;
+    catch
+        handles.chan_file = [];
+    end
+end
 guidata(hObject, handles);
 % uiwait(handles.figure1);
 
@@ -257,21 +267,24 @@ guidata(hObject, handles);
 % --- Executes on button press in chan_cluster_neighbours.
 function chan_cluster_neighbours_Callback(hObject, eventdata, handles)
 
-[chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
-if whatsup == 1
-    load (sprintf('%s\%s',chan_path,chan_file))
+[chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
+if sts == 1
+    load ([chan_path chan_file])
     if exist('expected_chanlocs','var') == 1
         test = expected_chanlocs;
     else
         test = eval(chan_file(1:end-4));
     end
+    
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
              && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && sum(channeighbstructmat(:)) ~= 0
              % && ~isempty(test(1).urchan) % urchan should not be needed
             
-        handles.chan_file = sprintf('%s\%s',chan_path,chan_file);
+        handles.chan_file = [chan_path chan_file];
         disp('channel location loaded');
+        assignin('base', 'gp_level_chanlocs', [chan_path chan_file])
+         
     else
         warndlg('this file is not recognize as a channel location file or informations are missing','file error')
     end

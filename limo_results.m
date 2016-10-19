@@ -147,18 +147,16 @@ if FilterIndex == 1
     end
     
     % 2nd level 
+    % ------------
     nboot = 1000;
     if handles.LIMO.LIMO.Level == 2;
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
             if strncmp(FileName,'one_sample',10)
                 load Yr; limo_random_robust(1,Yr,eval(FileName(28:end-4)),nboot,handles.tfce); clear Yr;
-                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'two_samples',11)
                 load Y1r; load Y2r; limo_random_robust(2,Y1r,Y2r,eval(FileName(29:end-4)),nboot,handles.tfce); clear Y1r Y2r;
-                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'paired_samples',14)
                 load Y1r; load Y2r; limo_random_robust(3,Y1r,Y2r,eval(FileName(32:end-4)),nboot,handles.tfce); clear Y1r Y2r;
-                LIMO.design.bootstrap = 1; save LIMO LIMO
             elseif strncmp(FileName,'Repeated_measures',17)
                 warndlg2('repeated measure ANOVA bootstrap is not availbale at this stage, please use the random effect GUI','action not performed')
             else
@@ -168,6 +166,8 @@ if FilterIndex == 1
                     limo_eeg(4);
                 end
             end
+            LIMO = handles.LIMO.LIMO; LIMO.design.bootstrap = 1; save LIMO LIMO
+            handles.LIMO.LIMO.design.bootstrap = 1;
         end
         
         if handles.tfce == 1 && ~exist(sprintf('TFCE%stfce_%s', filesep, FileName), 'file') ...
@@ -284,10 +284,14 @@ if FilterIndex == 1
                 end
             end
         end
+        LIMO = handles.LIMO.LIMO; LIMO.design.tfce = 1; save LIMO LIMO
+        handles.LIMO.LIMO.design.tfce = 1;
+
     end
     
     % do the figure
     % -------------
+    handles.LIMO.LIMO = LIMO;
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);

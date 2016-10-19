@@ -38,7 +38,11 @@ p         = varargin{3}; % p value
 MCC       = varargin{4}; % multiple comparison option
 LIMO      = varargin{5}; % LIMO.mat
 
-if strcmp(LIMO.Type,'Components') && MCC ~= 1, MCC = 4; end;
+if isfield(LIMO,'Type')
+    if strcmp(LIMO.Type,'Components') && MCC ~= 1, MCC = 4; end;
+else
+    LIMO.Type = 'channels';
+end
 
 load (FileName);
 M = []; mask =[]; mytitle=[];

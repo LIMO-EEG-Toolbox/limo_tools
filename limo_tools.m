@@ -92,7 +92,45 @@ guidata(hObject, handles);
 
 % --- Executes on button press in Expected_chanlocs.
 function Expected_chanlocs_Callback(hObject, eventdata, handles)
-limo_expected_chanlocs
+[expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
+figure;  topoplot(zeros(1,71), expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
+figure; imagesc(channeighbstructmat); 
+label = {}; colormap(jet); 
+for i=1:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
+set(gca,'YTick',[1:2:length(expected_chanlocs)],'YTickLabel', label)
+label = {};
+for i=2:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
+set(gca,'XTick',[2:2:length(expected_chanlocs)],'XTickLabel', label)
+title('Connectivity matrix between channels','FontSize',14)
+positive = 1; while positive == 1
+    [y,x]=ginput(1);
+    if x<0 || y<0
+        positive = 0;
+    else
+        
+        if channeighbstructmat(round(x),round(y)) == 0
+            channeighbstructmat(round(x),round(y)) = 1;
+            imagesc(channeighbstructmat)
+        else
+            channeighbstructmat(round(x),round(y)) = 0;
+            imagesc(channeighbstructmat)
+        end
+        label = {}; colormap(hot);
+        for i=1:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
+        set(gca,'YTick',[1:2:length(expected_chanlocs)],'YTickLabel', label)
+        label = {};
+        for i=2:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
+        set(gca,'XTick',[2:2:length(expected_chanlocs)],'XTickLabel', label)
+        title('Connectivity matrix between channels','FontSize',14)
+    end
+end
+D=uigetdir(pwd,'Save file in directory');
+if D == 0
+    disp('data not saved'); return
+else
+    cd(D); save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
+    fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
+end
 guidata(hObject, handles);
 
 % ---------------------------------------------------------------

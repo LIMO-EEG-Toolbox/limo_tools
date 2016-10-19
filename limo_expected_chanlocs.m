@@ -1,4 +1,4 @@
-function channeighbstructmat = limo_expected_chanlocs(varargin)
+function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varargin)
 
 % This function loads an EEG dataset to create a file with the
 % location of all expected channels and to create a neighbourhood
@@ -57,6 +57,7 @@ elseif nargin >= 2
         quest = 'One';
     else
         quest = 'Skip';
+        Paths = cell(1,n); Files = cell(1,n); Names = cell(1,n);
         for n=1:size(FileName,1)
             [Paths{n},name,ext] = fileparts(FileName{n});
             Names{n} = [name ext];
@@ -103,11 +104,7 @@ if strcmp(quest,'One')
             save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
             fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
         end
-%    catch ME
-%        errordlg('pop_loadset eeglab issue','error');
-%    end
-    
-    
+     
 elseif strcmp(quest,'Set')   % from a set of subjects
     % -------------------------------------------
     
@@ -253,15 +250,14 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     cd (current_dir);
 
     % now we have 1 cap we can do as if we had a single subject to process
-    [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO, neighbourdist);
+    [~,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO, neighbourdist);
     if sum(channeighbstructmat(:)) == 0
-        msg = sprintf('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
-        error(msg)
+        error('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
     end
     
     if nargout == 0
-        save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
-        fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
+         save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
+         fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
     end
 end
 
