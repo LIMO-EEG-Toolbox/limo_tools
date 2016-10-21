@@ -141,8 +141,10 @@ if strcmp(method,'OLS')
     else
         Betas = pinv(X)*Y;
     end
+    
 elseif strcmp(method,'WLS')
     [Betas,W] = limo_WLS(X,Y);
+    
 elseif strcmp(method,'WLS-TF')
     % unpack the data
     [n_freq_times, N] = size(Y');
