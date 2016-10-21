@@ -1,4 +1,4 @@
-function LIMO_files = limo_batch(varargin)
+function [LIMO_files, procstatus] = limo_batch(varargin)
 
 % interactive function to run several 1st level analyses
 % select directories and files - possibly enter contrasts of
@@ -36,9 +36,12 @@ function LIMO_files = limo_batch(varargin)
 %       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects)
 %       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
 %
-% OUTPUT  LIMO a cell array of LIMO.mat (info about subjects' GLM)
-%         create a directory per subject with GLM results in it
-%         create a log file directory with the pipleine and logs
+% OUTPUT  
+% LIMO_files  - A cell array of LIMO.mat (info about subjects' GLM)
+%               create a directory per subject with GLM results in it
+%               create a log file directory with the pipleine and logs
+% procstatus  - [1 x Number of subjects] binary vector. Status of the LIMO computations for each of the N subjects.
+%               [0] Failed, [1] Processed.
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf 
 % see also psom in external folder
@@ -70,6 +73,8 @@ opt.flag_pause = false; % don't bother asking to start jobs
 opt.flag_debug = true; % report a bit more of issues
 psom_gb_vars
 
+% Initializing Outputs
+LIMO_files = []; procstatus = [];
 
 %% what to do
 
@@ -307,6 +312,8 @@ if isfield(LIMO_files,'con')
     remove_con = zeros(1,N);
 end
 
+procstatus = zeros(1,N);
+
 % ----------------------
 % before running the pipeline, save it (useful to re-run, simply calling
 % psom_run_pipeline)
@@ -320,6 +327,7 @@ for subject = 1:N
         opt.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
         psom_run_pipeline(pipeline(subject),opt)
         report{subject} = ['subject ' num2str(subject) ' processed'];
+        procstatus(subject) = 1;
     catch ME
         report{subject} = ['subject ' num2str(subject) ' failed'];
         if strcmp(option,'model specification') 
