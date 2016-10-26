@@ -50,7 +50,7 @@ end
 
 if isempty(Y(:,mad(Y,1) > 1e-6))
     error('WLS cannot be computed, for at least 1 condition, all trials have the same values')
-ends
+end
 
 
 %% get the weights from PC on adjusted residuals

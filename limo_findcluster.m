@@ -161,8 +161,6 @@ for j = 1:length(uniquelabel)
 end
 
 
-
-
 % reshape the output to the original format of the data
 cluster = reshape(cluster, spatdimlength, nfreq, ntime);
 

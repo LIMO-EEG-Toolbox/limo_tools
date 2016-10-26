@@ -66,7 +66,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
 
-opt.mode = 'session'; % run in the backgroud -- see psom for other options
+opt.mode = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
 opt.max_queued = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
 opt.flag_pause = false; % don't bother asking to start jobs
@@ -315,17 +315,22 @@ end
 procstatus = zeros(1,N);
 
 % ----------------------
-% before running the pipeline, save it (useful to re-run, simply calling
-% psom_run_pipeline)
-save([current filesep 'limo_batch_report' filesep 'limo_pipeline.mat'],'pipeline')
+%% Save pipeline
+% useful to re-run, simply calling psom_run_pipeline
+save([current filesep 'limo_batch_report' filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 
+% allocate names
 for subject = 1:N
+    limopt{subject}= opt;
+    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
+end
+    
+parfor subject = 1:N
     disp('--------------------------------')
     fprintf('processing subject %g/%g \n',subject,N)
     disp('--------------------------------')
     try
-        opt.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
-        psom_run_pipeline(pipeline(subject),opt)
+        psom_run_pipeline(pipeline(subject),limopt{subject})
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
@@ -341,7 +346,10 @@ for subject = 1:N
     end
 end
 
+%% Save txt files
 % save as txt file the list of .set, Betas, LIMO and con
+% these lists can then be used in second level analyses
+
 if exist('STUDY','var')
     cd(LIMO_files.LIMO)
     cell2csv(['EEGLAB_set_' glm_name '.txt'],model.set_files)

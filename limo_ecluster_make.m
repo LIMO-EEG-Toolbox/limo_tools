@@ -27,7 +27,7 @@ function [th,boot_values] = limo_ecluster_make(bootf,bootp,alphav)
 %                    this is a more conservative way to control for multiple
 %                    comparisons than using a spatial-temporal clustering 
 %                    when the full space is analyzed.
-%          boot_values are all the cluster sums conmputed under H0
+%          boot_values are all the max cluster sums computed under H0
 %
 % v1 Guillaume Rousselet, University of Glasgow, August 2010
 % Luisa Frei, 4 Nov 2011: fixed bug in all electrode ouput
@@ -40,6 +40,7 @@ function [th,boot_values] = limo_ecluster_make(bootf,bootp,alphav)
 %
 % See also LIMO_TFCLUSTER_MAKE LIMO_ECLUSTER_TEST
 
+cluster_val = [];
 if nargin < 3
     alphav = 0.05;
 end

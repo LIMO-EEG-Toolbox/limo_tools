@@ -1,10 +1,10 @@
-function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
+function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 
 % limo_cluster_test finds clusters of significant F values, computes the
 % sum of F values inside each cluster, and compares that sum to a threshold
 % sum of F values expected by chance.
 %
-% FORMAT: [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
+% FORMAT: [mask, pval, L, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 %
 % INPUTS: ori_f: 3D or 2D matrix of observed F values 
 %         ori_p: 3D or 2D matrix of observed P values 
@@ -16,8 +16,7 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % OUTPUTS: mask = 3D or 2D logical matrix of significant effects corrected
 %                 for multiple comparisons by a cluster test
 %          pval = corrected p values of significant clusters
-%          L = 3D or 2D map of significant clusters identified by a number from 1 to NUM
-%          NUM = label of significant clusters
+%          maxval = maximum observed cluster mass
 %          maxclustersum_th = max cluster sum (1-alpha) bootstrap threshold
 %
 % See also limo~_getcluster_test limo_getclustersum
@@ -28,55 +27,51 @@ function [mask, pval, L, NUM, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % Cyril Pernet changed pval to be a map with NaN or the cluster p value May 2013
 % added a warping of NaN Mars 2014 
 % -------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2016
 
 
-if nargin<5;alphav=.05;end
-if nargin<4;minnbchan=2;end
+if nargin<5; alphav=.05;  end
+if nargin<4; minnbchan=2; end
 
-[posclusterslabelmat,nposclusters] = limo_ft_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan);
-
-nboot = length(boot_maxclustersum);
+[posclusterslabelmat,nposclusters] = limo_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan);
+nboot           = length(boot_maxclustersum);
 sort_clustermax = sort(boot_maxclustersum);
-n = sum(isnan(sort_clustermax)); 
+n               = sum(isnan(sort_clustermax)); 
+
 % NaN present if there was no clusters under H0 - just warp around
 % should not happen if using limo_getclustersum as it returns 0 in that case
 if n~=0 
     sort_clustermax(isnan(sort_clustermax))=[];
     sort_clustermax = [NaN(n,1); sort_clustermax];
 end
-maxclustersum_th = sort_clustermax( round((1-alphav)*nboot) );
+maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
 
 mask = zeros(size(ori_f));
 if nposclusters~=0
     for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
-        if sum(ori_f(posclusterslabelmat==C)) >= maxclustersum_th;
+        maxval(C) = sum(ori_f(posclusterslabelmat==C));
+        if  maxval(C)>= maxclustersum_th;
             mask(posclusterslabelmat==C)=1; % flag clusters above threshold
         end
     end
 end
+maxval = max(maxval);
 mask = logical(mask); 
-% figure; imagesc(mask)
 
-if nargout>1 % get L NUM pval
-    if sum(mask(:))>0
-        L=posclusterslabelmat.*mask;  % figure; imagesc(L)
-        CL_list=setdiff(unique(L),0);
-        NUM=length(CL_list);
-        pval = NaN(size(L));
-        for CL=1:length(CL_list)
-            L(L==CL_list(CL))=CL;
-            p=1-sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot;
-            if p ==0
-                p = 1/nboot; 
-            end
-            pval(L==CL_list(CL)) = p;
+if sum(mask(:))>0
+    L=posclusterslabelmat.*mask;  % figure; imagesc(L)
+    CL_list=setdiff(unique(L),0);
+    pval = NaN(size(L));
+    for CL=1:length(CL_list)
+        L(L==CL_list(CL))=CL;
+        p=1-(sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot);
+        if p ==0
+            p = 1/nboot;
         end
-    else
-        NUM=0;
-        L=zeros(size(mask));
-        pval=NaN;
+        pval(L==CL_list(CL)) = p;
     end
+else
+    pval=NaN;
 end
 
 

@@ -1,4 +1,4 @@
-function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
+function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value)
 % function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
 %
 % ECLUSTER_TEST computes sums of temporal clusters of significant F values and 
@@ -59,11 +59,14 @@ if isfield(th, 'max')
             errordlg('You need either the Image Processing Toolbox or SPM in your path'); return
         end
         
+        maxval = zeros(1,NUM);
         for C = 1:NUM % for each cluster compute cluster sums & compare to bootstrap threshold
-            if sum(abs(orif(E,L==C))) >= th.max;
+            maxval(C) = sum(abs(orif(E,L==C)));
+            if  maxval(C) >= th.max;
                 sigcluster.max_mask(E,L==C)=1; % flag clusters above threshold
             end
         end
+        maxval = max(maxval);
     end 
 end
 
@@ -71,6 +74,7 @@ end
 if isfield(th, 'elec') 
 
     sigcluster.elec_mask = zeros(Ne,Nf);
+    pval = zeros(Ne,Nf);
     ME = [];
     try
         [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters
@@ -82,11 +86,19 @@ if isfield(th, 'elec')
         end
     end
 
+    maxval = zeros(1,NUM);
     for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
-        if sum(abs(orif(L==C))) >= th.elec;
+        maxval(C) = sum(abs(orif(L==C)));
+        if maxval(C) >= th.elec;
             sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
+            p = 1-(sum(sum(ori_f(L==C))>=th.elec)./nboot);
+            if p ==0
+                p = 1/nboot;
+            end
+            pval(L==CL_list(CL)) = p;
         end
     end
+    maxval = max(maxval);
 end
 
 
