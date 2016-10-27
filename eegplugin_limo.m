@@ -27,9 +27,9 @@ end;
 % create menus
 % ------------
 menu=findobj(fig,'tag','tools');
-submenu = uimenu(menu, 'Label', version, 'separator', 'on');
-uimenu(submenu,'Label', 'GUI','callback','limo_eeg');
-uimenu(submenu,'Label', '1st level analysis','callback','limo_batch');
-uimenu(submenu,'Label', '2nd level analysis','callback','limo_random_effect');
-uimenu(submenu,'Label', 'LIMO EEG results','callback','limo_results');
-uimenu(submenu,'Label', 'LIMO EEG tools','callback','limo_tools');  
+submenu = uimenu(menu, 'Label', version, 'separator', 'on', 'userdata','startup:on,study:on');
+uimenu(submenu,'Label', 'GUI','callback','limo_eeg', 'userdata','study:on');
+uimenu(submenu,'Label', '1st level analysis','callback','limo_batch', 'userdata','study:off');
+uimenu(submenu,'Label', '2nd level analysis','callback','limo_random_effect','userdata','study:on,epoch:off,continuous:off');
+uimenu(submenu,'Label', 'LIMO EEG results','callback','limo_results','userdata','study:on');
+uimenu(submenu,'Label', 'LIMO EEG tools','callback','limo_tools','userdata','study:on');  
