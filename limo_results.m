@@ -286,12 +286,10 @@ if FilterIndex == 1
         end
         LIMO = handles.LIMO.LIMO; LIMO.design.tfce = 1; save LIMO LIMO
         handles.LIMO.LIMO.design.tfce = 1;
-
     end
     
     % do the figure
     % -------------
-    handles.LIMO.LIMO = LIMO;
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);

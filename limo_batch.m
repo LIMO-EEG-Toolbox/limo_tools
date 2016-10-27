@@ -104,7 +104,7 @@ if nargin == 0
                 batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
             end
         else
-            disp('limo batch aborded')
+            disp('limo batch aborded'); return
         end
         
         % update paths
@@ -128,7 +128,7 @@ if nargin == 0
                 batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
             end
         else
-            disp('limo batch aborded')
+            disp('limo batch aborded'); return
         end
         
         % get the constrasts
@@ -142,7 +142,7 @@ if nargin == 0
                 batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
             end
         else
-            disp('limo batch aborded')
+            disp('limo batch aborded'); return
         end
     end
 else
@@ -317,6 +317,9 @@ procstatus = zeros(1,N);
 % ----------------------
 %% Save pipeline
 % useful to re-run, simply calling psom_run_pipeline
+if ~exist('glm_name','var') && strcmp(option,'contrast only') 
+    [~,glm_name]=fileparts(fileparts(pipeline(1).n_contrast.files_in));
+end
 save([current filesep 'limo_batch_report' filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 
 % allocate names
@@ -366,12 +369,16 @@ if isfield(LIMO_files,'con')
     for c=1:size(batch_contrast.mat,1)
         index = 1;
         for subject = 1:N
-            name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '_' glm_name '.mat'];
+            if strcmp(option,'contrast only')
+                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(c) '.mat'];                
+            else
+                name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+            end
             index = index + 1;
         end
         name = name';
         cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
-    end   
+    end
 end
 
 % save the report from psom
