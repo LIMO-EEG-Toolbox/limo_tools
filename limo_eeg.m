@@ -1164,7 +1164,6 @@ switch varargin{1}
             
             % if bootsrrap
             if LIMO.design.bootstrap == 1
-                
             end
             
             % TFCE if requested
@@ -1200,7 +1199,7 @@ switch varargin{1}
         % ---
         if LIMO.design.bootstrap == 1
             if LIMO.design.tfce == 1
-                limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
+                limo_display_results(1,'R2.mat',pwd,0.05,3,LIMO,0);
             else
                 limo_display_results(1,'R2.mat',pwd,0.05,2,LIMO,0);
             end
@@ -1216,7 +1215,7 @@ switch varargin{1}
                 name = sprintf('Condition_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end
@@ -1234,7 +1233,7 @@ switch varargin{1}
                 name = sprintf('Interaction_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end
@@ -1252,7 +1251,7 @@ switch varargin{1}
                 name = sprintf('Covariate_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end

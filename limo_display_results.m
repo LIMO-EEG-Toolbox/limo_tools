@@ -5,7 +5,7 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % different kind of figures, thresholds etc ..
 %
 % FORMAT:
-% limo_display_results(Type,FileName,PathName,p,LIMO,flag)
+% limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,options)
 %
 % INPUTS:
 %   Type      = type of images/plot to do
