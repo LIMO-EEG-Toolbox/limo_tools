@@ -109,7 +109,7 @@ elseif nargin == 6
     % -------------
     limo.data.neighbouring_matrix = expected_chanlocs;
     [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);  
-    
+
     % get data for all parameters dim [electrode, frame, param, nb subjects
     % ---------------------------------------------------------------------
     disp('gathering data ...'); index = 1;
@@ -220,9 +220,12 @@ elseif nargin == 1
         
         % match frames
         % ------------
-     limo.data.neighbouring_matrix = expected_chanlocs;
-    [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
-
+     limo.data.neighbouring_matrix = channeighbstructmat;
+     limo.data.expected_chanlocs   = expected_chanlocs; 
+     [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
+     limo.Analysis = 'Time';
+     limo.Level = 2;
+     
     % match electrodes
         % --------------
         Analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
@@ -378,8 +381,11 @@ elseif nargin == 1
                 
         % match frames
         % -------------
-     limo.data.neighbouring_matrix = expected_chanlocs;
-    [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);      
+        limo.data.neighbouring_matrix = channeighbstructmat;
+        limo.data.expected_chanlocs = expected_chanlocs;
+        [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
+        limo.Analysis = 'Time';
+        limo.Level = 2;
         
         % get data for all parameters dim [electrode, frame, param, nb subjects
         % ---------------------------------------------------------------------

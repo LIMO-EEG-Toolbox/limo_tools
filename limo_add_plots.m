@@ -10,11 +10,13 @@ out = 0;
 turn = 1;
 current = pwd;
 subjects_plot = 0;
+electrode = [];
 
 while out == 0
     
     %% Data selection
     % ------------------
+    toplot = []; % that's for full channels fig.
     [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
     if index == 0
         out = 1; return
@@ -134,9 +136,13 @@ while out == 0
     %% electrode to plot
     % ----------------
     if size(Data,1) == 1
-        Data = squeeze(Data(1,:,:));
+        Data = squeeze(Data(1,:,:)); toplot = [];
     else
-        electrode = inputdlg(['which electgrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
+        toplot = squeeze(Data(:,:,2));
+        if isempty(electrode)
+            electrode = inputdlg(['which electrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
+        end
+        
         if strcmp(electrode,'') 
             tmp = Data(:,:,2); 
             if abs(max(tmp(:))) > abs(min(tmp(:)))
@@ -147,7 +153,11 @@ while out == 0
             if length(electrode) ~= 1; electrode = electrode(1); end; 
             Data = squeeze(Data(electrode,:,:)); fprintf('ploting channel %g\n',electrode)
         else
-            Data = squeeze(Data(eval(cell2mat(electrode)),:,:));
+            try
+                Data = squeeze(Data(electrode,:,:));
+            catch
+                Data = squeeze(Data(eval(cell2mat(electrode)),:,:));
+            end
         end
     end
     
@@ -174,14 +184,18 @@ while out == 0
     grid on; axis tight; box on;
     xlabel('Time ','FontSize',14)
     ylabel('Amplitude','FontSize',14)
-    
+        
     if turn == 1
         mytitle = name{1};
     else
         mytitle = sprintf('%s & %s',mytitle,name{turn});
     end
-    title(mytitle,'Fontsize',16);
-   
+    
+    if iscell(electrode)
+        electrode = eval(cell2mat(electrode));
+    end
+    title(sprintf('electrode %g \n %s',electrode,mytitle),'Fontsize',16);
+    
     % updates
     turn = turn+1;
     if colorindex <7
@@ -190,6 +204,13 @@ while out == 0
         colorindex = 1;
     end
     
+    if ~isempty(toplot) && subjects_plot ~= 1
+        limo.design.name = 'central tendency';
+        limo.Type = 'Channels';
+        limo.data.timevect = timevect;
+        limo_display_image(limo,toplot,ones(size(toplot)),file(1:end-4),0)
+    end
+
     if subjects_plot == 1; 
         out =1; return; 
     else

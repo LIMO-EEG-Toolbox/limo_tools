@@ -1,7 +1,5 @@
 function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 
-% calls rewriten field trip functions to do clustering
-%
 % FORMAT:  [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p)
 %
 % INPUT

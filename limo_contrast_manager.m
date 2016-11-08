@@ -455,10 +455,13 @@ end
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
-clc; uiresume
+clc; 
+uiresume
 guidata(hObject, handles);
 close(get(hObject,'Parent')); 
-
 if isempty(handles.limofile)
     limo_results;
 end
+
+clearvars LIMO handles limofile
+return

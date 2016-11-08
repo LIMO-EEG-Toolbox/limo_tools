@@ -805,8 +805,8 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
         
         try load(MCC_data);
             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                bootT = H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:);
-                bootP = H0_Rep_ANOVA_Interaction_with_gp(:,:,2,:);
+                bootT = squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:));
+                bootP = squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,2,:));
                 if size(Rep_ANOVA_Interaction_with_gp,1) == 1
                     tmp = NaN(1,size(Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
                     tmp(1,:,:) = bootT; bootT = tmp;
@@ -814,8 +814,8 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                     clear tmp
                 end
             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                bootT = H0_Rep_ANOVA_Gp_effect(:,:,1,:);
-                bootP = H0_Rep_ANOVA_Gp_effect(:,:,2,:);
+                bootT = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:));
+                bootP = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,2,:));
                 if size(Rep_ANOVA_Gp_effect,1) == 1
                     tmp = NaN(1,size(Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
                     tmp(1,:,:) = bootT; bootT = tmp;
@@ -823,8 +823,8 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                     clear tmp
                 end
             elseif strncmp(FileName,'Rep_ANOVA',9)
-                bootT = H0_Rep_ANOVA(:,:,1,:); % get all F values under H0
-                bootP = H0_Rep_ANOVA(:,:,2,:); % get all P values under H0
+                bootT = squeeze(H0_Rep_ANOVA(:,:,1,:)); % get all F values under H0
+                bootP = squeeze(H0_Rep_ANOVA(:,:,2,:)); % get all P values under H0
                 if size(Rep_ANOVA,1) == 1
                     tmp = NaN(1,size(Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
                     tmp(1,:,:) = bootT; bootT = tmp;

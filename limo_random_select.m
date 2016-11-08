@@ -1763,8 +1763,8 @@ elseif type == 5
         
         LIMO = limo; cd(limo.dir); save LIMO LIMO
         Yr = tmp_data; save Yr Yr;
-        clear Betas LIMO Yr channeighbstructmat data expected_chanlocs Names Paths limo subj_chanlocs
-        tmpname = limo_random_robust(type+1,tmp_data,gp,factor_nb,g.nboot,g.tfce);
+        clear Betas Yr channeighbstructmat data expected_chanlocs Names Paths limo subj_chanlocs
+        tmpname = limo_random_robust(type+1,tmp_data,gp,factor_nb,LIMO,g.nboot,g.tfce);
         if nargout ~= 0, filepath = tmpname; end
     end
 end % closes type

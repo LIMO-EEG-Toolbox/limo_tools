@@ -285,11 +285,13 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
         end
         
-        for c=1:size(batch_contrast.mat,1)
-            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
+        if strcmp(option,'both') % we can only be sure of the number if it's a new model
+            for c=1:size(batch_contrast.mat,1)
+                name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
+            end
+            pipeline(subject).n_contrast.files_out = name; % name{1};
+            LIMO_files.con{subject} = name;
         end
-        pipeline(subject).n_contrast.files_out = name; % name{1};
-        LIMO_files.con{subject} = name;
     end
 end
 
@@ -306,13 +308,13 @@ try
 catch
     N = size(batch_contrast.LIMO_files,1);
 end
+procstatus = zeros(1,N);
 
 if isfield(LIMO_files,'con')
     LIMO_files.con = LIMO_files.con';
     remove_con = zeros(1,N);
 end
 
-procstatus = zeros(1,N);
 
 % ----------------------
 %% Save pipeline
@@ -320,12 +322,12 @@ procstatus = zeros(1,N);
 if ~exist('glm_name','var') && strcmp(option,'contrast only') 
     [~,glm_name]=fileparts(fileparts(pipeline(1).n_contrast.files_in));
 end
-save([current filesep 'limo_batch_report' filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
+save([current filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 
 % allocate names
 for subject = 1:N
     limopt{subject}= opt;
-    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep 'subject' num2str(subject)];
+    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
     
 parfor subject = 1:N

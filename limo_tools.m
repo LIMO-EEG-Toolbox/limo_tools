@@ -1,11 +1,10 @@
 function varargout = limo_tools(varargin)
 
 % GUI for the LIMO EEG Tools
-% Created using GUIDE 
-% Cyril Pernet 25-08-2009 v1
-% update 21-01-2015 v2
+% Created using GUIDE
+% Cyril Pernet
 % -----------------------------
-%  Copyright (C) LIMO Team 2015
+%  Copyright (C) LIMO Team 2016
 
 %% GUI stuffs
 % -------------------------
@@ -15,11 +14,11 @@ warning off
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @limo_tools_OpeningFcn, ...
-                   'gui_OutputFcn',  @limo_tools_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @limo_tools_OpeningFcn, ...
+    'gui_OutputFcn',  @limo_tools_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -49,7 +48,7 @@ guidata(hObject, handles);
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
-function varargout = limo_tools_OutputFcn(hObject, eventdata, handles) 
+function varargout = limo_tools_OutputFcn(hObject, eventdata, handles)
 varargout{1} = 'LIMO tools off';
 
 
@@ -92,43 +91,70 @@ guidata(hObject, handles);
 
 % --- Executes on button press in Expected_chanlocs.
 function Expected_chanlocs_Callback(hObject, eventdata, handles)
-[expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
-figure;  topoplot(zeros(1,71), expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
-figure; imagesc(channeighbstructmat); 
-label = {}; colormap(jet); 
-for i=1:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
-set(gca,'YTick',[1:2:length(expected_chanlocs)],'YTickLabel', label)
-label = {};
-for i=2:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
-set(gca,'XTick',[2:2:length(expected_chanlocs)],'XTickLabel', label)
-title('Connectivity matrix between channels','FontSize',14)
-positive = 1; while positive == 1
+
+choice =  questdlg2('Do you you to Create or Edit a groupo level file?', ...
+    'Choice', ...
+    'Create', 'Edit', 'Edit');
+if strcmp(choice,'Create')
+    [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
+else
+    [gp_level_file,filepath,sts]=uigetfile('*.mat','select gp level channel file');
+    if sts ==0
+        return
+    else
+        load([filepath filesep gp_level_file])
+    end
+end
+
+% show channels
+figure
+topoplot(zeros(1,71), expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
+
+% show connectivity matrix
+figure
+imagesc(channeighbstructmat); colormap(gray);
+for i=1:length(expected_chanlocs);
+    try
+        label{i}= expected_chanlocs(i).urchan;
+    catch
+        label{i}= expected_chanlocs(i).labels;
+    end
+end
+set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
+set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
+axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
+title(sprintf('Connectivity matrix between channels \n'),'FontSize',14)
+
+% interactive editing
+positive = 1;
+while positive == 1
     [y,x]=ginput(1);
     if x<0 || y<0
         positive = 0;
     else
-        
         if channeighbstructmat(round(x),round(y)) == 0
             channeighbstructmat(round(x),round(y)) = 1;
-            imagesc(channeighbstructmat)
+            channeighbstructmat(round(y),round(x)) = 1;
+            imagesc(channeighbstructmat); v = 'on';
         else
             channeighbstructmat(round(x),round(y)) = 0;
-            imagesc(channeighbstructmat)
+            channeighbstructmat(round(y),round(x)) = 0;
+            imagesc(channeighbstructmat);  v = 'off';
         end
-        label = {}; colormap(hot);
-        for i=1:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
-        set(gca,'YTick',[1:2:length(expected_chanlocs)],'YTickLabel', label)
-        label = {};
-        for i=2:2:length(expected_chanlocs); label{i}= expected_chanlocs(i).labels; end
-        set(gca,'XTick',[2:2:length(expected_chanlocs)],'XTickLabel', label)
-        title('Connectivity matrix between channels','FontSize',14)
+        colormap(gray);
+        set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
+        set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
+        axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
+        title(sprintf('Connectivity matrix between channels \nconnection %g %g %s',round(x),round(y),v),'FontSize',14)
     end
 end
+
+% save
 D=uigetdir(pwd,'Save file in directory');
 if D == 0
     disp('data not saved'); return
 else
-    cd(D); save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
+    save([D filesep 'edited_' gp_level_file],'expected_chanlocs','channeighbstructmat') % save all in one file
     fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
 end
 guidata(hObject, handles);
@@ -138,7 +164,7 @@ guidata(hObject, handles);
 % --- Executes on button press in Help.
 function Help_Callback(hObject, eventdata, handles)
 
-origin = which('limo_eeg'); origin = origin(1:end-10); 
+origin = which('limo_eeg'); origin = origin(1:end-10);
 origin = sprintf('%shelp',origin); cd(origin)
 web(['file://' which('limo_tools.html')]);
 

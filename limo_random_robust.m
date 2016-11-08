@@ -49,21 +49,23 @@ function filepath = limo_random_robust(varargin)
 %                    nboot = nb of resamples (0 for none)
 %                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(5,y,cat,cont,nboot,tfce)
+% limo_random_robust(5,y,cat,cont,LIMO,nboot,tfce)
 %                    5 = N-way ANOVA/ANCOVA
 %                    y = data (dim electrodes, time or freq, subjects)
 %                      = data (dim electrodes, freq, time, subjects)
 %                    cat = categorical variable(s)
 %                    cont = continuous regressors (covariates)
+%                    LIMO the basic structure with data, design and channel info
 %                    nboot = nb of resamples (0 for none)
 %                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(6,y,gp,factor_levels,nboot,tfce)
+% limo_random_robust(6,y,gp,factor_levels,LIMO,nboot,tfce)
 %                    6 = Repeated measures ANOVA/ANCOVA using multivariate approach
 %                    y = data (dim electrodes, time or freq, subjects, measures)
 %                      = data (dim electrodes, freq, time, subjects, measures)
 %                    gp = a vector defining gps
 %                    factor_levels = a vector specifying the levels of each repeated measure factor
+%                    LIMO the basic structure with data, design and channel info
 %                    nboot = nb of resamples (0 for none)
 %                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
@@ -121,7 +123,7 @@ function filepath = limo_random_robust(varargin)
 % trimmed means when possible
 
 
-%% inputs checks 
+%% inputs checks
 filepath = pwd;
 type = varargin{1};
 if type == 1
@@ -244,7 +246,7 @@ switch type
                 save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
             end
             
-            if tfce ~= 0 
+            if tfce ~= 0
                 mkdir tfce; neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
@@ -306,7 +308,7 @@ switch type
                         end
                     end
                 end
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3'); 
+                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
                 clear tfce_H0_one_sample; disp(' .. done')
             end
             clear H0_one_sample tfce_H0_one_sample
@@ -428,7 +430,7 @@ switch type
                             H0_two_samples(electrode,:,2,b) = p{b};
                         end
                         clear t p
-
+                        
                     else
                         for b=1:nboot
                             [H0_two_samples(electrode,:,1,b),diff,se,CI,H0_two_samples(electrode,:,2,b),tcrit,df]=limo_yuen_ttest(Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)));
@@ -437,7 +439,7 @@ switch type
                     end
                     clear Y1 Y2
                 end
-              
+                
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     H0_two_samples = limo_tf_5d_reshape(H0_two_samples);
@@ -846,11 +848,11 @@ switch type
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
                     data = limo_tf_4d_reshape(data);
-                    Yhat = NaN(size(data)); 
+                    Yhat = NaN(size(data));
                     Condition_effect_1 = NaN(size(data,1),size(data,2),2);
                     array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
                     for e=1:size(array,1)
-                        electrode = array(e); fprintf('processing electrode %g \n,',electrode); 
+                        electrode = array(e); fprintf('processing electrode %g \n,',electrode);
                         [Condition_effect_1(electrode,:,1), Condition_effect_1(electrode,:,2),Yhat(electrode,:,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
                     end
                     Condition_effect_1 = limo_tf_4d_reshape(Condition_effect_1);
@@ -858,7 +860,7 @@ switch type
                     delete Betas.mat % no betas here
                     delete R2.mat % no R2
                     Yhat = limo_tf_4d_reshape(Yhat); % these are the trimmed mean
-                    data = limo_tf_4d_reshape(data); 
+                    data = limo_tf_4d_reshape(data);
                     Res = data - Yhat;
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
@@ -893,7 +895,7 @@ switch type
         % do the bootsrap for the 1-way ANOVA
         % --------------------------------------
         if LIMO.design.bootstrap ~= 0 &&  LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
-            mkdir('H0'); 
+            mkdir('H0');
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC'); data = limo_tf_4d_reshape(data); end
             for c=1:size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
@@ -902,26 +904,26 @@ switch type
             boot_table = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect_1 = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
             X = LIMO.design.X(:,1:end-1);
-%             if exist('parfor','file')
-%                 parfor b=1:LIMO.design.bootstrap
-%                     for e=1:size(array,1)
-%                        %  electrode = array(e); fprintf('processing electrode %g \n,',electrode);
-%                        %  [F(electrode,:), p(electrode,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,boot_table{electrode}(:,b)),X,20)); % no intercept in this model
-%                     end
-%                     H0_Condition_effect_1(:,:,1,b) = F;
-%                     H0_Condition_effect_1(:,:,2,b) = p;
-%                 end
-%             else
-                for b=1:LIMO.design.bootstrap
-                    for electrode=1:size(array,1)
-                        e = array(electrode); index = find(~isnan(squeeze(data(e,1,:)))); X = LIMO.design.X(index,1:end-1);
-                        if sum(sum(X) == 0) ==0
-                            disp('compute')
+            %             if exist('parfor','file')
+            %                 parfor b=1:LIMO.design.bootstrap
+            %                     for e=1:size(array,1)
+            %                        %  electrode = array(e); fprintf('processing electrode %g \n,',electrode);
+            %                        %  [F(electrode,:), p(electrode,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,boot_table{electrode}(:,b)),X,20)); % no intercept in this model
+            %                     end
+            %                     H0_Condition_effect_1(:,:,1,b) = F;
+            %                     H0_Condition_effect_1(:,:,2,b) = p;
+            %                 end
+            %             else
+            for b=1:LIMO.design.bootstrap
+                for electrode=1:size(array,1)
+                    e = array(electrode); index = find(~isnan(squeeze(data(e,1,:)))); X = LIMO.design.X(index,1:end-1);
+                    if sum(sum(X) == 0) ==0
+                        disp('compute')
                         [H0_Condition_effect_1(e,:,1,b), H0_Condition_effect_1(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X(find,:),20); % no intercept in this model
-                        end
                     end
                 end
- %           end
+            end
+            %           end
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC'); H0_Condition_effect_1 = limo_tf_5d_reshape(H0_Condition_effect_1); end
             save H0_Condition_effect_1 H0_Condition_effect_1
@@ -935,20 +937,19 @@ switch type
         %----------------------------------------------------------------------------------------------
     case {6}
         
-        load LIMO
+        data              = varargin{2}; % e,f,subjects,measures
+        gp_vector         = varargin{3}; % length of data, indices groups
+        factor_levels     = varargin{4}; % vector eg [2 3]
+        LIMO              = varargin{5};
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             tmp = NaN(size(data,1), size(data,2),size(data,3),size(data,4),size(data,5));
             for measure = 1:size(data,5)
                 tmp(:,:,:,measure) = limo_tf_4d_reshape(squeeze(data(:,:,:,:,measure)));
             end
             clear data; data=tmp; clear tmp;
-        else
-            data          = varargin{2}; % e,f,subjects,measures
         end
-        gp_vector         = varargin{3}; % length of data, indices groups
-        factor_levels     = varargin{4}; % vector eg [2 3]
-        nboot             = varargin{5};
-        tfce              = varargin{6};
+        nboot             = varargin{6};
+        tfce              = varargin{7};
         clear varargin
         
         % ------------------------------------------------
@@ -969,16 +970,16 @@ switch type
         if unique(gp_vector) == 1
             % one sample
             if length(factor_levels) ==1
-                type = 1;
+                type = 1; % simple repeated measure ANOVA (1 effect)
             elseif length(factor_levels) >1
-                type = 2;
+                type = 2; % multiple factors (effects and interactions)
             end
         else
             % k samples
             if length(factor_levels) ==1
-                type = 3;
+                type = 3; % gp * repeated measure (2 effects + interactions)
             elseif length(factor_levels) >1
-                type = 4;
+                type = 4; % gp * multiple factors (effects and interactions)
             end
         end
         
@@ -994,7 +995,7 @@ switch type
             x = kron(eye(prod(factor_levels)),ones(size(data,3),1));
             LIMO.design.X = [x ones(size(x,1),1)];
             
-        elseif type == 2 % many factor
+        elseif type == 2 % many factors
             LIMO.design.method = 'Mean';
             C = limo_OrthogContrasts(factor_levels);
             tmp_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2); % store F and p for each within factor and interactions
@@ -1113,12 +1114,13 @@ switch type
                 tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,:,1) = result.interaction.F';
                 tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,:,2) = result.interaction.p';
             end
+            nb_effects = size(tmp_Rep_ANOVA,3);
             clear tmp Y gp result
         end
         
         % save stuff
         % ---------
-        for i=1:size(tmp_Rep_ANOVA,3)
+        for i=1:nb_effects
             name = sprintf('Rep_ANOVA_Factor_%g',i);
             % save each factor effect as F/p values
             % use reshape instead of squeeze in case there is only 1 electrode
@@ -1127,7 +1129,8 @@ switch type
             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                 Rep_ANOVA = limo_tf_4d_reshape(Rep_ANOVA);
             end
-            save([name],'Rep_ANOVA', '-v7.3'); if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
+            save([name],'Rep_ANOVA', '-v7.3');
+            if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
         end
         
         if type == 3 || type ==4
@@ -1139,93 +1142,93 @@ switch type
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     Rep_ANOVA_Interaction_with_gp = limo_tf_4d_reshape(Rep_ANOVA_Interaction_with_gp);
                 end
-                save([name],'Rep_ANOVA_Interaction_with_gp', '-v7.3'); clear Rep_ANOVA_Interaction_with_gp; if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
+                save([name],'Rep_ANOVA_Interaction_with_gp', '-v7.3');
+                clear Rep_ANOVA_Interaction_with_gp;
+                if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
             end
             save Rep_ANOVA_Gp_effect Rep_ANOVA_Gp_effect -v7.3; % always only 1 effect
             if nargout ~= 0, filepath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
-
+            
         end
         
         % ----------------------------------------------------------------
-        if nboot > 0 && tfce ~= 0 % do tfce now to free memory
-            mkdir tfce;
-            
-            fprintf('Thresholding Rep ANOVA using TFCE \n');
-            for i=1:size(tmp_Rep_ANOVA,3)
-                fprintf('analyzing effect %g \n',i)
-                tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Factor_%g',filesep,i);
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(tmp_Rep_ANOVA,1) == 1
-                        tfce_Rep_ANOVA = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA(:,:,i,1))),[]);
-                    else
-                        tfce_Rep_ANOVA = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA(:,:,i,1))),channeighbstructmat);
-                    end
-                else
-                    if size(tmp_Rep_ANOVA,1) == 1
-                        tfce_Rep_ANOVA = limo_tfce(1,squeeze(tmp_Rep_ANOVA(:,:,i,1)),[]);
-                    else
-                        tfce_Rep_ANOVA = limo_tfce(2,squeeze(tmp_Rep_ANOVA(:,:,i,1)),channeighbstructmat);
-                    end
-                end
-                save(tfce_name, 'tfce_Rep_ANOVA'); 
-                clear tfce_Rep_ANOVA
-            end
-            
-            if type == 3 || type == 4
-                % gp effect
-                fprintf('analyzing gp effect \n')
-                tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Gp_effect',filesep);
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(Rep_ANOVA_Gp_effect,1) == 1
-                        tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_4d_reshape(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1))),[]);
-                    else
-                        tfce_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_4d_reshape(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1))),channeighbstructmat);
-                    end
-                else
-                    if size(Rep_ANOVA_Gp_effect,1) == 1
-                        tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1)),[]);
-                    else
-                        tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1)),channeighbstructmat);
-                    end
-                end
-                save(tfce_name, 'tfce_Rep_ANOVA_Gp_effect'); 
-                clear tfce_Rep_ANOVA_Gp_effect
-                
-                % interactions
-                for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
-                    fprintf('analyzing interaction effect %g \n',i)
-                    tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i);
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
-                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),[]);
-                    else
-                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),channeighbstructmat);
-                    end
-                else
-                    if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
-                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),[]);
-                    else
-                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),channeighbstructmat);
-                    end
-                end
-                    save(tfce_name, 'tfce_Rep_ANOVA_Interaction_with_gp'); 
-                    clear tfce_Rep_ANOVA_Interaction_with_gp 
-                end
-            end
-        end
-        
-        clear tmp_Rep_ANOVA
-        if type == 3 || type == 4
-            clear Rep_ANOVA_Gp_effect tmp_Rep_ANOVA_Interaction_with_gp
-        end
-        
-        % now do the bootstrap and tfce under H0
-        % -------------------------------------
         if nboot > 0
+            if tfce ~= 0 % do tfce now to free memory
+                mkdir tfce;
+                fprintf('Thresholding Rep ANOVA using TFCE \n');
+                for i=1:nb_effects
+                    fprintf('analyzing effect %g \n',i)
+                    tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Factor_%g',filesep,i);
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        if size(tmp_Rep_ANOVA,1) == 1
+                            tfce_Rep_ANOVA = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA(:,:,i,1))),[]);
+                        else
+                            tfce_Rep_ANOVA = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA(:,:,i,1))),LIMO.data.neighbouring_matrix);
+                        end
+                    else
+                        if size(tmp_Rep_ANOVA,1) == 1
+                            tfce_Rep_ANOVA = limo_tfce(1,squeeze(tmp_Rep_ANOVA(:,:,i,1)),[]);
+                        else
+                            tfce_Rep_ANOVA = limo_tfce(2,squeeze(tmp_Rep_ANOVA(:,:,i,1)),LIMO.data.neighbouring_matrix);
+                        end
+                    end
+                    save(tfce_name, 'tfce_Rep_ANOVA');
+                    clear tfce_Rep_ANOVA
+                end
+                
+                if type == 3 || type == 4
+                    % gp effect
+                    fprintf('analyzing gp effect \n')
+                    tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Gp_effect',filesep);
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        if size(Rep_ANOVA_Gp_effect,1) == 1
+                            tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_4d_reshape(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1))),[]);
+                        else
+                            tfce_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_4d_reshape(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1))),LIMO.data.neighbouring_matrix);
+                        end
+                    else
+                        if size(Rep_ANOVA_Gp_effect,1) == 1
+                            tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1)),[]);
+                        else
+                            tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                        end
+                    end
+                    save(tfce_name, 'tfce_Rep_ANOVA_Gp_effect');
+                    clear tfce_Rep_ANOVA_Gp_effect
+                    
+                    % interactions
+                    for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
+                        fprintf('analyzing interaction effect %g \n',i)
+                        tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i);
+                        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                            if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),[]);
+                            else
+                                tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),LIMO.data.neighbouring_matrix);
+                            end
+                        else
+                            if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),[]);
+                            else
+                                tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),LIMO.data.neighbouring_matrix);
+                            end
+                        end
+                        save(tfce_name, 'tfce_Rep_ANOVA_Interaction_with_gp');
+                        clear tfce_Rep_ANOVA_Interaction_with_gp
+                    end
+                end
+            end
+            
+            clear tmp_Rep_ANOVA
+            if type == 3 || type == 4
+                clear Rep_ANOVA_Gp_effect tmp_Rep_ANOVA_Interaction_with_gp
+            end
+            
+            % now do the bootstrap
+            % ---------------------
             bootex = 1;
-            name = 'Rep_ANOVA';
-            boot_name = sprintf('H0%sboot_H0_%s', filesep, name);
-            if exist(['H0', filesep, boot_name, '.mat'], 'file')
+            boot_files = dir(['H0' filesep 'H0_Rep_ANOVA*']);
+            if ~isempty(boot_files)
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if strcmp(answer,'Yes');
                     bootex = 1;
@@ -1370,69 +1373,109 @@ switch type
                     save(['H0', filesep, 'H0_Rep_ANOVA_Gp_effect'], 'H0_Rep_ANOVA_Gp_effect', '-v7.3');
                 end
             end
-            
-            % ------------------------- TFCE ---------------
-            if tfce ~= 0 % check if tfce is on and if more than one electrode
-                
-                fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
-                for i=1:size(tmp_Rep_ANOVA,3)
-                    fprintf('analyzing effect %g \n',i);
-                    tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Factor_%g',filesep,i);
+        end
+        
+        % ------------------------- TFCE ---------------
+        if tfce ~= 0 % check if tfce is on and if more than one electrode
+           
+            fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
+            for i=1:nb_effects
+                fprintf('analyzing effect %g \n',i);
+                tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Factor_%g',filesep,i);
+                if exist('tmp_boot_H0_Rep_ANOVA','var')
                     if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                         if size(tmp_boot_H0_Rep_ANOVA,1) == 1
                             tfce_H0_Rep_ANOVA = limo_tfce(2,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:))),[]);
                         else
-                            tfce_H0_Rep_ANOVA = limo_tfce(3,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:))),channeighbstructmat);
+                            tfce_H0_Rep_ANOVA = limo_tfce(3,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:))),LIMO.data.neighbouring_matrix);
                         end
                     else
                         if size(tmp_boot_H0_Rep_ANOVA,1) == 1
                             tfce_H0_Rep_ANOVA = limo_tfce(1,squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:)),[]);
                         else
-                            tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:)),channeighbstructmat);
+                            tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,1,:)),LIMO.data.neighbouring_matrix);
                         end
                     end
-                    save(tfce_name, 'tfce_H0_Rep_ANOVA'); clear tfce_H0_Rep_ANOVA
+                else
+                    load(sprintf('H0%sH0_Rep_ANOVA_Factor_%g',filesep,i));
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        if size(H0_Rep_ANOVA,1) == 1
+                            tfce_H0_Rep_ANOVA = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA(:,:,i,:))),[]);
+                        else
+                            tfce_H0_Rep_ANOVA = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA(:,:,i,:))),LIMO.data.neighbouring_matrix);
+                        end
+                    else
+                        if size(H0_Rep_ANOVA,1) == 1
+                            tfce_H0_Rep_ANOVA = limo_tfce(1,squeeze(H0_Rep_ANOVA(:,:,i,:)),[]);
+                        else
+                            tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(H0_Rep_ANOVA(:,:,i,:)),LIMO.data.neighbouring_matrix);
+                        end
+                    end
+                end
+                save(tfce_name, 'tfce_H0_Rep_ANOVA'); 
+                clear tfce_H0_Rep_ANOVA
+            end
+            
+            if type == 3 || type == 4
+                
+                % gp effect
+                fprintf('analyzing gp effect \n')
+                tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Gp_effect',filesep);
+                if ~exist('H0_Rep_ANOVA_Gp_effect','var')
+                    load(sprintf('H0%sH0_Rep_ANOVA_Gp_effect',filesep));
                 end
                 
-                if type == 3 || type == 4
-                    
-                    % gp effect
-                    fprintf('analyzing gp effect \n')
-                    tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Gp_effect',filesep);
-                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                        if size(H0_Rep_ANOVA_Gp_effect,1)
-                            tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
+                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                    if size(H0_Rep_ANOVA_Gp_effect,1)
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
+                    else
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(3,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),LIMO.data.neighbouring_matrix);
+                    end
+                else
+                    if size(H0_Rep_ANOVA_Gp_effect,1)
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
+                    else
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                    end
+                end
+                save(tfce_name, 'H0_tfce_Rep_ANOVA_Gp_effect');
+                clear tfce_H0_Rep_ANOVA_Gp_effect H0_Rep_ANOVA_Gp_effect
+                
+                % interactions
+                for i=1:nb_effects
+                    fprintf('analyzing interaction effect %g \n',i)
+                    tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i);
+                    if exist('tmp_boot_H0_Rep_ANOVA_Interaction_with_gp','var')
+                        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                            if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),[]);
+                            else
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),LIMO.data.neighbouring_matrix);
+                            end
                         else
-                            tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(3,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),channeighbstructmat);
+                            if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),[]);
+                            else
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),LIMO.data.neighbouring_matrix);
+                            end
                         end
                     else
-                        if size(H0_Rep_ANOVA_Gp_effect,1)
-                            tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
+                        load(sprintf('H0%sH0_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i));
+                        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                            if size(H0_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:))),[]);
+                            else
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:))),LIMO.data.neighbouring_matrix);
+                            end
                         else
-                            tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),channeighbstructmat);
+                            if size(H0_Rep_ANOVA_Interaction_with_gp,1) == 1
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:)),[]);
+                            else
+                                tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:)),LIMO.data.neighbouring_matrix);
+                            end
                         end
                     end
-                    save(tfce_name, 'H0_tfce_Rep_ANOVA_Gp_effect'); clear tfce_H0_Rep_ANOVA_Gp_effect H0_Rep_ANOVA_Gp_effect
-                    
-                    % interactions
-                    for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
-                        fprintf('analyzing interaction effect %g \n',i)
-                        tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i);
-                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                        if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-                            tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),[]);
-                        else
-                            tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),channeighbstructmat);
-                        end
-                    else
-                        if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-                            tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),[]);
-                        else
-                            tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),channeighbstructmat);
-                        end
-                    end
-                        save(tfce_name, 'tfce_H0_Rep_ANOVA_Interaction_with_gp'); clear tfce_H0_Rep_ANOVA_Interaction_with_gp
-                    end
+                    save(tfce_name, 'tfce_H0_Rep_ANOVA_Interaction_with_gp'); clear tfce_H0_Rep_ANOVA_Interaction_with_gp
                 end
             end
         end

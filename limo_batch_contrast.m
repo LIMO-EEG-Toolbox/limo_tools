@@ -21,7 +21,7 @@ end
 
 %% do the analysis
 
-fprintf('loading data - and conputing contrast(s) in %s \n',pwd)
+fprintf('loading data - and computing contrast(s) in %s \n',pwd)
 
 load Yr; load Betas;
 if isfield(LIMO,'contrast')
@@ -31,8 +31,9 @@ else
 end
 
 for i=1:size(C,1)  % for each new contrast
+    LIMO.contrast{previous_con+i}.V = 'T';
     LIMO.contrast{previous_con+i}.C = out(i,:); save LIMO LIMO
-    result = limo_contrast(Yr, Betas, LIMO, 0,1);
+    limo_contrast(Yr, Betas, LIMO, 0,1);
 end
 
 

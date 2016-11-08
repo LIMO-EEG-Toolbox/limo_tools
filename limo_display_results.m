@@ -237,8 +237,9 @@ if LIMO.Level == 1
                     update_cache = 1;
                 end
                 
-                % do the figure
-                % ---------------
+% -------------------------------------------------------------------------
+%              Actual plot takes place here
+% -------------------------------------------------------------------------
                 if ~isempty(toplot)
                     
                     % cache the results for next time
@@ -354,7 +355,7 @@ if LIMO.Level == 1
                     end
                 end
                 
-                % plots
+                
                 figure; set(gcf,'Color','w');
                 % imagesc eigen values
                 h = subplot(3,3,[4 5 7 8]);
@@ -2347,7 +2348,22 @@ end % closes the function
 % -------------------------------------------------------------------------
 function color_images_(scale,LIMO)
 
-cc=colormap(jet);cc(1,:)=[.9 .9 .9];colormap(cc);
+if min(scale(:)) >= 0
+    cc=cubehelixmap('increase',64);
+elseif min(scale(:)) <= 0
+    cc=cubehelixmap('decrease',64);   
+else
+    cc = zeros(64,3);
+    tmp = scale.*(scale>0);
+    cc(33:64,:)=cubehelixmap('increase',32);
+    tmp = scale.*(scale<0);  
+    cc(1:32,:)=cubehelixmap('decrease',32);
+end
+
+%cc=colormap(jet);
+cc(1,:)=[.9 .9 .9]; % set NaNs to gray
+colormap(cc);
+
 set(gca,'XMinorTick','on','LineWidth',2)
 try
     set(gca,'YTick',1:length(LIMO.data.expected_chanlocs));
