@@ -33,7 +33,10 @@ limo = struct('plotrank','on','testdifference','on','checkbias','on');
 
 if nargin == 0
     [~,~,LIMO_files] = limo_get_files([],'*txt','choose a list of LIMO files');
-    [to_load,path] = uigetfile2('expected_chanlocs.mat','load chanlocs'); chan = load([path to_load]);
+    if isempty(LIMO_files); return; end
+    [to_load,path] = uigetfile2('expected_chanlocs.mat','load chanlocs'); 
+    if to_load == 0; return; end
+    chan = load([path to_load]);
     limo.data.chanlocs = chan.expected_chanlocs;
     limo.data.neighbouring_matrix =  chan.channeighbstructmat;
 end

@@ -16,7 +16,6 @@ while out == 0
     
     %% Data selection
     % ------------------
-    toplot = []; % that's for full channels fig.
     [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
     if index == 0
         out = 1; return
@@ -87,7 +86,7 @@ while out == 0
         if isempty(v)
             out = 1; return
         elseif strcmp(v,'mean')
-            Data = squeeze(mean(tmp,3));
+            Data = squeeze(nanmean(tmp,3));
         else
             try
                 v = str2num(cell2mat(v));
@@ -145,7 +144,6 @@ while out == 0
     if size(Data,1) == 1
         Data = squeeze(Data(1,:,:)); toplot = [];
     else
-        toplot = squeeze(Data(:,:,2));
         if isempty(electrode)
             electrode = inputdlg(['which electrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
         end
@@ -170,8 +168,6 @@ while out == 0
     
     % finally plot
     % ---------------
-    figure(plotfig)
-    % subplot(3,2,[1 2 3 4])
     if turn==1
         if subjects_plot == 1
             plot(timevect,Data,'LineWidth',2); 
@@ -214,13 +210,6 @@ while out == 0
         colorindex = 1;
     end
     
-%     if ~isempty(toplot) && subjects_plot ~= 1
-%         limo.design.name = 'central tendency';
-%         limo.Type = 'Channels';
-%         limo.data.timevect = timevect;
-%         limo_display_image(limo,toplot,ones(size(toplot)),file(1:end-4),0)
-%     end
-
     if subjects_plot == 1; 
         out =1; return; 
     else
