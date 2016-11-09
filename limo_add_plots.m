@@ -78,9 +78,16 @@ while out == 0
     elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
         Data = squeeze(tmp(:,:,1,:));
     else 
-        v = inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option');
+        if subjects_plot == 1
+            v = inputdlg(['which subject to plot, 1 to ' num2str(size(tmp,3))],'plotting option');
+        else
+            v = inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option');            
+        end
+        
         if isempty(v)
             out = 1; return
+        elseif strcmp(v,'mean')
+            Data = squeeze(mean(tmp,3));
         else
             try
                 v = str2num(cell2mat(v));
@@ -168,13 +175,16 @@ while out == 0
     if turn==1
         if subjects_plot == 1
             plot(timevect,Data,'LineWidth',2); 
+            assignin('base','plotted_data',Data)
         else
             plot(timevect,Data(:,2)','LineWidth',3);
+            assignin('base','plotted_data',Data(:,2)')
         end
         colorOrder = get(gca, 'ColorOrder');
         colorindex = 1;
     else
         plot(timevect,Data(:,2)','Color',colorOrder(colorindex,:),'LineWidth',3);
+        assignin('base','plotted_data',Data(:,2)')
     end
     
     if subjects_plot == 0
@@ -204,12 +214,12 @@ while out == 0
         colorindex = 1;
     end
     
-    if ~isempty(toplot) && subjects_plot ~= 1
-        limo.design.name = 'central tendency';
-        limo.Type = 'Channels';
-        limo.data.timevect = timevect;
-        limo_display_image(limo,toplot,ones(size(toplot)),file(1:end-4),0)
-    end
+%     if ~isempty(toplot) && subjects_plot ~= 1
+%         limo.design.name = 'central tendency';
+%         limo.Type = 'Channels';
+%         limo.data.timevect = timevect;
+%         limo_display_image(limo,toplot,ones(size(toplot)),file(1:end-4),0)
+%     end
 
     if subjects_plot == 1; 
         out =1; return; 

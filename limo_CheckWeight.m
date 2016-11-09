@@ -96,7 +96,7 @@ if ~isempty(varargin)
         end
     end
 end
-
+   
 %% compute
 mkdir('Weights_checking'); cd('Weights_checking');
 [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
@@ -257,10 +257,14 @@ for f=1:length(LIMO_files)
                 Yr(e,1,:,:)=squeeze(Bias(e,:,:))';
             end
             save Yr Yr; clear Bias
-            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,1000,0);
+            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,LIMO,1000,0);
+            try close('Design matrix'); end
         end
     end % close bias
 end
-disp('analysis done - plot results')
+cd ..
+disp('analysis done')
+disp('Plot central tendency to check weights per subject and decile')
+disp('view results ''all'' for outliers and bias')
 
 

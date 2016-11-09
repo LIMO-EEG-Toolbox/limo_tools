@@ -83,6 +83,12 @@ guidata(hObject, handles);
 
 
 % ---------------------------------------------------------------
+% --- Executes on button press in check_weights.
+function check_weights_Callback(hObject, eventdata, handles)
+limo_CheckWeight
+guidata(hObject, handles);
+
+
 
 % --- Executes on button press in electrode_optimization.
 function electrode_optimization_Callback(hObject, eventdata, handles)
@@ -176,6 +182,8 @@ uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
+
+
 
 
 
