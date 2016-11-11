@@ -367,7 +367,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     cell2csv(['Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
 end
 
-if isfield(LIMO_files,'con')
+if strcmp(option,'contrast only') || strcmp(option,'both')
     for c=1:size(batch_contrast.mat,1)
         index = 1;
         for subject = 1:N
@@ -379,7 +379,11 @@ if isfield(LIMO_files,'con')
             index = index + 1;
         end
         name = name';
+        if exist('remove_con','var')
         cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
+        else
+        cell2csv(['con_files_' glm_name '.txt'], name);
+        end
     end
 end
 
