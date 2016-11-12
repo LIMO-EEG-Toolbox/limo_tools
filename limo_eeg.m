@@ -414,7 +414,7 @@ switch varargin{1}
         
         % NBOOT (updated if specified in LIMO.design)
         % ------------------------------------------
-        nboot =  1000;
+        nboot =  800;
         % ----------
         
         % get the LIMO.mat
@@ -667,7 +667,7 @@ switch varargin{1}
                         array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
                     end
                 
-                    if LIMO.design.bootstrap > 599
+                    if LIMO.design.bootstrap > 800
                         nboot = LIMO.design.bootstrap;
                     end
                     

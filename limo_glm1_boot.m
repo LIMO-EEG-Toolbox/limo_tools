@@ -52,6 +52,8 @@ if nargin == 2 || nargin == 3
         end
         n_freqs = varargin{2}.data.size4D(2);
         n_times = varargin{2}.data.size4D(3);
+    else
+        n_freqs = []; n_times =[];
     end
     
     if nargin == 2
@@ -475,13 +477,13 @@ parfor B = 1:nboot
                 I_index = I_index +1;
             end
         end
+        
+        if nb_factors ~= 0
+            F_INTERVALUES{B}  = F_interactions;
+            p_INTERVALUES{B}  = pval_interactions;
+        end
     end
-    
-    if nb_factors ~= 0
-        F_INTERVALUES{B}  = F_interactions;
-        p_INTERVALUES{B}  = pval_interactions;
-    end
-    
+   
     % -----------------------------------
     %% compute F for continuous variables
     % -----------------------------------

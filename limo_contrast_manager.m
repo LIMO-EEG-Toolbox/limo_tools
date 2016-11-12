@@ -413,7 +413,7 @@ if ~isempty(handles.C);
             
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'T';
+            LIMO.contrast{index}.V = 'F';
             C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
@@ -421,11 +421,11 @@ if ~isempty(handles.C);
             result = limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
-                cd H0; limo_contrast(Yr, LIMO, 4); cd ..
+                cd H0; limo_contrast(Yr, LIMO, 4,); cd ..
             end
             
             if LIMO.design.tfce == 1
-                filename = sprintf('ess_%g.mat',index); load(filename);
+                filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
                 tfce_score = limo_tfce(squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
