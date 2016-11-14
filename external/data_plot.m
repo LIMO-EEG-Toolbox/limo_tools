@@ -197,7 +197,7 @@ for u=1:grouping
 
     % plot contours
     y1 = plot(high+gp_index(u),bc); set(y1,'Color',color_scheme(u,:)); hold on
-    y2 = plot(low+gp_index(u),bc); set(y1,'Color',color_scheme(u,:));
+    y2 = plot(low+gp_index(u),bc); set(y2,'Color',color_scheme(u,:));
     if isnumeric(y1)
         y1 = get(y1); y2 = get(y2); % old fashion matlab
     end

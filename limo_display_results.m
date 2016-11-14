@@ -1088,7 +1088,7 @@ if LIMO.Level == 1
     
 elseif LIMO.Level == 2
     
-    if ~strncmp(FileName,'LIMO',4) % in all cases but ERP plot
+    if ~strncmp(FileName,'LIMO',4) % in all cases but course plot
         
         % if previously plotted, recover from the cache
         data_cached = 0;
@@ -1535,10 +1535,16 @@ elseif LIMO.Level == 2
             elseif strcmp(LIMO.Analysis,'Frequency')
                 plot(LIMO.data.freqlist,squeeze(trimci(:,2)),'LineWidth',3);
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
+                if size(LIMO.data.freqlist,2) == 1
+                    freq_axis = [LIMO.data.freqlist' flipud(LIMO.data.freqlist)'];
+                else
+                    freq_axis = [LIMO.data.freqlist fliplr(LIMO.data.freqlist)];
+                end
+                
                 try
-                    fillhandle = patch([LIMO.data.freqlist fliplr(LIMO.data.freqlist)], [squeeze(trimci(:,1)),fliplr(squeeze(trimci(:,3)))], [1 0 0]);
+                    fillhandle = patch(freq_axis, [squeeze(trimci(:,1))' flipud(squeeze(trimci(:,3)))'], [1 0 0]);
                 catch no_fill
-                    fillhandle = patch([LIMO.data.freqlist fliplr(LIMO.data.freqlist)], [squeeze(trimci(:,1));flipud(squeeze(trimci(:,3)))]', [1 0 0]);
+                    fillhandle = patch(freq_axis, [squeeze(trimci(:,1)) fliplr(squeeze(trimci(:,3)))], [1 0 0]);
                 end
                 xlabel('Frequency in Hz','FontSize',14)
                 ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -1653,7 +1659,7 @@ elseif LIMO.Level == 2
                         electrode = g.channels;
                     end
                     if isempty(electrode) || strcmp(cell2mat(electrode),'')
-                        [v,e] = max(data(:,:,4)); [v,c]=max(v); electrode = e(c);
+                        [v,e] = max(data(:,:,1)); [v,c]=max(v); electrode = e(c);
                     else
                         electrode = eval(cell2mat(electrode));
                         if length(electrode) > 1
@@ -1696,7 +1702,7 @@ elseif LIMO.Level == 2
                     for i=1:length(regressor)
                         index{i} = find(LIMO.design.X(:,regressor(i)));
                         [~,sorting_values]=sort(LIMO.design.X(index{i},regressor(i)));  % continuous variable 3D plot
-                        reg_values(i,:) = LIMO.data.Cont(:,sorting_values);
+                        reg_values(i,:) = LIMO.data.Cont(sorting_values,i);
                         if strcmp(LIMO.Analysis,'Time-Frequency')
                             continuous(i,:,:) = Yr(electrode,freq_index,:,sorting_values);
                         else
