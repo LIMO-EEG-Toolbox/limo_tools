@@ -421,7 +421,7 @@ if ~isempty(handles.C);
             result = limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
-                cd H0; limo_contrast(Yr, LIMO, 4,); cd ..
+                cd H0; limo_contrast(Yr, LIMO, 4); cd ..
             end
             
             if LIMO.design.tfce == 1
