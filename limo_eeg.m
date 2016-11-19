@@ -51,8 +51,7 @@ function limo_eeg(varargin)
 % Copyright (C) LIMO Team 2016
 
 % make sure paths are ok
-local_path = which('limo_eeg');
-root = fileparts(local_path);
+root = fileparts(which('limo_eeg'));
 pathCell = regexp(path, pathsep, 'split');
 onPath = any(strcmp([root filesep 'help'], pathCell));
 if onPath == 0
@@ -414,8 +413,6 @@ switch varargin{1}
         
         % NBOOT (updated if specified in LIMO.design)
         % ------------------------------------------
-        nboot =  800;
-        % ----------
         
         % get the LIMO.mat
         try
@@ -633,7 +630,7 @@ switch varargin{1}
                 if ~exist('H0','dir')
                     boot_go = 1;
                 else
-                    ow = questdlg('overwrie H0?','limo check','yes','no','yes');
+                    ow = questdlg('overwrite H0?','limo check','yes','no','yes');
                     if strcmp(ow,'yes')
                         boot_go = 1;
                     end
@@ -667,7 +664,9 @@ switch varargin{1}
                         array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
                     end
                 
-                    if LIMO.design.bootstrap > 800
+                    if LIMO.design.bootstrap <= 800
+                        nboot = 800;
+                    else
                         nboot = LIMO.design.bootstrap;
                     end
                     

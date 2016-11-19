@@ -233,7 +233,7 @@ guidata(hObject, handles);
 function boostrap_check_box_Callback(hObject, eventdata, handles)
 M = get(hObject,'Value');
 if M == 1
-    handles.bootstrap = 1;
+    handles.bootstrap = 800; % our simulations show that under 800 this is not stable
     disp('bootstrap is on');
     set(handles.TFCE,'Enable','on')
 elseif M == 0
