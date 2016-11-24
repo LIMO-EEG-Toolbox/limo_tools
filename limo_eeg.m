@@ -15,7 +15,7 @@ function limo_eeg(varargin)
 %                 1 - load the GUI
 %                 2,X - call limo_import (time X=1 or freuqency X=2), creating LIMO.mat file and call limo_egg(3)
 %                 3 - call limo_design_matrix and populate LIMO.design
-%                 4 - call limo_glm1 (mass univariate) or limo_glm2 (multivariate) 
+%                 4 - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
 %                 5 - shortcut to limo_results, look at possible results and print a report
 %                 6,C - shortcut to limo_contrast for the current directory,
 %                 ask for a list of contrasts if not given as 2nd argument) and run them all
@@ -472,7 +472,7 @@ switch varargin{1}
                     W = zeros(size(Yr));
                 end
 
-                % ------------ run limo_glm1 per electrodes ---------------------------
+                % ------------ run limo_glm per electrodes ---------------------------
                 update = 1;
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
@@ -483,7 +483,7 @@ switch varargin{1}
                         index = find(~isnan(Y(1,:)));
                         Y = Y(:,index);
                         LIMO.design.X = X(index,:);
-                        model = limo_glm1(Y',LIMO); warning on;
+                        model = limo_glm(Y',LIMO); warning on;
                         if isempty(index)
                             index = [1:size(Y,2)];
                         end
@@ -494,7 +494,7 @@ switch varargin{1}
                             fprintf('analyzing component %g/%g \n',e,size(array,1));
                         end
                         index = [1:size(Yr,3)];
-                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO);
+                        model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
                     end
                     
                     % update the LIMO.mat (do it only once)

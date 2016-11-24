@@ -1,14 +1,14 @@
-function model = limo_glm1(varargin)
+function model = limo_glm(varargin)
 
-% General Linear model for 1st level analysis of EEG data
-% The model consider trials as independent observations
+% General Linear model analysis of EEG data
+% The model consider trials/subjects as independent observations
 % i.e. this is similar as running a N-way ANOVA or ANCOVA
 % Analyses are performed at one electrode only, but for all
 % trials and all time points.
 %
 % FORMAT:
 % model = limo_glm1(Y,LIMO)
-% model = limo_glm1(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,n_freqs,n_times)
+% model = limo_glm1(Y,X,nb_conditions,nb_interactions,nb_continuous, method,analysis type,n_freqs,n_times)
 %
 % INPUTS:
 %   Y             = 2D matrix of EEG data with format trials x frames
@@ -45,8 +45,8 @@ function model = limo_glm1(varargin)
 % provided there is no interactions - for interactions this is not possible
 % and no correction is provided - a design created by limo_design_matrix
 % would have sampled trials to make sure the number of trials is identical
-% across interaction terms. For time*frequency analyses, limo_eeg_tf send a
-% vector of length freq*time that is unwrap after running limo_glm1 -
+% across interaction terms. For time*frequency analyses, limo_eeg_tf sends a
+% vector of length freq*time that is unwrapped after running limo_glm1 -
 % however, weights cannot be computed that way and thus one calls LIMO.Analysis
 % to unwrap and then rewarp to get the right weights and betas -- this
 % implies that to the run 'by hand' limo_glm1 for time freqency with WLS,
@@ -60,8 +60,6 @@ function model = limo_glm1(varargin)
 % See also
 % LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG
 %
-% Cyril Pernet v1 01-01-2011
-% Cyril Pernet v2 01-11-2011
 % Cyril Pernet v3 07-07-2015 (methods and analysis type)
 % ---------------------------------------------------------
 %  Copyright (C) LIMO Team 2015
@@ -285,8 +283,8 @@ elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interact
     % re-define X
     x = [X(:,dummy_columns) X(:,covariate_columns) ones(size(X,1),1)];
      
-    % run same model as above
-    R        = eye(size(Y,1)) - (x*pinv(x));   
+    % run same model as above with re-defined model x
+    R    = eye(size(Y,1)) - (x*pinv(x));   
     if strcmp(method,'IRLS')
         betas = pinv(W*x)*(W*Y);
     else
