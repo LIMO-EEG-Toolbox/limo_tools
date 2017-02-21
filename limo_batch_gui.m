@@ -55,7 +55,7 @@ handles.highf               = [];
 handles.Analysis            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'WLS';
+handles.method              = 'OLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
 handles.quit                = 0;
@@ -224,8 +224,9 @@ guidata(hObject, handles);
 function scalp_data_Callback(hObject, eventdata, handles)
 h = get(hObject,'Value');
 if h == 0
-    handles.type = '[]';
+    handles.type = 'Components';
     set(handles.component_data,'Enable','on')
+    set(handles.scalp_data,'Enable','off')
 elseif h == 1
     handles.type = 'Channels';
     set(handles.component_data,'Enable','off')
@@ -236,8 +237,9 @@ guidata(hObject, handles);
 function component_data_Callback(hObject, eventdata, handles)
 h = get(hObject,'Value');
 if h == 0
-    handles.type = '[]';
+    handles.type = 'Channels';
     set(handles.scalp_data,'Enable','on')
+    set(handles.component_data,'Enable','off')
 elseif h == 1
     handles.type = 'Components';
     set(handles.scalp_data,'Enable','off')
@@ -273,10 +275,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
+contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'WLS';
+    handles.method = 'OLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -440,7 +442,7 @@ defaults.method            = handles.method;
 defaults.type_of_analysis  = handles.type_of_analysis;  
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
-defaults.type              = handles.type; % model.defaults.type
+defaults.type              = handles.type; 
 
 
 % -----------------------------------------
@@ -482,3 +484,15 @@ uiresume
 handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
+
+
+
+
+
+% --- Executes on button press in checkbox13.
+function checkbox13_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox13 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox13

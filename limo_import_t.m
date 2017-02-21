@@ -53,7 +53,7 @@ handles.data                = [];
 handles.chanlocs            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'WLS';
+handles.method              = 'OLS';
 handles.rate                = [];
 handles.trim1               = [];
 handles.trim2               = [];
@@ -121,7 +121,6 @@ if FilterIndex ~= 0
     end
 end
 guidata(hObject, handles);
-
 
 % --- Executes on button press in use_ica.
 function use_ica_Callback(hObject, eventdata, handles)
@@ -248,10 +247,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
+contents{1} = 'OLS'; contents{2} = 'WLS'; 
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'WLS';
+    handles.method = 'OLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -489,3 +488,9 @@ uiresume
 handles.out = 'LIMO import aborded';
 guidata(hObject, handles);
 limo_gui
+
+
+
+
+
+
