@@ -865,7 +865,7 @@ switch type
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
                 else
-                    LIMO.design.method = 'IRLS';
+                    LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
                     limo_eeg_tf(4)
                 end
@@ -882,7 +882,7 @@ switch type
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
                 else
-                    LIMO.design.method = 'IRLS';
+                    LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
                     limo_eeg(4)
                 end
