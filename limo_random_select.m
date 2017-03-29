@@ -1480,8 +1480,8 @@ elseif type == 5
         
         % make Cat variable
         Cat = [];
-        for g = 1:length(nb_subjects)
-            Cat = [Cat ; repmat(template(g,:),nb_subjects(g),1)];
+        for gp = 1:length(nb_subjects)
+            Cat = [Cat ; repmat(template(gp,:),nb_subjects(gp),1)];
         end
         
         LIMO = limo; cd(limo.dir);
