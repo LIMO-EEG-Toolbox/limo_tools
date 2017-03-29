@@ -874,7 +874,7 @@ switch varargin{1}
                                 end
                             else
                                 if exist('parfor','file')
-                                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_R2,2),LIMO.design.bootstrap);
+                                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
                                     parfor b=1:nboot
                                         tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
                                     end
