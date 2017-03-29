@@ -199,7 +199,7 @@ if strcmp(opt.datatype,'ica')
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
             save([name '_icaspec.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datspec = [name '_icaspec.mat'];
+            ALLEEG.etc.datafiles.icaspec = [name '_icaspec.mat'];
             delete([name '.icaspec']);
         else
             ALLEEG.etc.datafiles.icaspec = [name '.icaspec'];
@@ -214,7 +214,7 @@ if strcmp(opt.datatype,'ica')
         if strcmp(opt.format,'matrix')
             data = limo_struct2mat(data);
             save([name '_icaersp.mat'],'data'); clear data
-            ALLEEG.etc.datafiles.datersp = [name '_icaersp.mat'];
+            ALLEEG.etc.datafiles.icaersp = [name '_icaersp.mat'];
             delete([name '.icatimef']);
         else
             ALLEEG.etc.datafiles.icaersp = [name '.icatimef'];
