@@ -140,7 +140,7 @@ if LIMO.Level == 1
                 % ------------------
                 % compute the plot
                 % ------------------
-                if data_cached == 0;
+                if data_cached == 0
                     
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice);
