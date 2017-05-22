@@ -314,16 +314,32 @@ switch varargin{1}
 
             else % channels
                 if isfield(EEGLIMO.etc.datafiles,'dattimef')
-                    for d=1:length(EEGLIMO.etc.datafiles.dattimef)
+                    if exist(EEGLIMO.etc.datafiles.dattimef,'file')
+                        for d=1:length(EEGLIMO.etc.datafiles.dattimef)
                         Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
                         if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
                     end
                     Y = limo_concatcells(Y);
                     clear EEGLIMO
+                    else
+                       error('The file %s \n in EEG.etc.datafile is not found', EEGLIMO.etc.datafiles.dattimef)
+                    end
                 elseif EEGLIMO.etc.datafiles.datersp % .mat file
-                    Y = load(EEGLIMO.etc.datafiles.datersp);
-                    if isstruct(Y)
-                        Y = getfield(Y,cell2mat(fieldnames(Y)));
+                    if exist(EEGLIMO.etc.datafiles.datersp,'file')
+                        Y = load(EEGLIMO.etc.datafiles.datersp);
+                        if isstruct(Y)
+                            Y = getfield(Y,cell2mat(fieldnames(Y)));
+                        end
+                    else
+                        [~,name,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
+                        try
+                            Y = load([LIMO.dir filesep name ext]);
+                            if isstruct(Y)
+                                Y = getfield(Y,cell2mat(fieldnames(Y)));
+                            end
+                        catch
+                            Y = load('-mat',[LIMO.dir filesep name '.datersp']);
+                        end
                     end
                 else
                     error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
