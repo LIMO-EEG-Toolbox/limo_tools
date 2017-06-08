@@ -69,7 +69,7 @@ if strcmp(LIMO.Analysis,'Time')
                     if length(which_ics)==1
                         newY(c,:,:) =  Y(which_ics,:,:);
                     else
-                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights*EEGLIMO.icasphere,EEGLIMO.icawinv,which_ics);
                     end
                 end
             end
