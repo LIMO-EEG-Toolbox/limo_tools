@@ -70,7 +70,7 @@ opt.mode = 'session'; % run in the current session -- see psom for other options
 opt.max_queued = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
 opt.flag_pause = false; % don't bother asking to start jobs
-opt.flag_debug = true; % report a bit more of issues
+opt.flag_debug = false; % report a bit more of issues
 psom_gb_vars
 
 % Initializing Outputs
@@ -330,12 +330,12 @@ for subject = 1:N
     limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
     
-parfor subject = 1:N
+for subject = 1:N
     disp('--------------------------------')
     fprintf('processing subject %g/%g \n',subject,N)
     disp('--------------------------------')
     try
-        psom_run_pipeline(pipeline(subject),limopt{subject})
+        psom_run_pipeline(pipeline(subject),limopt{subject});
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
