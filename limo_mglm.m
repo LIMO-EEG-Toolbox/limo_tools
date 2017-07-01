@@ -86,7 +86,7 @@ function model = limo_mglm(varargin)
 %
 % Cyril Pernet v1 13-05-2013
 % ----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2017
 
 %% varagin
 

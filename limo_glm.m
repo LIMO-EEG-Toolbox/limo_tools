@@ -28,7 +28,8 @@ function model = limo_glm(varargin)
 %   model.F             = the F value of the model
 %   model.df            = the df associated to the model F
 %   model.p             = the p value of the model
-%   model.betas dim     = the beta parameters (dimensions nb of paramters x frames)
+%   model.betas         = the beta parameters (dimensions nb of paramters x frames)
+%   model.W             = the weights for ea ch trial/subject (and frames if IRLS)
 %   model.conditions    = categorical effects
 %          --> F/p in rows are the factors, in columns time frames
 %          --> df row 1 = df, row 2 = dfe, columns are factors
@@ -119,13 +120,8 @@ end
 %% Compute model parameters
 % ------------------------------
 
-% total sum of squares, projection matrix for errors, residuals 
-% --------------------------------------------------------------
-T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
-R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
-E     = (Y'*R*Y);                                                          % SS Error
-
 % compute Beta parameters and weights
+% -----------------------------------
 if strcmp(method,'OLS')
     
     if strcmp(Analysis,'Time-Frequency')
@@ -142,6 +138,9 @@ if strcmp(method,'OLS')
     
 elseif strcmp(method,'WLS')
     [Betas,W] = limo_WLS(X,Y);
+    P = X*(X'*W*X)*X'W;
+    Y = Y .* repmat(W,1,size(Y,2));
+    X = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -169,23 +168,78 @@ elseif strcmp(method,'WLS-TF')
         index1=index1+1; 
     end
     clear reshaped
+    P = X*(X'*W*X)*X'W;
+    Y = Y .* repmat(W,1,size(Y,2));
+    X = X .* repmat(W,1,size(X,2));
     
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
+    Y = Y .* W;
+    for t=1:size(Y,2)
+        P{t} = X*(X'*W*X)*X'W(:,t);
+        XX{t} = [X(:,1:end-1).*W(:,t) X(:,end)];
+    end
+    X = XX; clear XX
 end
 
-% compute model R^2
-% -----------------
-C = eye(size(X,2));
-C(:,size(X,2)) = 0;
-C0 = eye(size(X,2)) - C*pinv(C);
-X0 = X*C0;  % Reduced model
-R0 = eye(size(Y,1)) - (X0*pinv(X0));
-M  = R0 - R;  % Projection matrix onto Xc
-H  = (Betas'*X'*M*X*Betas);  % SS Effect
-Rsquare   = diag(H)./diag(T); % Variances explained
-F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
+% total sum of squares, projection matrix for errors, residuals 
+% --------------------------------------------------------------
+T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
+if strcmp(method,'IRLS')
+    Rsquare = NaN(1,size(Y,2)); F_Rsquare = Rsquare; p_Rsquare = Rsquare;
+    df = Rsquare; dfe = Rsquare; % place holders
+    for t=1:size(Y,2)
+        R{t} = eye(size(Y(:,t),1)) - (X{t}*pinv(X{t}));
+        E{t} = (Y(:,t)'*{t}R*Y(:,t));
+        df(t)  = trace(P{t}'*P{t})^2/trace(P{t}'*P{t}*P{t}'*P{t})-1; % Satterthwaite approximation
+        dfe(t) = trace((eye(size(P{t}))-P{t})'*(eye(size(P{t}))-P{t}));
+
+        % compute model R^2
+        % -----------------
+        C = eye(size(X{t},2));
+        C(:,size(X{t},2)) = 0;
+        C0 = eye(size(X{t},2)) - C*pinv(C);
+        X0 = X{t}*C0;  % Reduced model
+        R0 = eye(size(Y,1)) - (X0*pinv(X0));
+        M  = R0 - R;  % Projection matrix onto Xc
+        H  = (Betas'*X{t}'*M*X{t}*Betas);  % SS Effect
+        Rsquare(t)   = H./T(t); % Variances explained
+        F_Rsquare(t) = (H./df(t)) ./ (E(t)/dfe(t));
+        p_Rsquare(t) = 1 - fcdf(F_Rsquare, df(t), dfe(t));
+    end
+else
+    R     = eye(size(Y,1)) - (X*pinv(X));    % Projection on E
+    E     = (Y'*R*Y);                        % SS Error
+    % the number of degrees of freedom can be defined as the minimum number of
+    % independent coordinates that can specify the position of the system completely.
+    df = trace(P'*P)^2/trace(P'*P*P'*P)-1; % Satterthwaite approximation
+    dfe = trace((eye(size(P))-P)'*(eye(size(P))-P));
+    % gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS
+    
+    % compute model R^2
+    % -----------------
+    C = eye(size(X,2));
+    C(:,size(X,2)) = 0;
+    C0 = eye(size(X,2)) - C*pinv(C);
+    X0 = X*C0;  % Reduced model
+    R0 = eye(size(Y,1)) - (X0*pinv(X0));
+    M  = R0 - R;  % Projection matrix onto Xc
+    H  = (Betas'*X'*M*X*Betas);  % SS Effect
+    Rsquare   = diag(H)./diag(T); % Variances explained
+    F_Rsquare = (diag(H)./df) ./ (diag(E)/dfe);
+    p_Rsquare = 1 - fcdf(F_Rsquare, df, dfe);
+end
+
+% ----------------------------
+%% update the model structure
+% ----------------------------
+
+model.R2_univariate   = Rsquare;
+model.F               = F_Rsquare;
+model.p               = p_Rsquare;
+model.betas           = Betas;
+model.df              = [df dfe];
+model.W               = W';
 
 %% Compute effects
 % ------------------
@@ -198,7 +252,7 @@ if nb_factors == 1   %  1-way ANOVA
     % compute F for categorical variables
     % -----------------------------------
     if nb_conditions ~= 0 && nb_continuous == 0
-        df_conditions   = rank(C)-1;
+        df_conditions   = df;
         F_conditions    = F_Rsquare;
         pval_conditions = p_Rsquare;
         
@@ -210,9 +264,10 @@ if nb_factors == 1   %  1-way ANOVA
         R0 = eye(size(Y,1)) - (X0*pinv(X0));
         M  = R0 - R;
         H  = (Betas'*X'*M*X*Betas);
-        df_conditions = rank(C)-1;
+        HM = [X*C]*pinv([X*C]'*[X*C])*[X*C]'; % Hat matrix; 
+        df_conditions = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM) - 1; % same as rank(C)-1 if OLS;
         F_conditions    = (diag(H)/(rank(C)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-        pval_conditions = 1 - fcdf(F_conditions(:), df_conditions, (size(Y,1)-rank(X)));
+        pval_conditions = 1 - fcdf(F_conditions(:), df_conditions, dfe);
     end
     
     model.conditions.F  = F_conditions;
@@ -451,14 +506,4 @@ if nb_continuous ~=0
     end
 end
 
-% ----------------------------
-%% update the model structure
-% ----------------------------
-
-model.R2_univariate   = Rsquare;
-model.F               = F_Rsquare;
-model.p               = p_Rsquare;
-model.betas           = Betas;
-model.df              = [rank(X)-1 (size(Y,1)-rank(X))];
-model.W               = W';
 
