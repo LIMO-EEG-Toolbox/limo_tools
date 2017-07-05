@@ -1965,7 +1965,7 @@ elseif LIMO.Level == 2
                 if strcmp(extra,'Original')
                     for time_or_freq=1:size(Data,1)
                         avg(time_or_freq,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
-                        S(time_or_freq,:,:) = cov(squeeze(Data(time_or_freq,:,:)));
+                        S(time_or_freq,:,:) = nancov(squeeze(Data(time_or_freq,:,:)));
                     end
                     if e>1
                         mytitle = sprintf('Original %s \n electrode %s (%g)',mytitle,LIMO.data.chanlocs(electrode).labels,electrode);
@@ -2002,15 +2002,24 @@ elseif LIMO.Level == 2
                 
                 if strcmp(LIMO.Analysis,'Time')
                     timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;
-                    plot(timevect,avg,'LineWidth',3);
-                    fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
+                    colours = cubehelixmap('semi_continuous',size(c,2)+2);
+                    for cond = 1:size(c,2)
+                        plot(timevect,avg(:,cond)','LineWidth',3,'color',colours(cond+1,:));
+                        fillhandle = patch([timevect fliplr(timevect)], [c(:,cond)',fliplr(b(:,cond)')], colours(cond+1,:));
+                        set(fillhandle,'EdgeColor',colours(cond+1,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                        hold on
+                    end
                 else
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
-                    plot(freqvect,avg,'LineWidth',3);
-                    fillhandle = patch([freqvect fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
+                    colours = cubehelixmap('semi_continuous',size(c,2)+2);
+                    for cond = 1:size(c,2)
+                        plot(freqvect,avg(:,cond)','LineWidth',3,'color',colours(cond+1,:));
+                        fillhandle = patch([freqvect fliplr(freqvect)], [c(:,cond)',fliplr(b(:,cond)')], colours(cond+1,:));
+                        set(fillhandle,'EdgeColor',colours(cond+1,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                        hold on
+                    end
                 end
                 
-                set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
