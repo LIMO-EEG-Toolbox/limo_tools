@@ -5,5 +5,5 @@ The previous version (1.5) is now archived here: http://datashare.is.ed.ac.uk/ha
 
 ## LIMO tutorial dataset
 
-With toe software we released a dataset that can now ne cited and downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189
+With the software we released a dataset that can now be cited and downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189
 
