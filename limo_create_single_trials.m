@@ -109,7 +109,7 @@ STUDY = struct;
 [trash,name]=fileparts(ALLEEG.filepath); clear trash
 [STUDY ALLEEG] = std_editset(STUDY, ALLEEG, 'commands',{{'index' 1 'subject' name}},'updatedat','off' );
 STUDY.name = ALLEEG.filename; [STUDY ALLEEG] = std_checkset(STUDY, ALLEEG);
-name = [ALLEEG.filepath filesep ALLEEG.filename '_single_trials'];
+name = [ALLEEG.filepath filesep ALLEEG.subject];
 STUDY.design.cell.filebase = name;
 
 %% compute

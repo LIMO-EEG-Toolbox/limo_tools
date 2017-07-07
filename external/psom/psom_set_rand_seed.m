@@ -76,11 +76,7 @@ if exist('OCTAVE_VERSION','builtin')
     randn('state',seed); % Octave
 else
     try
-        try 
-            rng shuffle
-        catch
-            RandStream.setDefaultStream(RandStream('mt19937ar','seed',seed)); % matlab 7.9+
-        end
+        RandStream.setDefaultStream(RandStream('mt19937ar','seed',seed)); % matlab 7.9+
     catch
         rand('state',seed);  % Matlab 5+
         randn('state',seed); % Matlab 5+
