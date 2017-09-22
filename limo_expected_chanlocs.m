@@ -4,32 +4,32 @@ function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varar
 % location of all expected channels and to create a neighbourhood
 % distance matrix used to control for multiple comparisons.
 %
-% FORMAT
-% limo_expected_chanlocs
-% limo_expected_chanlocs(full path data set name)
-% limo_expected_chanlocs(data set name, path)
-% limo_expected_chanlocs(data set name, path,neighbour distance)
+% FORMAT: limo_expected_chanlocs
+%         limo_expected_chanlocs(full path data set name)
+%         limo_expected_chanlocs(data set name, path)
+%         limo_expected_chanlocs(data set name, path,neighbour distance)
 %
-% INPUT
-% data set name is the name of a eeglab.set
-% path is the location of that file
-% neighbour distance is the distance between channels to buid the
-% neighbourhood matrix
-%
-% channeighbstructmat is the neighbourhood matrix
+% INPUTS data set name is the name of a eeglab.set
+%        path is the location of that file
+%        neighbour distance is the distance between channels to buid the neighbourhood matrix
+%        channeighbstructmat is the neighbourhood matrix
 % 
+% OUTPUTS expected_chanlocs structure that lists all the electrodes with their neighbours.
+%         channeighbstructmat a matrix of electrode neighbourhood used in cluster analyses.
+%
 % See also LIMO_NEIGHBOURDIST LIMO_GET_CHANNEIGHBSTRUCMAT
 % similar version from eeglab [STUDY neighbors] = std_prepare_neighbors( STUDY, ALLEEG, 'key', val)
 % see also eeg_mergelocs 
 %
 % Guillaume Rousselet v1 11 June 2010
-% Rewritten by Cyril Pernet so we don't have to know which subject has the
-% largest channel description v2 16 July 2010 - update 18 July 2012 to get
-% output channeighbstructmat so we can update subjects for tfce
-% Marianne Latinus May 2014 - update to create a cap with a minimum number
+% Cyril Pernet v2 16 July 2010, we don't have to know which subject has the
+% largest channel description  
+% Cyril PErnet, 18 July 2012, get output channeighbstructmat so we can update
+% subjects for tfce
+% Marianne Latinus, May 2014 - create a cap with a minimum number
 % of subjects per electrodes ; loop through all subjects
 % ----------------------------------
-%  Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2017
 
 %% variables set as defaults
 min_subjects = 3; % we want at least 3 subjects per electrode

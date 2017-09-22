@@ -112,9 +112,16 @@ else
     end
 end
 
+D=uigetdir(pwd,'Save file in directory');
+if D == 0
+    disp('data not saved'); return
+else
+    save([D filesep gp_level_expected_channel],'expected_chanlocs','channeighbstructmat') % save all in one file
+end
+
 % show channels
 figure
-topoplot(zeros(1,71), expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
+topoplot([], expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
 
 % show connectivity matrix
 figure
@@ -156,13 +163,8 @@ while positive == 1
 end
 
 % save
-D=uigetdir(pwd,'Save file in directory');
-if D == 0
-    disp('data not saved'); return
-else
-    save([D filesep 'edited_' gp_level_file],'expected_chanlocs','channeighbstructmat') % save all in one file
-    fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
-end
+save([D filesep 'edited_' gp_level_expected_channel],'expected_chanlocs','channeighbstructmat') % save all in one file
+fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
 guidata(hObject, handles);
 
 % ---------------------------------------------------------------
