@@ -33,3 +33,22 @@ uimenu(submenu,'Label', '1st level analysis','callback','limo_batch', 'userdata'
 uimenu(submenu,'Label', '2nd level analysis','callback','limo_random_effect','userdata','study:on,epoch:off,continuous:off');
 uimenu(submenu,'Label', 'LIMO EEG results','callback','limo_results','userdata','study:on');
 uimenu(submenu,'Label', 'LIMO EEG tools','callback','limo_tools','userdata','study:on');  
+
+% create STUDY menus
+% ------------------
+menu=findobj(fig,'tag','study');
+onstudy      = 'startup:off;epoch:off;continuous:off;study:on';
+nocheck      = 'try,';
+e_catch      = 'catch, eeglab_error; LASTCOM= ''''; clear EEGTMP ALLEEGTMP STUDYTMP; end;';
+e_hist       = [e_catch 'EEG = eegh(LASTCOM, EEG);'];
+e_plot_study = [e_catch 'if ~isempty(LASTCOM), STUDY = STUDYTMP; STUDY = eegh(LASTCOM, STUDY); disp(''Done.''); end; clear ALLEEGTMP STUDYTMP; eeglab(''redraw'');']; % ALLEEG not modified
+
+cb_limorunchan = [ nocheck '[STUDYTMP LASTCOM]= pop_limo(STUDY, ALLEEG,''dat'');' e_plot_study];
+cb_limoreschan = [ nocheck 'pop_limoresults(STUDY,''dat'');' e_hist];
+cb_limoruncomp = [ nocheck '[STUDYTMP LASTCOM]= pop_limo(STUDY, ALLEEG,''ica'');' e_plot_study];
+cb_limorescomp = [ nocheck 'pop_limoresults(STUDY,''ica'');' e_hist];
+limo_eeg = uimenu(menu,'Label','LInear MOdeling of EEG Data (BETA TESTING ONLY)' , 'userdata', onstudy,'Tag','limoeeg','separator', 'on');
+uimenu( limo_eeg,  'Label', 'Estimate Model Parameters (channnel)'        , 'userdata', onstudy, 'CallBack', cb_limorunchan);
+uimenu( limo_eeg,  'Label', 'Linear Model Results  (channnel)'            , 'userdata', onstudy, 'CallBack', cb_limoreschan);
+uimenu( limo_eeg,  'Label', 'Estimate Model Parameters (components)'     , 'userdata', onstudy, 'CallBack', cb_limoruncomp,'separator', 'on');
+uimenu( limo_eeg,  'Label', 'Linear Model Results (components)'          , 'userdata', onstudy, 'CallBack', cb_limorescomp);
