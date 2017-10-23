@@ -1360,7 +1360,7 @@ switch type
                 if type == 3 || type ==4
                     for i=1:size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,3)
                         name = sprintf('H0_Rep_ANOVA_Interaction_gp_Factor_%g',i);
-                        H0_Rep_ANOVA_Interaction_with_gp = squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:)); % save each interaction effect as F/p values
+                        H0_Rep_ANOVA_Interaction_with_gp = squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:,:)); % save each interaction effect as F/p values
                         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                             H0_Rep_ANOVA_Interaction_with_gp = limo_tf_5d_reshape(H0_Rep_ANOVA_Interaction_with_gp);
                         end
