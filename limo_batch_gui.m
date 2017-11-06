@@ -225,11 +225,12 @@ function scalp_data_Callback(hObject, eventdata, handles)
 h = get(hObject,'Value');
 if h == 0
     handles.type = 'Components';
-    set(handles.component_data,'Enable','on')
-    set(handles.scalp_data,'Enable','off')
+    set(handles.component_data,'Value',1)
+    set(handles.scalp_data,'Value',0)
 elseif h == 1
     handles.type = 'Channels';
-    set(handles.component_data,'Enable','off')
+    set(handles.component_data,'Value',0)
+    set(handles.scalp_data,'Value',1)
 end
 guidata(hObject, handles);
 
@@ -238,11 +239,12 @@ function component_data_Callback(hObject, eventdata, handles)
 h = get(hObject,'Value');
 if h == 0
     handles.type = 'Channels';
-    set(handles.scalp_data,'Enable','on')
-    set(handles.component_data,'Enable','off')
+    set(handles.component_data,'Value',0)
+    set(handles.scalp_data,'Value',1)
 elseif h == 1
     handles.type = 'Components';
-    set(handles.scalp_data,'Enable','off')
+    set(handles.component_data,'Value',1)
+    set(handles.scalp_data,'Value',0)
 end
 guidata(hObject, handles);
 
@@ -296,6 +298,7 @@ elseif M == 0
     handles.bootstrap = 0;
     disp('boostrap is off');
     set(handles.TFCE,'Enable','off')
+    set(handles.TFCE,'Value',0)
 end
 guidata(hObject, handles);
 
