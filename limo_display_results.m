@@ -2148,11 +2148,11 @@ elseif LIMO.Level == 2
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis, 'Time');
                     plot(timevect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Time in ms','FontSize',14)
                     ylabel('Amplitude (A.U.)','FontSize',14)
-                elseif LIMO.analysis_flag == 2
+                else
                     plot(freqvect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Frequency in Hz','FontSize',14)
                     ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -2264,6 +2264,8 @@ elseif LIMO.Level == 2
                             plot(freqvect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
                         end
                     end
+
+                    % there is an error in the following 2 formulas I cannot fix -- @disbeat
                     c = avg(gp,:,:) + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
                     b = avg(gp,:,:) - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
                     if strcmp(LIMO.Analysis,'Time')
