@@ -205,8 +205,8 @@ if type == 1 || type == 4
             end
             % restric the channels
             if strcmp(limo.Type,'Channels')
-                expected_chanlocs = expected_chanlocs(limo.design.electrode);
                 limo.design.electrode = eval(cell2mat(electrode));
+                expected_chanlocs = expected_chanlocs(limo.design.electrode);
                 limo.data.chanlocs = expected_chanlocs;
             else
                 limo.design.component = eval(cell2mat(electrode));
