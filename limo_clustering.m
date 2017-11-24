@@ -71,7 +71,7 @@ if MCC == 2 && size(bootM,1)==1 || MCC == 3
     U = round((1-p)*nboot); % bootstrap threshold
     [th,boot_maxclustersum] = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);   
     maxclustersum_th = th.elec;
-    [sigcluster, maxval,pval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
+    [sigcluster, maxval,pval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p, boot_maxclustersum);
     mask = sigcluster.elec_mask; 
 end
 

@@ -1,4 +1,4 @@
-function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value)
+function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value,boot_maxclustersum)
 % function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
 %
 % ECLUSTER_TEST computes sums of temporal clusters of significant F values and 
@@ -18,6 +18,7 @@ function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value)
 %               format;
 %           TH = output from ECLUSTER_MAKE
 %           alpha_value = type I error rate, default 0.05
+%           boot_maxclustersum = max cluster F value for each boot
 %
 % OUTPUTS:
 %           SIGCLUSTER.ELEC = significant [0/1] data points at each
@@ -37,8 +38,12 @@ function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value)
 %
 % See also limo_ecluster_make limo_tfcluster_make
 
-if nargin < 3
+if nargin < 4
     alpha_value = 0.05;
+end
+
+if nargin < 5
+    boot_maxclustersum = [];
 end
 
 Ne = size(orif,1); % electrodes or frequencies
@@ -74,7 +79,7 @@ end
 if isfield(th, 'elec') 
 
     sigcluster.elec_mask = zeros(Ne,Nf);
-    pval = zeros(Ne,Nf);
+    pval = nan(Ne,Nf);
     ME = [];
     try
         [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters
@@ -91,11 +96,14 @@ if isfield(th, 'elec')
         maxval(C) = sum(abs(orif(L==C)));
         if maxval(C) >= th.elec;
             sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
-            p = 1-(sum(sum(ori_f(L==C))>=th.elec)./nboot);
-            if p ==0
-                p = 1/nboot;
+
+            if ~isempty(boot_maxclustersum)
+                p = 1 - sum(maxval(C) >= boot_maxclustersum)/length(boot_maxclustersum);            
+                if p ==0
+                    p = 1/length(boot_maxclustersum);
+                end
+                pval(L==CL_list(CL)) = p;
             end
-            pval(L==CL_list(CL)) = p;
         end
     end
     maxval = max(maxval);
