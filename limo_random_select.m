@@ -709,7 +709,7 @@ elseif type == 2
             tmp = squeeze(data{1}(:,:,:,i(1),:));
             tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,:,i,:));
+            tmp = squeeze(data{2}(:,:,:,i(2),:));
             tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
@@ -724,10 +724,10 @@ elseif type == 2
         
     else
         if strcmp(g.analysis_type,'1 channel/component only')
-            tmp = squeeze(data{1}(:,:,i,:));
+            tmp = squeeze(data{1}(:,:,i(1),:));
             tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,i,:));
+            tmp = squeeze(data{2}(:,:,i(2),:));
             tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
             tmp_data2(1,:,:) = tmp; clear tmp
         else
