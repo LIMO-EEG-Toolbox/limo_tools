@@ -363,7 +363,7 @@ switch type
         % ------------------------------------------------
         % make a two_samples file per parameter (electrodes, frames, [mean value, se, df, t, p])
         two_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('two_samples_ttest_parameter_%g',parameter);
+        name = sprintf('two_samples_ttest_parameter_%g_%g',parameter);
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
@@ -388,7 +388,7 @@ switch type
         if nboot > 0
             
             bootex = 1;
-            boot_name = sprintf('H0_two_samples_ttest_parameter_%g',parameter);
+            boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);	
             if exist(['H0', filesep, boot_name, '.mat'], 'file')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if strcmp(answer,'Yes');
@@ -1350,7 +1350,8 @@ switch type
                 % save
                 for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
                     name = sprintf('H0_Rep_ANOVA_Factor_%g',i);
-                    H0_Rep_ANOVA = squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,:,:)); % save each factor effect as F/p/nboot values
+                    H0_Rep_ANOVA = NaN(size(tmp_boot_H0_Rep_ANOVA,1), size(tmp_boot_H0_Rep_ANOVA, 2), size(tmp_boot_H0_Rep_ANOVA, 4), size(tmp_boot_H0_Rep_ANOVA, 5));
+                    H0_Rep_ANOVA(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,:,:)); % save each factor effect as F/p/nboot values
                     if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                         H0_Rep_ANOVA = limo_tf_5d_reshape(H0_Rep_ANOVA);
                     end
@@ -1360,7 +1361,8 @@ switch type
                 if type == 3 || type ==4
                     for i=1:size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,3)
                         name = sprintf('H0_Rep_ANOVA_Interaction_gp_Factor_%g',i);
-                        H0_Rep_ANOVA_Interaction_with_gp = squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:,:)); % save each interaction effect as F/p values
+                        H0_Rep_ANOVA_Interaction_with_gp = NaN(size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 2), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 4), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 5));
+                        H0_Rep_ANOVA_Interaction_with_gp(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:,:)); % save each interaction effect as F/p values
                         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                             H0_Rep_ANOVA_Interaction_with_gp = limo_tf_5d_reshape(H0_Rep_ANOVA_Interaction_with_gp);
                         end
