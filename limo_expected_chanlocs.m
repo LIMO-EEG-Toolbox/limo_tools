@@ -113,11 +113,11 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     if filt == 0
         return
     else
-        [~,file,~]=fileparts(name);
-        if strcmp(file,'LIMO.mat') % we go for multiple LIMO.mat by hand
-            Names{index} = name;
-            Paths{index} = path;
-            Files{index} = sprintf('%s\%s',path,name);
+        [~,file,ext]=fileparts(name);
+        if strcmp([file ext],'LIMO.mat') % we go for multiple LIMO.mat by hand
+            Names{1} = name;
+            Paths{1} = path;
+            Files{1} = [path name];
             go = 1; 
             cd(current_dir); % go back to pwd...
         else
@@ -154,11 +154,17 @@ elseif strcmp(quest,'Set')   % from a set of subjects
             else
                 Names{index} = name;
                 Paths{index} = path;
-                Files{index} = sprintf('%s\%s',path,name);
+                Files{index} = [path name];
                 cd(current_dir)
                 index = index + 1;
             end
         end
+    end
+    
+    if index == 2
+        errordlg('you choose to create from a set and selected only one file?? ')
+        expected_chanlocs = [];
+        channeighbstructmat = [];
     end
     
     %% retreive all chanlocs and make up a cap where we have a least 3 subjects
