@@ -103,6 +103,15 @@ choice =  questdlg2('Do you you to Create or Edit a groupo level file?', ...
     'Create', 'Edit', 'Edit');
 if strcmp(choice,'Create')
     [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
+    if ~isempty(expected_chanlocs) && ~isempty(channeighbstructmat)
+        D=uigetdir(pwd,'Save file in directory');
+        if D == 0
+            disp('data not saved'); return
+        else
+            save([D filesep 'gp_level_expected_channel'],'expected_chanlocs','channeighbstructmat') % save all in one file
+        end
+    end
+    
 else
     [gp_level_file,filepath,sts]=uigetfile('*.mat','select gp level channel file');
     if sts ==0
@@ -112,12 +121,6 @@ else
     end
 end
 
-D=uigetdir(pwd,'Save file in directory');
-if D == 0
-    disp('data not saved'); return
-else
-    save([D filesep gp_level_expected_channel],'expected_chanlocs','channeighbstructmat') % save all in one file
-end
 
 % show channels
 figure
@@ -138,34 +141,39 @@ set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(e
 axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
 title(sprintf('Connectivity matrix between channels \n'),'FontSize',14)
 
-% interactive editing
-positive = 1;
-while positive == 1
-    [y,x]=ginput(1);
-    if x<0 || y<0
-        positive = 0;
-    else
-        if channeighbstructmat(round(x),round(y)) == 0
-            channeighbstructmat(round(x),round(y)) = 1;
-            channeighbstructmat(round(y),round(x)) = 1;
-            imagesc(channeighbstructmat); v = 'on';
-        else
-            channeighbstructmat(round(x),round(y)) = 0;
-            channeighbstructmat(round(y),round(x)) = 0;
-            imagesc(channeighbstructmat);  v = 'off';
-        end
-        colormap(gray);
-        set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
-        set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
-        axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
-        title(sprintf('Connectivity matrix between channels \nconnection %g %g %s',round(x),round(y),v),'FontSize',14)
-    end
-end
 
-% save
-save([D filesep 'edited_' gp_level_expected_channel],'expected_chanlocs','channeighbstructmat') % save all in one file
-fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
-guidata(hObject, handles);
+% interactive editing
+if strcmp(choice,'Edit')
+    
+    positive = 1;
+    while positive == 1
+        [y,x]=ginput(1);
+        if x<0 || y<0
+            positive = 0;
+        else
+            
+            if channeighbstructmat(round(x),round(y)) == 0
+                channeighbstructmat(round(x),round(y)) = 1;
+                channeighbstructmat(round(y),round(x)) = 1;
+                imagesc(channeighbstructmat); v = 'on';
+            else
+                channeighbstructmat(round(x),round(y)) = 0;
+                channeighbstructmat(round(y),round(x)) = 0;
+                imagesc(channeighbstructmat);  v = 'off';
+            end
+            colormap(gray);
+            set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
+            set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
+            axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
+            title(sprintf('Connectivity matrix between channels \nconnection %g %g %s',round(x),round(y),v),'FontSize',14)
+        end
+    end
+    
+    % save
+    save([filepath filesep 'edited_gp_level_expected_channel'],'expected_chanlocs','channeighbstructmat') % save all in one file
+    fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
+    guidata(hObject, handles);
+end
 
 % ---------------------------------------------------------------
 
