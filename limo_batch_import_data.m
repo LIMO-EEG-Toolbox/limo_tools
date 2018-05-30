@@ -21,8 +21,7 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 
 global EEGLIMO
 
-EEGLIMO                      = load('-mat',setfile);
-EEGLIMO                      = EEGLIMO.EEG;
+EEGLIMO                      = pop_loadset(setfile);
 [root,name,ext]              = fileparts(setfile); 
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];

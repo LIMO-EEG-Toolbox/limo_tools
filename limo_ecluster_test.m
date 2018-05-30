@@ -72,9 +72,9 @@ end
 
 %% threshold the data base on the maximum of cluster sum obtained over each electrode
 if isfield(th, 'elec') 
-
-    sigcluster.elec_mask = zeros(Ne,Nf);
-    pval = zeros(Ne,Nf);
+    nboot =  size(th.boot_values,1);
+    sigcluster = zeros(Ne,Nf);
+    pval = NaN(Ne,Nf);
     ME = [];
     try
         [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters
@@ -90,17 +90,14 @@ if isfield(th, 'elec')
     for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(abs(orif(L==C)));
         if maxval(C) >= th.elec;
-            sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
-            p = 1-(sum(sum(ori_f(L==C))>=th.elec)./nboot);
+            sigcluster(L==C)=1; % flag clusters above threshold
+            %p = (sum(sum(orif(L==C))>=th.elec)./nboot);
+            p = sum(th.boot_values >= sum(orif(L==C))) / nboot;
             if p ==0
                 p = 1/nboot;
             end
-            pval(L==CL_list(CL)) = p;
+            pval(L==C) = p;
         end
     end
     maxval = max(maxval);
 end
-
-
-
-

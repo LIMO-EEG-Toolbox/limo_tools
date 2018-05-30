@@ -55,7 +55,7 @@ handles.data                = [];
 handles.chanlocs            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.rate                = [];
 handles.start               = 0;
 handles.end                 = 0;
@@ -121,21 +121,6 @@ if FilterIndex ~= 0
     end
 end
 guidata(hObject, handles);
-
-
-% --- Executes on button press in use_ica.
-function use_ica_Callback(hObject, eventdata, handles)
-M = get(hObject,'Value');
-if M == 1
-    handles.type = 'Components';
-    disp('using independent components rather than scalp channels');
-elseif M == 0
-    handles.type = 'Channels';
-    disp('ica import is off');
-end
-guidata(hObject, handles);
-
-
 
 % get the starting frequency
 % ---------------------------
@@ -234,10 +219,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'OLS'; contents{2} = 'WLS'; 
+contents{1} = 'WLS'; contents{2} = 'IRLS'; contents{3} = 'OLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -467,10 +452,3 @@ uiresume
 handles.out = 'LIMO import aborded';
 guidata(hObject, handles);
 limo_gui
-
-
-
-
-
-
-

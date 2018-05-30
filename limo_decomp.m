@@ -1,63 +1,62 @@
-function [eigen_vectors,eigen_values] = limo_decomp(E,H,type)
+function [eigen_vectors,eigen_values] = limo_decomp(varargin)
 
-% FORMAT: [eigen_vectors,eigen_values] = limo_decomp(E,H,type)
+% FORMAT: [eigen_vectors,eigen_values] = limo_decomp(E,H)
 %
 % INPUT E and H are matrices, typically square symmetric Sum of Squares and
 %       Cross Products
-%       type is 'Chol' (default) or 'SVD')
 %
 % OUTPUT: the eigen vectors and values of the decomposition of inv(E)*H
-%
-% Following Rencher 2002 (Methods of multivariate analysis - Wiley) we note
-% that eig(inv(E)*H) = % eig((E^1/2)*H*inv(E^1/2)) = eig(inv(U')*H*inv(U))
-% and E^1/2 is the square root matrix of E and U'U = E (Cholesky factorization).
-% Using the Cholesky factorisation, we return positve eigen values from
-% inv(U')*H*inv(U) which is positive semidefinite. If this procedre fails
-% (E is not positive definite) we then use an eigen value decomposition of pinv(E)*H
-% It is also possible to procede using an SVD decomposition using the argument
-% type ('SVD')
 %
 % Cyril Pernet 2009
 % Cyril Pernet and Iege Bassez 2017
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
-% check input
-if nargin < 2
-    error('not enough arguments in')
-elseif nargin == 2
-    type = 'Chol';
+E = varargin{1};
+H = varargin{2};
+
+if nargin == 2
+    cov_method = 'pseudo'; % the default
+else 
+    cov_method = varargin{3};
 end
 
-% proceede
-if strcmpi(type,'chol')
-    try
-        U = chol(E);
-        [eigen_vectors, D] = eig(inv(U')*H*inv(U));
-        eigen_values = diag(D);
-        
-    catch
-        [eigen_vectors, eigen_values] = eig((pinv(E)*H));
-    end
-    
-    
-elseif strcmpi(type,'SVD')
-    y = (pinv(E)*H);
-    [m, n]   = size(y);
-    if m > n
-        [v,s,v] = svd(y*y');
-        s       = diag(s);
-        v       = v(:,1);
-        u       = y*v/sqrt(s(1));
-        eigen_vectors = v;
+if strcmp(cov_method, 'pseudo')
+    % procede
+    [vec, D] = eig((pinv(E)*H));
+
+    % sort eigenvalues and then sort eigenvectors in order of decreasing eigenvalues
+    [e,ei] = sort(diag(D));  % eigenvalues of inv(U')*H*inv(U) == eigenvalues of inv(E)*H
+    ordered_eigenvalues = flipud(e);
+    vec = vec(:,flipud(ei));
+
+    % validate if correct eigenvalues and eigenvectors of matrix pinv(E)*H:
+    if round((pinv(E)*H) * vec, 4) == round(vec * diag(ordered_eigenvalues), 4)
+        eigen_vectors = vec;
+        eigen_values = ordered_eigenvalues;
     else
-        [u, s,u] = svd(y'*y);
-        s       = diag(s);
-        u       = u(:,1);
-        v       = y'*u/sqrt(s(1));
-        eigen_vectors = u;
+        error('this method could not find the correct eigenvalues or eigenvectors')
     end
-    d  = sign(sum(v)); u = u*d;
-    eigen_values  = u*sqrt(s(1)/n);
+elseif strcmp(cov_method, 'regularized')
+%     n = size(Y,1);
+%     [RegularizedCovariance, ~] = cov1para(Y);
+%     RegularizedE = RegularizedCovariance .* (n-k);
+  
+    % procede
+    [vec, D] = eig((inv(E)*H));
+
+    % sort eigenvalues and then sort eigenvectors in order of decreasing eigenvalues
+    [e,ei] = sort(diag(D));  % eigenvalues of inv(U')*H*inv(U) == eigenvalues of inv(E)*H
+    ordered_eigenvalues = flipud(e);
+    vec = vec(:,flipud(ei));
+
+    % validate if correct eigenvalues and eigenvectors of matrix pinv(E)*H:
+    if round((inv(E)*H) * vec, 4) == round(vec * diag(ordered_eigenvalues), 4)
+        eigen_vectors = vec;
+        eigen_values = ordered_eigenvalues;
+    else
+        error('this method could not find the correct eigenvalues or eigenvectors')
+    end
 end
 
+end

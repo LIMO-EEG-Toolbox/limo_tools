@@ -3,7 +3,7 @@ function [M, mask, mytitle] = limo_mstat_values(varargin)
 % find corrected p values and mask from data under H0
 % this file is more multivariate statistics only
 %
-% FORMAT [M, mask, mytitle] = limo_stat_values2(varargin)
+% FORMAT [M, mask, mytitle] = limo_mstat_values(varargin)
 %
 % INPUTS 
 %         Type = the type of plots (matters for title)
@@ -90,7 +90,7 @@ if strcmp(FileName,'R2.mat')
                     tmp(column) = sum(M(column)>squeeze(sorted_values(column,:)));
                 end
                 M = 1- (tmp ./ size(sorted_values,2)) ; % p values
-                mytitle = sprintf('R^2 : uncorrected threshold \n based on bootstraped F values');
+                mytitle = sprintf('R^2 : uncorrected threshold \n based on bootstrapped F values');
             catch ME
                 if strcmp(choice,'Roy')
                     mask = R2(:,3) < p;
@@ -118,7 +118,7 @@ if strcmp(FileName,'R2.mat')
         % cluster correction for multiple testing
         % ---------------------------------------  
     elseif MCC == 2 || MCC == 3
-                
+
         % correction using the max
         % --------------------------
     elseif MCC == 4 % Stat max
@@ -139,18 +139,19 @@ if strcmp(FileName,'R2.mat')
 elseif strncmp(FileName,'Condition_effect',16)
     
     effect_nb = eval(FileName(18:end-4));
-    if strcmp(choice,'Roy')
-        M = squeeze(Condition_effect(:,1)); % F values
-    else
-        M = squeeze(Condition_effect(:,3));
-    end
-    MCC_data = 'H0_Condition_effect.mat';
+    MCC_data = sprintf('H0_Condition_effect_%g', effect_nb); 
     
+    if strcmp(choice,'Roy')
+        M = squeeze(Condition_effect(:,1)); % F values Roy
+        P = squeeze(Condition_effect(:,2)); % p values Roy
+    else
+        M = squeeze(Condition_effect(:,3)); % F values Pillai
+        P = squeeze(Condition_effect(:,4)); % p values Pillai
+    end    
     % no correction for multiple testing
     % -----------------------------------
-    if MCC == 1
-        
-        if LIMO.design.bootstrap == 1
+    if MCC == 1  
+        if LIMO.design.bootstrap >= 1
             try cd('H0');load(MCC_data); cd ..
                 if strcmp(choice,'Roy')
                     H0_F_values = squeeze(H0_Condition_effect(:,1,:)); clear H0_Condition_effect;
@@ -164,27 +165,27 @@ elseif strncmp(FileName,'Condition_effect',16)
                     tmp(column) = sum(M(column)>squeeze(sorted_values(column,:)));
                 end
                 M = 1- (tmp ./ size(sorted_values,2)) ; % p values
-                mytitle = sprintf('Condition_effect : uncorrected threshold \n based on bootstraped F values');
+                mytitle = sprintf('Condition effect : uncorrected threshold \n based on bootstrapped F values');
             catch ME
                 if strcmp(choice,'Roy')
                     mask = Condition_effect(:,2) < p;
                     M = squeeze(Condition_effect(:,2)); % p values
-                    mytitle = sprintf('Condition_effect : uncorrected threshold \n based on Roy test');
+                    mytitle = sprintf('Condition effect : uncorrected threshold \n based on Roy test');
                 else
                     mask = Condition_effect(:,4) < p;
                     M = squeeze(Condition_effect(:,4)); % p values
-                    mytitle = sprintf('Condition_effect : uncorrected threshold \n based on Pillai test');
+                    mytitle = sprintf('Condition effect : uncorrected threshold \n based on Pillai test');
                 end
             end
         else
             if strcmp(choice,'Roy')
                 mask = Condition_effect(:,2) < p;
                 M = squeeze(Condition_effect(:,2)); % p values
-                mytitle = sprintf('Condition_effect : uncorrected threshold \n based on Roy test');
+                mytitle = sprintf('Condition effect : uncorrected threshold \n based on Roy test');
             else
                 mask = Condition_effect(:,4) < p;
                 M = squeeze(Condition_effect(:,4)); % p values
-                mytitle = sprintf('Condition_effect : uncorrected threshold \n based on Pillai test');
+                mytitle = sprintf('Condition effect : uncorrected threshold \n based on Pillai test');
             end
         end
         mask = mask' ; M = M'; 
@@ -192,18 +193,117 @@ elseif strncmp(FileName,'Condition_effect',16)
         % cluster correction for multiple testing
         % ---------------------------------------  
     elseif MCC == 2 || MCC == 3
-                
+       try cd('H0'); load(MCC_data); cd ..
+            if strcmp(choice,'Roy')
+                bootM = squeeze(H0_Condition_effect(:,1,:)); % get all F values 
+                bootP = squeeze(H0_Condition_effect(:,2,:)); % get all p-values     
+            elseif strcmp(choice,'Pillai')
+                bootM = squeeze(H0_Condition_effect(:,3,:)); % get all F values pillai
+                bootP = squeeze(H0_Condition_effect(:,4,:)); % get all p-values pillai
+            end
+            % do the cluster correction:
+            [mask, M] = limo_clustering(M', P', bootM, bootP, LIMO, MCC, p, 1); 
+            mytitle = sprintf('Condition effect : correction by temporal clustering \n ');
+
+        catch ME
+            errordlg('no bootstrap file was found')
+            return
+        end
         % correction using the max
         % --------------------------
     elseif MCC == 4 % Stat max
-        
+        try cd('H0'); load(MCC_data); cd ..
+            if strcmp(choice,'Roy')
+                bootM = squeeze(H0_Condition_effect(:,1,:)); % get all F values 
+                bootP = squeeze(H0_Condition_effect(:,2,:)); % get all p-values     
+            elseif strcmp(choice,'Pillai')
+                bootM = squeeze(H0_Condition_effect(:,3,:)); % get all F values pillai
+                bootP = squeeze(H0_Condition_effect(:,4,:)); % get all p-values pillai
+            end
+            % correction:
+            [mask, M] = limo_max_correction(M, bootM, p,1); 
+            mask = mask';
+            mytitle = sprintf('Condition effect : correction by max F \n ');
+
+        catch ME
+            errordlg('no bootstrap file was found')
+            return
+        end
          
         % correction using TFCE
         % --------------------------
     elseif MCC == 5 % Stat max
 
     end 
+    % ---------------------------------
+    %% Linear_Classification (from 1st level) 
+    % ---------------------------------
     
+elseif strncmp(FileName,'Linear_Classification',16)
+    
+    MCC_data = sprintf('H0_Linear_Classification'); 
+    
+    M = Linear_Classification(:,2); % observed CV classification accuracies
+    % no correction for multiple testing
+    % -----------------------------------
+    if MCC == 1  
+        if LIMO.design.bootstrap >= 1
+            try cd('H0');load(MCC_data); cd ..
+                H0_values = squeeze(H0_Linear_Classification);
+                sorted_values = sort(H0_values,2); 
+                U = round((1-p)*size(sorted_values,2));
+                mask = (M >= sorted_values(:,U));
+                for column = 1:size(M,1)
+                    tmp(column) = sum(M(column)>squeeze(sorted_values(column,:))); % how many times H0 bootstraps higher than observed value
+                end
+                M = 1- (tmp ./ size(sorted_values,2)) ; % p values
+                mytitle = sprintf('CV linear decoding accuracies ± 2SD: uncorrected threshold \n based on H0 bootstrapped classification');
+            catch ME
+                mask = Linear_Classification(:,2) >  1/LIMO.design.nb_conditions;
+                M = NaN(size(Linear_Classification(:,2))); % p values
+                mytitle = sprintf('CV linear decoding accuracies ± 2SD: no threshold, classification > chance');
+            end
+        else
+                mask = Linear_Classification(:,2) >  1/LIMO.design.nb_conditions;
+                M = NaN(size(Linear_Classification(:,2))); % p values
+                mytitle = sprintf('CV linear decoding accuracies ± 2SD: no threshold, classification > chance');
+        end
+        mask = mask' ; M = M'; 
+        
+        % cluster correction for multiple testing
+        % ---------------------------------------  
+    elseif MCC == 2 || MCC == 3
+       try cd('H0'); load(MCC_data); cd ..
+            bootM = H0_Linear_Classification; 
+            bootP = NaN(size(H0_Linear_Classification));     
+            % do the cluster correction:
+            [mask, M] = limo_clustering(M', P', bootM, bootP, LIMO, MCC, p, 1); 
+            mytitle = sprintf('CV linear decoding accuracies ± 2SD: correction by temporal clustering \n ');
+
+        catch ME
+            errordlg('no bootstrap file was found')
+            return
+        end
+        % correction using the max
+        % --------------------------
+    elseif MCC == 4 % Stat max
+        try cd('H0'); load(MCC_data); cd ..
+            bootM = H0_Linear_Classification; 
+            % correction:
+            [mask, M] = limo_max_correction(M, bootM, p,1); 
+            mask = mask';
+            mytitle = sprintf('CV linear decoding accuracies ± 2SD: correction by max statistic\n ');
+
+        catch ME
+            errordlg('no bootstrap file was found')
+            return
+        end
+         
+        % correction using TFCE
+        % --------------------------
+    elseif MCC == 5 % Stat max
+
+    end    
     % ---------------------------------
     %% Covariate_effect (from 1st level) 
     % ---------------------------------
@@ -235,7 +335,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
                     tmp(column) = sum(M(column)>squeeze(sorted_values(column,:)));
                 end
                 M = 1- (tmp ./ size(sorted_values,2)) ; % p values
-                mytitle = sprintf('R^2 : uncorrected threshold \n based on bootstraped F values');
+                mytitle = sprintf('R^2 : uncorrected threshold \n based on bootstrapped F values');
             catch ME
                 if strcmp(choice,'Roy')
                     mask = R2(:,3) < p;
@@ -274,81 +374,74 @@ elseif strncmp(FileName,'Covariate_effect',16)
     elseif MCC == 5 % Stat max
 
     end 
+    % ------------------------------------------
+    %% One sample t-test
+    % ------------------------------------------
     
+elseif strncmp(FileName,'one_sample',10)
+    
+    try effect_nb = eval(FileName(28:end-4)); end
+
+    M = one_sample(:,4); % T values
+
+    MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
+    
+    % no correction for multiple testing
+    % -----------------------------------
+    if MCC == 1
+        mask = one_sample(:,5) <= p;
+        %M = squeeze(one_sample(:,5));
+        mytitle = sprintf('One sample t-test on classification accuracies \n uncorrected threshold');
+        
+        
+        % 2D cluster and 1D correction for multiple testing
+        % ------------------------------------------
+    elseif MCC == 2
+        try load(MCC_data);
+            bootT = squeeze(H0_one_sample(:,1,:)); % get all T values under H0
+            bootP = squeeze(H0_one_sample(:,2,:)); % get all P values under H0
+            [mask,M] = limo_clustering(M.^2,squeeze(one_sample(:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
+            mytitle = sprintf('One sample t-test results on classification accuracies \n correction by temporal cluster');
+
+        catch ME
+            errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
+            return
+        end
+                
+        % T max correction for multiple testing
+        % -------------------------------------
+    elseif MCC == 4 % Stat max
+        try load(MCC_data)
+            bootT = squeeze(H0_one_sample(:,1,:)); % get all T values under H0
+            [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+            mytitle = sprintf('One sample t-test results on classification accuracies \n correction by T max');
+        catch ME
+            errordlg('no bootstrap file was found to compute the max distribution','missing data')
+            return
+        end
+        
+        % Correction using TFCE
+        % -------------------------------------
+    elseif MCC == 3 % Stat tfce
+        MCC_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
+        tfce_data = sprintf('tfce%stfce_%s',filesep, FileName);
+        try load(tfce_data);
+            load(MCC_tfce_data)
+            [mask,M] = limo_max_correction(tfce_one_sample, tfce_H0_one_sample,p);
+            mytitle = sprintf('One Sample t-test \n correction using TFCE');
+        catch ME
+            errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
+            return
+        end
+    end
+        
 else
     errordlg2('unidentified FileName - no thresholding done');
 end
 end
 
-%% subfunctions which do the actual thresholding
-function [mask,cluster_p] = local_clustering(M,P,bootM,bootP,LIMO,MCC,p)
-% call field trip functions to do 2D or 1D clustering
-%
-% M = 3D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
-% P = 3D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
-% bootM = 3D matrix of F values for data bootstrapped under H0
-% bootP = 3D matrix of F values for data bootstrapped under H0
-% LIMO = LIMO structure - information requested is LIMO.data.chanlocs and LIMO.data.neighbouring_matrix
-% MCC = 2 (spatial-temporal clustering) or 3 (temporal clustering)
-% p = threshold to apply (note this applied to create clusters and to
-% threshold the cluster map)
 
-if MCC == 2 
-    nboot = size(bootM,3);
-    U = round((1-p)*nboot); % bootstrap threshold
-    if size(bootM,1)>1 % many electrodes
-        minnbchan = 2;
-        expected_chanlocs = LIMO.data.chanlocs;
-        channeighbstructmat = LIMO.data.neighbouring_matrix;
-        boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-        for boot=1:nboot
-            boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
-        end
-        sort_boot_maxclustersum = sort(boot_maxclustersum,2);
-        maxclustersum_th = sort_boot_maxclustersum(U); % the threshold under H0
-        [mask,cluster_p] = limo_cluster_test2(M,P,maxclustersum_th,channeighbstructmat,minnbchan,p);
-        
-    elseif size(bootM,1)==1 % one electrode
-        th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-        sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-        mask = sigcluster.elec; cluster_p = [];
-    end
-    
-elseif MCC == 3
-    nboot = size(bootM,3);
-    U = round((1-p)*nboot); % bootstrap threshold
-    th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-    sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-    mask = sigcluster.elec;
-    
-end
-end
 
-function [mask,p_val] = max_correction(M,bootM,p)
-% correction for multiple testing using the max stat value
-% note this works for bootstrapped data under H0 and for TFCE
-%
-% M = matrix of observed values (note for a single electrode the format is 1*time frames*trials)
-% bootM = matrix of F values for data bootstrapped under H0
-% p = threshold to apply 
-
-nboot = size(bootM,3);
-for boot=1:nboot
-    data = squeeze(bootM(:,:,boot));
-    maxM(boot) = max(data(:)); % collect highest value in space and time for each boot
-end
-
-U=round((1-p).*nboot);
-sortmaxM = sort(maxM); % sort bootstraps 
-maxF_th = sortmaxM(:,U); % get threshold for each parameter
-mask = squeeze(M) >= maxF_th;
-for row =1:size(M,1)
-    for column=1:size(M,2)
-        p_val(row,column) = 1-(sum(squeeze(M(row,column)) >=sortmaxM) / nboot);
-    end
-end 
- 
-end
 
 
     

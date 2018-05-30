@@ -5,8 +5,8 @@ function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 % INPUT
 % M = 2D matrix of observed F values (for a single channel use 1 in the 1st dimension)
 % P = 2D matrix of observed p values (for a single channel use 1 in the 1st dimension)
-% bootM = 3D matrix of F values for data bootstrapped under H0
-% bootP = 3D matrix of F values for data bootstrapped under H0
+% bootM = 3D or 2D matrix of F values for data bootstrapped under H0
+% bootP = 3D or 2D matrix of F values for data bootstrapped under H0
 % LIMO = LIMO structure - the necessary information is
 %                         LIMO.data.chanlocs: the structure describing channels
 %                         LIMO.data.neighbouring_matrix: the binary matrix of neighbours
@@ -36,9 +36,12 @@ end
 cluster_p = [];
 mask = [];
 
+if size(bootM,1) == 1 % if temporal clustering only and not squeezed yet, do it here. 
+    bootM = squeeze(bootM);
+    bootP = squeeze(bootP);
+end
 %% spatial-temporal clustering
-
-if MCC == 2 && size(bootM,1)>1
+if MCC == 2 && ndims(bootM) == 3 && size(bootM,1)>1
     nboot = size(bootM,3);
     U = round((1-p)*nboot); % bootstrap threshold
     minnbchan = 2;
@@ -65,14 +68,14 @@ if MCC == 2 && size(bootM,1)>1
 end
 
 %% temporal clustering
-
-if MCC == 2 && size(bootM,1)==1 || MCC == 3
-    nboot = size(bootM,3);
+if (MCC == 2 && ndims(bootM)== 2) || (MCC == 3 && ndims(bootM)== 2)
+    nboot = size(bootM,2);
     U = round((1-p)*nboot); % bootstrap threshold
-    [th,boot_maxclustersum] = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);   
+    [th,boot_maxclustersum] = limo_ecluster_make(bootM,bootP,p);   
     maxclustersum_th = th.elec;
-    [sigcluster, maxval,pval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-    mask = sigcluster.elec_mask; 
+    [sigcluster, maxval,pval] = limo_ecluster_test(M,P,th,p);
+    mask = sigcluster; 
+    cluster_p = pval;
 end
 
 %% plot

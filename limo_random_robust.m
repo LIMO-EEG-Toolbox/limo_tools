@@ -121,6 +121,8 @@ function filepath = limo_random_robust(varargin)
 % v5: May 2014 - added time-frequency analyses + added check for matrices with
 % NaNs everywhere (ie empty channel) + changed test of hypotheses to
 % trimmed means when possible
+% v6: May 2018 - added possibility to perform analyses on time x subjects
+% vector (for example, coming from multivariate analyses). 
 
 
 %% inputs checks
@@ -152,170 +154,233 @@ switch type
         tfce      = varargin{5};
         clear varargin
         
-        % ------------------------------------------------
-        % check the data structure
-        for e=1:size(data,1)
-            tmp = isnan(data(e,1,:));
-            if length(tmp) == sum(isnan(tmp))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
-                return
-            elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
-                return
-            end
-        end
-        clear tmp
-        
-        % ------------------------------------------------
-        % make a one_sample file per parameter (electrodes, frames, [mean value, se, df, t, p])
-        one_sample = NaN(size(data,1), size(data,2), 5);
-        name = sprintf('one_sample_ttest_parameter_%g',parameter);
-        
-        for electrode = 1:size(data,1) % run per electrode because we have to remove NaNs
-            fprintf('analyse parameter %g electrode %g \n',parameter, electrode);
-            tmp = data(electrode,:,:);
-            if nansum(tmp(1,:)) == 0
-                error('there is at least one empty electrode using your expected chanlocs')
-            else
-                Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
-            end
-            [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2),one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
-            % [one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
-            % one_sample(electrode,:,2) = sd./sqrt(n);
-            clear tmp Y
-        end
-        
-        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-            one_sample = limo_tf_4d_reshape(one_sample);
-        end
-        save ([name],'one_sample', '-v7.3')
-        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
-        
-        % ------------------------------------------------
-        % Bootstrap
-        if nboot > 0
+        if ndims(data) == 2 % timecourses coming from multivariata analyses            
+            one_sample = NaN(size(data,1), 5);
+            name = sprintf('one_sample_ttest_time');
+            Y = data;
+            [one_sample(:,4),one_sample(:,1),trimci,one_sample(:,2),one_sample(:,5),tcrit,one_sample(:,3)]=limo_trimci(Y,20, 0.05, 1/LIMO.nb_conditions_fl);
+
+            save ([name],'one_sample', '-v7.3')
+            if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end            
             
-            bootex = 1;
-            boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
-            if exist(['H0', filesep, boot_name, '.mat'], 'file')
-                answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
-                if strcmp(answer,'Yes');
-                    bootex = 1;
-                else
-                    bootex = 0;
+            % ------------------------------------------------
+            % Bootstrap
+            if nboot > 0
+
+                bootex = 1;
+                boot_name = sprintf('H0_one_sample_ttest_time');
+                if exist(['H0', filesep, boot_name, '.mat'], 'file')
+                    answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
+                    if strcmp(answer,'Yes');
+                        bootex = 1;
+                    else
+                        bootex = 0;
+                    end
                 end
-            end
-            
-            if bootex == 1;
-                mkdir H0
-                % create a boot one_sample file to store data under H0 and H1
-                H0_one_sample = NaN(size(data,1), size(data,2),2,nboot); % stores T and p values for each boot under H0
-                % create centered data to estimate H0
-                centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
-                % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
-                % get boot table
-                disp('making boot table ...')
-                boot_table = limo_create_boot_table(data,nboot);
-                save(['H0', filesep, 'boot_table'], 'boot_table')
-                
-                % get results under H0
-                for electrode = 1:size(data,1)
-                    fprintf('bootstrap: electrode %g parameter %g \n',electrode,parameter);
-                    tmp = centered_data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+
+                if bootex == 1;
+                    mkdir H0
+                    % create a boot one_sample file to store data under H0 and H1
+                    H0_one_sample = NaN(size(data,1), 2,nboot); % stores T and p values for each boot under H0
+                    % create centered data to estimate H0
+                    centered_data = data' - repmat(limo_trimmed_mean(data),size(data,2),1);
+                    % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
+                    % get boot table
+                    disp('making boot table ...')
+                    boot_table = limo_create_boot_table(data,nboot);
+                    save(['H0', filesep, 'boot_table'], 'boot_table')
+
+                    % get results under H0
                     if exist('parfor','file') ~=0
                         parfor b=1:nboot
-                            [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                            [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(:,boot_table(:,b)));
                         end
-                        
+
                         for b=1:nboot
-                            H0_one_sample(electrode,:,1,b) = t{b};
-                            H0_one_sample(electrode,:,2,b) = p{b};
+                            H0_one_sample(:,1,b) = t{b};
+                            H0_one_sample(:,2,b) = p{b};
                         end
                     else
                         for b=1:nboot
-                            [H0_one_sample(electrode,:,1,b),tmdata,trimci,se,H0_one_sample(electrode,:,2,b),tcrit,df]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                            [H0_one_sample(:,1,b),tmdata,trimci,se,H0_one_sample(electrode,:,2,b),tcrit,df]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
                             % [m,dfe,ci,sd,n,H0_one_sample(electrode,:,1,b),H0_one_sample(electrode,:,2,b)] = limo_ttest(1,Y(1,:,boot_table{electrode}(:,b)),0,5/100);
                         end
                     end
                     clear tmp Y
-                end % closes for electrode
-                
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    H0_one_sample = limo_tf_5d_reshape(H0_one_sample);
+                    save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
                 end
-                save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
-            end
-            
-            if tfce ~= 0
-                mkdir tfce; neighbouring_matrix = LIMO.data.neighbouring_matrix;
-                tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
-                tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
-                
-                % do tfce for the current data
-                fprintf('Thresholding One Sample T-test using TFCE ...');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(one_sample,1) == 1
-                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,:,4)),[]); % cluster in freq-time
-                    else
-                        tfce_one_sample = limo_tfce(3,squeeze(one_sample(:,:,:,4)),neighbouring_matrix);
-                    end
-                else
-                    if size(one_sample,1) == 1
-                        tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4)),[]); % cluster in time or freq
-                    else
-                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,4)),neighbouring_matrix);
-                    end
+
+                if tfce ~= 0
                 end
-                save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3');
-                clear clear one_sample tfce_one_sample; disp('.. done');
-                
-                % do tfce for the data under H0
-                fprintf('Thresholding H0 One Sample T-test using TFCE ...');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(H0_one_sample,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,:,b) = limo_tfce(3,squeeze(H0_one_sample(:,:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(3,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                else
-                    if size(H0_one_sample,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(1,squeeze(H0_one_sample(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                end
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
-                clear tfce_H0_one_sample; disp(' .. done')
-            end
-            clear H0_one_sample tfce_H0_one_sample
-        end % closes if nboot > 0
-        disp('one sample t-test done')
+            end % closes if nboot > 0
+            disp('one sample t-test done')            
         
+        else % if data has more than two dimensions 
+            % ------------------------------------------------
+            % check the data structure
+            for e=1:size(data,1)
+                tmp = isnan(data(e,1,:));
+                if length(tmp) == sum(isnan(tmp))
+                    errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
+                    return
+                elseif (length(tmp) - sum(isnan(tmp))) < 3
+                    errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
+                    return
+                end
+            end
+            clear tmp
+
+            % ------------------------------------------------
+            % make a one_sample file per parameter (electrodes, frames, [mean value, se, df, t, p])
+            one_sample = NaN(size(data,1), size(data,2), 5);
+            name = sprintf('one_sample_ttest_parameter_%g',parameter);
+
+            for electrode = 1:size(data,1) % run per electrode because we have to remove NaNs
+                fprintf('analyse parameter %g electrode %g \n',parameter, electrode);
+                tmp = data(electrode,:,:);
+                if nansum(tmp(1,:)) == 0
+                    error('there is at least one empty electrode using your expected chanlocs')
+                else
+                    Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+                end
+                [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2),one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
+                % [one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
+                % one_sample(electrode,:,2) = sd./sqrt(n);
+                clear tmp Y
+            end
+
+            if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                one_sample = limo_tf_4d_reshape(one_sample);
+            end
+            save ([name],'one_sample', '-v7.3')
+            if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
+
+            % ------------------------------------------------
+            % Bootstrap
+            if nboot > 0
+
+                bootex = 1;
+                boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
+                if exist(['H0', filesep, boot_name, '.mat'], 'file')
+                    answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
+                    if strcmp(answer,'Yes');
+                        bootex = 1;
+                    else
+                        bootex = 0;
+                    end
+                end
+
+                if bootex == 1;
+                    mkdir H0
+                    % create a boot one_sample file to store data under H0 and H1
+                    H0_one_sample = NaN(size(data,1), size(data,2),2,nboot); % stores T and p values for each boot under H0
+                    % create centered data to estimate H0
+                    centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
+                    % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
+                    % get boot table
+                    disp('making boot table ...')
+                    boot_table = limo_create_boot_table(data,nboot);
+                    save(['H0', filesep, 'boot_table'], 'boot_table')
+
+                    % get results under H0
+                    for electrode = 1:size(data,1)
+                        fprintf('bootstrap: electrode %g parameter %g \n',electrode,parameter);
+                        tmp = centered_data(electrode,:,:); Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+                        if exist('parfor','file') ~=0
+                            parfor b=1:nboot
+                                [t{b},~,~,~,p{b},~,~]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                            end
+
+                            for b=1:nboot
+                                H0_one_sample(electrode,:,1,b) = t{b};
+                                H0_one_sample(electrode,:,2,b) = p{b};
+                            end
+                        else
+                            for b=1:nboot
+                                [H0_one_sample(electrode,:,1,b),tmdata,trimci,se,H0_one_sample(electrode,:,2,b),tcrit,df]=limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                                % [m,dfe,ci,sd,n,H0_one_sample(electrode,:,1,b),H0_one_sample(electrode,:,2,b)] = limo_ttest(1,Y(1,:,boot_table{electrode}(:,b)),0,5/100);
+                            end
+                        end
+                        clear tmp Y
+                    end % closes for electrode
+
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        H0_one_sample = limo_tf_5d_reshape(H0_one_sample);
+                    end
+                    save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
+                end
+
+                if tfce ~= 0
+                    mkdir tfce; neighbouring_matrix = LIMO.data.neighbouring_matrix;
+                    tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
+                    tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
+
+                    % do tfce for the current data
+                    fprintf('Thresholding One Sample T-test using TFCE ...');
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        if size(one_sample,1) == 1
+                            tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,:,4)),[]); % cluster in freq-time
+                        else
+                            tfce_one_sample = limo_tfce(3,squeeze(one_sample(:,:,:,4)),neighbouring_matrix);
+                        end
+                    else
+                        if size(one_sample,1) == 1
+                            tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4)),[]); % cluster in time or freq
+                        else
+                            tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,4)),neighbouring_matrix);
+                        end
+                    end
+                    save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3');
+                    clear clear one_sample tfce_one_sample; disp('.. done');
+
+                    % do tfce for the data under H0
+                    fprintf('Thresholding H0 One Sample T-test using TFCE ...');
+                    if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                        if size(H0_one_sample,1) == 1
+                            if exist('parfor','file') ~=0
+                                parfor b=1:nboot
+                                    tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),[],0);
+                                end
+                            else
+                                tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),[]);
+                            end
+                        else
+                            if exist('parfor','file') ~=0
+                                parfor b=1:nboot
+                                    tfce_H0_one_sample(:,:,:,b) = limo_tfce(3,squeeze(H0_one_sample(:,:,:,1,b)),neighbouring_matrix,0);
+                                end
+                            else
+                                tfce_H0_one_sample = limo_tfce(3,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
+                            end
+                        end
+                    else
+                        if size(H0_one_sample,1) == 1
+                            if exist('parfor','file') ~=0
+                                parfor b=1:nboot
+                                    tfce_H0_one_sample(:,:,b) = limo_tfce(1,squeeze(H0_one_sample(:,:,1,b)),[],0);
+                                end
+                            else
+                                tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)),[]);
+                            end
+                        else
+                            if exist('parfor','file') ~=0
+                                parfor b=1:nboot
+                                    tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),neighbouring_matrix,0);
+                                end
+                            else
+                                tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
+                            end
+                        end
+                    end
+                    save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
+                    clear tfce_H0_one_sample; disp(' .. done')
+                end
+                clear H0_one_sample tfce_H0_one_sample
+            end % closes if nboot > 0
+            disp('one sample t-test done')
         
+        end 
+ 
         %--------------------------------------------------------------------------
         % Two Samples t-test // percentile bootstrap technique
         %--------------------------------------------------------------------------
@@ -750,7 +815,7 @@ switch type
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
-        LIMO.design.method           = 'OLS'; %'IRLS';
+        LIMO.design.method           = 'IRLS'; %'OLS';
         
         answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
         if isempty(answer)
@@ -865,7 +930,7 @@ switch type
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
                 else
-                    LIMO.design.method = 'OLS';
+                    LIMO.design.method = 'IRLS';
                     save LIMO LIMO; clear data LIMO
                     limo_eeg_tf(4)
                 end
@@ -882,7 +947,7 @@ switch type
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
                 else
-                    LIMO.design.method = 'OLS';
+                    LIMO.design.method = 'IRLS';
                     save LIMO LIMO; clear data LIMO
                     limo_eeg(4)
                 end

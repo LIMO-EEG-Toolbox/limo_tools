@@ -106,7 +106,7 @@ elseif ndims(bootf)==2 % 1 electrode * time/freq
 
     sortSC = sort(boot_values);
     th.elec = sortSC(U); % threshold at the unique electrode
-
+    th.boot_values = boot_values;
 else
     error('ecluster_make: bootf should be 2D or 3D')
 end

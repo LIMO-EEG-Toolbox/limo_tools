@@ -1,9 +1,5 @@
 # LInear MOdeling of EEG data
 
-This repo is the stable version of LIMO EEG (v2) to be used with EEGLAB (https://sccn.ucsd.edu/eeglab/) for your research applications.
-The previous version (1.5) is now archived here: http://datashare.is.ed.ac.uk/handle/10283/2190
+This is the development version of the software with new features being developped on the open. See the https://github.com/LIMO-EEG-Toolbox/Open-Contributions for a list of project we are eagewr to get done. 
 
-## LIMO tutorial dataset
-
-With toe software we released a dataset that can now ne cited and downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189
-
+Anyone is welcome to contribute ! drop me (@cyril) an email 

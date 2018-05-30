@@ -1,4 +1,4 @@
-function [b,W] = limo_WLS(X,Y,varargin)
+function [b,W] = limo_WLS(X,Y)
 
 % LIMO_WLS Limo Weighted Least Squares (WLS)
 % WLS is used to find the maximum likelihood estimates of a generalized
@@ -13,7 +13,6 @@ function [b,W] = limo_WLS(X,Y,varargin)
 % INPUTS:
 %   X             = the design matrix 
 %   Y             = 2D matrix of EEG data (dim trials x frames)
-%   method        is either 'simple' (default) or 'iterative'
 %
 % OUTPUTS:
 %   b             = betas (dim parameters * time frames)
@@ -69,60 +68,22 @@ tune = 4.685;
 
 % Get residuals from previous fit
 res = Y - X*b;
+
 resadj = res .* repmat(adjfactor, 1, size(Y,2));
 
-% re - Robust Estimator
-% 0.6745 is the 0.75- quantile of the standard normal distribution
-% (makes the estimate unbiased)
+% re - Robust Estimator (makes the estimate unbiased)
+% 0.6745 is the 0.75 quantile of the standard normal distribution
 re = median(abs(resadj)) ./ 0.6745;
 re(find(re < 1e-5)) = 1e-5;
 r= resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
+[W,out] = limo_pcout(r); % get weights from residuals
+WY = Y .* repmat(W,1,size(Y,2));
+WX = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+b = pinv(WX)*WY; % b = inv(X'*W*X)*X'W*Y
 
-if strcmpi(method,'simple')
-    
-    [W,out] = limo_pcout(r);
-    WY = Y .* repmat(W,1,size(Y,2));
-    WX = X .* repmat(W,1,size(X,2));
-    b = pinv(WX)*WY;
-    
-elseif strcmpi(method,'iterative')
-    
-    % iterate as to min res.
-    % set a 100 iteration max
-    numiter = 0; iterlim = 100;
-    oldRes=1; newRes=10;
-    
-    while(sum(abs(oldRes-newRes)) > cols*(1E-4)) % on average it is small
-        
-        numiter = numiter+1;
-        oldRes = newRes;
-        
-        if (numiter>iterlim)
-            warning('limo_WLS could not converge');
-            break;
-        end
-        
-        % Get residuals from previous fit
-        res = Y - X*b;
-        resadj = res .* repmat(adjfactor, 1, size(Y,2));
-        
-        %re - Robust Estimator
-        % 0.6745 is the 0.75- quantile of the standard normal distribution
-        % (makes the estimate unbiased)
-        re = median(abs(resadj)) ./ 0.6745;
-        re(find(re < 1e-5)) = 1e-5;
-        r= resadj ./ repmat(tune.*re, size(Y,1),1);
-        
-        % Compute new weights using Principal Component projection
-        [W,out] = limo_pcout(r);
-        WY = Y .* repmat(W,1,size(Y,2));
-        WX = X .* repmat(W,1,size(X,2));
-        b = pinv(WX)*WY;
-        
-        % newRes= sum(sum(res.^2));
-        newRes= sum(res(:).^2);
-    end
-    
-end
+%% check this is a valid result
+% b is a generalized least square if X*inv(X'*W*X)*X'*W*Y == Xb
+% WY = WXB+We with e ~N(0,s^2V) 
+
