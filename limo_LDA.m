@@ -1,22 +1,28 @@
-function [predicted] = limo_LDA(varargin)
+function [predicted, confmat, accuracy] = limo_LDA(varargin)
 % Performs linear classification following Rencher 2002. 
 %
-% FORMAT [accuracy, confusionmat] = limo_LDA(trainingset,traininglabel, testset, method)
+% FORMAT [predicted, confusionmat, accuracy] = limo_LDA(trainingset,traininglabel, testset, method)
 %
 % INPUT
-% Y = trainingset [trials/subjects x electrodes]
-% class = traininglabel (1D)
-% testset [trials/subjects x electrodes]
-% method = regularized or pseudo inverse 
+% Y       = trainingset [trials/subjects x electrodes]
+% class   = traininglabel (1D)
+% testset = [trials/subjects x electrodes]
+% method  = regularized or pseudo inverse covariance
 %
 % OUTPUT
-% predicted labels 
+% predicted labels, confusion matrice, accuracy
+%
+% compares to https://www.mathworks.com/help/stats/discriminant-analysis.html
+% see also https://en.wikipedia.org/wiki/Linear_discriminant_analysis
 %
 % Iege Bassez v1 May 2018
+% C Pernet, some code optimization
+% --------------------------------
+% Copyright (C) LIMO Team 2018
 
-
-Y = varargin{1}; 
-class = varargin{2}; 
+%% Inputs
+Y       = varargin{1}; 
+class   = varargin{2}; 
 testset = varargin{3};
 
 if nargin < 4
@@ -24,39 +30,41 @@ if nargin < 4
 else
     method = varargin{4}; 
 end
-% Calculate covariance matrix
-% transform class first to X matrix to calculate E same way as mglm
-X     = dummyvar(class);  
-X     = [X, ones(size(X,1),1)];
-T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
-R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
-E     = (Y'*R*Y); % SS Error
-n = size(Y,1);
-k = length(unique(class)); 
-ve = n - k;  
-Spooled = E./ve;
-meanFeaturesGroup =  grpstats(Y, class, {'mean'});
 
-if strcmp(lower(method), 'pseudo')
-    % get linear classification functions with PINV 
+meanFeaturesGroup =  grpstats(Y, class, {'mean'}); % get the means
+
+%% Calculate covariance matrix
+if strcmpi(method, 'pseudo')
+    % transform class first to X matrix to calculate E same way as mglm
+    X                 = dummyvar(class);
+    X                 = [X, ones(size(X,1),1)];
+    R                 = eye(size(Y,1)) - (X*pinv(X));                                     
+    Spooled           = (Y'*R*Y)./(size(Y,1) - length(unique(class)));
+    
+    % get linear classification functions with PINV
     % calculate coefficients and intercept on trainingset
-    coeff = meanFeaturesGroup * pinv(Spooled);
+    coeff     = meanFeaturesGroup * pinv(Spooled);
     intercept = diag(meanFeaturesGroup * pinv(Spooled) * meanFeaturesGroup')/2;
-    % calculate classification functions on testset
-    L = (coeff * testset') - repmat(intercept,1,size(testset,1)); % page 306
-    Logical = L == repmat(max(L),k,1);
-    [predicted, ~] = find(Logical == 1);
-
-elseif strcmp(lower(method), 'regularized')
-    % get linear classification functions with Regularized Covariance
-    % get regularized covariance matrix 
+    
+elseif strcmpi(method, 'regularized')
+    % get regularized covariance matrix
     [RegularizedCovariance, ~] = cov1para(Y);
+    % get linear classification functions with Regularized Covariance
     % calculate coefficients and intercept on trainingset
-    coeff = meanFeaturesGroup * inv(RegularizedCovariance);
+    coeff     = meanFeaturesGroup * inv(RegularizedCovariance);
     intercept = diag(meanFeaturesGroup * inv(RegularizedCovariance) * meanFeaturesGroup')/2;
-    % calculate classification functions on testset
-    L = (coeff * testset') - repmat(intercept,1,size(testset,1)); % page 306
-    Logical = L == repmat(max(L),k,1);
-    [predicted, ~] = find(Logical == 1);
 end
-end % end function
+
+% calculate classification functions on testset
+L = (coeff * testset') - repmat(intercept,1,size(testset,1)); % page 306
+Logical = L == repmat(max(L),k,1);
+[predicted, ~] = find(Logical == 1);
+
+%% additional outputs
+if nargout == 2
+    confmat = confusionmat(class, predicted);
+end
+
+if nargout == 3
+    accuracy = sum(diag(confmat/sum(sum(confmat))));
+end
