@@ -6,9 +6,9 @@ function model = limo_mglm(varargin)
 % Analyses are performed at one time frame only, but for all
 % subjects/ trials and considering the pattern of effect across all electrodes.
 % In addition, we compute the multivariate Discriminable value D which allows
-% finding if conditions/regressors (classes) are different. This is similar 
+% finding if conditions/regressors (classes) are different. This is similar
 % as a pattern classification (LDA, SVM etc) without to have to reply on
-% particular classifier algorithm.  
+% particular classifier algorithm.
 %
 % FORMAT:
 % model = limo_mglm(Y,LIMO)
@@ -23,14 +23,14 @@ function model = limo_mglm(varargin)
 %   nb_interactions = a vector indicating number of columns per interactions
 %   nb_continuous = number of covariates
 %   method        = 'OLS', 'WLS', 'IRLS' (bisquare)
+%   cov_mehtod    = either pseudo inverse of cov or inverse on regularized cov
 %   W             = optional - a matrix a trial weights ; ie method 'WLS'
 %                   using these weights rather than something else
-%   cov_mehtod    = either pseudo inverse of cov or inverse on regularized cov
 %
 % OUTPUTS:
-%     model.R2.V 
-%     model.R2.EV = eigenvalues 
-%     model.R2.Roy.F 
+%     model.R2.V
+%     model.R2.EV = eigenvalues
+%     model.R2.Roy.F
 %     model.R2.Roy.p
 %     model.R2.Pillai.F
 %     model.R2.Pillai.p
@@ -43,11 +43,11 @@ function model = limo_mglm(varargin)
 %          --> F/p in rows are the variables
 %          --> df column 1 = df, column2 2 = dfe (same for all covariates)
 %
-%     model.Discriminant.Z = discriminant functions (for plotting observations) 
+%     model.Discriminant.Z = discriminant functions (for plotting observations)
 %          --> [trials/subjects x nb discriminant functions]
-%     model.Discriminant.Z_cent = centered discriminant functions (for plotting observations) 
+%     model.Discriminant.Z_cent = centered discriminant functions (for plotting observations)
 %     model.Discriminant.importanceZ = relative importance of each discrim function
-%          --> considers its eigenvalue as a proportion of the total 
+%          --> considers its eigenvalue as a proportion of the total
 %     model.Discriminant.cc_squared = squared canonical correlation
 %          --> corresponding to each discriminant function
 %     model.Discriminant.D = Discriminable values (standardized eigenvector coefficients) for plotting topography
@@ -64,15 +64,22 @@ function model = limo_mglm(varargin)
 %
 % NOTES:
 %
+% The MANOVA uses Pillais' V and Roy's tests.
+% In Roy's test one maximizes the spread of the transformed data using the
+% 1st eigen value of inv(E)*H. The F approximation is an upper bound, i.e.
+% results are safe if H0 is accepted (no effect) but not rejected. If data
+% are highly correlated, there is only one high eigen value and Roy test is
+% appropriate otherwise Pillai is better.
+%
 % The parameters can be computed using 3 methods: ordinary least squares,
-% weighted least squares and iterative reweighted least squares. 
+% weighted least squares and iterative reweighted least squares.
 % For OLS, W=ones(size(Y)), for IRLS and WLS the weights can be provided.
-% For IRLS, each cell (time and space) is weighted so it doesn't matter if 
+% For IRLS, each cell (time and space) is weighted so it doesn't matter if
 % precomputed by limo_eeg.m *unless you want to pass some special weights)
 % For WLS, the default from limo_eeg.m is that weights are computed
 % trial-wise, seeing a trial as multivariate in time, but then the MANOVA is computed
-% across electrodes (ie all electrode have the same weights). If W is not provided, 
-% the weights will be computed across electrodes, seeing a trial as a multivariate 
+% across electrodes (ie all electrode have the same weights). If W is not provided,
+% the weights will be computed across electrodes, seeing a trial as a multivariate
 % measures in space.
 %
 % Within the MGLM, each effect is accounted for given the other effects; this means
@@ -82,45 +89,41 @@ function model = limo_mglm(varargin)
 % would have sampled trials to make sure the number of trials is identical
 % across interaction terms.
 %
-% The multivariate statistic uses Pillais' V and Roy's
-% test. In Roy's test one maximizes the spread of the transformed data using the
-% 1st eigen value of inv(E)*H. The F approximation is an upper bound, i.e.
-% results are safe if H0 is accepted (no effect) but not rejected. If data
-% are highly correlated, there is only one high eigen value and Roy test is
-% appropriate otherwise Pillai is better.
-%
-% The Classification ...
-%
 % References
-% Christensen, R. 2002. Plane answers to complex questions. 3rd Ed. Springer-Verlag
-% Friston et al. 2007. Statitical Parametric Mapping. Academic Press
-% Rencher, A.C. 2002. Methods of Multivariate Analysis. 2nd Ed. Wiley.
-% Robert and Escoufier, 1976. J.Royal Stat Soc, C
-% Pernet et al. in prep. Classification of EEG data though MGLM.
-%  
+% - Christensen, R. 2002. Plane answers to complex questions. 3rd Ed. Springer-Verlag
+% - Friston et al. 2007. Statitical Parametric Mapping. Academic Press
+% - Rencher, A.C. 2002. Methods of Multivariate Analysis. 2nd Ed. Wiley.
+% - Robert and Escoufier, 1976. A Unifying Tool for Linear Multivariate Statistical Methods:
+%   The RV- Coefficient J.Royal Stat Soc, C
+% - Bassez et al. Spatial Multivariate Analyses of EEG data: theory and application. In prep.
+%
 % See also
 % LIMO_DESIGN_MATRIX, LIMO_PCOUT, LIMO_IRLS, LIMO_EEG, LIMO_DECOMP
 %
-% Cyril Pernet v1 13-05-2013
+% Cyril Pernet v1 May 2013
+% Iege Bassez  v2 June 2018
 % ----------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2018
+
+%% defaults
+decomp_method = 'pseudo'; % default decomposition method ie eig((pinv(E)*H))
+folds = 10; % 10 folds cross validated classification
 
 %% varagin
 
 W = [];
+Y                  = varargin{1}; % the data
 if nargin == 2
-    Y               = varargin{1};
     X               = varargin{2}.design.X;
     nb_conditions   = varargin{2}.design.nb_conditions;
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
     cov_method      = varargin{2}.design.cov_method;
-    try
+    if isfield(varargin{2}.design,'weigths')
         W           = varargin{2}.design.weigths;
     end
 elseif nargin >= 7
-    Y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
     nb_interactions = varargin{4};
@@ -145,6 +148,8 @@ end
 
 if size(Y,1)~=size(X,1)
     error('The number of events in Y and the design matrix are different')
+elseif size(Y,1)>=size(X,1)
+    error('The number of events is bigger or equal to the number of channels, the analysis cannot be done')
 end
 
 if nb_interactions == 0
@@ -157,14 +162,14 @@ end
 
 % -------------------------
 if nb_factors == 1   %  1-way MANOVA/MANCOVA
-% -------------------------
+    % -------------------------
     
     % total sum of squares, projection matrix for errors, residuals and betas
     % -----------------------------------------------------------------------
     T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
     R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
     E     = (Y'*R*Y);                                                          % SS Error
-   
+    
     % compute Beta parameters and weights
     if strcmp(method,'OLS')
         W = ones(size(Y,1),1);
@@ -182,58 +187,68 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
     % compute model R^2
     % -----------------
     C = eye(size(X,2));
-    C(:,size(X,2)) = 0;
-    C0 = eye(size(X,2)) - C*pinv(C);
-    X0 = X*C0;  % Reduced model
+    C(:,size(X,2)) = 0;                  % contrast matrix for effect
+    C0 = eye(size(X,2)) - C*pinv(C);     % contrast matrix for error
+    X0 = X*C0;                           % reduced model
     R0 = eye(size(Y,1)) - (X0*pinv(X0));
-    M  = R0 - R;  % Projection matrix onto Xc
-    H = (Betas'*X'*M*X*Betas);  % SS Effect % only works
-    % with rank deficient matrix (intercept column with ones as last column of X)
-    if round(H,6) ~= round(T - E, 6) % if H is not equal to T - E problem!
-        H = T - E; % temporary solution
-    end 
+    M  = R0 - R;                         % projection matrix onto Xc
+    H = (Betas'*X'*M*X*Betas);           % SS Effect
+                                         % only works with rank deficient matrix
+                                         % intercept column with ones as last column of X
+    if round(H,6) ~= round(T - E, 6)     % since T = H + E
+        H = T - E;                       % 'temporary' solution ; is there a better solution?
+    end
     
-
-    % Generalized R2
+    
+    % Generalized R2 - Robert and Escoufier, J.Royal Stat Soc, C - 1976
+    % -----------------------------------------------------------------
     % variance covariance matrix
-    S = cov([Y X(:,1:size(X,2)-1)]);
+    S   = cov([Y X(:,1:size(X,2)-1)]);
     Syy = S(1:size(Y,2),1:size(Y,2));
     Sxy = S(size(Y,2)+1:size(S,1),1:size(Y,2));
     Syx = S(1:size(Y,2),size(Y,2)+1:size(S,2));
     Sxx = S(size(Y,2)+1:size(S,1),size(Y,2)+1:size(S,2));
-    Rsquare_multi = trace(Sxy*Syx) / sqrt(trace(Sxx.^2)*trace(Syy.^2)); % Robert and Escoufier, J.Royal Stat Soc, C - 1976
+    Rsquare_multi = trace(Sxy*Syx) / sqrt(trace(Sxx.^2)*trace(Syy.^2));
     
+    % compute multivariate effects
+    % ----------------------------
     if strcmp(cov_method, 'regularized')
-        [RegularizedCovariance, ~] = cov1para(Y);
+        [RegularizedCovariance, ~] = cov1para(Y); % shrinkage
         E = RegularizedCovariance .* (size(Y,1)-nb_conditions);
-    end     
-    [Eigen_vectors_R2, Eigen_values_R2] = limo_decomp(E,H, cov_method); 
-    p = size(Y,2); % = number of variables (dimension)
-    q = rank(X)-1; % -1 because of intercept column
-    s = min(p,q); % df
-    n = size(Y,1); % nb of observations (dfe)
+    end
+    
+    [~,pd] = chol(E); % check if E is positive definite
+    if pd == 0
+        decomp_method = 'choldesky';
+    end
+    [Eigen_vectors_R2, Eigen_values_R2] = limo_decomp(E,H, decomp_method);
+    
+    p = size(Y,2);      % = number of variables (dimension)
+    q = rank(X)-1;      % -1 because of intercept column
+    s = min(p,q);       % df
+    n = size(Y,1);      % nb of observations (dfe)
     m = (abs(q-p)-1)/2;
     N = (n-q-p-2)/2;
     ve = n - rank(X);
     
     % Roy
-    theta = max(Eigen_values_R2) / (1+max(Eigen_values_R2)); % Roy
+    theta        = max(Eigen_values_R2) / (1+max(Eigen_values_R2));
     R2_Roy_value = theta; % = 1st canonical correlation
     R2_Roy_F     = ((ve-max(p,q)+q)*max(Eigen_values_R2))/max(p,q);
     R2_Roy_p     = 1-fcdf(R2_Roy_F, max(p,q), ve-max(p,q)+q);
     
     % Pillai
-    V = sum(Eigen_values_R2 ./ (1+Eigen_values_R2)); % Pillai
+    V               = sum(Eigen_values_R2 ./ (1+Eigen_values_R2));
     R2_Pillai_value = V / s; % average of canonical correlations
     R2_Pillai_F     = ((2*N+s+1)*V) / ((2*m+s+1)*(s-V)');
     R2_Pillai_p     = 1-fcdf(R2_Pillai_F,(s*(2*m+s+1)),(s*(2*N+s+1)));
-        
+    
     % compute F for categorical variables
     % -----------------------------------
     if nb_conditions ~= 0 && nb_continuous == 0
-        Eigen_values_cond = Eigen_values_R2;
+        Eigen_values_cond  = Eigen_values_R2;
         Eigen_vectors_cond = Eigen_vectors_R2;
-
+        
     elseif nb_conditions ~= 0 && nb_continuous ~= 0
         C = eye(size(X,2));
         C(:,(nb_conditions+1):size(X,2)) = 0;
@@ -241,10 +256,10 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
         X0 = X*C0; % Here the reduced model includes the covariates
         R0 = eye(size(Y,1)) - (X0*pinv(X0));
         M  = R0 - R;
-        H  = (Betas'*X'*M*X*Betas); 
-        [Eigen_vectors_cond, Eigen_values_cond] = limo_decomp(E,H,cov_method);
+        H  = (Betas'*X'*M*X*Betas);
+        [Eigen_vectors_cond, Eigen_values_cond] = limo_decomp(E,H,decomp_method);
     end
-
+    
     vh = nb_conditions - 1; % df = q above
     s = min(vh,p); % subspace in which mean Ys are located
     for c=1:nb_conditions
@@ -263,38 +278,36 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
         
         % Pillai
         V = sum(Eigen_values_cond ./ (1+Eigen_values_cond));
-        df_conditions_Pillai = s*(2*m+s+1);
-        dfe_conditions_Pillai = s*(2*N+s+1);
-        F_conditions_Pillai = ((2*N+s+1)*V) / ((2*m+s+1)*(s-V)');
+        df_conditions_Pillai   = s*(2*m+s+1);
+        dfe_conditions_Pillai  = s*(2*N+s+1);
+        F_conditions_Pillai    = ((2*N+s+1)*V) / ((2*m+s+1)*(s-V)');
         pval_conditions_Pillai = 1-fcdf(F_conditions_Pillai,df_conditions_Pillai,dfe_conditions_Pillai);
         
         % Roy's test
         theta = max(Eigen_values_cond) / (1+max(Eigen_values_cond));
-        df_conditions_Roy = max(p,vh);
-        %dfe_conditions_Roy = ve - 1; % in Renchner it is proposed to use ve - max(p,vh) -1  while in Statistica it is ve -1. 
-        dfe_conditions_Roy = ve - max(p,q) + q; % SAS site
-        F_conditions_Roy = (dfe_conditions_Roy*max(Eigen_values_cond))/df_conditions_Roy;
+        df_conditions_Roy   = max(p,vh);
+        dfe_conditions_Roy  = ve - max(p,q) + q;
+        F_conditions_Roy    = (dfe_conditions_Roy*max(Eigen_values_cond))/df_conditions_Roy;
         pval_conditions_Roy = 1-fcdf(F_conditions_Roy, df_conditions_Roy, dfe_conditions_Roy);
         
     else % = only one non zeros Eigen value s = 1 and/or vh = 1 (see p. 169 Rencher)
         
         theta = max(Eigen_values_cond) / (1+max(Eigen_values_cond)); % Roy
         V = theta; % Pillai(1) equals theta
-     
-        df_conditions_Pillai = p; 
-        dfe_conditions_Pillai = ve-p+1;
-        df_conditions_Roy = df_conditions_Pillai;
-        dfe_conditions_Roy = dfe_conditions_Pillai;
         
-        F_conditions_Pillai = (dfe_conditions_Pillai/df_conditions_Pillai) * max(Eigen_values_cond);
+        df_conditions_Pillai  = p;
+        dfe_conditions_Pillai = ve-p+1;
+        df_conditions_Roy     = df_conditions_Pillai;
+        dfe_conditions_Roy    = dfe_conditions_Pillai;
+        
+        F_conditions_Pillai    = (dfe_conditions_Pillai/df_conditions_Pillai) * max(Eigen_values_cond);
         pval_conditions_Pillai = 1-fcdf(F_conditions_Pillai,df_conditions_Pillai,dfe_conditions_Pillai);
-        F_conditions_Roy = F_conditions_Pillai;
-        pval_conditions_Roy = pval_conditions_Pillai;
+        F_conditions_Roy       = F_conditions_Pillai;
+        pval_conditions_Roy    = pval_conditions_Pillai;
     end
     
-    %% 
-    % Discriminant Analysis
-    % ----------------------------------------
+    %% Discriminant Analysis
+    % ------------------------
     if length(Y)-nb_conditions <= nb_conditions
         errordlg('there is not enough data point to run a discriminant analysis')
     else
@@ -313,79 +326,79 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
             errordlg('something went wrong with scaling the eigenvectors')
         end
         
-        % get the discriminant function(s) 
+        % get the discriminant function(s)
         scaled_eigenvectors = scaled_eigenvectors(:,1:s); % s: nb nonzero eigenvalues
-        Eigen_values_cond = Eigen_values_cond(1:s); % s: nb nonzero eigenvalues
-        z = Y * scaled_eigenvectors; % the discriminant functions themself 
-        z_importance = Eigen_values_cond ./ sum(Eigen_values_cond); % variance corresponding to each eigenvalue
-        cc_squared = Eigen_values_cond ./ (1 + Eigen_values_cond); % canonical correlation
-        centered_Y = bsxfun(@minus, Y,mean(Y));     
-        centered_z = centered_Y * scaled_eigenvectors; % centered discriminant functions
+        Eigen_values_cond   = Eigen_values_cond(1:s); % s: nb nonzero eigenvalues
+        z                   = Y * scaled_eigenvectors; % the discriminant functions themself
+        z_importance        = Eigen_values_cond ./ sum(Eigen_values_cond); % variance corresponding to each eigenvalue
+        cc_squared          = Eigen_values_cond ./ (1 + Eigen_values_cond); % canonical correlation
+        centered_Y          = bsxfun(@minus, Y,mean(Y));
+        centered_z          = centered_Y * scaled_eigenvectors; % centered discriminant functions
         
         % now, get standardized eigenvectors
         Spooled = E./ve;
         if strcmp(cov_method, 'regularized')
             Spooled = RegularizedCovariance;
-        end        
-        standardized_eigenvectors = bsxfun(@times, scaled_eigenvectors, sqrt(diag(Spooled)));                
-    end      
-    %%
-    % do the classification 
+        end
+        standardized_eigenvectors = bsxfun(@times, scaled_eigenvectors, sqrt(diag(Spooled)));
+    end
+    
+    %% do the classification
     %--------------------------------------------------------
     % get training linear decoding accuracy:
-    [class,~] = find(X(:,1:nb_conditions)');
-    [predicted] = limo_LDA(Y, class, Y, cov_method);
-    confmat = confusionmat(class, predicted); clear predicted;
-    training_Acc = sum(diag(confmat/sum(sum(confmat))));
+    [class,~]            = find(X(:,1:nb_conditions)');
+    [~, ~,training_Acc]  = limo_LDA(Y, class, Y, cov_method);
+    % confmat      = confusionmat(class, predicted); clear predicted;
+    % training_Acc = sum(diag(confmat/sum(sum(confmat))));
     
     % get 10-fold CV linear decoding accuracy:
-    folds = 10;
-    cvp = cvpartition(class,'k',folds); 
+    cvp = cvpartition(class,'k',folds);
     accuracyvector = NaN(1,folds);
     for foldi=1:folds
-        trainIdx = cvp.training(foldi);
-        testIdx = cvp.test(foldi);
+        trainIdx              = cvp.training(foldi);
+        testIdx               = cvp.test(foldi);
         % make a training and test set based on indexes:
-        trainingset = Y(trainIdx,:);
-        testset = Y(testIdx,:);
+        trainingset           = Y(trainIdx,:);
+        testset               = Y(testIdx,:);
         % class labels:
-        traininglabel = class(trainIdx,1);
-        testlabel = class(testIdx,1);
+        traininglabel         = class(trainIdx,1);
+        testlabel             = class(testIdx,1);
         % Classification:
-        predicted = limo_LDA(trainingset,traininglabel,testset, cov_method);
-        confmat = confusionmat(testlabel, predicted); clear predicted;
+        predicted             = limo_LDA(trainingset,traininglabel,testset, cov_method);
+        confmat               = confusionmat(testlabel, predicted); clear predicted;
         accuracyvector(foldi) = sum(diag(confmat/sum(sum(confmat))));
     end
     cvAcc  = mean(accuracyvector);
-    cvSD = std(accuracyvector);
-% 
-%     % get training linear decoding accuracy:
-%     LinearModel = fitcdiscr(Y,class, 'DiscrimType', 'pseudolinear'); %The software inverts the covariance matrix using the pseudo inverse.
-%     training_Acc = sum(diag(confusionmat(LinearModel.Y, predict(LinearModel, Y))))/sum(sum(confusionmat(LinearModel.Y, predict(LinearModel, Y))));
-%     
-%     % get CV linear decoding accuracy:
-%     LinearModel_CV = fitcdiscr(Y,class, 'DiscrimType', 'pseudolinear','CrossVal', 'on'); 
-%     acc = NaN(1,LinearModel_CV.KFold);
-%     for k=1:LinearModel_CV.KFold
-%         acc(k) = sum(diag(confusionmat(LinearModel_CV.Y, predict(LinearModel_CV.Trained{k,1}, Y))))/sum(sum(confusionmat(LinearModel_CV.Y, predict(LinearModel_CV.Trained{k,1}, Y))));
-%     end
-%     cvAcc = mean(acc);
-%     cvSD  = sqrt(sum((acc - mean(acc)).^2)/(LinearModel_CV.KFold-1));
-%     
+    cvSD   = std(accuracyvector);
+    
+    %     % get training linear decoding accuracy:
+    %     LinearModel = fitcdiscr(Y,class, 'DiscrimType', 'pseudolinear'); %The software inverts the covariance matrix using the pseudo inverse.
+    %     training_Acc = sum(diag(confusionmat(LinearModel.Y, predict(LinearModel, Y))))/sum(sum(confusionmat(LinearModel.Y, predict(LinearModel, Y))));
+    %
+    %     % get CV linear decoding accuracy:
+    %     LinearModel_CV = fitcdiscr(Y,class, 'DiscrimType', 'pseudolinear','CrossVal', 'on');
+    %     acc = NaN(1,LinearModel_CV.KFold);
+    %     for k=1:LinearModel_CV.KFold
+    %         acc(k) = sum(diag(confusionmat(LinearModel_CV.Y, predict(LinearModel_CV.Trained{k,1}, Y))))/sum(sum(confusionmat(LinearModel_CV.Y, predict(LinearModel_CV.Trained{k,1}, Y))));
+    %     end
+    %     cvAcc = mean(acc);
+    %     cvSD  = sqrt(sum((acc - mean(acc)).^2)/(LinearModel_CV.KFold-1));
+    %
+    
     % get training quadratic decoding accuracy:
     QuadraticModel = fitcdiscr(Y, class, 'DiscrimType', 'pseudoquadratic');
     q_training_Acc = sum(diag(confusionmat(QuadraticModel.Y, predict(QuadraticModel, Y))))/sum(sum(confusionmat(QuadraticModel.Y, predict(QuadraticModel, Y))));
-
+    
     % get CV quadratic decoding accuracy:
-    QuadraticModel_CV = fitcdiscr(Y, class, 'DiscrimType', 'pseudoquadratic', 'CrossVal', 'on');    
+    QuadraticModel_CV = fitcdiscr(Y, class, 'DiscrimType', 'pseudoquadratic', 'CrossVal', 'on');
     q_acc = NaN(1,QuadraticModel_CV.KFold);
     for k=1:QuadraticModel_CV.KFold
         q_acc(k) = sum(diag(confusionmat(QuadraticModel_CV.Y, predict(QuadraticModel_CV.Trained{k,1}, Y))))/sum(sum(confusionmat(QuadraticModel_CV.Y, predict(QuadraticModel_CV.Trained{k,1}, Y))));
     end
     q_cvAcc = mean(q_acc);
-    q_cvSD  = sqrt(sum((q_acc - mean(q_acc)).^2)/(QuadraticModel_CV.KFold-1));     
-
-    %% 
+    q_cvSD  = sqrt(sum((q_acc - mean(q_acc)).^2)/(QuadraticModel_CV.KFold-1));
+    
+    %%
     % ------------------------------------------------
 elseif nb_factors > 1  && isempty(nb_interactions) % N-ways MANOVA without interactions
     % ------------------------------------------------
@@ -394,6 +407,7 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways MANOVA without inter
     T        = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
     R        = eye(size(Y,1)) - (X*pinv(X));
     E        = (Y'*R*Y);
+
     % compute Beta parameters and weights
     if strcmp(method,'OLS')
         W = ones(size(Y,1),1);
@@ -513,8 +527,7 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways MANOVA without inter
             F_conditions_Roy(f) = F_conditions_Pillai(f);
             pval_conditions_Roy(f) = pval_conditions_Pillai(f);
         end
-        
-        
+                
         % update factors
         if f<length(nb_conditions)
             update = max(find(eoi));
@@ -524,7 +537,6 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways MANOVA without inter
             eoni = find(eoni - eoi);
         end
     end
-    
     
     % ------------------------------------------------
 elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways MANOVA with interactions
@@ -976,7 +988,7 @@ model.R2.Pillai.p = R2_Pillai_p;
 model.R2.varEV = Eigen_values_R2(1:s) ./ sum(Eigen_values_R2(1:s))*100;
 model.betas = Betas;
 
-if nb_conditions ~= 0  
+if nb_conditions ~= 0
     model.conditions.EV           = [Eigen_values_cond'];
     model.conditions.Pillai.F     = F_conditions_Pillai;
     model.conditions.Pillai.p     = pval_conditions_Pillai;
@@ -988,7 +1000,7 @@ if nb_conditions ~= 0
     model.conditions.Roy.dfe      = dfe_conditions_Roy;
 end
 
-if nb_factors == 1  
+if nb_factors == 1
     model.conditions.varEV  = z_importance * 100; % to see in how many dimension the mean vectors lie in (guide using Roy or Pillai)
     
     % outcomes from Discriminant Analysis:
@@ -998,7 +1010,7 @@ if nb_factors == 1
     model.Discriminant.cc_squared  = cc_squared;
     model.Discriminant.Z           = z;
     model.Discriminant.Z_cent     = centered_z;
-    model.Discriminant.cc_squared  = cc_squared; 
+    model.Discriminant.cc_squared  = cc_squared;
     
     % outcome from Classification:
     model.Classification.Linear.Acc       = training_Acc;
@@ -1008,7 +1020,7 @@ if nb_factors == 1
     model.Classification.Quadratic.Acc       = q_training_Acc;
     model.Classification.Quadratic.cvAcc     = q_cvAcc;
     model.Classification.Quadratic.cvSD      = q_cvSD;
-
+    
 end
 
 if nb_interactions ~= 0
