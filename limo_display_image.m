@@ -195,7 +195,13 @@ if dynamic == 1
                 % ERP plot at best electrode and topoplot
                 % at max time or freq
                 y = round(y);
-                if strcmp(LIMO.Analysis,'Time') ;
+                if size(toplot,2) > 1 && y>size(toplot,1)
+                    y = size(toplot,1);
+                elseif size(toplot,2) > 1 && y<1
+                    y = 1;
+                end
+                
+                if strcmp(LIMO.Analysis,'Time') 
                     
                     if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
