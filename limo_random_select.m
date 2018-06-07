@@ -651,7 +651,7 @@ elseif type == 2
             elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                 
                 % Use single electrode
-                if size(limo.design.electrode,2) == 1;
+                if size(limo.design.electrode,2) == 1
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
                         if strcmp(limo.Analysis,'Time-Frequency')
                             tmp_data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
