@@ -275,9 +275,48 @@ elseif strncmp(FileName,'Linear_Classification',16)
     elseif MCC == 2 || MCC == 3
        try cd('H0'); load(MCC_data); cd ..
             bootM = H0_Linear_Classification; 
-            bootP = NaN(size(H0_Linear_Classification));     
+            bootP = NaN(size(H0_Linear_Classification));            
             % do the cluster correction:
-            [mask, M] = limo_clustering(M', P', bootM, bootP, LIMO, MCC, p, 1); 
+            % 1.make the clusters under H0
+            b = size(bootM,2);
+            U = round((1-p)*b);
+            boot_values = zeros(b,1);
+            for kk=1:b % bootstrap samples
+                [L,NUM] = bwlabeln(squeeze(bootM(:,kk))>=1/LIMO.design.nb_conditions); % find clusters
+                if NUM~=0
+                    tmp=zeros(1,NUM);
+                    for C = 1:NUM % compute sum for each cluster
+                        tmp(C) = sum(squeeze(bootM(L==C,kk)) );
+                    end
+                    boot_values(kk) = max(tmp(:)); % save max across clusters
+                else
+                    boot_values(kk) = 0;
+                end
+
+            end % bootstrap loop
+            sortSC = sort(boot_values);
+            threshold = sortSC(U); % threshold 
+            % 2.make clusters under H1 and threshold
+            sigcluster = zeros(size(M,1),1);
+            pval = NaN(size(M,1),1);
+            [L,NUM] = bwlabeln(Linear_Classification(:,2) >= 1/LIMO.design.nb_conditions); % find clusters
+            maxval = zeros(1,NUM);
+            for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
+                maxval(C) = sum(M(L==C)); % sum of classification accuracies
+                if maxval(C) >= threshold;
+                    sigcluster(L==C)=1; % flag clusters above threshold
+                    p = sum(boot_values >= sum(M(L==C))) / b; % corrrected p value
+                    if p ==0
+                        p = 1/b;
+                    end
+                    pval(L==C) = p;
+                end
+            end
+            maxval = max(maxval);
+            % return output
+            mask = sigcluster';
+            M = pval;
+            %[mask, M] = limo_clustering(M', M', bootM, bootM, LIMO, MCC, 1/LIMO.design.nb_conditions, 1); 
             mytitle = sprintf('CV linear decoding accuracies ± 2SD: correction by temporal clustering \n ');
 
         catch ME
