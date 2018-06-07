@@ -751,7 +751,9 @@ elseif type == 2
     LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
     tmpname = limo_random_robust(type,tmp_data1,tmp_data2,i,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
-    try delete data.mat; end
+    if exist('data.mat','file')
+        try delete data.mat; end
+    end
     
     
     % ------------------------------
