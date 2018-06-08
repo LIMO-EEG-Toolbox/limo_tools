@@ -413,7 +413,7 @@ if ~isempty(handles.C);
             
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'F';
+            LIMO.contrast{index}.V = 'F'; % always F since we use Hotelling test
             C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
