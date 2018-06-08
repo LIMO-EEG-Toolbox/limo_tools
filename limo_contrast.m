@@ -15,7 +15,7 @@ function result = limo_contrast(varargin)
 % Betas          = betas computed in limo_glm1 
 % LIMO           = the LIMO.mat with the design matrix and contrast
 % contrast type  = 0 for T test, 1 for F test
-% analysis type  = 1 for 1st level and 2nd level ANOVA/ANCOVA 
+% analysis type  = 1 Contrast for 1st level analyses and 2nd level regression/ANOVA/ANCOVA 
 %                  2 for 1/2nd level bootrapped ANOVA/ANCOVA
 %
 % FORMAT:
@@ -361,7 +361,7 @@ switch type
             end
             
             result = [];
-            if Test == 0;
+            if Test == 0
                 save ([filename], 'H0_con'); clear H0_con
             else
                 save ([filename], 'H0_ess'); clear H0_ess

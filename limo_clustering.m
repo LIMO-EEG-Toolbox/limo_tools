@@ -1,4 +1,4 @@
-function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
+function [mask,cluster_pval] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 
 % FORMAT:  [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p)
 %
@@ -13,7 +13,7 @@ function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 % MCC = 2 (spatial-temporal clustering) or 3 (temporal clustering)
 % p   = threshold to apply (note this applied to create the excursion set,
 %       and then use as the corrected p value)
-% fig = 1/0 to plot the maximum stat un der H0
+% fig = 1/0 to plot the maximum stat under H0
 %
 % OUTPUT
 % mask is a binary matrix of the same size as M corresponding to a threshold
@@ -24,7 +24,7 @@ function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 % Cyril Pernet v1
 % outsourced from limo_stat_values
 % --------------------------------
-% Copyright (C) LIMO Team 2016
+% Copyright (C) LIMO Team 2018
 
 if nargin == 7
     fig = 1;
@@ -39,15 +39,15 @@ mask = [];
 %% spatial-temporal clustering
 
 if MCC == 2 && size(bootM,1)>1
-    nboot = size(bootM,3);
-    U = round((1-p)*nboot); % bootstrap threshold
-    minnbchan = 2;
-    expected_chanlocs = LIMO.data.chanlocs;
+    nboot               = size(bootM,3);
+    U                   = round((1-p)*nboot); % bootstrap threshold
+    minnbchan           = 2;
+    expected_chanlocs   = LIMO.data.chanlocs;
     channeighbstructmat = LIMO.data.neighbouring_matrix;
-    boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
+    boot_maxclustersum  = zeros(nboot,1); % compute bootstrap clusters
+    
     disp('getting clusters under H0 boot ...');
     parfor boot = 1:nboot
-        % boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
         [posclusterslabelmat,nposclusters] = limo_findcluster((bootP(:,:,boot) <= p),channeighbstructmat,minnbchan);
         bootM_b = bootM(:,:,boot);
         if nposclusters~=0
@@ -60,8 +60,7 @@ if MCC == 2 && size(bootM,1)>1
             boot_maxclustersum(boot) = 0;
         end
     end
-    [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
-    
+    [mask, cluster_pval, maxval, maxclustersum_th] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
 end
 
 %% temporal clustering
@@ -71,7 +70,7 @@ if MCC == 2 && size(bootM,1)==1 || MCC == 3
     U = round((1-p)*nboot); % bootstrap threshold
     [th,boot_maxclustersum] = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);   
     maxclustersum_th = th.elec;
-    [sigcluster, maxval,pval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p, boot_maxclustersum);
+    [sigcluster, maxval,cluster_pval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p, boot_maxclustersum);
     mask = sigcluster.elec_mask; 
 end
 
