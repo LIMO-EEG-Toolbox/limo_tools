@@ -52,10 +52,11 @@ if strcmpi(cov_method, 'pseudo')
 elseif strcmp(method, 'cholesky')
         U = chol(E);
         [eigen_vectors, D] = eig(inv(U')*H*inv(U));
+        eigen_vectors = inv(U)*eigen_vectors; % rescale
         eigen_values = diag(D);
 
-elseif strcmpi(method,'SVD')
-    y = (pinv(E)*H);
+elseif strcmpi(method,'SVD') % note this doesn't returned scaled vectors and
+    y = (pinv(E)*H);         % therefore cannot be used for MANOVA/LDA/QDA
     [m, n]   = size(y);
     if m > n
         [v,s,v] = svd(y*y');
