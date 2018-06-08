@@ -169,6 +169,10 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
     T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
     R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
     E     = (Y'*R*Y);                                                          % SS Error
+    if strcmp(cov_method, 'regularized')
+        [RegularizedCovariance, ~] = cov1para(Y); % shrinkage
+        E = RegularizedCovariance .* (size(Y,1)-nb_conditions);
+    end
     
     % compute Beta parameters and weights
     if strcmp(method,'OLS')
@@ -193,8 +197,6 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
     R0 = eye(size(Y,1)) - (X0*pinv(X0));
     M  = R0 - R;                         % projection matrix onto Xc
     H = (Betas'*X'*M*X*Betas);           % SS Effect
-                                         % only works with rank deficient matrix
-                                         % intercept column with ones as last column of X
     if round(H,6) ~= round(T - E, 6)     % since T = H + E
         H = T - E;                       % 'temporary' solution ; is there a better solution?
     end
@@ -211,12 +213,7 @@ if nb_factors == 1   %  1-way MANOVA/MANCOVA
     Rsquare_multi = trace(Sxy*Syx) / sqrt(trace(Sxx.^2)*trace(Syy.^2));
     
     % compute multivariate effects
-    % ----------------------------
-    if strcmp(cov_method, 'regularized')
-        [RegularizedCovariance, ~] = cov1para(Y); % shrinkage
-        E = RegularizedCovariance .* (size(Y,1)-nb_conditions);
-    end
-    
+    % ----------------------------    
     [~,pd] = chol(E); % check if E is positive definite
     if pd == 0
         decomp_method = 'choldesky';
