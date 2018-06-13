@@ -241,11 +241,22 @@ switch varargin{1}
                         Y = limo_concatcells(Y);
                     end
                 else
-                    disp('the field EEGLIMO.etc.datafiles.daterp or .icaerp pointing to the data is missing - using EEGLIMO.data')
-                    Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+                    disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); spec = dir('*.datspec');
+                        for d=1:length(spec)
+                            Y{d} = load('-mat',spec(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
-                clear EEGLIMO
+                Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
             end
+            clear EEGLIMO
+            
             
         elseif strcmp(LIMO.Analysis,'Frequency')
             if strcmp(LIMO.Type,'Components')
@@ -287,8 +298,19 @@ switch varargin{1}
                         Y = limo_concatcells(Y); clear EEGLIMO
                     end
                 else
-                    error('the field EEGLIMO.etc.datspec pointing to the data is missing')
+                    disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); spec = dir('*.datspec');
+                        for d=1:length(spec)
+                            Y{d} = load('-mat',spec(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
+                Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
             end
             clear EEGLIMO
             
@@ -342,10 +364,20 @@ switch varargin{1}
                         end
                     end
                 else
-                    error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
+                    disp('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); ersp = dir('*.dattimef');
+                        for d=1:length(ersp)
+                            Y{d} = load('-mat',ersp(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
+                Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
             end
-            
             LIMO.data.size4D= size(Y);
             LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         end
