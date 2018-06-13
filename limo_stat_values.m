@@ -560,6 +560,7 @@ elseif strncmp(FileName,'one_sample',10)
         try load(MCC_data);
             bootT = squeeze(H0_one_sample(:,:,1,:)); % get all T values under H0
             bootP = squeeze(H0_one_sample(:,:,2,:)); % get all P values under H0
+            clear H0_one_sample
             if size(one_sample,1) == 1
                 tmp = NaN(1,size(one_sample,2),size(H0_one_sample,4));
                 tmp(1,:,:) = bootT; bootT = tmp;
