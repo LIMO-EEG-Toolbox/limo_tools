@@ -2,7 +2,7 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 
 % find corrected p values and mask from data under H0
 %
-% FORMAT [M, mask, mytitle] = limo_stat_values(varargin)
+% FORMAT [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO)
 %
 % INPUTS
 %         Type = the type of plots (matters for title)
@@ -82,16 +82,16 @@ end
 
 if strcmp(FileName,'R2.mat')
     
-    M = squeeze(R2(:,:,2)); % F values
+    M        = squeeze(R2(:,:,2)); % F values
     MCC_data = 'H0_R2.mat';
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = squeeze(R2(:,:,3)) < p;
-        M = squeeze(R2(:,:,3)); % p values
-        mytitle = sprintf('R^2 : uncorrected threshold');
+        mask    = squeeze(R2(:,:,3)) < p;
+        M       = squeeze(R2(:,:,3)); % p values
+        mytitle = sprintf('R^2 values: \n uncorrected threshold');
         
         
         % cluster correction for multiple testing
@@ -102,9 +102,9 @@ if strcmp(FileName,'R2.mat')
             bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
             [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('R^2: correction by \n spatial-temporal cluster');
+                mytitle = sprintf('R^2 values: \n correction by \n spatial-temporal cluster');
             else
-                mytitle = sprintf('R^2: correction by \n spatial-frequency cluster');
+                mytitle = sprintf('R^2 values: \n correction by \n spatial-frequency cluster');
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -117,7 +117,7 @@ if strcmp(FileName,'R2.mat')
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_R2(:,:,2,:)); % get all F values under H0
             [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('R^2 : correction by F max');
+            mytitle = sprintf('R^2 values: \n correction by F max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -130,7 +130,7 @@ if strcmp(FileName,'R2.mat')
         try cd('TFCE'); load('tfce_R2.mat'); cd ..
             cd('H0');load('tfce_H0_R2.mat'); cd ..
             [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('R^2 : correction using TFCE');
+            mytitle = sprintf('R^2 values: \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
             return
@@ -146,16 +146,16 @@ if strcmp(FileName,'R2.mat')
 elseif strncmp(FileName,'Condition_effect',16)
     
     effect_nb = eval(FileName(18:end-4));
-    M = squeeze(Condition_effect(:,:,1)); % F values
-    MCC_data = sprintf('H0_Condition_effect_%g',effect_nb);
+    M         = squeeze(Condition_effect(:,:,1)); % F values
+    MCC_data  = sprintf('H0_Condition_effect_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = squeeze(Condition_effect(:,:,2)) < p;
-        M = squeeze(Condition_effect(:,:,2));
-        mytitle = sprintf('Condition %g: uncorrected threshold',effect_nb);
+        mask    = squeeze(Condition_effect(:,:,2)) < p;
+        M       = squeeze(Condition_effect(:,:,2));
+        mytitle = sprintf('Condition %g: F-values \n uncorrected threshold',effect_nb);
         
         % cluster correction for multiple testing
         % ---------------------------------------
@@ -167,9 +167,9 @@ elseif strncmp(FileName,'Condition_effect',16)
             clear H0_Conditions;
             [mask,M] = limo_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Condition %g: \n correction by spatial-temporal cluster',effect_nb);
+                mytitle = sprintf('Condition %g: F-values \n correction by spatial-temporal cluster',effect_nb);
             else
-                mytitle = sprintf('Condition %g: \n correction by spatial-frequency cluster',effect_nb);
+                mytitle = sprintf('Condition %g: F-values \n correction by spatial-frequency cluster',effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -182,7 +182,7 @@ elseif strncmp(FileName,'Condition_effect',16)
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Condition_effect(:,:,1,:)); % get all F values under H0
             clear H0_Condition_effect; [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('Condition %g: \n correction by F max',effect_nb);
+            mytitle = sprintf('Condition %g: F-values \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -195,7 +195,7 @@ elseif strncmp(FileName,'Condition_effect',16)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             clear H0_Condition_effect; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Condition %g: \n correction using TFCE',effect_nb);
+            mytitle = sprintf('Condition %g: F-values \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
             return
@@ -209,16 +209,16 @@ elseif strncmp(FileName,'Condition_effect',16)
 elseif strncmp(FileName,'Covariate_effect',16)
     
     effect_nb = eval( FileName(18:end-4));
-    M = squeeze(Covariate_effect(:,:,1)); % F values
-    MCC_data = sprintf('H0_Covariate_effect_%g',effect_nb);
+    M         = squeeze(Covariate_effect(:,:,1)); % F values
+    MCC_data  = sprintf('H0_Covariate_effect_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = squeeze(Covariate_effect(:,:,2)) < p;
-        M = squeeze(Covariate_effect(:,:,2)); % p values
-        mytitle = sprintf('Covariate %g: uncorrected threshold ',effect_nb);
+        mask    = squeeze(Covariate_effect(:,:,2)) < p;
+        M       = squeeze(Covariate_effect(:,:,2)); % p values
+        mytitle = sprintf('Covariate %g: F-values \n uncorrected threshold ',effect_nb);
         
         
         % cluster correction for multiple testing
@@ -231,9 +231,9 @@ elseif strncmp(FileName,'Covariate_effect',16)
             clear H0_Covariate_effect;
             [mask,M] = limo_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Covariate %g: \n correction by spatial-temporal cluster',effect_nb);
+                mytitle = sprintf('Covariate %g: F-values \n correction by spatial-temporal cluster',effect_nb);
             else
-                mytitle = sprintf('Covariate %g: \n correction by spatial-frequency cluster',effect_nb);
+                mytitle = sprintf('Covariate %g: F-values \n correction by spatial-frequency cluster',effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -246,7 +246,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Covariate_effect(:,:,1,:)); % get all F values under H0
             [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('Covariate %g: \n correction by F max',effect_nb);
+            mytitle = sprintf('Covariate %g: F-values \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -260,7 +260,7 @@ elseif strncmp(FileName,'Covariate_effect',16)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Covariate %g: \n correction using TFCE',effect_nb);
+            mytitle = sprintf('Covariate %g: F-values \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
             return
@@ -274,16 +274,16 @@ elseif strncmp(FileName,'Covariate_effect',16)
 elseif strncmp(FileName,'Interaction_effect',18)
     
     effect_nb = eval( FileName(20:end-4));
-    M = squeeze(Interaction_effect(:,:,1)); % F values
-    MCC_data = sprintf('H0_Interaction_effect_%g',effect_nb);
+    M         = squeeze(Interaction_effect(:,:,1)); % F values
+    MCC_data  = sprintf('H0_Interaction_effect_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = squeeze(Interaction_effect(:,:,2)) < p;
-        M = squeeze(Interaction_effect(:,:,2));
-        mytitle = sprintf('Interaction %g: uncorrected threshold',effect_nb);
+        mask    = squeeze(Interaction_effect(:,:,2)) < p;
+        M       = squeeze(Interaction_effect(:,:,2));
+        mytitle = sprintf('Interaction %g: F-values \n uncorrected threshold',effect_nb);
         
         
         % cluster correction for multiple testing
@@ -296,9 +296,9 @@ elseif strncmp(FileName,'Interaction_effect',18)
             clear H0_Interaction;
             [mask,M] = limo_clustering(M,squeeze(Interaction_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Interaction %g: \n correction by spatial-temporal cluster',effect_nb);
+                mytitle = sprintf('Interaction %g: F-values \n correction by spatial-temporal cluster',effect_nb);
             else
-                mytitle = sprintf('Interaction %g: \n correction by spatial-frequency cluster',effect_nb);
+                mytitle = sprintf('Interaction %g: F-values \n correction by spatial-frequency cluster',effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -311,7 +311,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_Interaction_effect(:,:,1,:)); % get all F values under H0
             clear H0_Interaction_effect; [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('Interaction %g: \n correction by F max',effect_nb);
+            mytitle = sprintf('Interaction %g: F-values \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -324,7 +324,7 @@ elseif strncmp(FileName,'Interaction_effect',18)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             clear H0_Interaction_effect; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Interaction %g: \n correction using TFCE',effect_nb);
+            mytitle = sprintf('Interaction %g: F-values \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
             return
@@ -338,8 +338,8 @@ elseif strncmp(FileName,'Interaction_effect',18)
 elseif strncmp(FileName,'semi_partial_coef',17)
     
     effect_nb = eval(FileName(19:end-4));
-    M = squeeze(semi_partial_coef(:,:,2)); % F values
-    MCC_data = sprintf('H0_semi_partial_coef_%g',effect_nb);
+    M         = squeeze(semi_partial_coef(:,:,2)); % F values
+    MCC_data  = sprintf('H0_semi_partial_coef_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
@@ -347,7 +347,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         
         mask = squeeze(semi_partial_coef(:,:,3)) < p;
         M = squeeze(semi_partial_coef(:,:,3));
-        mytitle = sprintf('Semi partial coef %g: uncorrected threshold ',effect_nb);
+        mytitle = sprintf('Semi partial coef %g: F-values \n uncorrected threshold ',effect_nb);
         
         % cluster correction for multiple testing
         % ---------------------------------------
@@ -358,9 +358,9 @@ elseif strncmp(FileName,'semi_partial_coef',17)
             clear H0_semi_partial_coef;
             [mask,M] = limo_clustering(M,squeeze(semi_partial_coef(:,:,3)),bootM,bootP,LIMO,MCC,p);
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Semi partial coef %g: \n correction by spatial-temporal cluster',effect_nb);
+                mytitle = sprintf('Semi partial coef %g: F-values \n correction by spatial-temporal cluster',effect_nb);
             else
-                mytitle = sprintf('Semi partial coef %g: \n correction by spatial-frequency cluster',effect_nb);
+                mytitle = sprintf('Semi partial coef %g: F-values \n correction by spatial-frequency cluster',effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -373,7 +373,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         try cd('H0');load(MCC_data); cd ..
             bootM = squeeze(H0_semi_partial_coef(:,:,1,:)); % get all F values under H0
             [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('Semi partial coef %g: \n correction by F max',effect_nb);
+            mytitle = sprintf('Semi partial coef %g: F-values \n correction by F max',effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -386,7 +386,7 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             clear H0_semi partial coef; [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Semi partial coef %g: \n correction using TFCE',effect_nb);
+            mytitle = sprintf('Semi partial coef %g: F-values \n correction using TFCE',effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
             return
@@ -401,16 +401,16 @@ elseif strncmp(FileName,'semi_partial_coef',17)
 elseif strncmp(FileName,'con_',4)
     
     effect_nb = eval(FileName(5:end-4));
-    M = squeeze(con(:,:,4));
-    MCC_data = sprintf('H0_con_%g',effect_nb);
+    M         = squeeze(con(:,:,4));
+    MCC_data  = sprintf('H0_con_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = con(:,:,5) <= p;
-        M = con(:,:,5);
-        mytitle = sprintf('Contrast T %g: uncorrected threshold',effect_nb);
+        mask    = con(:,:,5) <= p;
+        M       = con(:,:,5);
+        mytitle = sprintf('Contrast %g: T-values \n uncorrected threshold',effect_nb);
         
         
         % cluster correction for multiple testing
@@ -422,9 +422,9 @@ elseif strncmp(FileName,'con_',4)
             clear H0_con
             [mask,M] = limo_clustering(M.^2,squeeze(con(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Contrast T %g: correction by spatial-temporal cluster', effect_nb);
+                mytitle = sprintf('Contrast %g: T-values \n correction by spatial-temporal cluster', effect_nb);
             else
-                mytitle = sprintf('Contrast T %g: correction by spatial-frequency cluster', effect_nb);
+                mytitle = sprintf('Contrast %g: T-values \n correction by spatial-frequency cluster', effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -438,7 +438,7 @@ elseif strncmp(FileName,'con_',4)
         try load(MCC_data);
             bootT = squeeze(H0_con(:,:,2,:)); % take all T values under H0
             [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % absolute T values
-            mytitle = sprintf('Contrast T %g: correction by T max', effect_nb);
+            mytitle = sprintf('Contrast %g: T-values \n correction by T max', effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -450,7 +450,7 @@ elseif strncmp(FileName,'con_',4)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Contrast T %g: correction using TFCE', effect_nb);
+            mytitle = sprintf('Contrast %g: T-values \n correction using TFCE', effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
             return
@@ -474,16 +474,16 @@ elseif strncmp(FileName,'ess_',4)
             ess = ess1; clear ess1
         end
     end
-    M = squeeze(ess(:,:,end-1));
+    M        = squeeze(ess(:,:,end-1));
     MCC_data = sprintf('H0_ess_%g',effect_nb);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         
-        mask = squeeze(ess(:,:,end)) < p;
-        M = squeeze(ess(:,:,end));
-        mytitle = sprintf('Contrast F %g: uncorrected threshold', effect_nb);
+        mask    = squeeze(ess(:,:,end)) < p;
+        M       = squeeze(ess(:,:,end));
+        mytitle = sprintf('Contrast %g: F-values \n uncorrected threshold', effect_nb);
         
         
         % 1D 2D cluster correction for multiple testing
@@ -496,9 +496,9 @@ elseif strncmp(FileName,'ess_',4)
             clear H0_ess
             [mask,M] = limo_clustering(M,squeeze(ess(:,:,end)),bootF,bootP,LIMO,MCC,p);
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Contrast F %g: correction by spatial-temporal cluster', effect_nb);
+                mytitle = sprintf('Contrast %g: F-values \n correction by spatial-temporal cluster', effect_nb);
             else
-                mytitle = sprintf('Contrast F %g: correction by spatial-frequency cluster', effect_nb);
+                mytitle = sprintf('Contrast %g: F-values \n correction by spatial-frequency cluster', effect_nb);
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster correction','missing data')
@@ -511,7 +511,7 @@ elseif strncmp(FileName,'ess_',4)
         try cd H0; load(MCC_data);
             bootF  = squeeze(H0_ess(:,:,end-1,:)); clear H0_ess;
             [mask,M] = limo_max_correction(M,bootF,p); % absolute T values
-            mytitle = sprintf('Contrast F %g: correction by F max', effect_nb);
+            mytitle = sprintf('Contrast %g: F-values \n correction by F max', effect_nb);
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -523,7 +523,7 @@ elseif strncmp(FileName,'ess_',4)
         try cd('TFCE'); tfceName = ['tfce_' FileName]; load(tfceName); cd ..
             cd('H0'); tfceName = ['tfce_H0_' FileName]; load(tfceName); cd ..
             [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('Contrast F %g: correction using TFCE', effect_nb);
+            mytitle = sprintf('Contrast %g: F-values \n correction using TFCE', effect_nb);
         catch ME
             errordlg('no tfce bootstrap file was found to compute the tfce distribution','missing data')
             return
@@ -549,8 +549,8 @@ elseif strncmp(FileName,'one_sample',10)
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
-        mask = one_sample(:,:,5) <= p;
-        M = squeeze(one_sample(:,:,5));
+        mask    = one_sample(:,:,5) <= p;
+        M       = squeeze(one_sample(:,:,5));
         mytitle = sprintf('One sample t-test: uncorrected threshold');
         
         
@@ -560,18 +560,19 @@ elseif strncmp(FileName,'one_sample',10)
         try load(MCC_data);
             bootT = squeeze(H0_one_sample(:,:,1,:)); % get all T values under H0
             bootP = squeeze(H0_one_sample(:,:,2,:)); % get all P values under H0
-            clear H0_one_sample
             if size(one_sample,1) == 1
                 tmp = NaN(1,size(one_sample,2),size(H0_one_sample,4));
                 tmp(1,:,:) = bootT; bootT = tmp;
                 tmp(1,:,:) = bootP; bootP = tmp;
                 clear tmp
             end
+            clear H0_one_sample
+          
             [mask,M] = limo_clustering(M.^2,squeeze(one_sample(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('One Sample t-test \n correction by spatial-temporal cluster');
+                mytitle = sprintf('One Sample t-test: t values \n correction by spatial-temporal cluster');
             else
-                mytitle = sprintf('One Sample t-test \n correction by spatial-frequency cluster');
+                mytitle = sprintf('One Sample t-test: t values \n correction by spatial-frequency cluster');
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -589,7 +590,7 @@ elseif strncmp(FileName,'one_sample',10)
                 tmp(1,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-            mytitle = sprintf('One Sample t-test \n correction by T max');
+            mytitle = sprintf('One Sample t-test: t values \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -603,7 +604,7 @@ elseif strncmp(FileName,'one_sample',10)
         try load(tfce_data);
             load(MCC_tfce_data)
             [mask,M] = limo_max_correction(tfce_one_sample, tfce_H0_one_sample,p);
-            mytitle = sprintf('One Sample t-test \n correction using TFCE');
+            mytitle = sprintf('One Sample t-test: t values  \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
             return
@@ -628,9 +629,9 @@ elseif strncmp(FileName,'two_samples',11)
     % -----------------------------------
     if MCC == 1
         
-        mask = two_samples(:,:,5) <= p;
-        M = squeeze(two_samples(:,:,5));
-        mytitle = sprintf('Two samples t-test: uncorrected threshold');
+        mask    = two_samples(:,:,5) <= p;
+        M       = squeeze(two_samples(:,:,5));
+        mytitle = sprintf('Two samples t-test: t values \n uncorrected threshold');
         
         
         % 2D cluster and 1D correction for multiple testing
@@ -667,7 +668,7 @@ elseif strncmp(FileName,'two_samples',11)
                 tmp(1,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-            mytitle = sprintf('Two Samples t-test \n correction by T max');
+            mytitle = sprintf('Two Samples t-test: t values \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -681,7 +682,7 @@ elseif strncmp(FileName,'two_samples',11)
         try load(tfce_data);
             load(MCC_tfce_data)
             [mask,M] = limo_max_correction(tfce_two_samples, tfce_H0_two_samples,p);
-            mytitle = sprintf('Two Samples t-test \n correction using TFCE');
+            mytitle = sprintf('Two Samples t-test: t values \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
             return
@@ -707,7 +708,7 @@ elseif strncmp(FileName,'paired_samples',14)
     if MCC == 1
         mask = paired_samples(:,:,5) <= p;
         M = squeeze(paired_samples(:,:,5));
-        mytitle = sprintf('Paired samples t-test: \n uncorrected threshold');
+        mytitle = sprintf('Paired samples t-test: t values \n uncorrected threshold');
         
         
         % 2D cluster and 1D correction for multiple testing
@@ -725,9 +726,9 @@ elseif strncmp(FileName,'paired_samples',14)
             end
             [mask,M] = limo_clustering(M.^2,squeeze(paired_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
             if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Paired Samples t-test \n correction by spatial-temporal cluster');
+                mytitle = sprintf('Paired Samples t-test: t values \n correction by spatial-temporal cluster');
             else
-                mytitle = sprintf('Paired Samples t-test \n correction by spatial-frequency cluster');
+                mytitle = sprintf('Paired Samples t-test: t values \n correction by spatial-frequency cluster');
             end
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -745,7 +746,7 @@ elseif strncmp(FileName,'paired_samples',14)
                 tmp(1,:,:) = bootT; bootT = tmp; clear tmp
             end
             [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-            mytitle = sprintf('Paired Samples t-test \n correction by T max');
+            mytitle = sprintf('Paired Samples t-test: t values \n correction by T max');
         catch ME
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
             return
@@ -759,7 +760,7 @@ elseif strncmp(FileName,'paired_samples',14)
         try load(tfce_data);
             load(MCC_tfce_data)
             [mask,M] = limo_max_correction(tfce_paired_samples, tfce_H0_paired_samples,p);
-            mytitle = sprintf('Paired Samples t-test \n correction using TFCE');
+            mytitle = sprintf('Paired Samples t-test: t values \n correction using TFCE');
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
             return
@@ -774,13 +775,13 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
     
     % all files have dim electrode x time frames x F/p
     if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-        M = Rep_ANOVA_Interaction_with_gp(:,:,1); % get the F values
+        M    = Rep_ANOVA_Interaction_with_gp(:,:,1); % get the F values
         PVAL = Rep_ANOVA_Interaction_with_gp(:,:,2);
     elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-        M = Rep_ANOVA_Gp_effect(:,:,1); % get the F values
+        M    = Rep_ANOVA_Gp_effect(:,:,1); % get the F values
         PVAL = Rep_ANOVA_Gp_effect(:,:,2);
     elseif strncmp(FileName,'Rep_ANOVA',9)
-        M = Rep_ANOVA(:,:,1); % get the F values
+        M    = Rep_ANOVA(:,:,1); % get the F values
         PVAL = Rep_ANOVA(:,:,2);
     end
     
@@ -792,11 +793,11 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
         mask = PVAL <= p;
         M = PVAL;
         if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-            mytitle = sprintf('Rep ANOVA Interaction: \n uncorrected threshold');
+            mytitle = sprintf('Rep ANOVA Interaction: F-values \n uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-            mytitle = sprintf('Rep ANOVA Gp effect: \n uncorrected threshold');
+            mytitle = sprintf('Rep ANOVA Gp effect: F-values \n uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA',9)
-            mytitle = sprintf('Rep ANOVA: \n uncorrected threshold');
+            mytitle = sprintf('Rep ANOVA: F-values \n uncorrected threshold');
         end
         
         
@@ -814,6 +815,7 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                     tmp(1,:,:) = bootP; bootP = tmp;
                     clear tmp
                 end
+                clear H0_Rep_ANOVA_Interaction_with_gp
             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
                 bootT = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:));
                 bootP = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,2,:));
@@ -823,6 +825,7 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                     tmp(1,:,:) = bootP; bootP = tmp;
                     clear tmp
                 end
+                clear H0_Rep_ANOVA_Gp_effect
             elseif strncmp(FileName,'Rep_ANOVA',9)
                 bootT = squeeze(H0_Rep_ANOVA(:,:,1,:)); % get all F values under H0
                 bootP = squeeze(H0_Rep_ANOVA(:,:,2,:)); % get all P values under H0
@@ -832,26 +835,27 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
                     tmp(1,:,:) = bootP; bootP = tmp;
                     clear tmp
                 end
+                clear H0_Rep_ANOVA
             end
             
             [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,MCC,p);
             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                 if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA Interaction: \n correction by spatial-temporal cluster');
+                    mytitle = sprintf('Rep ANOVA Interaction: F-values \n correction by spatial-temporal cluster');
                 else
-                    mytitle = sprintf('Rep ANOVA Interaction: \n correction by spatial-frequency cluster');
+                    mytitle = sprintf('Rep ANOVA Interaction: F-values \n correction by spatial-frequency cluster');
                 end
             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
                 if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA Gp effect: \n correction by spatial-temporal cluster');
+                    mytitle = sprintf('Rep ANOVA Gp effect: F-values \n correction by spatial-temporal cluster');
                 else
-                    mytitle = sprintf('Rep ANOVA Gp effect: \n correction by spatial-frequency cluster');
+                    mytitle = sprintf('Rep ANOVA Gp effect: F-values \n correction by spatial-frequency cluster');
                 end
             elseif strncmp(FileName,'Rep_ANOVA',9)
                 if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA: \n correction by spatial-temporal cluster');
+                    mytitle = sprintf('Rep ANOVA: F-values \n correction by spatial-temporal cluster');
                 else
-                    mytitle = sprintf('Rep ANOVA: \n correction by spatial-frequency cluster');
+                    mytitle = sprintf('Rep ANOVA: F-values \n correction by spatial-frequency cluster');
                 end
             end
             
@@ -859,7 +863,6 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
         end
-        
         
         
         % T max correction for multiple testing
