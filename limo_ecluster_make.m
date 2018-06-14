@@ -55,12 +55,14 @@ if ndims(bootf)==3 % electrode*time/freq*boot
         for kk=1:b % bootstrap samples
 
             % get cluster along 1st dim
-            if exist('bwlabeln','file')~=0
-                [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);
-            elseif exist('bwlabeln','file')==0 && exist('spm_bwlabel','file')~=0
+            if exist('spm_bwlabel','file')~=0
                 [L,NUM] = spm_bwlabel(squeeze(bootp(E,:,kk))<=alphav,6);
             else
-                errordlg('You need either the Image Processing Toolbox or SPM in your path to execute this function');
+                if exist('bwlabeln','file')~=0
+                    [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);
+                else
+                    errordlg('You need either the Image Processing Toolbox or SPM in your path to execute this function');
+                end
             end
             
             if NUM~=0
@@ -77,7 +79,6 @@ if ndims(bootf)==3 % electrode*time/freq*boot
 
     sortSC = sort(boot_values,2);
     th.elec = sortSC(:,U); % threshold at each electrode
-
     maxSC = max(boot_values,[],1); % max across electrodes
     sortmaxSC = sort(maxSC);
     th.max = sortmaxSC(U); % threshold of max across electrodes
