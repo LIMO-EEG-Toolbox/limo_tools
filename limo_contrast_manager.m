@@ -61,11 +61,11 @@ function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
 global handles
 
 % define handles used for the save callback
-handles.dir = pwd;
-handles.go  = 0;
-handles.C   = [];
-handles.F   = 0;
-handles.X   = [];
+% handles.dir = pwd;
+% handles.go  = 0;
+% handles.C   = [];
+% handles.F   = 0;
+% handles.X   = [];
 handles.output = hObject;
 guidata(hObject,handles);
 set(hObject,'Tag','figure_limo_contrast_manager');
@@ -77,6 +77,19 @@ varargout{1} = 'contrast done';
 
 
 %% Callbacks
+
+% --- Display selected contrasts
+% ---------------------------------------------------------------
+function contrast_CreateFcn(hObject, eventdata, handles)
+global handles
+
+try
+    imagesc(handles.C);
+catch
+    imagesc([]);
+end
+handles.output = hObject;
+guidata(hObject,handles)
 
 % --- Display the design matrix
 % ---------------------------------------------------------------
@@ -131,18 +144,7 @@ else
     guidata(hObject,handles)
 end
 
-% --- Display selected contrasts
-% ---------------------------------------------------------------
-function contrast_CreateFcn(hObject, eventdata, handles)
-global handles
 
-try
-    imagesc(handles.C);
-catch
-    imagesc([]);
-end
-handles.output = hObject;
-guidata(hObject,handles)
 
 
 % --- Evaluate New Contrast
@@ -295,7 +297,7 @@ guidata(hObject,handles)
 function Done_Callback(hObject, eventdata, handles)
 global LIMO handles
 
-if ~isempty(handles.C);
+if ~isempty(handles.C)
     if handles.go == 1
         
         if LIMO.design.bootstrap ==1
@@ -425,8 +427,21 @@ if ~isempty(handles.C);
             end
             
             if LIMO.design.tfce == 1
+                if numel(size(Yr)) == 5
+                    if size(Yr,1)==1 % ERSP 1 channel
+                        type = 2;
+                    else
+                        type = 3;
+                    end
+                else % ERP - Spec
+                    if size(Yr,1)>1 % many channels
+                        type = 2;
+                    else
+                        type = 1;
+                    end
+                end
                 filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
-                tfce_score = limo_tfce(squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
+                    tfce_score = limo_tfce(2,squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
                 tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
