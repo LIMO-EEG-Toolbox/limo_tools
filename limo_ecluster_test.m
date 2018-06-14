@@ -1,4 +1,4 @@
-function [sigcluster,maxval,pval] = limo_ecluster_test(orif,orip,th,alpha_value,boot_maxclustersum)
+function [sigcluster,pval,maxval] = limo_ecluster_test(orif,orip,th,alpha_value,boot_maxclustersum)
 % function sigcluster = limo_ecluster_test(orif,orip,th,alpha_value)
 %
 % ECLUSTER_TEST computes sums of temporal clusters of significant F values and 
@@ -94,7 +94,7 @@ if isfield(th, 'elec')
     maxval = zeros(1,NUM);
     for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(abs(orif(L==C)));
-        if maxval(C) >= th.elec;
+        if maxval(C) >= th.elec
             sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
 
             if ~isempty(boot_maxclustersum)
@@ -102,7 +102,7 @@ if isfield(th, 'elec')
                 if p ==0
                     p = 1/length(boot_maxclustersum);
                 end
-                pval(L==CL_list(CL)) = p;
+                pval(L==C) = p;
             end
         end
     end
