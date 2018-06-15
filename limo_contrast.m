@@ -225,7 +225,7 @@ switch type
         % ---------------------------------------
         if LIMO.design.nb_continuous == 0
             for e=1:size(y,1)
-                centered_y = NaN(size(y,1),size(y,2),size(y,3));
+                centered_data = NaN(size(y,1),size(y,2),size(y,3));
                 if LIMO.design.nb_interactions ~=0
                     % look up the last interaction to get unique groups
                     if length(LIMO.design.nb_interactions) == 1
@@ -236,14 +236,14 @@ switch type
                     
                     for cel=(start_at+1):(start_at+LIMO.design.nb_interactions(end))
                         index = find(X(:,cel));
-                        centered_y(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,length(index));
+                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,length(index));
                     end
                     
                 elseif size(LIMO.design.nb_conditions,2) == 1
                     % no interactions because just 1 factor
                     for cel=1:LIMO.design.nb_conditions
                         index = find(X(:,cel));
-                        centered_y(e,:,index) = squeeze(y(e,:,index)) - repmat(nanmean(squeeze(y(e,:,index)),2),1,length(index));
+                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(nanmean(squeeze(y(e,:,index)),2),1,length(index));
                     end
                     
                 else
@@ -257,7 +257,7 @@ switch type
                     
                     for cel=(start_at+1):(start_at+interactions(end))
                         index = find(X(:,cel));
-                        centered_y(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,[size(y(index,:),1)]);
+                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,[size(y(index,:),1)]);
                     end
                 end
             end
@@ -285,7 +285,7 @@ switch type
                     % create data under H0
                     if LIMO.design.nb_continuous == 0
                         % sample from the centered data in categorical designs
-                        Y = squeeze(centered_y(electrode,:,resampling_index))';
+                        Y = squeeze(centered_data(electrode,:,resampling_index))';
                         X = design(resampling_index,:); % resample X as Y
                     else
                         % sample and break the link between Y and (regression and AnCOVA designs)
@@ -366,7 +366,7 @@ switch type
                     % create data under H0
                     if LIMO.design.nb_continuous == 0
                         % sample from the centered data in categorical designs
-                        Y = centered_y(boot_table(:,B));
+                        Y = centered_data(boot_table(:,B));
                         X = design(boot_table(:,B)); % resample X as Y
                     else
                         % sample and break the link between Y and (regression and AnCOVA designs)
@@ -499,23 +499,24 @@ switch type
             filename = sprintf('H0_ess_repeated_measure_%g.mat',size(LIMO.contrast,2));
             
             % prepare the boostrap centering the data
-            for e=1:size(Y,1)
-                centered_y = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
-                for cel=1:(size(LIMO.design.X,2)-1)
-                    index = find(LIMO.design.X(:,cel));
-                    centered_y(e,:,index) = squeeze(Yr(e,:,index)) - repmat(mean(squeeze(Yr(e,:,index)),2),1,length(index));
-                end
-            end
+            load centered_data
+%             for e=1:size(Yr,1)
+%                 centered_data = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
+%                 for cel=1:(size(LIMO.design.X,2)-1)
+%                     index = find(LIMO.design.X(:,cel));
+%                     centered_data(e,:,index) = squeeze(Yr(e,:,index)) - repmat(mean(squeeze(Yr(e,:,index)),2),1,length(index));
+%                 end
+%             end
             
             %  compute
-            load boot_table
+            load boot_table; clear Yr
             for b = 1:LIMO.design.bootstrap
-                for electrode = 1:size(Yr,1)
-                    fprintf('bootstrap electrode %g \n',electrode);
+                fprintf('contrast bootstrap %g \n',b);
+                for electrode = 1:size(centered_data,1)
                     % Inputs
                     resampling_index = boot_table{electrode}(:,b);
-                    tmp = squeeze(centered_y(electrode,:,resampling_index));
-                    Y = tmp(:,:,find(~isnan(tmp(1,1,:)))); % resampling should not have NaN, JIC
+                    tmp = squeeze(centered_data(electrode,:,resampling_index,:));
+                    Y = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
                     gp = LIMO.data.Cat(find(~isnan(tmp(1,1,:))),:);
                     % mean, se, df
                     n = size(Y,2);
