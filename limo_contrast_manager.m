@@ -61,11 +61,11 @@ function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
 global handles
 
 % define handles used for the save callback
-% handles.dir = pwd;
-% handles.go  = 0;
-% handles.C   = [];
-% handles.F   = 0;
-% handles.X   = [];
+handles.dir = pwd;
+handles.go  = 0;
+handles.C   = [];
+handles.F   = 0;
+handles.X   = [];
 handles.output = hObject;
 guidata(hObject,handles);
 set(hObject,'Tag','figure_limo_contrast_manager');
@@ -334,7 +334,7 @@ if ~isempty(handles.C)
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
                 % -------------------------------------------------------
-                result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
+                limo_contrast(Yr, Betas, LIMO, handles.F,1);
                 
                 if LIMO.design.bootstrap ~= 0
                     if strcmp(LIMO.Analysis ,'Time-Frequency')
@@ -346,11 +346,11 @@ if ~isempty(handles.C)
                            tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
                         end
                         clear H0_Betas; cd ..; load Yr; cd(H0);
-                        result = limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
+                        limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
                         clear tmp
                     else
                         clear Betas; cd H0; load H0_Betas
-                        result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
+                        limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
                     end
                     clear Yr ; cd ..
                 end
@@ -393,7 +393,7 @@ if ~isempty(handles.C)
                 
                 LIMO.contrast = handles.F;
                 save LIMO LIMO
-                result = limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
+                limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
                 
             end
             
@@ -420,7 +420,7 @@ if ~isempty(handles.C)
             
             % create ess files and call limo_rep_anova adding C
             load Yr; save LIMO LIMO
-            result = limo_contrast(Yr,LIMO,3);
+            limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
                 cd H0; limo_contrast(Yr, LIMO, 4); cd ..
