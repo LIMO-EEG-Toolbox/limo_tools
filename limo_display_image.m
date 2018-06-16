@@ -22,9 +22,7 @@ if nargin == 4
     dynamic = 1;
 end
 
-figure; set(gcf,'Color','w','InvertHardCopy','off');
-
-% get some informations for the plots
+%% get some informations for the plots
 v = max(toplot(:)); [e,f]=find(toplot==v);
 if length(e)>1 % happen if we have multiple times the exact same max values
     e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
@@ -57,6 +55,9 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     ratio =  (freqvect(end)-freqvect(1)) / length(freqvect);
     scale = toplot.*mask; scale(scale==0)=NaN;
 end
+
+%% make the main figure
+figure; set(gcf,'Color','w','InvertHardCopy','off');
 
 % ERP plot at best electrode
 ax(3) = subplot(3,3,9);
@@ -170,7 +171,7 @@ try
     caxis([min(min(scale)), max(max(scale))]);
 catch caxiserror
 end
-title(mytitle,'Fontsize',14)
+title(mytitle,'Fontsize',12)
 cc=color_images_(scale,LIMO);
 
 % ------------------------
@@ -328,17 +329,17 @@ catch ME
 end
 
 if strcmp(LIMO.Analysis,'Time')
-    xlabel('Time in ms','FontSize',16)
+    xlabel('Time in ms','FontSize',10)
 elseif strcmp(LIMO.Analysis,'Frequency')
-    xlabel('Frequency in Hz','FontSize',16)
+    xlabel('Frequency in Hz','FontSize',10)
 end
 
 if strcmp(LIMO.Type,'Components')
     if size(scale,1) == 1
         label_electrodes = ' ';
-        ylabel('optimized component','FontSize',14);
+        ylabel('optimized component','FontSize',10);
     else
-        ylabel('Components','FontSize',14);
+        ylabel('Components','FontSize',10);
         for i=1:size(scale,1)
             label_electrodes{i} = i;
         end
@@ -346,9 +347,9 @@ if strcmp(LIMO.Type,'Components')
 else
     if size(scale,1) == 1
         label_electrodes = ' ';
-        ylabel('optimized electrode','FontSize',14);
+        ylabel('optimized electrode','FontSize',10);
     else
-        ylabel('Electrodes','FontSize',14);
+        ylabel('Electrodes','FontSize',10);
         for i = 1:length(LIMO.data.chanlocs)
             if LIMO.Level == 2
                 try
