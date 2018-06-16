@@ -101,11 +101,9 @@ if strcmp(FileName,'R2.mat')
             bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
             [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('R^2 values: \n correction by \n spatial-temporal cluster');
-            else
-                mytitle = sprintf('R^2 values: \n correction by \n spatial-frequency cluster');
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('R^2 values \n cluster correction (%g %s)', Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -137,8 +135,6 @@ if strcmp(FileName,'R2.mat')
         end
     end
     
-    
-    
     % ---------------------------------
     %% Condition_effect (from 1st level)
     % ---------------------------------
@@ -166,11 +162,9 @@ elseif strncmp(FileName,'Condition_effect',16)
             bootP = squeeze(H0_Condition_effect(:,:,2,:)); % get all P values under H0
             clear H0_Conditions;
             [mask,M] = limo_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Condition %g: F-values \n correction by spatial-temporal cluster',effect_nb);
-            else
-                mytitle = sprintf('Condition %g: F-values \n correction by spatial-frequency cluster',effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Condition %g: F-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -230,11 +224,9 @@ elseif strncmp(FileName,'Covariate_effect',16)
             bootP = squeeze(H0_Covariate_effect(:,:,2,:)); % get all P values under H0
             clear H0_Covariate_effect;
             [mask,M] = limo_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Covariate %g: F-values \n correction by spatial-temporal cluster',effect_nb);
-            else
-                mytitle = sprintf('Covariate %g: F-values \n correction by spatial-frequency cluster',effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Covariate %g: F-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -294,12 +286,9 @@ elseif strncmp(FileName,'Interaction_effect',18)
             bootM = squeeze(H0_Interaction_effect(:,:,1,:)); % get all F values under H0
             bootP = squeeze(H0_Interaction_effect(:,:,2,:)); % get all P values under H0
             clear H0_Interaction;
-            [mask,M] = limo_clustering(M,squeeze(Interaction_effect(:,:,2)),bootM,bootP,LIMO,MCC,p);
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Interaction %g: F-values \n correction by spatial-temporal cluster',effect_nb);
-            else
-                mytitle = sprintf('Interaction %g: F-values \n correction by spatial-frequency cluster',effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Interaction %g: F-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -357,11 +346,9 @@ elseif strncmp(FileName,'semi_partial_coef',17)
             bootP = squeeze(H0_semi_partial_coef(:,:,2,:)); % get all P values under H0
             clear H0_semi_partial_coef;
             [mask,M] = limo_clustering(M,squeeze(semi_partial_coef(:,:,3)),bootM,bootP,LIMO,MCC,p);
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Semi partial coef %g: F-values \n correction by spatial-temporal cluster',effect_nb);
-            else
-                mytitle = sprintf('Semi partial coef %g: F-values \n correction by spatial-frequency cluster',effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Semi-parital coef %g: F-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -421,11 +408,9 @@ elseif strncmp(FileName,'con_',4)
             bootP = H0_con(:,:,3,:); % get all p values under H0
             clear H0_con
             [mask,M] = limo_clustering(M.^2,squeeze(con(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Contrast %g: T-values \n correction by spatial-temporal cluster', effect_nb);
-            else
-                mytitle = sprintf('Contrast %g: T-values \n correction by spatial-frequency cluster', effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Contrast %g: T-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -486,7 +471,7 @@ elseif strncmp(FileName,'ess_',4)
         mytitle = sprintf('Contrast %g: F-values \n uncorrected threshold', effect_nb);
         
         
-        % 1D 2D cluster correction for multiple testing
+        % clustering correction for multiple testing
         % ---------------------------------------
     elseif MCC == 2
         
@@ -495,11 +480,9 @@ elseif strncmp(FileName,'ess_',4)
             bootP = squeeze(H0_ess(:,:,end,:));
             clear H0_ess
             [mask,M] = limo_clustering(M,squeeze(ess(:,:,end)),bootF,bootP,LIMO,MCC,p);
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Contrast %g: F-values \n correction by spatial-temporal cluster', effect_nb);
-            else
-                mytitle = sprintf('Contrast %g: F-values \n correction by spatial-frequency cluster', effect_nb);
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Contrast %g: F-values \n cluster correction (%g %s)', effect_nb, Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster correction','missing data')
             return
@@ -569,11 +552,9 @@ elseif strncmp(FileName,'one_sample',10)
             clear H0_one_sample
           
             [mask,M] = limo_clustering(M.^2,squeeze(one_sample(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('One Sample t-test: t values \n correction by spatial-temporal cluster');
-            else
-                mytitle = sprintf('One Sample t-test: t values \n correction by spatial-frequency cluster');
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('One Sample t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -647,11 +628,9 @@ elseif strncmp(FileName,'two_samples',11)
                 clear tmp
             end
             [mask,M] = limo_clustering(M.^2,squeeze(two_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Two Samples t-test \n correction by spatial-temporal cluster');
-            else
-                mytitle = sprintf('Two Samples t-test \n correction by spatial-frequency cluster');
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Two Samples t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -725,11 +704,9 @@ elseif strncmp(FileName,'paired_samples',14)
                 clear tmp
             end
             [mask,M] = limo_clustering(M.^2,squeeze(paired_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('Paired Samples t-test: t values \n correction by spatial-temporal cluster');
-            else
-                mytitle = sprintf('Paired Samples t-test: t values \n correction by spatial-frequency cluster');
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('Paired t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
@@ -839,25 +816,15 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
             end
             
             [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,MCC,p);
-            if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA Interaction: F-values \n correction by spatial-temporal cluster');
-                else
-                    mytitle = sprintf('Rep ANOVA Interaction: F-values \n correction by spatial-frequency cluster');
-                end
-            elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA Gp effect: F-values \n correction by spatial-temporal cluster');
-                else
-                    mytitle = sprintf('Rep ANOVA Gp effect: F-values \n correction by spatial-frequency cluster');
-                end
-            elseif strncmp(FileName,'Rep_ANOVA',9)
-                if strcmp(LIMO.Analysis,'Time')
-                    mytitle = sprintf('Rep ANOVA: F-values \n correction by spatial-temporal cluster');
-                else
-                    mytitle = sprintf('Rep ANOVA: F-values \n correction by spatial-frequency cluster');
-                end
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+             if strncmp(FileName,'Rep_ANOVA_Interaction',21)
+                 mytitle = sprintf('Rep ANOVA Interaction: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+             elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
+                 mytitle = sprintf('Rep ANOVA Gp effect: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+             elseif strncmp(FileName,'Rep_ANOVA',9)
+                 mytitle = sprintf('Rep ANOVA: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+             end
             
         catch ME
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
@@ -961,11 +928,9 @@ elseif strncmp(FileName,'LI_Map',6)
             bootT = squeeze(boot_LI_Map(:,:,2,:)); % get all T values under H0
             bootP = squeeze(boot_LI_Map(:,:,3,:)); % get all P values under H0
             [mask,M] = limo_clustering(M.^2,squeeze(LI(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-            if strcmp(LIMO.Analysis,'Time')
-                mytitle = sprintf('LI Map: one sample T values \n correction by spatial-temporal cluster');
-            else
-                mytitle = sprintf('LI Map: one sample T values \n correction by spatial-frequency cluster');
-            end
+             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            mytitle = sprintf('LI Map: T-values \n cluster correction (%g %s)', Nclust, Mclust);
             
         catch ME
             errordlg('no bootstrap file was found to compute the cluster correction','missing data')
@@ -1006,93 +971,4 @@ else
     errordlg2('unidentified FileName - no thresholding done');
 end
 end
-
-%% subfunctions which do the actual thresholding
-% function [mask,cluster_p] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p)
-% % call field trip functions to do 2D or 1D clustering
-% %
-% % M = 2D matrix of observed F values (note for a single electrode the format is 1*time frames*trials)
-% % P = 2D matrix of observed p values (note for a single electrode the format is 1*time frames*trials)
-% % bootM = 3D matrix of F values for data bootstrapped under H0
-% % bootP = 3D matrix of F values for data bootstrapped under H0
-% % LIMO = LIMO structure - information requested is LIMO.data.chanlocs and LIMO.data.neighbouring_matrix
-% % MCC = 2 (spatial-temporal clustering) or 3 (temporal clustering)
-% % p = threshold to apply (note this applied to create clusters and to
-% % threshold the cluster map)
-% 
-% if size(M,1) == 1
-%     MCC = 21;
-% end
-% cluster_p = [];
-% mask = [];
-% 
-% if MCC == 2
-%     nboot = size(bootM,3);
-%     U = round((1-p)*nboot); % bootstrap threshold
-%     if size(bootM,1)>1 % many electrodes
-%         minnbchan = 2;
-%         expected_chanlocs = LIMO.data.chanlocs;
-%         channeighbstructmat = LIMO.data.neighbouring_matrix;
-%         boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-%         disp('getting clusters under H0 boot ...');
-%         parfor boot = 1:nboot
-%             % boot_maxclustersum(boot) = limo_getclustersum(bootM(:,:,boot),bootP(:,:,boot),channeighbstructmat,minnbchan,p);
-%             [posclusterslabelmat,nposclusters] = limo_findcluster((bootP(:,:,boot) <= p),channeighbstructmat,minnbchan);
-%             
-%             bootM_b = bootM(:,:,boot);
-%             if nposclusters~=0
-%                 tmp=zeros(1,nposclusters);
-%                 for C = 1:nposclusters % compute sum for each cluster
-%                     tmp(C) = sum( bootM_b(posclusterslabelmat==C) );
-%                 end
-%                 boot_maxclustersum(boot) = max(tmp(:)); % save max across clusters
-%             else
-%                 boot_maxclustersum(boot) = 0;
-%             end
-%         end
-%         [mask, cluster_p] = limo_cluster_test(M,P,boot_maxclustersum,channeighbstructmat,minnbchan,p);
-%     
-%     elseif size(bootM,1)==1 % one electrode
-%         th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-%         sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-%         mask = sigcluster.elec_mask; cluster_p = [];
-%     end
-%     
-% elseif MCC == 21
-%     nboot = size(bootM,3);
-%     U = round((1-p)*nboot); % bootstrap threshold
-%     th = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);
-%     sigcluster = limo_ecluster_test(squeeze(M),squeeze(P),th,p);
-%     mask = sigcluster.elec_mask; cluster_p = [];
-%     
-% end
-% end
-
-% function [mask,p_val] = limo_max_correction(M,bootM,p)
-% correction for multiple testing using the max stat value
-% note this works for bootstrapped data under H0 and for TFCE
-%
-% M = 2D matrix of observed values (note for a single electrode the format is 1*time frames*trials)
-% bootM = 3D matrix of F values for data bootstrapped under H0
-% p = threshold to apply
-
-% nboot = size(bootM,3);
-% for boot=1:nboot
-%     data = squeeze(bootM(:,:,boot));
-%     maxM(boot) = max(data(:)); % collect highest absolute value in space and time for each boot
-% end
-% 
-% U=round((1-p).*nboot);
-% sortmaxM = sort(maxM); % sort bootstraps
-% maxF_th = sortmaxM(U); % get threshold for each parameter
-% mask = squeeze(M) >= maxF_th;
-% % figure; imagesc(mask)
-% for row =1:size(M,1)
-%     for column=1:size(M,2)
-%         p_val(row,column) = 1-(sum(squeeze(M(row,column)) >=sortmaxM) / nboot);
-%     end
-% end
-% 
-% end
-
 
