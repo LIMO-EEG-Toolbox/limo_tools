@@ -440,18 +440,16 @@ if ~isempty(handles.C)
                         type = 1;
                     end
                 end
-                filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
-                    tfce_score = limo_tfce(2,squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
+                filename = sprintf('ess_%g.mat',index); load(filename);
+                    tfce_score = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
                 filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
             end
             
             clear Yr LIMO
             disp('contrast evaluation done ...')
-               
-                
         end 
         
     else

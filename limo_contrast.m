@@ -482,10 +482,10 @@ switch type
             end
         end
         
-        filename = sprintf('ess_repeated_measure_%g.mat',index);
+        filename = sprintf('ess_%g.mat',index);
         save ([filename], 'ess');
         if exist('ess2','var')
-            ess = ess2; filename = sprintf('ess_interaction_gp_repeated_measure_%g.mat',index);
+            ess = ess2; filename = sprintf('ess_gp_interaction_%g.mat',index);
             save ([filename], 'ess2');
         end
         
@@ -495,19 +495,12 @@ switch type
         % ---------------------------------------------
         
         if gp_values == 1
-            H0_ess = NaN(size(Yr,1),size(Yr,2),5,LIMO.design.bootstrap);
-            filename = sprintf('H0_ess_repeated_measure_%g.mat',size(LIMO.contrast,2));
+            H0_ess = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap);
+            filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
             
             % prepare the boostrap centering the data
             load centered_data
-%             for e=1:size(Yr,1)
-%                 centered_data = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
-%                 for cel=1:(size(LIMO.design.X,2)-1)
-%                     index = find(LIMO.design.X(:,cel));
-%                     centered_data(e,:,index) = squeeze(Yr(e,:,index)) - repmat(mean(squeeze(Yr(e,:,index)),2),1,length(index));
-%                 end
-%             end
-            
+
             %  compute
             load boot_table; clear Yr
             for b = 1:LIMO.design.bootstrap
@@ -518,22 +511,14 @@ switch type
                     tmp = squeeze(centered_data(electrode,:,resampling_index,:));
                     Y = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
                     gp = LIMO.data.Cat(find(~isnan(tmp(1,1,:))),:);
-                    % mean, se, df
-                    n = size(Y,2);
-                    g=floor((20/100)*n);
-                    for time=1:size(Y,1)
-                        H0_ess(electrode,time,1,b) = nanmean(C(1:size(Y,3))*squeeze(Y(time,:,:))',2);
-                        H0_ess(electrode,time,2,b) = sqrt(C(1:size(Y,3))*cov(squeeze(Y(time,:,:)))*C(1:size(Y,3))');
-                    end
-                    df  = rank(C); dfe = n-df;
-                    H0_ess(electrode,:,3,b) = dfe;
                     % F and p
                     result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
-                    H0_ess(electrode,:,4,b) = result.F;
-                    H0_ess(electrode,:,5,b) = result.p;
+                    H0_ess(electrode,:,1,b) = result.F;
+                    H0_ess(electrode,:,2,b) = result.p;
                 end
             end
-            
+            save (filename, 'H0_ess');
+
         else
             ess = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
             ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
@@ -577,6 +562,7 @@ switch type
                 ess2(electrode,:,2,4) = result.interaction.F;
                 ess2(electrode,:,2,5) = result.interaction.p;
             end
+            save ([filename], 'ess2');
         end
 end
 
