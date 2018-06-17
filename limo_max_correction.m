@@ -1,4 +1,4 @@
-function [mask,p_val,max_th] = limo_max_correction(M,bootM,p,fig)
+function [mask,p_val,max_th] = limo_max_correction(varargin)
 
 % correction for multiple testing using the max stat value
 % since the type 1 error is the prob to make at least one error
@@ -24,9 +24,20 @@ function [mask,p_val,max_th] = limo_max_correction(M,bootM,p,fig)
 % --------------------------------
 % Copyright (C) LIMO Team 2016
 
-if nargin == 3
-    fig = 1;
+% check inputs 
+M       = varargin{1};
+bootM   = varargin{2};
+if nargin == 2
+    p   = 0.05;
+    fig = [];
+elseif nargin == 3
+    p   = varargin{3};
+    fig = [];
+elseif nargin == 4
+    p   = varargin{3};
+    fig = varargin{4};
 end
+clear varargin
 
 [a,b,nboot]=size(bootM);
 if any(size(M)~=[a b])
@@ -36,7 +47,7 @@ end
 % collect highest value for each boot
 parfor boot=1:nboot
     data = squeeze(bootM(:,:,boot));
-    maxM(boot) = max(data(:)); %
+    maxM(boot) = max(data(:)); 
 end
 
 % get threshold
@@ -57,18 +68,21 @@ for row =1:a
 end
 
 %% figure
+if sum(mask(:)) == 0
+    fig = 1 ; 
+end
+
 if fig == 1
     figure('Name','Correction by max: results under H0')
     plot(sortmaxM,'LineWidth',3); grid on; hold on; 
     
     plot(min(find(sortmaxM==max_th)),max_th,'r*','LineWidth',5)
-    txt = 'threashold \rightarrow';
+    txt = ['bootstrap threashold ' num2str(max_th) '\rightarrow'];
     text(min(find(sortmaxM==max_th)),max_th,txt,'FontSize',12,'HorizontalAlignment','right');
     
     [val,loc]=min(abs(sortmaxM-max(M(:)))); 
     plot(loc,max(M(:)),'r*','LineWidth',5)
-    txt = sprintf('maximum');
-    txt = [txt '\rightarrow'];
+    txt = ['maximum observed: ' num2str(max(M(:))) '\rightarrow'];
     text(loc,max(M(:)),txt,'FontSize',12,'HorizontalAlignment','right');
     
     title('Maxima under H0','FontSize',12)
