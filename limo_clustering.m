@@ -40,6 +40,7 @@ if nargin == 7
 else
     fig = varargin{8};
 end
+clear varargin
 
 % switch behavioural to 1D clustering if one channel, no matter user choice
 if size(M,1) == 1
