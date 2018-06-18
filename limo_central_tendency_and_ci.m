@@ -141,7 +141,7 @@ elseif nargin == 6
                 % 1st level analysis
                 % --------------------
                 if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
-                    tmp=limo_trimmed_mean(tmp,20);
+                    tmp = limo_trimmed_mean(tmp,20);
                 elseif strcmpi(Estimator1,'Median') % median raw data
                     tmp = nanmedian(tmp,3);
                 elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
@@ -152,8 +152,8 @@ elseif nargin == 6
                 
                 if strcmp(Analysis_type,'Full scalp analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
                     data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                elseif strcmp(Analysis_type,'1 electrode only') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-                    if size(selected_electrodes,2) == 1;
+                elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                    if size(selected_electrodes,2) == 1
                         data(1,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                     else
                         out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
@@ -277,7 +277,7 @@ elseif nargin == 1
                 data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters)));
             end
         elseif strcmp(Analysis_type,'1 electrode only')
-            if size(selected_electrodes,2) == 1;
+            if size(selected_electrodes,2) == 1
                 if strcmp(LIMO.Analysis,'Time-Frequency')
                     data(1,:,:,1:length(parameters),i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,:,parameters)));
                 else
@@ -322,14 +322,14 @@ elseif nargin == 1
                 parameters = inputdlg('which parameters to pool e.g [1 3 5]','parameters option');
             end
             
-            try
-                parameters = str2num(cell2mat(parameters));
-            catch
-                parameters = eval(cell2mat(parameters));
-            end
-            
             if isempty(parameters)
                 return
+            else
+                try
+                    parameters = str2num(cell2mat(parameters));
+                catch
+                    parameters = eval(cell2mat(parameters));
+                end
             end
             
         else
@@ -417,19 +417,19 @@ elseif nargin == 1
                         % 1st level analysis
                         % --------------------
                         if strcmp(Estimator1,'Trimmed mean') % trim raw data @ 20%
-                            tmp=limo_trimmed_mean(tmp,20);
+                            tmp = limo_trimmed_mean(tmp,20);
                         elseif strcmp(Estimator1,'Median') % median raw data
                             tmp = nanmedian(tmp,3);
                         elseif strcmp(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                             tmp = limo_harrell_davis(tmp,0.5);
                         elseif strcmp(Estimator1,'Mean') % mean of raw data 
-                            tmp = mean(tmp,3);
+                            tmp = nanmean(tmp,3);
                         end
                         
-                        if strcmp(Analysis_type,'Full scalp analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+                        if strcmp(Analysis_type,'Full scalp analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                             data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                        elseif strcmp(Analysis_type,'1 electrode only') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-                            if size(selected_electrodes,2) == 1;
+                        elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                            if size(selected_electrodes,2) == 1
                                 data(1,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             else
                                 out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
@@ -461,16 +461,16 @@ elseif nargin == 1
                     elseif strcmp(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                         tmp = limo_harrell_davis(tmp,0.5);
                     elseif strcmp(Estimator1,'Mean') % mean of raw data on which we do across subjects TM, HD and Median
-                        tmp = mean(tmp,3);
+                        tmp = nanmean(tmp,3);
                     end
                     
-                    if strcmp(Analysis_type,'Full scalp analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+                    if strcmp(Analysis_type,'Full scalp analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
                             data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         else
                             data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
-                    elseif strcmp(Analysis_type,'1 electrode only') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+                    elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
                             if size(selected_electrodes,2) == 1;
                                 data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
