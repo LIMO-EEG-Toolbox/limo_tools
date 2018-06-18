@@ -393,7 +393,7 @@ cell2csv(['batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
-for subject=1:N; 
+for subject=1:N
     if strfind(report{subject},'failed')
         failed = 1;
     end
