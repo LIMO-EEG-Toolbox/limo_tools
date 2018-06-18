@@ -701,7 +701,7 @@ if LIMO.Level == 1
                 electrode = eval(cell2mat(electrode));
                 if size(electrode) > 1
                     errordlg('invalid electrode choice'); return
-                elseif electrode > size(LIMO.data.chanlocs,2) || electrode < 1
+                elseif electrode > size(LIMO.data.chanlocs,1) || electrode < 1
                     errordlg('invalid electrode number'); return
                 end
                 
@@ -720,8 +720,6 @@ if LIMO.Level == 1
             
             % down to business
             % ----------------------
-            
-            
             data_cached = 0;
             if isfield(LIMO,'cache')
                 if strcmp(LIMO.Analysis,'Time-Frequency') && isfield(LIMO.cache,'ERPplot')
