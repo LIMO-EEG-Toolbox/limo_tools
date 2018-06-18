@@ -2,7 +2,7 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 
 % routine to get multifiles from different directories
 %
-% FORNMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
+% FORMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
 %
 % INPUT can be left empty, in the case ask for .mat or .txt
 %       gp  is a simple numerical value, so the selection question reminds
