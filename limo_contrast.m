@@ -161,12 +161,18 @@ switch type
             if strcmp(LIMO.Analysis ,'Time-Frequency')
                 if Test == 0
                     con = limo_tf_4d_reshape(con);
-                    save ([filename], 'con');
-                    clear con
                 else
                     ess = limo_tf_4d_reshape(ess);
-                    save ([filename], 'ess'); clear ess
-                end
+                end                
+            end
+ 
+            % save files
+            if Test == 0
+                save ([filename], 'con');
+                clear con
+            else
+                save ([filename], 'ess');
+                clear ess
             end
             
         elseif strcmp(Method,'Multivariate')
