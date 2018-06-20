@@ -181,8 +181,8 @@ else
     if strcmp(cat(end-3:end),'.txt')
         LIMO.data.Cat = load(cat);
     else strcmp(cat(end-3:end),'.mat')
-        [filepath,name,ext] = fileparts(cat);
-        load(cat); LIMO.data.Cat = eval(name);
+        name = load(cat); f = fieldnames(name);
+        LIMO.data.Cat = getfield(name,f{1});
     end
 end
 

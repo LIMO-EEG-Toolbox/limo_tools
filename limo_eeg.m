@@ -63,7 +63,7 @@ end
 
 
 % in case data are already there
-if isempty(varargin);
+if isempty(varargin)
     varargin={1};
 end
 
