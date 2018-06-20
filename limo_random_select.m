@@ -205,8 +205,8 @@ if type == 1 || type == 4
             end
             % restric the channels
             if strcmp(limo.Type,'Channels')
-                expected_chanlocs = expected_chanlocs(limo.design.electrode);
                 limo.design.electrode = eval(cell2mat(electrode));
+                expected_chanlocs = expected_chanlocs(limo.design.electrode);
                 limo.data.chanlocs = expected_chanlocs;
             else
                 limo.design.component = eval(cell2mat(electrode));
@@ -651,7 +651,7 @@ elseif type == 2
             elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                 
                 % Use single electrode
-                if size(limo.design.electrode,2) == 1;
+                if size(limo.design.electrode,2) == 1
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
                         if strcmp(limo.Analysis,'Time-Frequency')
                             tmp_data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
@@ -713,8 +713,8 @@ elseif type == 2
             tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,:,i(1),:));
-            tmp_data2 = squeeze(data{2}(:,:,:,i(2),:));
+            tmp_data1 = squeeze(data{1}(:,:,:,i,:));
+            tmp_data2 = squeeze(data{2}(:,:,:,i,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
@@ -731,8 +731,8 @@ elseif type == 2
             tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
             tmp_data2(1,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,i(1),:));
-            tmp_data2 = squeeze(data{2}(:,:,i(2),:));
+            tmp_data1 = squeeze(data{1}(:,:,i,:));
+            tmp_data2 = squeeze(data{2}(:,:,i,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
@@ -751,7 +751,9 @@ elseif type == 2
     LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
     tmpname = limo_random_robust(type,tmp_data1,tmp_data2,i,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
-    try delete data.mat; end
+    if exist('data.mat','file')
+        try delete data.mat; end
+    end
     
     
     % ------------------------------
@@ -1519,13 +1521,13 @@ elseif type == 5
         elseif length(gp_nb) > 1
             errordlg('only 1 independent factor (with n groups) is handled by LIMO')
             return
-        elseif gp_nb == 0;
+        elseif gp_nb == 0
             gp_nb = 1;
         end
         
         % Ask for Repeated Measures
         % --------------------------
-        factor_nb = eval(cell2mat(inputdlg('How many repeated factors? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
+        factor_nb = eval(cell2mat(inputdlg('Repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
         % in case the inpuit is [] or [0]
         if isempty(factor_nb)
             return;
@@ -1688,13 +1690,13 @@ elseif type == 5
                 elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
                         if size(limo.design.electrode,2) == 1
-                            data(1,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                         else
                             out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                             data(1,:,:,matrix_index) = out(i,:,:); % matches the expected chanloc of the subject
                         end
                     elseif strcmpi(g.type,'Components')
-                        if size(limo.design.component,2) == 1;
+                        if size(limo.design.component,2) == 1
                             data(1,:,:,matrix_index) = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
                         else
                             data(1,:,:,matrix_index) = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject

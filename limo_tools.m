@@ -98,27 +98,27 @@ guidata(hObject, handles);
 % --- Executes on button press in Expected_chanlocs.
 function Expected_chanlocs_Callback(hObject, eventdata, handles)
 
-choice =  questdlg2('Do you you to Create or Edit a groupo level file?', ...
+choice =  questdlg2('Do you want to Create or Edit a groupo level file?', ...
     'Choice', ...
     'Create', 'Edit', 'Edit');
 if strcmp(choice,'Create')
     [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
-    if ~isempty(expected_chanlocs) && ~isempty(channeighbstructmat)
-        D=uigetdir(pwd,'Save file in directory');
-        if D == 0
-            disp('data not saved'); return
-        else
-            save([D filesep 'gp_level_expected_channel'],'expected_chanlocs','channeighbstructmat') % save all in one file
-        end
-    end
-    
-else
+
+elseif strcmp(choice,'Edit')
+
     [gp_level_file,filepath,sts]=uigetfile('*.mat','select gp level channel file');
     if sts ==0
         return
     else
         load([filepath filesep gp_level_file])
     end
+end
+
+D=uigetdir(pwd,'Save file in directory');
+if D == 0
+    disp('data not saved'); return
+else
+    save([D filesep 'gp_level_expected_channel'],'expected_chanlocs','channeighbstructmat') % save all in one file
 end
 
 

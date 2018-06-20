@@ -22,9 +22,7 @@ if nargin == 4
     dynamic = 1;
 end
 
-figure; set(gcf,'Color','w','InvertHardCopy','off');
-
-% get some informations for the plots
+%% get some informations for the plots
 v = max(toplot(:)); [e,f]=find(toplot==v);
 if length(e)>1 % happen if we have multiple times the exact same max values
     e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
@@ -33,7 +31,7 @@ end
 if strcmp(LIMO.Analysis,'Time')
     try timevect = LIMO.data.timevect; catch timevect = []; end
     if size(timevect,2) == 1; timevect = timevect'; end
-    if size(timevect,2) ~= size(toplot,2);
+    if size(timevect,2) ~= size(toplot,2)
         timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
     end
     ratio =  (timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
@@ -58,23 +56,25 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     scale = toplot.*mask; scale(scale==0)=NaN;
 end
 
+%% make the main figure
+figure; set(gcf,'Color','w','InvertHardCopy','off');
+
 % ERP plot at best electrode
 ax(3) = subplot(3,3,9);
 if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
     LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
 end
 
-if size(toplot,2) == 1
-    bar(toplot(e,1)); grid on; ylabel('stat value')
-    axis([0 2 0 max(toplot(:))+0.2]);
+if size(toplot,1) == 1
+    plot(timevect,toplot); grid on; ylabel('stat value'); axis tight
     if isfield(LIMO,'Type')
         if strcmp(LIMO.Type,'Components')
-            mytitle2 = sprintf('component %g', y);
+            mytitle2 = 'Average component';
         elseif strcmp(LIMO.Type,'Channels')
-            mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
+            mytitle2 = 'Average electrode';
         end
     else
-        mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
+        mytitle2 = 'Average electrode';
     end
 else
     if strcmp(LIMO.Analysis,'Time')
@@ -115,43 +115,45 @@ end
 title(mytitle2,'FontSize',12)
 
 % topoplot at max time
-if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
-    
-    ax(2) = subplot(3,3,6);
-    chans = LIMO.data.chanlocs;
-    opt = {'maplimits','maxmin','verbose','off'};
-    
-    if isfield(LIMO,'Type')
-        if strcmp(LIMO.Type,'Components')
-            opt = {'maplimits','absmax','electrodes','off','verbose','off'};
-            topoplot(toplot(:,f),chans,opt{:});
-        else
-            topoplot(toplot(:,f),chans,opt{:});
-        end
+if size(toplot,1) ~= 1
+    if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
-        if size(toplot,2) == 1
-            title('Topoplot','FontSize',12)
-        else
-            if strcmp(LIMO.Analysis,'Time')
-                title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
-                set(gca,'XTickLabel', timevect);
-            elseif strcmp(LIMO.Analysis,'Frequency')
-                title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
-                set(gca,'XTickLabel', LIMO.data.freqlist);
+        ax(2) = subplot(3,3,6);
+        chans = LIMO.data.chanlocs;
+        opt = {'maplimits','maxmin','verbose','off'};
+        
+        if isfield(LIMO,'Type')
+            if strcmp(LIMO.Type,'Components')
+                opt = {'maplimits','absmax','electrodes','off','verbose','off'};
+                topoplot(toplot(:,f),chans,opt{:});
+            else
+                topoplot(toplot(:,f),chans,opt{:});
             end
-        end
-        
-    elseif ~isempty(chans)
-        topoplot(toplot(:,f),chans,opt{:});
-        if size(toplot,2) == 1
-            title('Topoplot','FontSize',12)
-        else
-            if strcmp(LIMO.Analysis,'Time')
-                title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
-                set(gca,'XTickLabel', timevect);
-            elseif strcmp(LIMO.Analysis,'Frequency')
-                title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
-                set(gca,'XTickLabel', LIMO.data.freqlist);
+            
+            if size(toplot,2) == 1
+                title('Topoplot','FontSize',12)
+            else
+                if strcmp(LIMO.Analysis,'Time')
+                    title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
+                    set(gca,'XTickLabel', timevect);
+                elseif strcmp(LIMO.Analysis,'Frequency')
+                    title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
+                    set(gca,'XTickLabel', LIMO.data.freqlist);
+                end
+            end
+            
+        elseif ~isempty(chans)
+            topoplot(toplot(:,f),chans,opt{:});
+            if size(toplot,2) == 1
+                title('Topoplot','FontSize',12)
+            else
+                if strcmp(LIMO.Analysis,'Time')
+                    title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
+                    set(gca,'XTickLabel', timevect);
+                elseif strcmp(LIMO.Analysis,'Frequency')
+                    title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
+                    set(gca,'XTickLabel', LIMO.data.freqlist);
+                end
             end
         end
     end
@@ -169,7 +171,7 @@ try
     caxis([min(min(scale)), max(max(scale))]);
 catch caxiserror
 end
-title(mytitle,'Fontsize',14)
+title(mytitle,'Fontsize',12)
 cc=color_images_(scale,LIMO);
 
 % ------------------------
@@ -195,7 +197,13 @@ if dynamic == 1
                 % ERP plot at best electrode and topoplot
                 % at max time or freq
                 y = round(y);
-                if strcmp(LIMO.Analysis,'Time') ;
+                if size(toplot,2) > 1 && y>size(toplot,1)
+                    y = size(toplot,1);
+                elseif size(toplot,2) > 1 && y<1
+                    y = 1;
+                end
+                
+                if strcmp(LIMO.Analysis,'Time') 
                     
                     if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
@@ -285,7 +293,8 @@ if dynamic == 1
                 end
                 
             end
-            colormap(cc);
+            colormap(cc); p_values = evalin('base','p_values');
+            fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame))
         end
     end
 end
@@ -300,11 +309,11 @@ if min(scale(:)) >= 0
 elseif max(scale(:)) <= 0
     cc=cubehelixmap('decrease',64);
 else
-    cc = zeros(64,3);
-    % cc=cubehelixmap('semi_continuous',64);
-    cc(1:32,:)=flipud(cubehelixmap('decrease',32));
-    tmp=cubehelixmap('increase',46); 
-    cc(33:64,:) = tmp(15:46,:);
+    cc=cubehelixmap('semi_continuous',64);
+    % cc = zeros(64,3);
+    % cc(1:32,:)=flipud(cubehelixmap('decrease',32));
+    % tmp=cubehelixmap('increase',46); 
+    % cc(33:64,:) = tmp(15:46,:);
 end
 
 if sum(isnan(scale(:))) ~= 0
@@ -320,17 +329,17 @@ catch ME
 end
 
 if strcmp(LIMO.Analysis,'Time')
-    xlabel('Time in ms','FontSize',16)
+    xlabel('Time in ms','FontSize',10)
 elseif strcmp(LIMO.Analysis,'Frequency')
-    xlabel('Frequency in Hz','FontSize',16)
+    xlabel('Frequency in Hz','FontSize',10)
 end
 
 if strcmp(LIMO.Type,'Components')
     if size(scale,1) == 1
         label_electrodes = ' ';
-        ylabel('optimized component','FontSize',14);
+        ylabel('optimized component','FontSize',10);
     else
-        ylabel('Components','FontSize',14);
+        ylabel('Components','FontSize',10);
         for i=1:size(scale,1)
             label_electrodes{i} = i;
         end
@@ -338,9 +347,9 @@ if strcmp(LIMO.Type,'Components')
 else
     if size(scale,1) == 1
         label_electrodes = ' ';
-        ylabel('optimized electrode','FontSize',14);
+        ylabel('optimized electrode','FontSize',10);
     else
-        ylabel('Electrodes','FontSize',14);
+        ylabel('Electrodes','FontSize',10);
         for i = 1:length(LIMO.data.chanlocs)
             if LIMO.Level == 2
                 try

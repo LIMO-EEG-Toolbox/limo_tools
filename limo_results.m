@@ -76,7 +76,7 @@ if FilterIndex == 1
     % check if bootstrap or tfce should be computed
     % ---------------------------------------------
     % 1st level 
-    if handles.LIMO.LIMO.Level == 1;
+    if handles.LIMO.LIMO.Level == 1
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') ...
                 && strncmp(FileName,'con',3) == 0 && strncmp(FileName,'ess',3) ==0
             if strcmp(questdlg('Level 1: compute all bootstraps?','bootstrap turned on','Yes','No','No'),'Yes');
@@ -114,10 +114,10 @@ if FilterIndex == 1
     if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
         if strncmp(FileName,'con',3)
             load Yr; cd H0; H0_Betas.mat;
-            result = limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 0,3); clear Yr H0_Betas
+            limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 0,3); clear Yr H0_Betas
         elseif strncmp(FileName,'ess',3)
             load Yr; cd H0; H0_Betas.mat;
-            result = limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 1,3); clear Yr H0_Betas
+            limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 1,3); clear Yr H0_Betas
         end
     end
     
@@ -125,24 +125,47 @@ if FilterIndex == 1
             && exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
         if strncmp(FileName,'con',3)
             load(FileName);
-            if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency'); x = 3;
-            else [x,y,z] = size(con); if x~=1; x=2; end
+            if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
+                x = 3;
+            else
+                x = size(con,1); 
+                if x~=1 
+                    x=2; 
+                end
             end
             tfce_score = limo_tfce(x,squeeze(con(:,:,2)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            cd TFCE; filename2 = sprintf('tfce_%s',FileName); save ([filename2], 'tfce_score'); clear con tfce_score
-            cd ..; cd H0; filename = sprintf('H0_%s',FileName); load(filename);
+            cd TFCE; 
+            filename2 = sprintf('tfce_%s',FileName); 
+            save ([filename2], 'tfce_score'); 
+            clear con tfce_score
+            cd ..; cd H0; 
+            filename = sprintf('H0_%s',FileName); 
+            load(filename);
             tfce_H0_score = limo_tfce(x,squeeze(H0_ess(:,:,2,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_con tfce_score
+            filename2 = sprintf('tfce_%s',filename); 
+            save ([filename2], 'tfce_H0_score'); 
+            clear H0_con tfce_score
         elseif strncmp(FileName,'ess',3)
             load(FileName);
-            if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency'); x = 3;
-            else [x,y,z] = size(ess); if x~=1; x=2; end
+            if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
+                x = 3;
+            else
+                x = size(ess,1); 
+                if x~=1
+                    x=2; 
+                end
             end
             tfce_score = limo_tfce(x,squeeze(ess(:,:,2)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            cd TFCE; filename2 = sprintf('tfce_%s',FileName); save ([filename2], 'tfce_score'); clear ess tfce_score
-            cd ..; cd H0; filename = sprintf('H0_%s',FileName); load(filename);
+            cd TFCE; 
+            filename2 = sprintf('tfce_%s',FileName); 
+            save ([filename2], 'tfce_score'); 
+            clear ess tfce_score
+            cd ..; cd H0; 
+            filename = sprintf('H0_%s',FileName); load(filename);
             tfce_H0_score = limo_tfce(x,squeeze(H0_ess(:,:,2,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
+            filename2 = sprintf('tfce_%s',filename); 
+            save ([filename2], 'tfce_H0_score'); 
+            clear H0_ess tfce_score
         end
     end
     
@@ -160,8 +183,13 @@ if FilterIndex == 1
             elseif strncmp(FileName,'paired_samples',14)
                 load Y1r; load Y2r; 
                 limo_random_robust(3,Y1r,Y2r,eval(FileName(32:end-4)),nboot,handles.tfce); clear Y1r Y2r;
-            elseif strncmp(FileName,'Repeated_measures',17)
-                warndlg2('repeated measure ANOVA bootstrap is not availbale at this stage, please use the random effect GUI','action not performed')
+            elseif strncmp(FileName,'Rep_ANOVA',9)
+                LIMO = handles.LIMO.LIMO; 
+                LIMO.design.bootstrap = 1000; 
+                LIMO.design.tfce = handles.tfce;
+                save LIMO LIMO
+                limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
+                    LIMO,LIMO.design.bootstrap, LIMO.design.tfce)
             else
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                     limo_eeg_tf(4);
@@ -275,10 +303,13 @@ if FilterIndex == 1
                 end
                 full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score'); cd ..
                 clear H0_Covariate_effect tfce_H0_score; 
-                        
-                            
-            elseif strncmp(FileName,'Repeated_measures',17)
-                msgbox('repeated measure ANOVA tfce is not availbale at this stage, please use the random effect GUI','action not performed','warn')
+                                                 
+            elseif strncmp(FileName,'Rep_ANOVA',9)
+                LIMO = handles.LIMO.LIMO; 
+                LIMO.design.tfce = handles.tfce;
+                save LIMO LIMO
+                limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
+                    LIMO,LIMO.design.bootstrap, LIMO.design.tfce)
             else
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                     limo_eeg_tf(4);

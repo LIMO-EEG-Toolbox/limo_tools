@@ -78,6 +78,19 @@ varargout{1} = 'contrast done';
 
 %% Callbacks
 
+% --- Display selected contrasts
+% ---------------------------------------------------------------
+function contrast_CreateFcn(hObject, eventdata, handles)
+global handles
+
+try
+    imagesc(handles.C);
+catch
+    imagesc([]);
+end
+handles.output = hObject;
+guidata(hObject,handles)
+
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
@@ -131,18 +144,7 @@ else
     guidata(hObject,handles)
 end
 
-% --- Display selected contrasts
-% ---------------------------------------------------------------
-function contrast_CreateFcn(hObject, eventdata, handles)
-global handles
 
-try
-    imagesc(handles.C);
-catch
-    imagesc([]);
-end
-handles.output = hObject;
-guidata(hObject,handles)
 
 
 % --- Evaluate New Contrast
@@ -295,7 +297,7 @@ guidata(hObject,handles)
 function Done_Callback(hObject, eventdata, handles)
 global LIMO handles
 
-if ~isempty(handles.C);
+if ~isempty(handles.C)
     if handles.go == 1
         
         if LIMO.design.bootstrap ==1
@@ -332,7 +334,7 @@ if ~isempty(handles.C);
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
                 % -------------------------------------------------------
-                result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
+                limo_contrast(Yr, Betas, LIMO, handles.F,1);
                 
                 if LIMO.design.bootstrap ~= 0
                     if strcmp(LIMO.Analysis ,'Time-Frequency')
@@ -344,11 +346,11 @@ if ~isempty(handles.C);
                            tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
                         end
                         clear H0_Betas; cd ..; load Yr; cd(H0);
-                        result = limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
+                        limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
                         clear tmp
                     else
                         clear Betas; cd H0; load H0_Betas
-                        result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
+                        limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
                     end
                     clear Yr ; cd ..
                 end
@@ -391,7 +393,7 @@ if ~isempty(handles.C);
                 
                 LIMO.contrast = handles.F;
                 save LIMO LIMO
-                result = limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
+                limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
                 
             end
             
@@ -413,30 +415,41 @@ if ~isempty(handles.C);
             
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'F';
+            LIMO.contrast{index}.V = 'F'; % always F since we use Hotelling test
             C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
             load Yr; save LIMO LIMO
-            result = limo_contrast(Yr,LIMO,3);
+            limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
                 cd H0; limo_contrast(Yr, LIMO, 4); cd ..
             end
             
             if LIMO.design.tfce == 1
-                filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
-                tfce_score = limo_tfce(squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
+                if numel(size(Yr)) == 5
+                    if size(Yr,1)==1 % ERSP 1 channel
+                        type = 2;
+                    else
+                        type = 3;
+                    end
+                else % ERP - Spec
+                    if size(Yr,1)>1 % many channels
+                        type = 2;
+                    else
+                        type = 1;
+                    end
+                end
+                filename = sprintf('ess_%g.mat',index); load(filename);
+                    tfce_score = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
                 filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
             end
             
             clear Yr LIMO
             disp('contrast evaluation done ...')
-               
-                
         end 
         
     else

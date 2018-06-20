@@ -368,22 +368,22 @@ if strcmp(option,'model specification') || strcmp(option,'both')
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
+    index = 1;
     for c=1:size(batch_contrast.mat,1)
-        index = 1;
         for subject = 1:N
             if strcmp(option,'contrast only')
-                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(c) '.mat'];                
+                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(c) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
             end
             index = index + 1;
         end
-        name = name';
-        if exist('remove_con','var')
+    end
+    name = name';
+    if exist('remove_con','var')
         cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
-        else
+    else
         cell2csv(['con_files_' glm_name '.txt'], name);
-        end
     end
 end
 
@@ -393,7 +393,7 @@ cell2csv(['batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
-for subject=1:N; 
+for subject=1:N
     if strfind(report{subject},'failed')
         failed = 1;
     end

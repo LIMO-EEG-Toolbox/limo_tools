@@ -111,7 +111,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(1,x,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -137,7 +137,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -193,7 +193,7 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -234,7 +234,7 @@ switch type
                     
                 else
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -341,7 +341,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(x,y,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -372,7 +372,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     nsteps = length(min(data(:)):increment:max(data(:)));
@@ -438,7 +438,7 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -483,7 +483,7 @@ switch type
                     
                 else
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -598,7 +598,7 @@ switch type
                     % then tfce score for that height
                     index = 1;
                     tfce = NaN(x,y,z,length(min(data(:)):increment:max(data(:))));
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     
@@ -630,7 +630,7 @@ switch type
                     pos_data = (data > 0).*data;
                     neg_data = abs((data < 0).*data);
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'Thresholding levels','name','TFCE');
                     end
                     
@@ -697,7 +697,7 @@ switch type
                     
                     % select a height, obtain cluster map, obtain extent map
                     % then tfce score for that height
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     
@@ -742,7 +742,7 @@ switch type
                     
                 else
                     
-                    if updatebar ==1;
+                    if updatebar ==1
                         f = waitbar(0,'percentage of bootstraps analyzed','name','TFCE');
                     end
                     

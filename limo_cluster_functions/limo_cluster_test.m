@@ -19,7 +19,7 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %          maxval = maximum observed cluster mass
 %          maxclustersum_th = max cluster sum (1-alpha) bootstrap threshold
 %
-% See also limo~_getcluster_test limo_getclustersum
+% See also limo_clustering limo_getcluster_test limo_getclustersum
 % 
 % Guillaume Rousselet, University of Glasgow, June 2010
 % optional L & NUM outputs: GAR, Feb 2012
@@ -33,10 +33,13 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 if nargin<5; alphav=.05;  end
 if nargin<4; minnbchan=2; end
 
+% find clusters in the observed data
 [posclusterslabelmat,nposclusters] = limo_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan);
-nboot           = length(boot_maxclustersum);
-sort_clustermax = sort(boot_maxclustersum);
-n               = sum(isnan(sort_clustermax)); 
+
+% get bootstrap parameters
+nboot                              = length(boot_maxclustersum);
+sort_clustermax                    = sort(boot_maxclustersum);
+n                                  = sum(isnan(sort_clustermax)); 
 
 % NaN present if there was no clusters under H0 - just warp around
 % should not happen if using limo_getclustersum as it returns 0 in that case
@@ -46,33 +49,34 @@ if n~=0
 end
 maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
 
+% compute the mask: for each cluster do the sum and set significant if > maxclustersum_th
 mask = zeros(size(ori_f));
 if nposclusters~=0
     for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(ori_f(posclusterslabelmat==C));
-        if  maxval(C)>= maxclustersum_th;
+        if  maxval(C)>= maxclustersum_th
             mask(posclusterslabelmat==C)=1; % flag clusters above threshold
         end
     end
 end
-maxval = max(maxval);
-mask = logical(mask); 
+maxval = max(maxval);   % biggest cluster
+mask   = logical(mask); % logical - faster for masking
 
+% compute corrected p-values: number of times observed mass > bootstrap
 if sum(mask(:))>0
-    L=posclusterslabelmat.*mask;  % figure; imagesc(L)
+    L=posclusterslabelmat.*mask;  
     CL_list=setdiff(unique(L),0);
     pval = NaN(size(L));
     for CL=1:length(CL_list)
         L(L==CL_list(CL))=CL;
         p=1-(sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot);
         if p ==0
-            p = 1/nboot;
+            p = 1/nboot; % never 0
         end
-        pval(L==CL_list(CL)) = p;
+        pval(L==CL) = p;
     end
 else
     pval=NaN;
 end
-
 
 
