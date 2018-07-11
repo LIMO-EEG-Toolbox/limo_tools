@@ -1527,7 +1527,7 @@ elseif type == 5
         
         % Ask for Repeated Measures
         % --------------------------
-        factor_nb = eval(cell2mat(inputdlg('Repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
+        factor_nb = eval(cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
         % in case the inpuit is [] or [0]
         if isempty(factor_nb)
             return;
