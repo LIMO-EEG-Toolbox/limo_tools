@@ -48,11 +48,25 @@ handles.MCC = 1;
 handles.dir = pwd;
 handles.bootstrap = 0;
 handles.tfce = 0;
+handles.filter = {'R2.mat','Model fit';
+    'Condition_effect*.mat','F test for condition difference(s)'; ...
+    'Covariate_effect*.mat','F test for a conttinuous regressor'; ...
+    'Interaction_effect*.mat','F test for differences between conditions'; ...
+    'semi_partial_coef','F test for specific contribution to the data'; ...
+    'con_*.mat','T test for spcific differences'; ...
+    'ess_*.mat','F test for spcific differences'; ...
+    'one_sample*.mat','T test on Betas or Cons'; ...
+    'two_samples*.mat','T test between independent Betas or Cons'; ...
+    'paired_samples*.mat','T test between dependent Betas or Cons'; ...
+    'Rep_ANOVA*.mat','F test from repeated measure ANOVA'};
+
 % set(handles.add_bootstrap,'Enable','off')
 % set(handles.add_tfce,'Enable','off')
 
 guidata(hObject, handles);
 %uiwait(handles.figure1);
+
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_results_OutputFcn(hObject, eventdata, handles) 
@@ -69,9 +83,10 @@ varargout{1} = 'LIMO result terminated';
 % ---------------------------------------------------------------
 function Image_results_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile('*.mat','Select Univariate Results to display');
+
+[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
 if FilterIndex == 1
-    cd(PathName); handles.LIMO = load('LIMO.mat');
+    cd(PathName); handles.LIMO = load('LIMO.mat');        
     
     % check if bootstrap or tfce should be computed
     % ---------------------------------------------
@@ -333,7 +348,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Topoplot_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile('*.mat','Select Result to plot');
+[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Result to plot');
 if FilterIndex == 1
     cd(PathName); handles.LIMO = load('LIMO.mat');
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
