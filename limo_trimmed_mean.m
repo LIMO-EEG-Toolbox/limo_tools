@@ -14,7 +14,7 @@ function TM = limo_trimmed_mean(varargin)
 % TM is a 2D or 3D matrix with the lower CI, the trimmed mean and the high CI
 
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2018
 
 % Original R code by Rand Wilcox - See also Wilcox p.71, 139
 % GA Rousselet, University of Glasgow, Dec 2007
@@ -52,11 +52,11 @@ end
 
 
 %% do the trimming
-n = size(data,3); 
-g=floor((percent/100)*n); % g trimmed elements
-datasort=sort(data,3);
+n        = size(data,3); 
+g        = floor(percent*n); % g trimmed elements
+datasort = sort(data,3);
 if option == 1
-    TM = NaN(size(data,1),size(data,2),3);
+    TM        = NaN(size(data,1),size(data,2),3);
     TM(:,:,2) = nanmean(datasort(:,:,(g+1):(n-g)),3);
 else
     TM = NaN(size(data,1),size(data,2));
