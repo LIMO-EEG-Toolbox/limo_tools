@@ -74,11 +74,18 @@ if file ==0
     return
     guidata(hObject, handles);
 else
-    cd (dir_path);
-    uiresume
-    delete(handles.figure1)
-    limo_eeg(4);
-    limo_eeg(1);
+    load([dir_path file]);
+    if strcmp(LIMO.design.status,'done');
+        answer=questdlg('This design was already estimated, redo it?','Estimation','Yes','No','Yes');
+    else
+        answer = 'Yes';
+    end
+    
+    if strcmp(answer ,'Yes')
+        uiresume; delete(handles.figure1); 
+        cd (dir_path); LIMO.design.status ='to do';
+        save LIMO LIMO; clear LIMO; limo_eeg(4); limo_results;
+    end
 end
 
 % --- Executes on button press in results.

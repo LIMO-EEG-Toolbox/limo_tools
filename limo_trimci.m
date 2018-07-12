@@ -9,7 +9,7 @@ function [t,tmdata,trimci,se,p,tcrit,df]=limo_trimci(data, percent, alphav, null
 % This code assumes no missing values.
 % 
 % INPUT: 
-%        data (electrodes*frames*subjects) or (frames x subjects)
+%        data (electrodes*frames*trials)
 %        percent (percentage of trimming [0-100], default=20)
 %        alphav (default=.05)
 %        nullvalue (mean of nullhypothesis, default=0)
@@ -46,63 +46,34 @@ end
 
 %% ttest
 % assumes there are no NaNs in the data
-if ndims(data) == 3
-    % number of trials
-    na=size(data,3);
 
-    % number of items to winsorize and trim
-    ga=floor((percent/100)*na);
+% number of trials
+na=size(data,3);
 
-    % windsorize variance of data
-    asort=sort(data,3);
-    wa=asort;
-    wa(:,:,1:ga+1)=repmat(asort(:,:,ga+1),[1 1 ga+1]);
-    wa(:,:,na-ga:end)=repmat(asort(:,:,na-ga),[1 1 ga+1]);
-    wva=var(wa,0,3);
+% number of items to winsorize and trim
+ga=floor((percent/100)*na);
 
-    % get standard error and df
-    se=sqrt(wva)/((1-2*(percent/100))*sqrt(na));
+% windsorize variance of data
+asort=sort(data,3);
+wa=asort;
+wa(:,:,1:ga+1)=repmat(asort(:,:,ga+1),[1 1 ga+1]);
+wa(:,:,na-ga:end)=repmat(asort(:,:,na-ga),[1 1 ga+1]);
+wva=var(wa,0,3);
 
-    df=na-2*floor((percent/100)*na)-1;
+% get standard error and df
+se=sqrt(wva)/((1-2*(percent/100))*sqrt(na));
 
-    % trimmed mean and CI
-    tmdata=mean(asort(:,:,(ga+1):(na-ga)),3);
-    trimci(:,:,1)=tmdata+tinv(alphav./2,df).*se; %
-    trimci(:,:,2)=tmdata-tinv(alphav./2,df).*se; %
+df=na-2*floor((percent/100)*na)-1;
 
-    t=(tmdata-nullvalue)./se;
-    p=2.*(1-tcdf(abs(t),df)); % 2-tailed probability
+% trimmed mean and CI
+tmdata=mean(asort(:,:,(ga+1):(na-ga)),3);
+trimci(:,:,1)=tmdata+tinv(alphav./2,df).*se; %
+trimci(:,:,2)=tmdata-tinv(alphav./2,df).*se; %
 
-    tcrit=tinv(1-alphav./2,df); % 1-alpha/2 quantile of Student's distribution with df degrees of freedom
+t=(tmdata-nullvalue)./se;
+p=2.*(1-tcdf(abs(t),df)); % 2-tailed probability
 
-elseif ndims(data) == 2
+tcrit=tinv(1-alphav./2,df); % 1-alpha/2 quantile of Student's distribution with df degrees of freedom
 
-    % number of trials
-    na=size(data,2);
 
-    % number of items to winsorize and trim
-    ga=floor((percent/100)*na);
-
-    % windsorize variance of data
-    asort=sort(data,2);
-    wa=asort;
-    wa(:,1:ga+1)=repmat(asort(:,ga+1),[1 1 ga+1]);
-    wa(:,na-ga:end)=repmat(asort(:,na-ga),[1 1 ga+1]);
-    wva=var(wa,0,2);
-
-    % get standard error and df
-    se=sqrt(wva)/((1-2*(percent/100))*sqrt(na));
-
-    df=na-2*floor((percent/100)*na)-1;
-
-    % trimmed mean and CI
-    tmdata=mean(asort(:,(ga+1):(na-ga)),2);
-    trimci(:,1)=tmdata+tinv(alphav./2,df).*se; %
-    trimci(:,2)=tmdata-tinv(alphav./2,df).*se; %
-
-    t=(tmdata-nullvalue)./se;
-    p=2.*(1-tcdf(abs(t),df)); % 2-tailed probability
-
-    tcrit=tinv(1-alphav./2,df); % 1-alpha/2 quantile of Student's distribution with df degrees of freedom
-end
 

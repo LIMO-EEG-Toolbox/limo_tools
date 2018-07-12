@@ -3,10 +3,10 @@ function limo_batch_design_matrix(LIMOfile)
 % this function wrap aound the LIMOfile structure from the batch and
 % calls limo_design_matrix - of special interest is the ability to
 % rearrange data per components based on the study structure clustering
-% output - this allowing group statistics at the 2nd level. 
+% output - this allowing group statistics at the 2nd level.
 %
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLIMOLAB STUDY
-% see also limo_batch 
+% see also limo_batch
 %% -----------------------------
 % Copyright (C) LIMO Team 2015
 
@@ -69,14 +69,14 @@ if strcmp(LIMO.Analysis,'Time')
                     if length(which_ics)==1
                         newY(c,:,:) =  Y(which_ics,:,:);
                     else
-                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights*EEGLIMO.icasphere,EEGLIMO.icawinv,which_ics);
                     end
                 end
             end
             Y = newY; clear newY;
         end
     else % channels
-        try isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
+        try isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp');
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(Y)
@@ -89,11 +89,20 @@ if strcmp(LIMO.Analysis,'Time')
                 end
                 Y = limo_concatcells(Y);
             end
-        catch 
-            disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using EEGLIMO.data')
-            Y = EEGLIMO.data; %Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:); 
+        catch
+            disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using hack')
+            try
+                cd(LIMO.data.data_dir); erp = dir('*.daterp');
+                for d=1:length(erp)
+                    Y{d} = load('-mat',erp(d).name);
+                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                end
+                Y = limo_concatcells(Y);
+            catch
+                Y = EEGLIMO.data;
+            end
         end
-        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:); 
+        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
         clear EEGLIMO
     end
     
@@ -165,7 +174,17 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                 Y = limo_concatcells(Y); clear EEGLIMO
             end
         else
-            error('the field EEG.etc.datspec pointing to the data is missing')
+            disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
+            try
+                cd(LIMO.data.data_dir); spec = dir('*.datspec');
+                for d=1:length(spec)
+                    Y{d} = load('-mat',spec(d).name);
+                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                end
+                Y = limo_concatcells(Y);
+            catch
+                Y = EEGLIMO.data;
+            end
         end
         Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
     end
@@ -235,7 +254,17 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 end
             end
         else
-            error('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
+            disp('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing - using a hack')
+            try
+                cd(LIMO.data.data_dir); ersp = dir('*.dattimef');
+                for d=1:length(ersp)
+                    Y{d} = load('-mat',ersp(d).name);
+                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                end
+                Y = limo_concatcells(Y);
+            catch
+                Y = EEGLIMO.data;
+            end
         end
         Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
     end

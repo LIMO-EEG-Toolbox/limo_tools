@@ -56,8 +56,9 @@ end
 handles.data_dir            = [];
 handles.data                = [];
 handles.chanlocs            = [];
+handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'WLS';
+handles.method              = 'OLS';
 handles.rate                = [];
 handles.trim1               = [];
 handles.trim2               = [];
@@ -465,10 +466,12 @@ LIMO.data.chanlocs            = handles.chanlocs;
 LIMO.data.sampling_rate       = handles.rate;
 LIMO.data.Cat                 = handles.Cat;      
 LIMO.data.Cont                = handles.Cont; 
+LIMO.Type                     = handles.type;
+
 
 LIMO.design.fullfactorial     = handles.fullfactorial;
 LIMO.design.zscore            = handles.zscore;
-LIMO.design.method            = 'WLS';
+LIMO.design.method            = handles.method;
 LIMO.design.type_of_analysis  = handles.type_of_analysis;  
 LIMO.design.bootstrap         = handles.bootstrap;  
 LIMO.design.tfce              = handles.tfce;  
