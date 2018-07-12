@@ -2,8 +2,8 @@ function [eigen_vectors,eigen_values] = limo_decomp(varargin)
 
 % FORMAT: [eigen_vectors,eigen_values] = limo_decomp(E,H,method)
 %
-% INPUT E and H are matrices, typically square symmetric Sum of Squares and
-%               Cross Products
+% INPUT E and H are matrices, expected to be symmetric positive definite
+%           typically square symmetric Sum of Squares and Cross Products
 %       method is the decomposition method for pinv(E)*H
 %              - pseudo (default)
 %              - Cholesky
@@ -53,7 +53,11 @@ elseif strcmp(method, 'cholesky')
         U = chol(E);
         [eigen_vectors, D] = eig(inv(U')*H*inv(U));
         eigen_vectors = inv(U)*eigen_vectors; % rescale
-        eigen_values = diag(D);
+
+        % sort eigenvalues and then sort eigenvectors in order of decreasing eigenvalues
+        [e,ei] = sort(diag(D));
+        eigenvalues = flipud(e);
+        eigen_vectors = eigen_vectors(:,flipud(ei));
 
 elseif strcmpi(method,'SVD') % note this doesn't returned scaled vectors and
     y = (pinv(E)*H);         % therefore cannot be used for MANOVA/LDA/QDA
