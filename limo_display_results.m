@@ -140,7 +140,7 @@ if LIMO.Level == 1
                 % ------------------
                 % compute the plot
                 % ------------------
-                if data_cached == 0;
+                if data_cached == 0
                     
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice);
@@ -802,7 +802,7 @@ if LIMO.Level == 1
                 electrode = eval(cell2mat(electrode));
                 if size(electrode) > 1
                     errordlg('invalid electrode choice'); return
-                elseif electrode > size(LIMO.data.chanlocs,2) || electrode < 1
+                elseif electrode > size(LIMO.data.chanlocs,1) || electrode < 1
                     errordlg('invalid electrode number'); return
                 end
                 
@@ -1193,7 +1193,7 @@ elseif LIMO.Level == 2
         
         % if previously plotted, recover from the cache
         data_cached = 0;
-        if isfield(LIMO,'cache')
+        if isfield(LIMO,'cache') 
             try
                 if strcmp(LIMO.cache.fig.name, FileName) && ...
                         LIMO.cache.fig.MCC == MCC && ...
@@ -1207,10 +1207,12 @@ elseif LIMO.Level == 2
                         warndlg('  no values under threshold  ','no significant effect','modal');
                         toplot = []; return
                     else
-                        M = LIMO.cache.fig.pval;
-                        mytitle = LIMO.cache.fig.title;
-                        toplot = LIMO.cache.fig.stats;
+                        toplot      = LIMO.cache.fig.stats;
+                        M           = LIMO.cache.fig.pval;
+                        mask        = LIMO.cache.fig.mask;
+                        mytitle     = LIMO.cache.fig.title;
                         data_cached = 1;
+                        assignin('base','stat_values',M)
                         assignin('base','p_values',M)
                         assignin('base','mask',mask)
                     end
@@ -1220,7 +1222,9 @@ elseif LIMO.Level == 2
             end
         end
         
-        if data_cached == 0 % compute and plot
+        % if there is no cached data, compute and plot
+        % -------------------------------------------
+        if data_cached == 0 
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice,[]);
@@ -1241,26 +1245,19 @@ elseif LIMO.Level == 2
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 if strncmp(FileName,'R2',2)
                     toplot = squeeze(R2(:,:,:,1));
-                    assignin('base','R_values',toplot)
                 elseif strncmp(FileName,'one_sample',10)
                     toplot = squeeze(one_sample(:,:,:,4));
-                    assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'two_samples',11)
                     toplot = squeeze(two_samples(:,:,:,4));
-                    assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'paired',6)
                     toplot = squeeze(paired_samples(:,:,:,4));
-                    assignin('base','T_values',toplot)
-                elseif strncmp(FileName,'Covariate',9);
+                elseif strncmp(FileName,'Covariate',9)
                     toplot = squeeze(Covariate_effect(:,:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Condition',9);
+                elseif strncmp(FileName,'Condition',9)
                     toplot = squeeze(Condition_effect(:,:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'con_',4);
+                elseif strncmp(FileName,'con_',4)
                     toplot = squeeze(con(:,:,:,4));
-                    assignin('base','T_values',toplot)
-                elseif strncmp(FileName,'ess_',4);
+                elseif strncmp(FileName,'ess_',4)
                     if ~exist('ess','var')
                         effect_nb = eval(FileName(22:end-4));
                         try
@@ -1271,42 +1268,32 @@ elseif LIMO.Level == 2
                         end
                     end
                     toplot = squeeze(ess(:,:,:,4));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21);
+                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     toplot = squeeze(Rep_ANOVA_Interaction_with_gp(:,:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA_Gp',12);
+                elseif strncmp(FileName,'Rep_ANOVA_Gp',12)
                     toplot = squeeze(Rep_ANOVA_Gp_effect(:,:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA',9);
+                elseif strncmp(FileName,'Rep_ANOVA',9)
                     toplot = squeeze(Rep_ANOVA(:,:,:,1));
-                    assignin('base','F_values',toplot)
                 else
                     disp('file no supported'); return
                 end
             else
                 if strncmp(FileName,'R2',2)
                     toplot = squeeze(R2(:,:,1));
-                    assignin('base','R_values',toplot)
                 elseif strncmp(FileName,'one_sample',10)
                     toplot = squeeze(one_sample(:,:,4));
-                    assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'two_samples',11)
                     toplot = squeeze(two_samples(:,:,4));
-                    assignin('base','T_values',toplot)
                 elseif strncmp(FileName,'paired',6)
                     toplot = squeeze(paired_samples(:,:,4));
-                    assignin('base','T_values',toplot)
-                elseif strncmp(FileName,'Covariate',9);
+                elseif strncmp(FileName,'Covariate',9)
                     toplot = squeeze(Covariate_effect(:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Condition',9);
+                elseif strncmp(FileName,'Condition',9)
                     toplot = squeeze(Condition_effect(:,:,1));
                     assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'con_',4);
+                elseif strncmp(FileName,'con_',4)
                     toplot = squeeze(con(:,:,4));
-                    assignin('base','T_values',toplot)
-                elseif strncmp(FileName,'ess_',4);
+                elseif strncmp(FileName,'ess_',4)
                     if ~exist('ess','var')
                         effect_nb = eval(FileName(22:end-4));
                         try
@@ -1317,29 +1304,28 @@ elseif LIMO.Level == 2
                         end
                     end
                     toplot = squeeze(ess(:,:,4));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21);
+                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     toplot = squeeze(Rep_ANOVA_Interaction_with_gp(:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA_Gp',12);
+                elseif strncmp(FileName,'Rep_ANOVA_Gp',12)
                     toplot = squeeze(Rep_ANOVA_Gp_effect(:,:,1));
-                    assignin('base','F_values',toplot)
-                elseif strncmp(FileName,'Rep_ANOVA',9);
+                elseif strncmp(FileName,'Rep_ANOVA',9)
                     toplot = squeeze(Rep_ANOVA(:,:,1));
-                    assignin('base','F_values',toplot)
                 else
                     disp('file no supported'); return
                 end
             end
+            assignin('base','stat_values',toplot)
             data_cached = 0;
         end
     end
+    
     % ------------------------------
     %      Image and topoplot
     % ----------------------------
     if Type == 1 || Type == 2
         
         % cache the results for next time
+        % ------------------------------         
         if data_cached == 0
             LIMO.cache.fig.name       = FileName;
             LIMO.cache.fig.MCC        = MCC;
@@ -1351,7 +1337,8 @@ elseif LIMO.Level == 2
             save LIMO LIMO
         end
         
-        
+        % image all results
+        % ------------------
         if Type == 1 && ~strcmp(LIMO.Analysis,'Time-Frequency') && ~strcmp(LIMO.Analysis,'ITC')
             limo_display_image(LIMO,toplot,mask,mytitle)
                         
@@ -1360,10 +1347,12 @@ elseif LIMO.Level == 2
             if ndims(toplot)==3
                 limo_display_results_tf(LIMO,toplot,mask,mytitle);
             else
-                % plot time*freq map
-                mask = squeeze(mask);
+                % plot time*freq map <-- should be handled by limo_display_image
+                % limo_display_image(LIMO,toplot,mask,mytitle)
+                mask  = squeeze(mask);
                 scale = toplot.*mask;
-                v = max(scale(:)); [e,f]=find(scale==v);
+                v     = max(scale(:)); 
+                [e,f] = find(scale==v);
                 if min(scale(:))<0
                     scale(scale==0)=min(scale(:))+(min(scale(:))/10);
                 else
@@ -1522,8 +1511,8 @@ elseif LIMO.Level == 2
             if strncmp(FileName,'one_sample',10); data = one_sample; clear one_sample;
             elseif strncmp(FileName,'two_samples',11); data = two_samples; clear two_samples
             elseif  strncmp(FileName,'paired_samples',14);  data = paired_samples; clear paired_samples
-            elseif  strncmp(FileName,'con',4); data = con; clear con
-            elseif  strncmp(FileName,'ess',4); data = ess; clear ess
+            elseif  strncmp(FileName,'con',3); data = con; clear con
+            elseif  strncmp(FileName,'ess',3); data = ess; clear ess
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -2066,7 +2055,7 @@ elseif LIMO.Level == 2
                 if strcmp(extra,'Original')
                     for time_or_freq=1:size(Data,1)
                         avg(time_or_freq,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
-                        S(time_or_freq,:,:) = cov(squeeze(Data(time_or_freq,:,:)));
+                        S(time_or_freq,:,:) = nancov(squeeze(Data(time_or_freq,:,:)));
                     end
                     if e>1
                         mytitle = sprintf('Original %s \n electrode %s (%g)',mytitle,LIMO.data.chanlocs(electrode).labels,electrode);
@@ -2103,15 +2092,24 @@ elseif LIMO.Level == 2
                 
                 if strcmp(LIMO.Analysis,'Time')
                     timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;
-                    plot(timevect,avg,'LineWidth',3);
-                    fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
+                    colours = cubehelixmap('semi_continuous',size(c,2)+2);
+                    for cond = 1:size(c,2)
+                        plot(timevect,avg(:,cond)','LineWidth',3,'color',colours(cond+1,:));
+                        fillhandle = patch([timevect fliplr(timevect)], [c(:,cond)',fliplr(b(:,cond)')], colours(cond+1,:));
+                        set(fillhandle,'EdgeColor',colours(cond+1,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                        hold on
+                    end
                 else
                     freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
-                    plot(freqvect,avg,'LineWidth',3);
-                    fillhandle = patch([freqvect fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
+                    colours = cubehelixmap('semi_continuous',size(c,2)+2);
+                    for cond = 1:size(c,2)
+                        plot(freqvect,avg(:,cond)','LineWidth',3,'color',colours(cond+1,:));
+                        fillhandle = patch([freqvect fliplr(freqvect)], [c(:,cond)',fliplr(b(:,cond)')], colours(cond+1,:));
+                        set(fillhandle,'EdgeColor',colours(cond+1,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                        hold on
+                    end
                 end
                 
-                set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
@@ -2240,11 +2238,11 @@ elseif LIMO.Level == 2
                 grid on; box on; axis tight
                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                 h = axis;  hold on;
-                if LIMO.analysis_flag == 1
+                if strcmp(LIMO.Analysis, 'Time');
                     plot(timevect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Time in ms','FontSize',14)
                     ylabel('Amplitude (A.U.)','FontSize',14)
-                elseif LIMO.analysis_flag == 2
+                else
                     plot(freqvect,sig.*h(3),'r.','MarkerSize',20)
                     xlabel('Frequency in Hz','FontSize',14)
                     ylabel('Spectral Power (A.U.)','FontSize',14)
@@ -2356,6 +2354,8 @@ elseif LIMO.Level == 2
                             plot(freqvect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
                         end
                     end
+
+                    % there is an error in the following 2 formulas I cannot fix -- @disbeat
                     c = avg(gp,:,:) + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
                     b = avg(gp,:,:) - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
                     if strcmp(LIMO.Analysis,'Time')
