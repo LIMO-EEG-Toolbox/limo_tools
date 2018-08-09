@@ -23,17 +23,28 @@ if nargin == 4
 end
 
 %% get some informations for the plots
-v = max(toplot(:)); [e,f]=find(toplot==v);
-if length(e)>1 % happen if we have multiple times the exact same max values
-    e = e(1); f = f(1); % then we take the 1st (usually an artefact but allows to see it)
+
+v = max(toplot(:));      % from the 2D data to plot, find max
+[e,f]=find(toplot==v);   % which channel and time/frequency frame
+if length(e)>1           % if we have multiple times the exact same max values
+    e = e(1); f = f(1);  % then take the 1st (usually an artefact but allows to see it)
 end
 
+%% what do we plot? 
+
+scale = toplot.*mask;  % the data masked by the mask (tpically of significance)
+scale(scale==0)=NaN;   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             ERP            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmp(LIMO.Analysis,'Time')
-    try timevect = LIMO.data.timevect; catch timevect = []; end
+    try timevect = LIMO.data.timevect; catch timevect = []; end       % precomputed time info
     if size(timevect,2) == 1; timevect = timevect'; end
     if size(timevect,2) ~= size(toplot,2)
-        timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+        timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2)); 
     end
+    
     ratio =  (timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
     if LIMO.data.start < 0
         frame_zeros = find(timevect == 0);
@@ -43,8 +54,10 @@ if strcmp(LIMO.Analysis,'Time')
     else
         frame_zeros = 1;
     end
-    scale = toplot.*mask; scale(scale==0)=NaN;
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%        Spectrum            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmp(LIMO.Analysis,'Frequency')
     freqvect = LIMO.data.freqlist;
     if size(freqvect,2) == 1; freqvect = freqvect'; end
@@ -53,13 +66,14 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     end
     frame_zeros = 1;
     ratio =  (freqvect(end)-freqvect(1)) / length(freqvect);
-    scale = toplot.*mask; scale(scale==0)=NaN;
 end
 
+
 %% make the main figure
+% ----------------------------------------------------------------------------
 figure; set(gcf,'Color','w','InvertHardCopy','off');
 
-% ERP plot at best electrode
+% course plot at best electrode
 ax(3) = subplot(3,3,9);
 if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
     LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
@@ -98,15 +112,15 @@ else
     elseif strcmp(LIMO.Analysis,'Frequency')
         if isfield(LIMO,'Type')
             if strcmp(LIMO.Type,'Components')
-                mytitle2 = sprintf('power spectra @ \n component %g', e);
+                mytitle2 = sprintf('power spectrum @ \n component %g', e);
             elseif strcmp(LIMO.Type,'Channels')
-                mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
+                mytitle2 = sprintf('power spectrum @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
             end
         else
             try
-                mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
+                mytitle2 = sprintf('power spectrum @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
             catch
-                mytitle2 = sprintf('power spectra @ y=%g', e);
+                mytitle2 = sprintf('power spectrum @ y=%g', e);
             end
         end
         plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
@@ -115,6 +129,7 @@ end
 title(mytitle2,'FontSize',12)
 
 % topoplot at max time
+% ---------------------
 if size(toplot,1) ~= 1
     if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
@@ -160,6 +175,7 @@ if size(toplot,1) ~= 1
 end
 
 % images toplot
+% -------------------------------
 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
 if strcmp(LIMO.Analysis,'Time')
     imagesc(timevect,1:size(toplot,1),scale);
@@ -172,7 +188,7 @@ try
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
-cc=color_images_(scale,LIMO);
+cc = color_images_(scale,LIMO);
 
 % ------------------------
 % update with mouse clicks
@@ -186,22 +202,28 @@ if dynamic == 1
             catch
                 update =1; break
             end
+            
             if button > 1
-                update = 1;
+                update = 1; % right click to come out of the dynamic figure
             end
+            
             clickedAx = gca;
             if clickedAx ~=ax(1)
                 disp('right click to exit')
             else
+                % topoplot at new time or freq
                 frame = frame_zeros + round(x / ratio);
-                % ERP plot at best electrode and topoplot
-                % at max time or freq
+                if frame<=0; frame = 1; end
+                if frame>=size(toplot,2); frame=size(toplot,2); end
+                
+                % course plot at best electrode and 
                 y = round(y);
-                if size(toplot,2) > 1 && y>size(toplot,1)
+                if size(toplot,1)> 1 && y>size(toplot,1)
                     y = size(toplot,1);
-                elseif size(toplot,2) > 1 && y<1
+                elseif size(toplot,1)> 1 && y<1
                     y = 1;
                 end
+            
                 
                 if strcmp(LIMO.Analysis,'Time') 
                     
@@ -293,27 +315,31 @@ if dynamic == 1
                 end
                 
             end
+            
             colormap(cc); p_values = evalin('base','p_values');
-            fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame))
+            if ~isnan(p_values) 
+                fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
+            end
         end
     end
 end
 end
+
 %% color map
 % -------------------------------------------------------------------------
-% -------------------------------------------------------------------------
+% just use ready made map from https://github.com/CPernet/brain_colours
+% Reference: Pernet & Madan. Data visualization for inference in
+% tomographic brain imaging. In prep.
+
 function cc = color_images_(scale,LIMO)
 
+color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
 if min(scale(:)) >= 0
-    cc=cubehelixmap('increase',64);
+    cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
 elseif max(scale(:)) <= 0
-    cc=cubehelixmap('decrease',64);
+    cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
 else
-    cc=cubehelixmap('semi_continuous',64);
-    % cc = zeros(64,3);
-    % cc(1:32,:)=flipud(cubehelixmap('decrease',32));
-    % tmp=cubehelixmap('increase',46); 
-    % cc(33:64,:) = tmp(15:46,:);
+    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
 end
 
 if sum(isnan(scale(:))) ~= 0
