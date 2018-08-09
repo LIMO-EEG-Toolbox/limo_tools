@@ -132,24 +132,24 @@ switch type
             C = [eye(p-1) ones(p-1,1).*-1];  % contrast matrix
         end
         
-        df           = p-1;                % number of levels -1
-        g            = 2*floor(percent*n); % number of items to trim
-        dfe          = (g*p) - n;                
+        df           = p; 
+        h            = n-2*floor(percent*n); % number of items to trim
+        dfe          = h-p;                
         y            = squeeze(limo_trimmed_mean(permute(Data,[1 3 2]),percent)); % these are the means to compare
         Tsquare      = NaN(1,size(Data,1));
 
         if isempty(S)
             for time = 1:size(Data,1)
                 S = limo_robust_cov(squeeze(Data(time,:,:)),percent); % covariance to account for spericity
-                Tsquare(time)  = n*(C*y(time,:)')'*inv(C*S*C')*(C*y(time,:)');   % Hotelling Tsquare
+                Tsquare(time)  = h*(C*y(time,:)')'*inv(C*S*C')*(C*y(time,:)');   % Hotelling Tsquare
            end
         else
             for time = 1:size(Data,1)
-                Tsquare(time)  = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
+                Tsquare(time)  = h*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
             end
         end
         
-        result.F     = (dfe/((n-g/2)*p*df)) * Tsquare; 
+        result.F     = (dfe/((n-1)*df)) * Tsquare;  
         result.p     = 1 - fcdf(result.F, df, dfe);
 
         % -----------------------------------------------------------------
