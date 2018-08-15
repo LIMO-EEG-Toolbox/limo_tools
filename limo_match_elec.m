@@ -35,7 +35,7 @@ if numel(size(data)) == 4
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
-            if strcmp(c_elec(current).labels,e_elec(expected).labels)
+            if strcmpi(c_elec(current).labels,e_elec(expected).labels)
                 out(expected,:,:,:) = data(current,a_beg(1):a_end(1),a_beg(2):a_end(2),:);
             end
         end
@@ -45,7 +45,7 @@ else
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
-            if strcmp(c_elec(current).labels,e_elec(expected).labels)
+            if strcmpi(c_elec(current).labels,e_elec(expected).labels)
                 out(expected,:,:) = data(current,a_beg:a_end,:);
             end
         end
