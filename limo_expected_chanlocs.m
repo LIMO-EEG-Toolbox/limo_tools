@@ -168,13 +168,13 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     end
     
     %% retreive all chanlocs and make up a cap where we have a least 3 subjects
-    chanlocs = cell(length(Paths),1);
+    chanlocs      = cell(length(Paths),1);
     size_chanlocs = zeros(length(Paths),1);
     
     % retreive all chanlocs
     for i=1:length(Paths)
         load(Files{i})
-        chanlocs{i} = LIMO.data.chanlocs;
+        chanlocs{i}      = LIMO.data.chanlocs;
         size_chanlocs(i) = size(LIMO.data.chanlocs,2);
         clear LIMO
         for c = 1:size_chanlocs(i)
@@ -185,12 +185,12 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     % take the largest set as reference
     [nm,ref] = max(size_chanlocs);
     load(Files{ref})
-    EEGLIMO.xmin = LIMO.data.start;
-    EEGLIMO.xmax = LIMO.data.end;
-    EEGLIMO.pnts = length(LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end); % note only for LIMO v2 in msec
+    EEGLIMO.xmin     = LIMO.data.start;
+    EEGLIMO.xmax     = LIMO.data.end;
+    EEGLIMO.pnts     = length(LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end); % note only for LIMO v2 in msec
     EEGLIMO.chanlocs = LIMO.data.chanlocs;
-    EEGLIMO.srate = LIMO.data.sampling_rate;
-    EEGLIMO.trials = size(LIMO.design.X,1);
+    EEGLIMO.srate    = LIMO.data.sampling_rate;
+    EEGLIMO.trials   = size(LIMO.design.X,1);
     clear LIMO
     for c = 1:nm
         ref_chan_labs{c,1} = chan_labs{ref,c};

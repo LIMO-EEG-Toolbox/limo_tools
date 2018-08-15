@@ -110,7 +110,7 @@ elseif strcmp(choice,'Edit')
     if sts ==0
         return
     else
-        load([filepath filesep gp_level_file])
+        load([filepath gp_level_file])
     end
 end
 
@@ -129,7 +129,7 @@ topoplot([], expected_chanlocs,'style','blank','electrodes','labelpoint','chanin
 % show connectivity matrix
 figure
 imagesc(channeighbstructmat); colormap(gray);
-for i=1:length(expected_chanlocs);
+for i=1:length(expected_chanlocs)
     try
         label{i}= expected_chanlocs(i).urchan;
     catch
@@ -140,6 +140,7 @@ set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(e
 set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
 axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
 title(sprintf('Connectivity matrix between channels \n'),'FontSize',14)
+cmap = gray; cmap(1,:) = [0.25 0.25 0.25]; colormap(cmap)
 
 
 % interactive editing
@@ -161,7 +162,7 @@ if strcmp(choice,'Edit')
                 channeighbstructmat(round(y),round(x)) = 0;
                 imagesc(channeighbstructmat);  v = 'off';
             end
-            colormap(gray);
+            colormap(cmap);
             set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
             set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
             axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
