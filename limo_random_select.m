@@ -422,7 +422,7 @@ if type == 1 || type == 4
                 disp('X has been transposed'); X = X';
             end
             
-            if size(X,1) > N;
+            if size(X,1) > N
                 try
                     index = 0;
                     for i=1:size(Paths,2)
@@ -437,7 +437,7 @@ if type == 1 || type == 4
                 end
             end
             
-            if size(X,2)==1 && g.nboot < 599;
+            if size(X,2)==1 && g.nboot < 599
                 limo.design.bootstrap = 599;
                 disp('nb of bootstrap adjusted to 599 for a simple regression');
             end
@@ -582,7 +582,7 @@ elseif type == 2
                 end
                 limo.data.chanlocs = expected_chanlocs;
             end
-        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N;
+        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N
             if strcmp(g.type,'Components')
                 limo.design.name = 'two samples t-test one component';
                 limo.design.component = eval(cell2mat(electrode));
