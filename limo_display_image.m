@@ -316,9 +316,12 @@ if dynamic == 1
                 
             end
             
-            colormap(cc); p_values = evalin('base','p_values');
-            if ~isnan(p_values) 
-                fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
+            colormap(cc); 
+            try
+                p_values = evalin('base','p_values');
+                if ~isnan(p_values)
+                    fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
+                end
             end
         end
     end
