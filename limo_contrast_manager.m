@@ -94,7 +94,7 @@ guidata(hObject,handles)
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global limofile handles
 
 if isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
