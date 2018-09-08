@@ -369,31 +369,37 @@ end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
     for c=1:size(batch_contrast.mat,1)
-        index = 1;
+        index = 1; clear name
         for subject = 1:N
             if strcmp(option,'contrast only')
-                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(c) '.mat'];                
+                load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
+                for l=1:size(LIMO.contrast,2)
+                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:));
+                        con_num = l; break
+                    end
+                end
+                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
             end
             index = index + 1;
         end
         name = name';
+        
         if exist('remove_con','var')
-        cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
+            cell2csv(['con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         else
-        cell2csv(['con_files_' glm_name '.txt'], name);
+            cell2csv(['con' num2str(con_num) '_files_'  glm_name '.txt'], name);
         end
     end
 end
-
 % save the report from psom
 cd([current filesep 'limo_batch_report'])
 cell2csv(['batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
-for subject=1:N; 
+for subject=1:N
     if strfind(report{subject},'failed')
         failed = 1;
     end
