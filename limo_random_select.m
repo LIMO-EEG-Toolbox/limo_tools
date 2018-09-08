@@ -422,7 +422,7 @@ if type == 1 || type == 4
                 disp('X has been transposed'); X = X';
             end
             
-            if size(X,1) > N;
+            if size(X,1) > N
                 try
                     index = 0;
                     for i=1:size(Paths,2)
@@ -437,7 +437,7 @@ if type == 1 || type == 4
                 end
             end
             
-            if size(X,2)==1 && g.nboot < 599;
+            if size(X,2)==1 && g.nboot < 599
                 limo.design.bootstrap = 599;
                 disp('nb of bootstrap adjusted to 599 for a simple regression');
             end
@@ -893,11 +893,11 @@ elseif type == 3
     if size(parameters,2) == 1 % groups and cons
         
         subject_nb = 1;
-        for g = 1:size(Paths,2)
+        for gp = 1:size(Paths,2)
             index = 1;
-            for i=1:size(Paths{g},2) % for each subject per group
-                load(cell2mat(limo.data.data{g}(i)));
-                name = str2mat(cell2mat(Names{g}(i)));
+            for i=1:size(Paths{gp},2) % for each subject per group
+                load(cell2mat(limo.data.data{gp}(i)));
+                name = str2mat(cell2mat(Names{gp}(i)));
                 if strcmp(name,'Betas.mat')
                     tmp = eval(name(1:end-4));
                 else
@@ -943,7 +943,7 @@ elseif type == 3
                                 index = index +1;
                             end
                         else
-                            if size(limo.design.electrode,2) == 1;
+                            if size(limo.design.electrode,2) == 1
                                 tmp_data(1,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                                 index = index + 1;
                             else
@@ -972,7 +972,7 @@ elseif type == 3
                 tmp_data(1,1:size(tmp_data2,1),1,1:size(tmp_data2,2)) = tmp_data2; clear tmp_data2
             end
             
-            data{g} = tmp_data;
+            data{gp} = tmp_data;
             clear tmp tmp_data
         end
         
