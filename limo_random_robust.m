@@ -588,14 +588,14 @@ switch type
             boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
             if exist(['H0', filesep, boot_name, '.mat'], 'file')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
-                if strcmp(answer,'Yes');
+                if strcmp(answer,'Yes')
                     bootex = 1;
                 else
                     bootex = 0;
                 end
             end
             
-            if bootex == 1;
+            if bootex == 1
                 mkdir H0
                 % create a boot one_sample file to store data under H0
                 H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, nboot); % stores T and p values for each boot
