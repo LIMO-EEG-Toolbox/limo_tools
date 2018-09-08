@@ -803,7 +803,11 @@ elseif type == 3
         
         if isempty(Names{2})
             return
+        else
+            newparameters = check_files(Names{2},1);
+            parameters = str2num([num2str(parameters) num2str(newparameters)]);
         end
+        
         limo.data.data_dir{2} = Paths{2};
         N = N + size(Names{2},2);
         if size(Names{1},2) ~= size(Names{2},2)
@@ -1119,7 +1123,7 @@ elseif type == 3
     
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
-    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
+    tmpname = limo_random_robust(type,squeeze(tmp_data1),squeeze(tmp_data2),parameters,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
     
     % -----------------------------------
@@ -1797,7 +1801,7 @@ if gp == 1
         if strcmp(Names{i},'Betas.mat')
             is_beta(i) = 1;
         elseif strcmp(Names{i}(1:3),'con')
-            is_con(i) = 1;
+            is_con(i) = 1; con_val(i) = str2num(Names{i}(5:end-4));
         end
     end
     
@@ -1811,7 +1815,11 @@ if gp == 1
             return
         end
     elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
-        parameters = 1;
+               if length(unique(con_val)) == 1
+            parameters = unique(con_val);
+        else
+            parameters = 1;
+        end
     end
     
 elseif gp > 1
