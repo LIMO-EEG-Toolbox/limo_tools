@@ -1818,7 +1818,7 @@ if gp == 1
         if length(unique(con_val)) == 1
             parameters = unique(con_val);
         else
-            parameters = 'X';
+            parameters = 1;
         end
     end
     
