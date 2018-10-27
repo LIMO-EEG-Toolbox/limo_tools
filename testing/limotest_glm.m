@@ -173,27 +173,31 @@ else strcmpi(option,'IRLS')
     
     %% simply check the data strcuture is the same
     % Simple Regression
-    Y = randn(100,1);
+    Y = randn(100,5);
     X = [randn(100,1) ones(100,1)];
     modelo = limo_glm(Y,X,0,0,1,'OLS','Time',0,1);
     modeli = limo_glm(Y,X,0,0,1,'IRLS','Time',0,1);
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
     % Multiple Regression
-    Y = randn(100,1);
+    Y = randn(100,5);
     X = [randn(100,3) ones(100,1)];
     modelo = limo_glm(Y,X,0,0,3,'OLS','Time',0,5);
     modeli = limo_glm(Y,X,0,0,3,'IRLS','Time',0,1);
 
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
@@ -205,17 +209,19 @@ else strcmpi(option,'IRLS')
             end
         end
     end
-    
+
     % One-Way ANOVA
-    Y = randn(90,1);
+    Y = randn(90,5);
     X = [kron(eye(3),ones(30,1)) ones(90,1)];
     modelo = limo_glm(Y,X,1,0,0,'OLS','Time',0,1);
     modeli = limo_glm(Y,X,1,0,0,'IRLS','Time',0,1);
    
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
@@ -229,15 +235,17 @@ else strcmpi(option,'IRLS')
     end
     
     % One-Way ANCOVA
-    Y = randn(90,1);
+    Y = randn(90,5);
     X = [kron(eye(3),ones(30,1)) randn(90,2) ones(90,1)];
     modelo = limo_glm(Y,X,3,0,2,'OLS','Time',0,1);
     modeli = limo_glm(Y,X,3,0,2,'IRLS','Time',0,1);
     
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
@@ -260,7 +268,7 @@ else strcmpi(option,'IRLS')
     end
     
     % N-ways ANOVA without interactions
-    Y = randn(240,1);
+    Y = randn(240,5);
     X = [kron(eye(3),ones(80,1)) repmat(kron(eye(2),ones(40,1)),3,1) ...
         repmat(kron(eye(2),ones(20,1)),6,1) ones(240,1)];
     modelo = limo_glm(Y,X,[3 2 2],0,0,'OLS','Time',0,1);
@@ -268,8 +276,10 @@ else strcmpi(option,'IRLS')
 
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
@@ -283,7 +293,7 @@ else strcmpi(option,'IRLS')
     end
     
     % N-ways ANCOVA without interactions
-    Y = randn(100,1);
+    Y = randn(100,5);
     X = [kron(eye(2),ones(50,1)) repmat(kron(eye(2),ones(25,1)),2,1) ...
         randn(100,2) ones(100,1)];
     modelo = limo_glm(Y,X,[2 2],0,2,'OLS','Time',0,1);
@@ -291,8 +301,10 @@ else strcmpi(option,'IRLS')
     
     fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
@@ -315,7 +327,7 @@ else strcmpi(option,'IRLS')
     end
     
     % N-ways ANOVA with interactions (full factorial)
-    Y = randn(360,1);
+    Y = randn(360,5);
     tmpX = [kron(eye(3),ones(120,1)) repmat(kron(eye(2),ones(60,1)),3,1) ...
         repmat(kron(eye(2),ones(30,1)),6,1)];
     [X,interactions] = limo_make_interactions(tmpX, [3 2 2]);
@@ -323,10 +335,12 @@ else strcmpi(option,'IRLS')
     modelo = limo_glm(Y,X,[3 2 2],interactions,0,'OLS','Time',0,1);
     modeli = limo_glm(Y,X,[3 2 2],interactions,0,'IRLS','Time',0,1);
  
-     fields = fieldnames(modelo);
+    fields = fieldnames(modelo);
     for f=1:size(fields,1)
-        if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
-            error('different field size model.%s between models OLS vs IRLS',fields{f})
+        if ~strcmp(fields{f},'W')
+            if any(size(getfield(modelo,fields{f})) ~= size(getfield(modeli,fields{f})))
+                error('different field size model.%s between models OLS vs IRLS',fields{f})
+            end
         end
     end
     
