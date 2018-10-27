@@ -517,7 +517,7 @@ switch varargin{1}
                 if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
                     W = ones(size(Yr,1),size(Yr,3));
                 elseif strcmp(LIMO.design.method,'IRLS')
-                    W = zeros(size(Yr));
+                    W = ones(size(Yr));
                 end
 
                 % ------------ run limo_glm per electrodes ---------------------------
