@@ -66,15 +66,16 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
 
-opt.mode = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
-opt.max_queued = Inf; % with a maximum of possible sessions
+opt.mode                = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
+opt.max_queued          = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
-opt.flag_pause = false; % don't bother asking to start jobs
-opt.flag_debug = true; % report a bit more of issues
+opt.flag_pause          = false; % don't bother asking to start jobs
+opt.flag_debug          = true; % report a bit more of issues
 psom_gb_vars
 
 % Initializing Outputs
-LIMO_files = []; procstatus = [];
+LIMO_files = [];
+procstatus = [];
 
 %% what to do
 
@@ -167,13 +168,20 @@ if nargin == 4
     if isempty(STUDY.filepath)
         STUDY.filepath =pwd;
     end
-    cd(STUDY.filepath); current =pwd;
+    cd(STUDY.filepath); % go to study
+    if isempty(findstr(STUDY.filepath,'derivatives'))
+        if ~exist([STUDY.filepath filesep 'derivatives'],'dir')
+            mkdir([STUDY.filepath filesep 'derivatives']);
+        end
+        cd('derivatives'); % if study is not in 'derivatives' go to it
+    end
+    current = pwd; 
     if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
     if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
-    study_root = [STUDY.filepath filesep ['LIMO_' STUDY.filename(1:end-6)]];
+    study_root = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     LIMO_files.LIMO = study_root;
 else
-    current =pwd;
+    current = pwd;
     mkdir('limo_batch_report')
 end
 
@@ -224,11 +232,21 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         
         if nargin == 4
-            if exist([study_root filesep cell2mat(STUDY.names(subject))],'dir') ~= 7, mkdir([study_root filesep cell2mat(STUDY.names(subject))]); end
-            root = [study_root filesep cell2mat(STUDY.names(subject))];
-            glm_name = ['GLM' num2str(STUDY.design_index) model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
+            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
+                root = [study_root filesep 'sub-' STUDY.datasetinfo(subject).subject];
+            else
+                root = [study_root filesep STUDY.datasetinfo(subject).subject];
+            end
+            
+            if exist(root,'dir') ~= 7; mkdir(root); end
+            design_name = STUDY.design.name; 
+            design_name(isspace(design_name)) = [];
+            if findstr(design_name,'STUDY.')
+                design_name = design_name(7:end);
+            end
+            glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
-            pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
+            % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
