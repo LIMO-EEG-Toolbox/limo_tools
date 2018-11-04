@@ -338,11 +338,11 @@ function cc = color_images_(scale,LIMO)
 
 color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
 if min(scale(:)) >= 0
-    cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+    cc = load([color_path 'NIH_fire.mat']); cc = cc.NIH_fire;
 elseif max(scale(:)) <= 0
-    cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
+    cc = load([color_path 'NIH_ice.mat']); cc = cc.NIH_ice;
 else
-    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+    cc = load([color_path 'diverging_bwr.mat']); cc = cc.diverging_bwr;
 end
 
 if sum(isnan(scale(:))) ~= 0
