@@ -849,21 +849,23 @@ if LIMO.Level == 1
                 elseif strcmp(LIMO.Analysis,'Time') && isfield(LIMO.cache,'ERPplot') || ...
                         strcmp(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'ERPplot')
                     
-                    if mean([LIMO.cache.ERPplot.electrode == electrode ...
-                            LIMO.cache.ERPplot.regressor == regressor]) == 1  ...
-                            && strcmp('LIMO.cache.ERPplot.extra',extra)
-                        
-                        if sum(regressor <= categorical) == length(regressor)
-                            average = LIMO.cache.ERPplot.average;
-                            ci = LIMO.cache.ERPplot.ci;
-                            mytitle = LIMO.cache.ERPplot.title;
-                            disp('using cached data');
-                            data_cached = 1;
-                        else
-                            continuous = LIMO.cache.ERPplot.continuous;
-                            mytitle = LIMO.cache.ERPplot.title;
-                            disp('using cached data');
-                            data_cached = 1;
+                    if length(LIMO.cache.ERPplot.regressor) == length(electrode)
+                        if mean([LIMO.cache.ERPplot.electrode == electrode ...
+                                LIMO.cache.ERPplot.regressor == regressor]) == 1  ...
+                                && strcmp('LIMO.cache.ERPplot.extra',extra)
+                            
+                            if sum(regressor <= categorical) == length(regressor)
+                                average = LIMO.cache.ERPplot.average;
+                                ci = LIMO.cache.ERPplot.ci;
+                                mytitle = LIMO.cache.ERPplot.title;
+                                disp('using cached data');
+                                data_cached = 1;
+                            else
+                                continuous = LIMO.cache.ERPplot.continuous;
+                                mytitle = LIMO.cache.ERPplot.title;
+                                disp('using cached data');
+                                data_cached = 1;
+                            end
                         end
                     end
                 end
