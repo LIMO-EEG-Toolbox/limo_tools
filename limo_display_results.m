@@ -267,134 +267,235 @@ if LIMO.Level == 1
                 
                 % mutivariate results from 1st level analysis
                 % ------------------------------------------
-                
-                if strncmp(FileName,'R2',2)
-                    
-                    cd(LIMO.dir); load R2_EV.mat; EV = R2_EV(1:5,:); % no point plotting 0, just pick 5 1st Eigen values
-                    test = sum(sum(R2_EV(1:5,:)>1,2)>1); % check if we have more than 1 EV>1
-                    if test ==1; choice = 'Roy'; else choice = 'Pillai'; end
-                    clear R2_EV;
-                    
-                    load R2.mat;
-                    F_values(:,1) = squeeze(R2(:,2));
-                    F_values(:,2) = squeeze(R2(:,4));
-                    [M, mask, mytitle] = limo_statm_values(Type,FileName,p,MCC,LIMO,choice);
-                    if isempty(mask)
-                        return
-                    elseif sum(mask(:)) == 0
-                        warndlg('  no values under threshold  ','no significant effect','modal');
-                        toplot = []; return
-                    else
-                        toplot = squeeze(R2(:,1)); % plot R2 values instead of F
-                        assignin('base','F_values',F_values)
-                        assignin('base','p_values',M)
-                        assignin('base','mask',mask)
-                        clear R2
-                    end
-                    
-                elseif strncmp(FileName,'Condition_effect',16)
-                    
-                    cd(LIMO.dir);
-                    if strcmp(FileName(end-6:end),'_EV.mat'); FileName = [FileName(1:end-7) '.mat']; end
-                    name = sprintf('Condition_effect_%g_EV',eval(FileName(18:end-4))); load(name);
-                    EV = Condition_effect_EV(1:5,:); % no point plotting 0, just pick 5 1st Eigen values
-                    test =  sum(sum(EV>1,2)>1); % check if we have more than 1 EV>1
-                    if test <=1; choice = 'Roy'; else choice = 'Pillai'; end
-                    clear Condition_effect_EV;
-                    
-                    load(FileName);
-                    F_values(:,1) = squeeze(Condition_effect(:,1));
-                    F_values(:,2) = squeeze(Condition_effect(:,3));
-                    [M, mask, mytitle] = limo_statm_values(Type,FileName,p,MCC,LIMO,choice);
-                    if isempty(mask)
-                        return
-                    elseif sum(mask(:)) == 0
-                        warndlg('  no values under threshold  ','no significant effect','modal');
-                        toplot = []; return
-                    else
-                        if strcmp(choice,'Roy')
-                            toplot = F_values(:,1);
+                if strncmp(FileName,'R2',2) || strncmp(FileName,'Condition_effect',16) || strncmp(FileName,'Covariate_effect',16)   % MANOVA PLOTTING 
+                    if strncmp(FileName,'R2',2)
+
+                        cd(LIMO.dir); load R2_EV.mat; EV = R2_EV(1:size(R2_EV,1),:); % no point plotting 0, just pick 5 1st Eigen values
+                        load('R2_EV_var.mat');
+                        test =  sum(R2_EV_var(1,:) > 95) / size(R2_EV_var,2); % If more than 50% of the time-frames have a 
+                        %first eigenvalue with a proportion higher than 90%, the results of Roy's test are displayed,
+                        if test > .50; choice = 'Roy'; else choice = 'Pillai'; end
+                        
+                        
+                        if test ==1; choice = 'Roy'; else choice = 'Pillai'; end
+                        clear R2_EV;
+
+                        load R2.mat;
+                        F_values(:,1) = squeeze(R2(:,2));
+                        F_values(:,2) = squeeze(R2(:,4));
+                        [M, mask, mytitle] = limo_mstat_values(Type,FileName,p,MCC,LIMO,choice);
+                        if isempty(mask)
+                            return
+                        elseif sum(mask(:)) == 0
+                            warndlg('  no values under threshold  ','no significant effect','modal');
+                            toplot = []; return
                         else
-                            toplot = F_values(:,2);
+                            toplot = squeeze(R2(:,1)); % plot R2 values instead of F
+                            assignin('base','F_values',F_values)
+                            assignin('base','p_values',M)
+                            assignin('base','mask',mask)
+                            clear R2
                         end
-                        assignin('base','F_values',F_values)
-                        assignin('base','p_values',M)
-                        assignin('base','mask',mask)
-                        clear R2
-                    end
-                    
-                elseif strncmp(FileName,'Covariate_effect',16)
-                    
-                    cd(LIMO.dir);
-                    if strcmp(FileName(end-6:end),'_EV.mat'); FileName = [FileName(1:end-7) '.mat']; end
-                    name = sprintf('Covariate_effect_%g_EV',eval( FileName(18:end-4))); load(name);
-                    EV = Covariate_effect_EV(1:5,:); % no point plotting 0, just pick 5 1st Eigen values
-                    test = sum(sum(Covariate_effect_EV(1:5,:)>1,2)>1); % check if we have more than 1 EV>1
-                    if test ==1; choice = 'Roy'; else choice = 'Pillai'; end
-                    clear Covariate_effect_EV;
-                    
-                    load(FileName);
-                    F_values(:,1) = squeeze(Covariate_effect(:,1));
-                    F_values(:,2) = squeeze(Covariate_effect(:,3));
-                    [M, mask, mytitle] = limo_statm_values(Type,FileName,p,MCC,LIMO,choice);
-                    if isempty(mask)
-                        return
-                    elseif sum(mask(:)) == 0
-                        warndlg('  no values under threshold  ','no significant effect','modal');
-                        toplot = []; return
-                    else
-                        if strcmp(choice,'Roy')
-                            toplot = F_values(:,1);
+
+                    elseif strncmp(FileName,'Condition_effect',16)
+
+                        cd(LIMO.dir);
+                        if strcmp(FileName(end-6:end),'_EV.mat'); FileName = [FileName(1:end-7) '.mat']; end
+                        name = sprintf('Condition_effect_%g_EV',eval(FileName(18:end-4))); load(name);
+                        EV = Condition_effect_EV(1:size(Condition_effect_EV,1),:); % no point plotting 0, just pick 5 1st Eigen values
+                        name = sprintf('Condition_effect_%g_EV_var',eval(FileName(18:end-4))); load(name);
+                        EV_var = Condition_effect_EV_var(1:size(Condition_effect_EV_var,1),:); 
+                        test =  sum(EV_var(1,:) > 95) / size(EV_var,2); % If more than 50% of the time-frames have a 
+                        %first eigenvalue with a proportion higher than 90%, the results of Roy's test are displayed,
+                        if test > .50; choice = 'Roy'; else choice = 'Pillai'; end
+                        clear Condition_effect_EV;
+
+                        load(FileName);
+                        F_values(:,1) = squeeze(Condition_effect(:,1));
+                        F_values(:,2) = squeeze(Condition_effect(:,3));
+                        [M, mask, mytitle] = limo_mstat_values(Type,FileName,p,MCC,LIMO,choice);
+                        if isempty(mask)
+                            return
+                        elseif sum(mask(:)) == 0
+                            warndlg('  no values under threshold  ','no significant effect','modal');
+                            toplot = []; return
                         else
-                            toplot = F_values(:,2);
+                            if strcmp(choice,'Roy')
+                                toplot = F_values(:,1);
+                            else
+                                toplot = F_values(:,2);
+                            end
+                            assignin('base','F_values',F_values)
+                            assignin('base','p_values',M)
+                            assignin('base','mask',mask)
+                            clear R2
                         end
-                        assignin('base','F_values',F_values)
-                        assignin('base','p_values',M)
-                        assignin('base','mask',mask)
-                        clear R2
+
+                    elseif strncmp(FileName,'Covariate_effect',16)
+
+                        cd(LIMO.dir);
+                        if strcmp(FileName(end-6:end),'_EV.mat'); FileName = [FileName(1:end-7) '.mat']; end
+                        name = sprintf('Covariate_effect_%g_EV',eval( FileName(18:end-4))); load(name);
+                        EV = Covariate_effect_EV(1:5,:); % no point plotting 0, just pick 5 1st Eigen values
+                        test = sum(sum(Covariate_effect_EV(1:5,:)>1,2)>1); % check if we have more than 1 EV>1
+                        if test ==1; choice = 'Roy'; else choice = 'Pillai'; end
+                        clear Covariate_effect_EV;
+
+                        load(FileName);
+                        F_values(:,1) = squeeze(Covariate_effect(:,1));
+                        F_values(:,2) = squeeze(Covariate_effect(:,3));
+                        [M, mask, mytitle] = limo_mstat_values(Type,FileName,p,MCC,LIMO,choice);
+                        if isempty(mask)
+                            return
+                        elseif sum(mask(:)) == 0
+                            warndlg('  no values under threshold  ','no significant effect','modal');
+                            toplot = []; return
+                        else
+                            if strcmp(choice,'Roy')
+                                toplot = F_values(:,1);
+                            else
+                                toplot = F_values(:,2);
+                            end
+                            assignin('base','F_values',F_values)
+                            assignin('base','p_values',M)
+                            assignin('base','mask',mask)
+                            clear R2
+                        end
                     end
+
+
+                    figure; set(gcf,'Color','w');
+                    % imagesc eigen values
+                    h = subplot(3,3,[4 5 7 8]);
+                    timevect = linspace(LIMO.data.start,LIMO.data.end,size(EV,2));
+                    ratio = (LIMO.data.end*1000 - LIMO.data.start*1000) / size(EV,2);
+                    if LIMO.data.start < 0
+                        frame_zeros = round(abs(LIMO.data.start*1000) / ratio);
+                    end
+                    scale = EV; scale(scale==0)=NaN;
+                    imagesc(timevect,1:size(EV,1),scale);
+                    color_images_(scale,LIMO);  colorbar
+                    ylabel('Eigen Values','Fontsize',14)
+                    set(gca,'YTickLabel',{'1','2','3','4','5'});
+                    title('non-zero Eigen values','Fontsize',14)
+
+                    % imagesc effect values
+                    subplot(3,3,[1 2]);
+                    scale = toplot'.*mask; scale(scale==0)=NaN;
+                    imagesc(timevect,1,scale);
+                    v = max(toplot(:)); [~,f]=find(toplot==v);
+                    try
+                        caxis([min(min(scale)), max(max(scale))]);
+                    end
+                    color_images_(scale,LIMO); xlabel(' ')
+                    title(mytitle,'Fontsize',18); colorbar
+                    ylabel(' '); set(gca,'YTickLabel',{''});
+
+                    % ERP plot1 - Roy -
+                    subplot(3,3,6);
+                    plot(timevect, F_values(:,1),'LineWidth',3); grid on; axis tight
+                    mytitle2 = sprintf('F values - Roy');
+                    title(mytitle2,'FontSize',14)
+
+                    % ERP plot2 - Pillai -
+                    subplot(3,3,9);
+                    plot(timevect, F_values(:,2),'LineWidth',3); grid on; axis tight
+                    mytitle2 = sprintf('F value - Pillai');
+                    title(mytitle2,'FontSize',14)
+                end % end of MANOVA PLOTTING    
+
+                if strncmp(FileName,'Discriminant_coeff',18) || strncmp(FileName,'Discriminant_scores',19)
+                    cd(LIMO.dir);
+                    load('Discriminant_coeff');
+                    load('Discriminant_scores');
+                    load('Condition_effect_1_EV_var.mat');
+                    
+                    time = linspace(LIMO.data.start,LIMO.data.end, size(Discriminant_coeff,2));
+                    
+                    input_title = sprintf('which time-frame to plot (in ms)?: ');
+                    timepoint = inputdlg(input_title,'Plotting option');
+                    t = dsearchn(time', str2num(timepoint{1}));
+                    groupcolors = 'rgbcwmryk';
+                    groupsymbols = 'xo*+.sdv<>';
+                    [class,~] = find(LIMO.design.X(:,1:LIMO.design.nb_conditions)');
+                    k = LIMO.design.nb_conditions;
+                    
+                    if k>2
+                        figure;set(gcf,'Color','w');
+                        subplot(2,2,[1 2]); % 2D plot of two discriminant functions
+                        gscatter(squeeze(Discriminant_scores(1,t,:)), squeeze(Discriminant_scores(2,t,:)), class, groupcolors(1:k), groupsymbols(1:k));
+                        grid on; axis tight;
+                        xlabel(['Z1, var: ' num2str(round(Condition_effect_EV_var(1,t)),2) '%'],'Fontsize',14); 
+                        ylabel(['Z2, var: ' num2str(round(Condition_effect_EV_var(2,t)),2) '%'],'Fontsize',14);
+                        title(['Results of the discriminant analysis at ' num2str(time(t)) 'ms'], 'Fontsize', 18);
+                        z1 = subplot(2,2,3); % First discriminant coeff
+                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        title('Z1','Fontsize',14); colormap(z1, 'hot'); 
+                        z2 = subplot(2,2,4); % Second discriminant coeff
+                        topoplot(Discriminant_coeff(:,t,2),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        title('Z2','Fontsize',14); colormap(z2, 'hot');
+                    elseif k==2
+                        figure;set(gcf,'Color','w');
+                        subplot(2,2,[1 2]); % 1D plot of two discriminant functions
+                        data = squeeze(Discriminant_scores(1,t,:));
+                        class1 = data(class == 1);
+                        class2 = data(class == 2);
+                        h1 = histogram(class1, 'BinWidth', 0.1);
+                        hold on
+                        h2 = histogram(class2,'BinWidth',0.1);
+                        hold off
+                        legend show  
+                        grid on; axis tight;
+                        xlabel(['Z1, var: ' num2str(round(Condition_effect_EV_var(1,t)),2) '%'],'Fontsize',14); 
+                        title(['Results of the discriminant analysis at ' num2str(time(t)) 'ms'], 'Fontsize', 18);
+                        z1 = subplot(2,2,[3,4]); % First discriminant coeff
+                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        title('Z1','Fontsize',14); colormap(z1, 'hot');      
+                    end
+                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1')
+
+%                     figure;set(gcf,'Color','w');
+%                     for t=1:size(Discriminant_coeff,2)
+%                     topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','numbers','style','map');
+%                     title(['Discriminant values first discriminant at timepoint ' num2str(t) ' corresponding to ' num2str(time(t)) ' ms']);
+%                     pause(.01)
+%                     end;
                 end
                 
-                
-                figure; set(gcf,'Color','w');
-                % imagesc eigen values
-                h = subplot(3,3,[4 5 7 8]);
-                timevect = linspace(LIMO.data.start,LIMO.data.end,size(EV,2));
-                ratio = (LIMO.data.end*1000 - LIMO.data.start*1000) / size(EV,2);
-                if LIMO.data.start < 0
-                    frame_zeros = round(abs(LIMO.data.start*1000) / ratio);
+                if strncmp(FileName,'Linear_Classification',21)     
+                    load('Linear_Classification');
+                    [M, mask, mytitle] = limo_mstat_values(Type,FileName,p,MCC,LIMO,choice);
+                    timevect = linspace(LIMO.data.start,LIMO.data.end,size(Linear_Classification,1));
+                    figure;set(gcf,'Color','w');
+                    subplot(3,1,[1 2]); % lineplot                    
+                    plot(timevect,Linear_Classification(:,2),'LineWidth',3);title(mytitle, 'Fontsize', 18);
+                    ylabel('decoding accuracies', 'Fontsize', 14);grid on; axis tight; hold on;
+                    plot(timevect, Linear_Classification(:,2) + 2*Linear_Classification(:,3), 'k-','LineWidth',1); hold on; 
+                    plot(timevect, Linear_Classification(:,2) - 2*Linear_Classification(:,3), 'k-','LineWidth',1)
+                    line([0,0],[0,1], 'color', 'black')
+                    subplot(3, 1, 3); % imagesc accuracies
+                    toplot = Linear_Classification(:,2); scale = toplot'.*mask;scale(scale==0)=NaN;
+                    imagesc(timevect,1,scale);xlabel('Time in ms');
+                    color_images_(scale,LIMO); 
+                    ylabel(' '); set(gca,'YTickLabel',{''});  
                 end
-                scale = EV; scale(scale==0)=NaN;
-                imagesc(timevect,1:size(EV,1),scale);
-                color_images_(scale,LIMO);  colorbar
-                ylabel('Eigen Values','Fontsize',14)
-                set(gca,'YTickLabel',{'1','2','3','4','5'});
-                title('5 first Eigen values','Fontsize',14)
                 
-                % imagesc effect values
-                subplot(3,3,[1 2]);
-                scale = toplot'.*mask; scale(scale==0)=NaN;
-                imagesc(timevect,1,scale);
-                v = max(toplot(:)); [~,f]=find(toplot==v);
-                try
-                    caxis([min(min(scale)), max(max(scale))]);
+                if strncmp(FileName,'Quadratic_Classification',24)
+                    load('Quadratic_Classification')
+                    timevect = linspace(LIMO.data.start,LIMO.data.end,size(Quadratic_Classification,1));
+                    figure;set(gcf,'Color','w');
+                    subplot(3,1,[1 2]); % lineplot
+                    plot(timevect,Quadratic_Classification(:,2),'LineWidth',3);title('CV quadratic decoding accuracies +/- 2SD', 'Fontsize', 18);
+                    ylabel('decoding accuracies', 'Fontsize', 14);grid on; axis tight; hold on 
+                    plot(timevect, Quadratic_Classification(:,2) + 2*Quadratic_Classification(:,3), 'k-','LineWidth',1); hold on; 
+                    plot(timevect, Quadratic_Classification(:,2) - 2*Quadratic_Classification(:,3), 'k-','LineWidth',1)
+                    line([0,0],[0,1], 'color', 'black')
+                    subplot(3,1, 3); % imagesc plot training accuracies
+                    scale = Quadratic_Classification(:,2)'; scale(scale==0)=NaN;
+                    imagesc(timevect,1,scale);xlabel('Time in ms');
+                    color_images_(scale,LIMO); 
+                    ylabel(' '); set(gca,'YTickLabel',{''});                    
                 end
-                color_images_(scale,LIMO); xlabel(' ')
-                title(mytitle,'Fontsize',18); colorbar
-                ylabel(' '); set(gca,'YTickLabel',{''});
-                
-                % ERP plot1 - Roy -
-                subplot(3,3,6);
-                plot(timevect, F_values(:,1),'LineWidth',3); grid on; axis tight
-                mytitle2 = sprintf('F values - Roy');
-                title(mytitle2,'FontSize',14)
-                
-                % ERP plot2 - Pillai -
-                subplot(3,3,9);
-                plot(timevect, F_values(:,2),'LineWidth',3); grid on; axis tight
-                mytitle2 = sprintf('F value - Pillai');
-                title(mytitle2,'FontSize',14)
-                
             end
             
             
@@ -720,6 +821,8 @@ if LIMO.Level == 1
             
             % down to business
             % ----------------------
+            
+            
             data_cached = 0;
             if isfield(LIMO,'cache')
                 if strcmp(LIMO.Analysis,'Time-Frequency') && isfield(LIMO.cache,'ERPplot')
@@ -1091,7 +1194,6 @@ elseif LIMO.Level == 2
     if ~strncmp(FileName,'LIMO',4) % in all cases but course plot
         
         % if previously plotted, recover from the cache
-        % ---------------------------------------------
         data_cached = 0;
         if isfield(LIMO,'cache') 
             try
@@ -1225,7 +1327,7 @@ elseif LIMO.Level == 2
     if Type == 1 || Type == 2
         
         % cache the results for next time
-        % ------------------------------
+        % ------------------------------         
         if data_cached == 0
             LIMO.cache.fig.name       = FileName;
             LIMO.cache.fig.MCC        = MCC;
