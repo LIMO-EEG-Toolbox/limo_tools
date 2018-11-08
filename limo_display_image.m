@@ -334,13 +334,19 @@ end
 function cc = color_images_(scale,LIMO)
 
 color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
+% cc = load([color_path 'diverging_bgy.mat']); cc = cc.diverging_bgy;
+cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
 if min(scale(:)) >= 0
-    cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+    cc = cc(floor(length(cc)/2):end,:);
+    %cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
 elseif max(scale(:)) <= 0
-    cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-else
-    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+    cc = flipud(cc(1:ceil(length(cc)/2),:));
+    % cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
 end
+
+% else
+%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+% end
 
 if sum(isnan(scale(:))) ~= 0
     cc(1,:)=[.9 .9 .9]; % set NaNs to gray
