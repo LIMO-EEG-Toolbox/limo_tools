@@ -184,7 +184,15 @@ elseif strcmp(LIMO.Analysis,'Frequency')
 end
 
 try
-    caxis([min(min(scale)), max(max(scale))]);
+    maxval = max(abs(max(scale(:))),abs(min(scale(:))));
+    if max(scale(:)) < 0
+        caxis([-maxval 0])
+    elseif min(scale(:)) > 0 
+        caxis([0 maxval])
+    else
+        caxis([-maxval maxval])
+    end
+    % caxis([min(min(scale)), max(max(scale))]);
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
@@ -319,7 +327,7 @@ if dynamic == 1
             colormap(cc); 
             try
                 p_values = evalin('base','p_values');
-                if ~isnan(p_values)
+                if ~isnan(p_values(round(y),frame))
                     fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
                 end
             end
@@ -336,14 +344,36 @@ end
 
 function cc = color_images_(scale,LIMO)
 
-color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
 if min(scale(:)) >= 0
-    cc = load([color_path 'NIH_fire.mat']); cc = cc.NIH_fire;
-elseif max(scale(:)) <= 0
-    cc = load([color_path 'NIH_ice.mat']); cc = cc.NIH_ice;
+    cc=cubehelixmap('increase',64);
+elseif min(scale(:)) <= 0
+    cc=cubehelixmap('decrease',64);   
 else
-    cc = load([color_path 'diverging_bwr.mat']); cc = cc.diverging_bwr;
+    cc = zeros(64,3);
+    tmp = scale.*(scale>0);
+    cc(33:64,:)=cubehelixmap('increase',32);
+    tmp = scale.*(scale<0);  
+    cc(1:32,:)=cubehelixmap('decrease',32);
 end
+
+% color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
+% cc = load([color_path 'diverging_bgy.mat']); cc = cc.diverging_bgy;
+% % cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+% if min(scale(:)) >= 0
+%     cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+%     cc = cc(floor(length(cc)/2):end,:);
+%     %cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+% elseif max(scale(:)) <= 0
+%     cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
+% else
+%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+%     cc = flipud(cc(1:ceil(length(cc)/2),:));
+%     % cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
+% end
+
+% else
+%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+% end
 
 if sum(isnan(scale(:))) ~= 0
     cc(1,:)=[.9 .9 .9]; % set NaNs to gray
