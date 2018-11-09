@@ -148,6 +148,7 @@ if type == 1 || type == 4
     else
         parameters = check_files(Names,1,g.parameters{1});
     end
+    
     if isempty(parameters)
         errordlg('file selection failed, only Beta and Con files are supported','Selection error'); return
     end
@@ -336,19 +337,14 @@ if type == 1 || type == 4
         clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
         if parameters == 0; parameters = [1:size(data,3)]; end
         
-        for i=parameters
+        for i=1:length(parameters)
             cd(LIMO.dir);
-            if length(parameters) > 1 && i == parameters(1)
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
-                mkdir(dir_name); cd(dir_name);
-            elseif length(parameters) > 1 && i ~= parameters(1)
-                cd ..
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
-                mkdir(dir_name); cd(dir_name);
+            if length(parameters) > 1 && i == parameters(i)
+                foldername = sprintf('parameter_%g',parameters(i));
+                if ~isempty(g.folderprefix)
+                    g.folderprefix = [g.folderprefix foldername]; 
+                end
+                mkdir(foldername); cd(foldername);
             end
             LIMO.dir = pwd;
             
@@ -377,7 +373,7 @@ if type == 1 || type == 4
             
             LIMO.design.method = 'Trimmed means'; save LIMO LIMO
             Yr = tmp_data; save Yr Yr, clear Yr % just to be consistent with name
-            tmpname = limo_random_robust(type,tmp_data,i,g.nboot,g.tfce);
+            tmpname = limo_random_robust(type,tmp_data,parameters(i),g.nboot,g.tfce);
             if nargout ~= 0, filepath{i} = tmpname; end
         end
         
