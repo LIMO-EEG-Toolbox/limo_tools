@@ -78,19 +78,6 @@ varargout{1} = 'contrast done';
 
 %% Callbacks
 
-% --- Display selected contrasts
-% ---------------------------------------------------------------
-function contrast_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
-
-try 
-    imagesc(handles.C);
-catch
-    imagesc([]);
-end
-handles.output = hObject;
-guidata(hObject,handles)
-
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
@@ -109,16 +96,10 @@ if FilterIndex ==0
     varargout{1} = 'contrast cancelled';
 else
     cd(PathName); load('LIMO.mat');
-    if LIMO.Level == 2 && strcmp(LIMO.design.name,'one sample t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'one sample t-test one electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'paired t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'paired t-test one electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'two sample t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'two sample t-test one electrodes')
-        warndlg('no contrast can be performed for a t-test'); guidata(hObject, handles);
-    end
-    
-    if LIMO.Level == 2 && strcmp(LIMO.design.name(1:11),'Mixed ANOVA') || ...
+    if LIMO.Level == 2 && ~isempty(strfind(LIMO.design.name,'t-test'))
+        warndlg('no contrast can be performed for a t-test','modal'); 
+        Xdisplay = []; 
+    elseif LIMO.Level == 2 && strcmp(LIMO.design.name(1:11),'Mixed ANOVA') || ...
             LIMO.Level == 2 && strcmp(LIMO.design.name(1:8),'Repeated') % always F
         if LIMO.design.nb_conditions == 1 % only one gp
             Xdisplay = LIMO.design.X;
@@ -126,7 +107,9 @@ else
             Xdisplay = LIMO.design.X(1:prod(LIMO.design.repeated_measure),1:prod(LIMO.design.repeated_measure));
         end
     else
-        if sum(LIMO.design.nb_conditions) ~=0 && LIMO.design.nb_continuous == 0
+        if ~isfield(LIMO.design,'nb_conditions') && ~isfield(LIMO.design,'nb_continuous')
+            Xdisplay = [];
+        elseif sum(LIMO.design.nb_conditions) ~=0 && LIMO.design.nb_continuous == 0
             Xdisplay = LIMO.design.X;
         elseif sum(LIMO.design.nb_conditions) == 0
             Xdisplay = [zscore(LIMO.design.X(:,1:end-1)) LIMO.design.X(:,end)];
@@ -139,14 +122,15 @@ else
         end
     end
     
-    imagesc(Xdisplay); colormap('gray');
-    title('design matrix'); drawnow
-    handles.output = hObject;
-    guidata(hObject,handles)
+    if isempty(Xdisplay)
+        uiresume; guidata(hObject, handles);
+    else
+        imagesc(Xdisplay); colormap('gray');
+        title('design matrix'); drawnow
+        handles.output = hObject;
+        guidata(hObject,handles)
+    end
 end
-
-
-
 
 % --- Evaluate New Contrast
 % ---------------------------------------------------------------
@@ -203,6 +187,19 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Display selected contrasts
+% ---------------------------------------------------------------
+function contrast_CreateFcn(hObject, eventdata, handles)
+global LIMO handles
+
+try 
+    imagesc(handles.C);
+catch
+    imagesc([]);
+end
+handles.output = hObject;
+guidata(hObject,handles)
+
 
 % --- Executes on button press in F_contrast.
 % ---------------------------------------------------------------
@@ -227,26 +224,19 @@ end
 % --- Previous Contrast
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
-global LIMO handles limofile
+global LIMO handles 
 
-if exist('limofile','var') == 1 && ~isempty(limofile)
-    handles.limofile = limofile;
+if isfield(LIMO,'contrast')
+    handles.C = LIMO.contrast;
+    previous_con = 1;
 else
-    handles.limofile = [];
+    previous_con = 0;
 end
-clear global limofile
-
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
-previous_con = 0;
-try
-    previous_con = size(LIMO.contrast,2);
-catch
-    previous_con = 0;
-end
- 
+
 if previous_con ~=0
     for i=1:previous_con
         if LIMO.contrast{i}.V == 'T'
@@ -273,7 +263,6 @@ end
 
 handles.output = hObject;
 guidata(hObject,handles)
-
 
   
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
