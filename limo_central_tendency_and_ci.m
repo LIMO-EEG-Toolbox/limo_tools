@@ -218,20 +218,20 @@ elseif nargin == 1
                 return
             end
         elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
-            parameters = cell2mat(inputdlg('which contrasts to test e.g 1','parameters option'));
-            if isempty(parameters)
-                return
-            else
-                test = strfind(Names,parameters);
-                if isempty(cell2mat(test))
-                    errordlg2('contrast not listed')
-                    return
-                else
-                    index = cellfun('isempty',test) == 0;
-                    Paths = Paths(index);
-                    Names = Names(index);
-                end
-            end
+            parameters = 1; % cell2mat(inputdlg('which contrasts to test e.g 1','parameters option'));
+%             if isempty(parameters)
+%                 return
+%             else
+%                 test = strfind(Names,parameters);
+%                 if isempty(cell2mat(test))
+%                     errordlg2('contrast not listed')
+%                     return
+%                 else
+%                     index = cellfun('isempty',test) == 0;
+%                     Paths = Paths(index);
+%                     Names = Names(index);
+%                 end
+%             end
         else
             errordlg('file selection failed, only Betas.mat files are supported'); return
         end
