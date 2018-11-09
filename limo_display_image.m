@@ -346,14 +346,11 @@ function cc = color_images_(scale,LIMO)
 
 if min(scale(:)) >= 0
     cc=cubehelixmap('increase',64);
-elseif min(scale(:)) <= 0
+elseif max(scale(:)) <= 0
     cc=cubehelixmap('decrease',64);   
 else
-    cc = zeros(64,3);
-    tmp = scale.*(scale>0);
-    cc(33:64,:)=cubehelixmap('increase',32);
-    tmp = scale.*(scale<0);  
-    cc(1:32,:)=cubehelixmap('decrease',32);
+    color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
+    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
 end
 
 % color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
