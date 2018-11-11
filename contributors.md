@@ -29,17 +29,17 @@ Legend (source:
 The following individuals have contributed to the LIMO EEG project (in alphabetical order). If you contributed and
 your name is not listed, please add it.
 
-Arnaud Delorme 🐛💻⚠️🔌🎨📋📢
-Benedikt Ehinger 🐛💻
-Carl Gaspar 💻⚠️
-Cyril Pernet 💬💻📖🎨🤔📋 ✅📢
-Guillaume Rousselet 💻🎨📖
-Iege Bassez 💻🎨
-Ignacio Suay Mas 💻
-Marco Simões 🐛💻
-Matt Craddock 🐛💻
-Marianne Latinus 💻
-Nicolas Chauveau 💻⚠️
-Ramon Martinez-Cancino 🐛💻⚠️🔌🎨
-Rand Wilcox  🤔
-Tom Nichols  🤔
+Arnaud Delorme 🐛💻⚠️🔌🎨📋📢  
+Benedikt Ehinger 🐛💻  
+Carl Gaspar 💻⚠️  
+Cyril Pernet 💬💻📖🎨🤔📋 ✅📢  
+Guillaume Rousselet 💻🎨📖  
+Iege Bassez 💻🎨  
+Ignacio Suay Mas 💻  
+Marco Simões 🐛💻  
+Matt Craddock 🐛💻  
+Marianne Latinus 💻  
+Nicolas Chauveau 💻⚠️  
+Ramon Martinez-Cancino 🐛💻⚠️🔌🎨  
+Rand Wilcox  🤔  
+Tom Nichols  🤔  
