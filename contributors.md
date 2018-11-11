@@ -38,7 +38,7 @@ Iege Bassez 💻🎨
 Ignacio Suay Mas 💻  
 Marco Simões 🐛💻  
 Matt Craddock 🐛💻  
-Marianne Latinus 💻  
+Marianne Latinus 💻✅  
 Nicolas Chauveau 💻⚠️  
 Ramon Martinez-Cancino 🐛💻⚠️🔌🎨  
 Rand Wilcox  🤔  
