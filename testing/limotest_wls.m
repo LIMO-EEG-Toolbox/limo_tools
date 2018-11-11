@@ -1,41 +1,54 @@
 function limotest_wls
 
-% this is the unit test of the limo_glm function when calling limo_wls
-% given null data in, only the nominal level of error should be obtained
-% to test limo_wls, we must create time vectors since this is a
-% multivariate technique, i.e. the outlier detection will be wrong
+% this is the unit test of the limo_glm function when calling limo_glm with
+% the WLS option. Given null data in, only the nominal level of error should
+% be obtained - to test that, we must create time vectors since this is a
+% multivariate technique
 % see also limotest_glm
 
 nmc = 1000;
 
 %% Simple Regression
 
-Y = randn(100,nmc);
-X = [randn(100,1) ones(100,1)]; 
-pvalues = NaN(1,nmc);
-parfor MC=1:nmc
-model = limo_glm(Y(:,MC),X,[],[],1,'OLS','Time',0,1);
-pvalues(MC) = model.p;
-end
-pvalues(isnan(pvalues)) = [];
-FP_rate = sum(pvalues<0.05)/length(pvalues);
+Y = randn(100,20);
+X = [randn(100,1) ones(100,1)];
 
-% WLS
-% ---
-pvalues = NaN(1,nmc);
-parfor MC=1:nmc
-model = limo_glm(Y(:,MC),X,[],[],1,'WLS','Time',0,1);
-pvalues(MC) = model.p;
+wls  = NaN(1,100);
+for avg = 1:100
+    X2 = [randn(100,1) ones(100,1)];
+    pvalues = NaN(20,nmc);
+    
+    parfor MC=1:nmc
+        Y2 = randn(100,20);
+        model = limo_glm(Y2,X2,0,0,1,'WLS','Time',0,1);
+        pvalues(:,MC) = model.p;
+    end
+    pvalues = pvalues(:);
+    pvalues(isnan(pvalues)) = [];
+    wls(avg) = sum(pvalues<0.05)/length(pvalues);
 end
-pvalues(isnan(pvalues)) = [];
-FP_rate = sum(pvalues<0.05)/length(pvalues);
+wls = wls.*100;
 
-% IRLS
-% ----
-pvalues = NaN(1,nmc);
-parfor MC=1:nmc
-model = limo_glm(Y(:,MC),X,[],[],1,'IRLS','Time',0,1);
-pvalues(MC) = model.p;
+
+[meanwls,ciwls]=rst_data_plot(wls,'estimator','mean','newfig','yes');
+
+% one way ANOVA
+wls = NaN(1,100);
+X = [kron(eye(3),ones(30,1)) ones(90,1)];
+for avg = 1:100
+    pvalues = NaN(20,nmc);
+    
+    parfor MC=1:nmc
+        Y2 = randn(90,20);
+        model = limo_glm(Y2,X,1,0,0,'WLS','Time',0,20);
+        pvalues(:,MC) = model.p;
+    end
+    pvalues = pvalues(:);
+    pvalues(isnan(pvalues)) = [];
+    wls(avg) = sum(pvalues<0.05)/length(pvalues);
 end
-pvalues(isnan(pvalues)) = [];
+wls = wls.*100;
+
+[meanwls,ciwls]=rst_data_plot(wls,'estimator','mean','newfig','yes');
+
 
