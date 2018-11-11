@@ -22,7 +22,7 @@ How do you know that you joined? well, you're here and you likely used limo_eeg 
 ## Contributing without writing a line of code
 
 There is many ways you can contribute to the project without having to wite a single line of code! 
-- editing and updating the wiki [all the (/help/docs](https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/master/help/docs) should really be updated and moved over)
+- editing and updating the wiki all the [/help/docs](https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/master/help/docs) should really be updated and moved over)
 - making any tutorials, exemples available 
 
 ## Contributing through code
