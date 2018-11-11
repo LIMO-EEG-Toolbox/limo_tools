@@ -16,4 +16,4 @@ With the software we released a dataset that can now be cited and downloaded her
 
 Anyone is welcome to contribute ! check here [how you can get involved](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/contributing.md), the [code of conduct](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/code_of_conduct.md).
 
-
+Contributors are listed (here)[https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/contributors.md]
