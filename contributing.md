@@ -22,22 +22,22 @@ How do you know that you joined? well, you're here and you likely used limo_eeg 
 ## Contributing without writing a line of code
 
 There is many ways you can contribute to the project without having to wite a single line of code! 
-- editing and updating the wiki all the [/help/docs](https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/master/help/docs) should really be updated and moved over)
+- editing and updating the wiki all the [/help/docs](https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/master/help/docs) should really be updated and moved over.
 - making any tutorials, exemples available 
 
 ## Contributing through code
 
 Obviously, there is plenty of work to do :-)
 
-We are happy to have contributr fixing and improving the code (functionalization is awesome and needed btw). If you plan to do this a lot, ask to become a contributor to have access writes and you'll be able to either work on the (develop branch)[https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/develop] or if you prefer have your own branch. Alternatively you can use pull request.   
+We are happy to have contributr fixing and improving the code (functionalization is awesome and needed btw). If you plan to do this a lot, ask to become a contributor to have access writes and you'll be able to either work on the [develop branch](https://github.com/LIMO-EEG-Toolbox/limo_eeg/tree/develop) or if you prefer have your own branch. Alternatively you can use pull request.   
 
-You like limo_eeg and want to understand better various bits and wrote some code to understand basic function behaviour. It looks like you have been running a (unit test)[https://en.wikipedia.org/wiki/Unit_testing]! let us know so we can incordporate it.  
+You like limo_eeg and want to understand better various bits and wrote some code to understand basic function behaviour. It looks like you have been running a [unit test](https://en.wikipedia.org/wiki/Unit_testing)! let us know so we can incordporate it.  
 
 Plug you own linear tools! let's say you have some cool analyses that run at the subject level and now you want to do stats. LIMO EEG 2nd level analyses tools can help and easy to interface with - we can do as you want: write wrappers from your tool to LIMO EEG, incorporate your tool in the distribution directly, incorporate your tool as external, etc.
 
 ## Recognizing contributions
 
-We welcome and recognize all contributions from documentation to testing to code development. Contributors are listed here and when possible, we'd like to assicate you to future publication.
+We welcome and recognize all contributions from documentation to testing to code development. Contributors are listed [here](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/contributors.md) and when possible, we'd like to associate you to future publication.
 
 ## Thank you!
 
