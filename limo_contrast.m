@@ -64,7 +64,7 @@ elseif type == 3 || type == 4
     Yr         = varargin{1};
     LIMO       = varargin{2};
     if LIMO.Level == 1
-        error('1st level Analysis detected - limo_contrast line 434 wrong case');
+        error('1st level Analysis detected - limo_contrast line 67 wrong case');
     end
     gp_values  = LIMO.design.nb_conditions;
     index      = size(LIMO.contrast,2);
@@ -107,9 +107,9 @@ switch type
             for e = 1:length(array)
                 electrode = array(e); warning off;
                 if strcmp(LIMO.Type,'Channels')
-                    fprintf('analyzing channel %g/%g \n',e,size(array,1));
+                    fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                 else
-                    fprintf('analyzing component %g/%g \n',e,size(array,1));
+                    fprintf('applying contrast on component %g/%g \n',e,size(array,1));
                 end
                 
                 % T contrast
