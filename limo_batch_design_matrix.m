@@ -1,14 +1,14 @@
 function limo_batch_design_matrix(LIMOfile)
 
-% this function wrap aound the LIMOfile structure from the batch and
+% this function wraps around the LIMO.mat file structure from the batch and
 % calls limo_design_matrix - of special interest is the ability to
 % rearrange data per components based on the study structure clustering
-% output - this allowing group statistics at the 2nd level.
+% output - this allows easier group statistics at the 2nd level.
 %
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLIMOLAB STUDY
 % see also limo_batch
 %% -----------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2018
 
 global EEGLIMO
 load(LIMOfile);
@@ -25,6 +25,7 @@ end
 
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
+        % 1st load ICA data
         if isfield(EEGLIMO.etc.datafiles,'icaerp')
             if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.icaerp);
@@ -47,6 +48,8 @@ if strcmp(LIMO.Analysis,'Time')
             signal = eeg_getdatact(EEGLIMO,'component',[1:size(EEGLIMO.icawinv,2)]);
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
+        
+        % 2nd if cluster present, reorder
         if isfield(LIMO.data,'cluster')
             try
                 STUDY = evalin('base','STUDY');
