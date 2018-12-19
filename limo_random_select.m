@@ -148,6 +148,7 @@ if type == 1 || type == 4
     else
         parameters = check_files(Names,1,g.parameters{1});
     end
+    
     if isempty(parameters)
         errordlg('file selection failed, only Beta and Con files are supported','Selection error'); return
     end
@@ -336,19 +337,14 @@ if type == 1 || type == 4
         clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
         if parameters == 0; parameters = [1:size(data,3)]; end
         
-        for i=parameters
+        for i=1:length(parameters)
             cd(LIMO.dir);
-            if length(parameters) > 1 && i == parameters(1)
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
-                mkdir(dir_name); cd(dir_name);
-            elseif length(parameters) > 1 && i ~= parameters(1)
-                cd ..
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
-                mkdir(dir_name); cd(dir_name);
+            if length(parameters) > 1 && i == parameters(i)
+                foldername = sprintf('parameter_%g',parameters(i));
+                if ~isempty(g.folderprefix)
+                    g.folderprefix = [g.folderprefix foldername]; 
+                end
+                mkdir(foldername); cd(foldername);
             end
             LIMO.dir = pwd;
             
@@ -377,7 +373,7 @@ if type == 1 || type == 4
             
             LIMO.design.method = 'Trimmed means'; save LIMO LIMO
             Yr = tmp_data; save Yr Yr, clear Yr % just to be consistent with name
-            tmpname = limo_random_robust(type,tmp_data,i,g.nboot,g.tfce);
+            tmpname = limo_random_robust(type,tmp_data,parameters(i),g.nboot,g.tfce);
             if nargout ~= 0, filepath{i} = tmpname; end
         end
         
@@ -582,7 +578,7 @@ elseif type == 2
                 end
                 limo.data.chanlocs = expected_chanlocs;
             end
-        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N
+        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N;
             if strcmp(g.type,'Components')
                 limo.design.name = 'two samples t-test one component';
                 limo.design.component = eval(cell2mat(electrode));
@@ -785,6 +781,7 @@ elseif type == 3
     else
         parameters = check_files(Names,1,g.parameters{1});
     end
+    
     if size(parameters,2) == 1  % was not beta files, ie was con files
         n = Names; clear Names; Names{1} = n; clear n;
         p = Paths; clear Paths; Paths{1} = p; clear p;
@@ -807,7 +804,6 @@ elseif type == 3
             newparameters = check_files(Names{2},1);
             parameters = str2num([num2str(parameters) num2str(newparameters)]);
         end
-        
         limo.data.data_dir{2} = Paths{2};
         N = N + size(Names{2},2);
         if size(Names{1},2) ~= size(Names{2},2)
@@ -897,11 +893,11 @@ elseif type == 3
     if size(parameters,2) == 1 % groups and cons
         
         subject_nb = 1;
-        for g = 1:size(Paths,2)
+        for gp = 1:size(Paths,2)
             index = 1;
-            for i=1:size(Paths{g},2) % for each subject per group
-                load(cell2mat(limo.data.data{g}(i)));
-                name = str2mat(cell2mat(Names{g}(i)));
+            for i=1:size(Paths{gp},2) % for each subject per group
+                load(cell2mat(limo.data.data{gp}(i)));
+                name = str2mat(cell2mat(Names{gp}(i)));
                 if strcmp(name,'Betas.mat')
                     tmp = eval(name(1:end-4));
                 else
@@ -947,7 +943,7 @@ elseif type == 3
                                 index = index +1;
                             end
                         else
-                            if size(limo.design.electrode,2) == 1;
+                            if size(limo.design.electrode,2) == 1
                                 tmp_data(1,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                                 index = index + 1;
                             else
@@ -976,7 +972,7 @@ elseif type == 3
                 tmp_data(1,1:size(tmp_data2,1),1,1:size(tmp_data2,2)) = tmp_data2; clear tmp_data2
             end
             
-            data{g} = tmp_data;
+            data{gp} = tmp_data;
             clear tmp tmp_data
         end
         
@@ -1815,7 +1811,7 @@ if gp == 1
             return
         end
     elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
-               if length(unique(con_val)) == 1
+        if length(unique(con_val)) == 1
             parameters = unique(con_val);
         else
             parameters = 1;
