@@ -320,10 +320,10 @@ switch opt.mode
         try
             if ~isempty(logs)
                 diary(logs.txt);
-                sub_eval(cmd);
+                sub_eval([ cmd ';' ]);
                 diary off;
             else
-                sub_eval(cmd);
+                sub_eval([ cmd ';' ]);
             end
             flag_failed = false;
             msg = '';
