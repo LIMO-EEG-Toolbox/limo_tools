@@ -48,7 +48,7 @@ function limo_eeg(varargin)
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
 % ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% Copyright (C) LIMO Team 2018
 
 % make sure paths are ok
 root = fileparts(which('limo_eeg'));
@@ -1328,14 +1328,18 @@ switch varargin{1}
         % code of the contrast manager)
         
         % load LIMO and C
-        if ~exist(LIMO,'var')
-            load LIMO; cd (LIMO.dir);
+        if exist('LIMO.mat','file')
+            load LIMO; F = getfield(LIMO,'contrast');
+            for f=1:length(F)
+                C(f,:) = F{f}.C;
+            end
         else
             [LIMO_file,LIMO_dir] = uigetfile('.mat','select a LIMO.mat file');
             cd (LIMO_dir); load LIMO.mat;
         end
         
-        if ~exist(C,'var')
+        previous_con = 0;
+        if ~exist('C','var')
             [contrast_file,contrast_dir] = uigetfile({'*.mat';'*.txt'},'select your contrast file');
             cd (contrast_dir); load(contrast_file);  % problm here it has to be named C
             if strcmp(FileName(end-3:end),'.txt')
@@ -1345,18 +1349,15 @@ switch varargin{1}
                 C = getfield(contrast_file,cell2mat(fieldnames(contrast_file)));
             end
             cd (LIMO.dir);
+            if isfield(LIMO,'contrast')
+                previous_con = size(LIMO.contrast,2);
+            end
         end
         
         % Check dimensions
         C = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
         
         % Perform the analysis
-        try
-            previous_con = size(LIMO.contrast,2);
-        catch
-            previous_con = 0;
-        end
-        
         load Yr; load Betas;
         
         for i=1:size(C,1)  % for each contrast
@@ -1377,22 +1378,17 @@ switch varargin{1}
             save ([filename], 'con'); clear con;
             
             % update con file
-            fprintf('compute contrast %g',i); disp(' ');
-            % loop for each electrodes
-            for electrode = 1:size(Yr,1)
-                fprintf('electrode %g',electrode); disp(' ');
-                result = limo_contrast(squeeze(Yr(electrode,:,:))', squeeze(Betas(electrode,:,:))', electrode, LIMO);
-                
-                % update multivariate results
-                if LIMO.Method == 2
-                    LIMO.contrast{i}.multivariate{electrode} = result;
-                end
+            fprintf('computing contrast %g',i); disp(' ');
+            result = limo_contrast(Yr, Betas, LIMO, 0,1);
+            
+            % update multivariate results
+            if strfind(LIMO.design.type_of_analysis,'multivariate')
+                LIMO.contrast{i}.multivariate = result;
             end
             save LIMO LIMO
         end
         
         clear Yr LIMO_dir LIMO_file contrast_dir contrast_file electrode filename previous_con result C;
-        
         
         
     case{7}
