@@ -1,4 +1,4 @@
-function limo_contrast(varargin)
+function result = limo_contrast(varargin)
 
 % limo_contrast computes contrasts (i.e. differences between regressors)
 % using outputs from main statitistical tests (limo_glm.m,
@@ -36,12 +36,14 @@ function limo_contrast(varargin)
 % Cyril Pernet v4 26/09/2010
 % updated 21-16-2013
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2018
 
 
 %% nargin stuff
-
 type = varargin{end};
+
+%% default
+result = [];
 
 %% Analyses
 
@@ -411,6 +413,7 @@ switch type
                     multivariate.dfe   = abs(size(Y,1) - (nb_beta-1) - (multivariate.df-1));
                     multivariate.T_contrast    = sqrt((dfe*max(multivariate.EV))/multivariate.df);
                     multivariate.pval_contrast = 1-fcdf(multivariate.T_contrast, multivariate.df, abs(dfe));
+                    result = multivariate;
                 end
             end
         end
