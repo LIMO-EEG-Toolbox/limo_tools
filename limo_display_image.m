@@ -196,7 +196,7 @@ try
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
-cc = color_images_(scale,LIMO);
+cc = limo_color_images(scale,LIMO);
 
 % ------------------------
 % update with mouse clicks
@@ -336,93 +336,4 @@ if dynamic == 1
 end
 end
 
-%% color map
-% -------------------------------------------------------------------------
-% just use ready made map from https://github.com/CPernet/brain_colours
-% Reference: Pernet & Madan. Data visualization for inference in
-% tomographic brain imaging. In prep.
-
-function cc = color_images_(scale,LIMO)
-
-if min(scale(:)) >= 0
-    cc=cubehelixmap('increase',64);
-elseif max(scale(:)) <= 0
-    cc=cubehelixmap('decrease',64);   
-else
-    color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
-    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-end
-
-% color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
-% cc = load([color_path 'diverging_bgy.mat']); cc = cc.diverging_bgy;
-% % cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-% if min(scale(:)) >= 0
-%     cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
-%     cc = cc(floor(length(cc)/2):end,:);
-%     %cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
-% elseif max(scale(:)) <= 0
-%     cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-% else
-%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-%     cc = flipud(cc(1:ceil(length(cc)/2),:));
-%     % cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-% end
-
-% else
-%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-% end
-
-if sum(isnan(scale(:))) ~= 0
-    cc(1,:)=[.9 .9 .9]; % set NaNs to gray
-end
-colormap(cc);
-
-set(gca,'XMinorTick','on','LineWidth',2)
-try
-    set(gca,'YTick',1:length(LIMO.data.expected_chanlocs));
-catch ME
-    set(gca,'YTick',1:length(LIMO.data.chanlocs));
-end
-
-if strcmp(LIMO.Analysis,'Time')
-    xlabel('Time in ms','FontSize',10)
-elseif strcmp(LIMO.Analysis,'Frequency')
-    xlabel('Frequency in Hz','FontSize',10)
-end
-
-if strcmp(LIMO.Type,'Components')
-    if size(scale,1) == 1
-        label_electrodes = ' ';
-        ylabel('optimized component','FontSize',10);
-    else
-        ylabel('Components','FontSize',10);
-        for i=1:size(scale,1)
-            label_electrodes{i} = i;
-        end
-    end
-else
-    if size(scale,1) == 1
-        label_electrodes = ' ';
-        ylabel('optimized electrode','FontSize',10);
-    else
-        ylabel('Electrodes','FontSize',10);
-        for i = 1:length(LIMO.data.chanlocs)
-            if LIMO.Level == 2
-                try
-                    label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-                catch
-                    label_electrodes{i} = i;
-                end
-            else
-                try
-                    label_electrodes{i} = LIMO.data.chanlocs(i).labels;
-                catch
-                    label_electrodes{i} = i;
-                end
-            end
-        end
-    end
-end
-set(gca,'YTickLabel', label_electrodes);
-end
 
