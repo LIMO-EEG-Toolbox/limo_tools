@@ -80,10 +80,15 @@ procstatus = [];
 
 %% what to do
 
-if nargin == 0
-    option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
-    if isempty(option)
-        return
+if nargin <= 1
+    
+    if nargin == 0
+        option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
+        if isempty(option)
+            return
+        end
+    else
+        option = varargin{1};
     end
     
     % model
@@ -147,7 +152,7 @@ if nargin == 0
             disp('limo batch aborded'); return
         end
     end
-else
+elseif nargin > 1
     option = varargin{1};
     
     % model
