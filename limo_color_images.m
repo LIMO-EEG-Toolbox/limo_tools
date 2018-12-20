@@ -2,14 +2,14 @@ function cm = limo_color_images(scale,LIMO,varargin)
 
 %% limo color map
 % 
-% FORNAT cc = limo_color_images_(scale,LIMO,'map','map_name','limits',[min max])
+% FORMAT cc = limo_color_images_(scale,LIMO,'map','map_name','limits',[min max])
 %
 % INPUT scale if the data to show (typically stat map masked by NaN)
 %       LIMO is the LIMO.mat associated to the data
 %       map_name is either 'cubehelix' (default) or any map from limo_eeg\external\color_maps
 %       [min max] are the values to set the colormap to
 %
-% OUPUT cm is your colormap
+% OUTPUT cm is your colormap
 %
 % References:
 % Green, D. A., 2011, `A colour scheme for the display of astronomical intensity images', Bulletin of the Astronomical Society of India, 39, 289.
