@@ -903,7 +903,7 @@ switch type
                 data = limo_tf_4d_reshape(data); 
             end
             
-            for c=1:size(LIMO.data.data,2) % center data
+            for c=1:(size(LIMO.design.X,2)-1) % size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
                 data(:,:,index) = data(:,:,index) - repmat(mean(data(:,:,index),3),[1 1 length(index)]);
             end
