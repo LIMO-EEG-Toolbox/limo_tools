@@ -819,12 +819,12 @@ switch type
         
         % ------------------------------------------------
         % update the LIMO structure
-        LIMO.design.type_of_analysis = 'Mass-univariate';
-        LIMO.data.Cat = cat;
-        LIMO.data.Cont = cont;
-        LIMO.data.data_dir = pwd;
-        LIMO.design.zscore = 1;
-        LIMO.design.status = 'to do';
+        LIMO.design.type_of_analysis  = 'Mass-univariate';
+        LIMO.data.Cat                 = cat;
+        LIMO.data.Cont                = cont;
+        LIMO.data.data_dir            = pwd;
+        LIMO.design.zscore            = 1;
+        LIMO.design.status            = 'to do';
         if size(cat,2) > 1
             LIMO.design.fullfactorial = 1;
         else
@@ -844,6 +844,7 @@ switch type
         % ------------------------------------------------
         % do the analysis
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+        
         if strcmp(a,'Yes')
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
@@ -892,40 +893,38 @@ switch type
         end
         
         
-        % do the bootsrap for the 1-way ANOVA
-        % --------------------------------------
+        % do the bootsrap for the 1-way ANOVA 
+        % limo_eeg(4) wouild have done for OLS - full factorial designs/ANCOVA
+        % -----------------------------------------------------------------
         if LIMO.design.bootstrap ~= 0 &&  LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
             mkdir('H0');
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC'); data = limo_tf_4d_reshape(data); end
+            
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC') 
+                data = limo_tf_4d_reshape(data); 
+            end
+            
             for c=1:size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
                 data(:,:,index) = data(:,:,index) - repmat(mean(data(:,:,index),3),[1 1 length(index)]);
             end
-            boot_table = limo_create_boot_table(data,LIMO.design.bootstrap);
+            boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect_1 = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
-            X = LIMO.design.X(:,1:end-1);
-            %             if exist('parfor','file')
-            %                 parfor b=1:LIMO.design.bootstrap
-            %                     for e=1:size(array,1)
-            %                        %  electrode = array(e); fprintf('processing electrode %g \n,',electrode);
-            %                        %  [F(electrode,:), p(electrode,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,boot_table{electrode}(:,b)),X,20)); % no intercept in this model
-            %                     end
-            %                     H0_Condition_effect_1(:,:,1,b) = F;
-            %                     H0_Condition_effect_1(:,:,2,b) = p;
-            %                 end
-            %             else
+            
             for b=1:LIMO.design.bootstrap
                 for electrode=1:size(array,1)
-                    e = array(electrode); index = find(~isnan(squeeze(data(e,1,:)))); X = LIMO.design.X(index,1:end-1);
+                    e = array(electrode); 
+                    index = find(~isnan(squeeze(data(e,1,:)))); 
+                    X = LIMO.design.X(index,1:end-1);
                     if sum(sum(X) == 0) ==0
                         disp('compute')
-                        [H0_Condition_effect_1(e,:,1,b), H0_Condition_effect_1(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X(find,:),20); % no intercept in this model
+                        [H0_Condition_effect_1(e,:,1,b), H0_Condition_effect_1(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X,20); % no intercept in this model
                     end
                 end
             end
-            %           end
             
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC'); H0_Condition_effect_1 = limo_tf_5d_reshape(H0_Condition_effect_1); end
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                H0_Condition_effect_1 = limo_tf_5d_reshape(H0_Condition_effect_1); 
+            end
             save H0_Condition_effect_1 H0_Condition_effect_1
             clear data
         end
