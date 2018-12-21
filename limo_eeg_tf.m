@@ -1,7 +1,7 @@
 function limo_eeg_tf(varargin)
 
 % Forked from limo_eeg to run time-frequncy analyses
-% This mostly runs parallel to limo_eeg{3} and +, but adapted for 4D tf
+% This mostly runs parallel to limo_eeg{3} but adapted for 4D tf
 % data - the LIMO.mat is created and updated via limo_eeg.m - if data are
 % 4D then limo_eeg_tf is called.
 %
@@ -12,7 +12,7 @@ function limo_eeg_tf(varargin)
 % Andrew X Stewart, Nov 2013
 % Cyril Pernet February 2014
 % ---------------------------
-% Copyright (C) LIMO Team 2014
+% Copyright (C) LIMO Team 2018
 
 global LIMO
 if ~isnumeric(cell2mat(varargin))
@@ -37,7 +37,12 @@ switch varargin{1}
         try
             load('LIMO.mat');
         catch
-            [file,dir_path,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            if ispc
+                [~,dir_path,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            else
+                [ind,dir_path]   = uiGetFiles('select a LIMO.mat file');
+            end
+            
             if ind ==0
                 return
             else
@@ -52,19 +57,19 @@ switch varargin{1}
             
             % --------- load files created by limo_design_matrix ------------------
             load Yr; % load a 4D Yr with tf data,
-            if sum(size(Yr) ~= LIMO.data.size4D)~=0; % then check it is so
+            if sum(size(Yr) ~= LIMO.data.size4D)~=0 % then check it is so
                 errordlg('Is 4D data given to limo_design_matrix_tf?','LIMO.data.size4D'); return
             end
             
             Yr = limo_tf_4d_reshape(Yr); % reshape to 3D
-            if sum(size(Yr) ~= LIMO.data.size3D)~=0; % confirm now shaped 3D
+            if sum(size(Yr) ~= LIMO.data.size3D)~=0 % confirm now shaped 3D
                 errordlg('4D data are not reshaped correctly!','LIMO.data.size3D'); return
             end
             
-            Yhat = zeros(LIMO.data.size3D);
-            Res = zeros(LIMO.data.size3D);
+            Yhat  = zeros(LIMO.data.size3D);
+            Res   = zeros(LIMO.data.size3D);
             Betas = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),size(LIMO.design.X,2));
-            R2 = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),3);
+            R2    = zeros(LIMO.data.size3D(1),LIMO.data.size3D(2),3);
             
             % ------------- prepare weight matrix -------------------------------------
             if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
@@ -100,21 +105,25 @@ switch varargin{1}
                     electrode = array(e); warning off;
                     fprintf('analyzing channel %g/%g \n',electrode,size(Yr,1));
                     if LIMO.Level == 2
-                        Y = squeeze(Yr(electrode,:,:));
-                        index = find(~isnan(Y(1,:)));
-                        Y = Y(:,index);
+                        Y             = squeeze(Yr(electrode,:,:));
+                        index         = find(~isnan(Y(1,:)));
+                        Y             = Y(:,index);
                         LIMO.design.X = X(index,:);
+                        
                         if size(LIMO.design.X,1) <= size(LIMO.design.X,2)
                             fprintf('skipping channel %g not enough data \n',electrode);
                         else
-                            model = limo_glm1(Y',LIMO); warning on;
+                            model = limo_glm(Y',LIMO); warning on;
                         end
+                        
                         if isempty(index)
                             index = [1:size(Y,2)];
                         end
+                        
                     else % level 1 we should not have any NaNs
+                        
                         index = [1:size(Yr,3)];
-                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO);
+                        model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
                     end
                     
                     % update the LIMO.mat (do it only once)
@@ -138,18 +147,19 @@ switch varargin{1}
                     else
                         W(electrode,:,index) = model.W';
                     end
-                    fitted_data = LIMO.design.X*model.betas;
+                    
+                    fitted_data             = LIMO.design.X*model.betas;
                     Yhat(electrode,:,index) = fitted_data';
-                    Res(electrode,:,index) = squeeze(Yr(electrode,:,index)) - fitted_data'; clear fitted_data
-                    R2(electrode,:,1) = model.R2_univariate;
-                    R2(electrode,:,2) = model.F;
-                    R2(electrode,:,3) = model.p;
-                    Betas(electrode,:,:,1) = model.betas';
+                    Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data'; clear fitted_data
+                    R2(electrode,:,1)       = model.R2_univariate;
+                    R2(electrode,:,2)       = model.F;
+                    R2(electrode,:,3)       = model.p;
+                    Betas(electrode,:,:,1)  = model.betas';
                     
                     if prod(LIMO.design.nb_conditions) ~=0
                         if length(LIMO.design.nb_conditions) == 1
-                            tmp_Condition_effect(electrode,:,1,1) = model.conditions.F;
-                            tmp_Condition_effect(electrode,:,1,2) = model.conditions.p;
+                            tmp_Condition_effect(electrode,:,1,1)     = model.conditions.F;
+                            tmp_Condition_effect(electrode,:,1,2)     = model.conditions.p;
                         else
                             for i=1:length(LIMO.design.nb_conditions)
                                 tmp_Condition_effect(electrode,:,i,1) = model.conditions.F(i,:);
@@ -160,8 +170,8 @@ switch varargin{1}
                     
                     if LIMO.design.fullfactorial == 1
                         if length(LIMO.design.nb_interactions) == 1
-                            tmp_Interaction_effect(electrode,:,1,1) = model.interactions.F;
-                            tmp_Interaction_effect(electrode,:,1,2) = model.interactions.p;
+                            tmp_Interaction_effect(electrode,:,1,1)    = model.interactions.F;
+                            tmp_Interaction_effect(electrode,:,1,2)    = model.interactions.p;
                         else
                             for i=1:length(LIMO.design.nb_interactions)
                                 tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(i,:);
@@ -172,8 +182,8 @@ switch varargin{1}
                     
                     if LIMO.design.nb_continuous ~=0
                         if LIMO.design.nb_continuous == 1
-                            tmp_Covariate_effect(electrode,:,1,1) = model.continuous.F;
-                            tmp_Covariate_effect(electrode,:,1,2) = model.continuous.p;
+                            tmp_Covariate_effect(electrode,:,1,1)    = model.continuous.F;
+                            tmp_Covariate_effect(electrode,:,1,2)    = model.continuous.p;
                         else
                             for i=1:LIMO.design.nb_continuous
                                 tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(:,i);
@@ -190,24 +200,24 @@ switch varargin{1}
                 
                 
                 % Save all tf data as 4D elec x freqs x times x trials
-                disp('saving results to drive ..'); save LIMO LIMO;
-                Yhat = limo_tf_4d_reshape(Yhat); save Yhat Yhat -v7.3;
-                Res = limo_tf_4d_reshape(Res); save Res Res -v7.3;
+                disp('saving results to drive as 4D ...'); save LIMO LIMO;
+                Yhat  = limo_tf_4d_reshape(Yhat); save Yhat Yhat -v7.3;
+                Res   = limo_tf_4d_reshape(Res); save Res Res -v7.3;
                 Betas = limo_tf_4d_reshape(Betas); save Betas Betas -v7.3;
-                R2 = limo_tf_4d_reshape(R2); save R2 R2 -v7.3;
+                R2    = limo_tf_4d_reshape(R2); save R2 R2 -v7.3;
                 clear Yhat Res Betas R2
                 
                 if prod(LIMO.design.nb_conditions) ~=0
                     for i=1:length(LIMO.design.nb_conditions)
                         name = sprintf('Condition_effect_%g',i);
                         if size(tmp_Condition_effect,1) == 1
-                            tmp = squeeze(tmp_Condition_effect(1,:,i,:));
-                            Condition_effect = NaN(1,size(tmp_Condition_effect,2),2);
+                            tmp                     = squeeze(tmp_Condition_effect(1,:,i,:));
+                            Condition_effect        = NaN(1,size(tmp_Condition_effect,2),2);
                             Condition_effect(1,:,:) = tmp;
                         else
-                            Condition_effect = squeeze(tmp_Condition_effect(:,:,i,:));
+                            Condition_effect        = squeeze(tmp_Condition_effect(:,:,i,:));
                         end
-                        Condition_effect = limo_tf_4d_reshape(Condition_effect);
+                        Condition_effect            = limo_tf_4d_reshape(Condition_effect);
                         save(name,'Condition_effect','-v7.3')
                     end
                     clear Condition_effect tmp_Condition_effect
@@ -217,11 +227,11 @@ switch varargin{1}
                     for i=1:length(LIMO.design.nb_interactions)
                         name = sprintf('Interaction_effect_%g',i);
                         if size(tmp_Interaction_effect,1) == 1
-                            tmp = squeeze(tmp_Interaction_effect(1,:,i,:));
-                            Interaction_effect = NaN(1,size(tmp_Interaction_effect,2),2);
+                            tmp                       = squeeze(tmp_Interaction_effect(1,:,i,:));
+                            Interaction_effect        = NaN(1,size(tmp_Interaction_effect,2),2);
                             Interaction_effect(1,:,:) = tmp;
                         else
-                            Interaction_effect = squeeze(tmp_Interaction_effect(:,:,i,:));
+                            Interaction_effect        = squeeze(tmp_Interaction_effect(:,:,i,:));
                         end
                         Interaction_effect = limo_tf_4d_reshape(Interaction_effect);
                         save(name,'Interaction_effect','-v7.3')
@@ -233,13 +243,13 @@ switch varargin{1}
                     for i=1:LIMO.design.nb_continuous
                         name = sprintf('Covariate_effect_%g',i);
                         if size(tmp_Covariate_effect,1) == 1
-                            tmp = squeeze(tmp_Covariate_effect(1,:,i,:));
-                            Covariate_effect = NaN(1,size(tmp_Covariate_effect,2),2);
+                            tmp                     = squeeze(tmp_Covariate_effect(1,:,i,:));
+                            Covariate_effect        = NaN(1,size(tmp_Covariate_effect,2),2);
                             Covariate_effect(1,:,:) = tmp;
                         else
-                            Covariate_effect = squeeze(tmp_Covariate_effect(:,:,i,:));
+                            Covariate_effect        = squeeze(tmp_Covariate_effect(:,:,i,:));
                         end
-                        Covariate_effect = limo_tf_4d_reshape(Covariate_effect);
+                        Covariate_effect            = limo_tf_4d_reshape(Covariate_effect);
                         save(name,'Covariate_effect','-v7.3')
                     end
                     clear Covariate_effect tmp_Covariate_effect
@@ -281,10 +291,10 @@ switch varargin{1}
                     if LIMO.Level == 2
                         boot_table = limo_create_boot_table(Yr,nboot);
                     else
-                        boot_table = randi(size(Yr,3),size(Yr,3),nboot);
+                        boot_table  = randi(size(Yr,3),size(Yr,3),nboot);
                     end
                     H0_Betas = NaN(size(Yr,1), size(Yr,2), size(LIMO.design.X,2), nboot);
-                    H0_R2 = NaN(size(Yr,1), size(Yr,2), 3, nboot); % stores R, F and p values for each boot
+                    H0_R2    = NaN(size(Yr,1), size(Yr,2), 3, nboot); % stores R, F and p values for each boot
                     
                     if LIMO.design.nb_conditions ~= 0
                         tmp_H0_Conditions = NaN(size(Yr,1), size(Yr,2), length(LIMO.design.nb_continuous), 2, nboot);
@@ -306,8 +316,8 @@ switch varargin{1}
                         waitbar(e/size(array,1))
                         fprintf('bootstrapping electrode %g \n',electrode);
                         if LIMO.Level == 2
-                            Y = squeeze(Yr(electrode,:,:));
-                            index = find(~isnan(Y(1,:)));
+                            Y           = squeeze(Yr(electrode,:,:));
+                            index       = find(~isnan(Y(1,:)));
                             [rows,cols] = size(X(index,:));
                             if (rows >= cols)
                                 model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,boot_table{electrode});
