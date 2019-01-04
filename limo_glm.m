@@ -213,24 +213,14 @@ switch method
         HM  = WX*pinv(WX);                                                   % Hat matrix, projection onto X
         R   = eye(size(Y,1)) - WX*pinv(WX);                                  % Projection onto E
         E   = Y'*R*Y;                                                        % SS Error
-        
-        % The number of degrees of freedom can be defined as the minimum number of
-        % independent coordinates that can specify the position of the system completely.
-        % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS
-        df  = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1; % Satterthwaite approximation
-        dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-        
-        % do an adjustement if MSE robust < MSE least squares
-        % Dumouchel, W. H., and F. L. O'Brien. 1989
-        if strcmp(method,'WLS')
-            R_ols = eye(size(Y,1)) - X*pinv(X);
-            E_ols = Y'*R_ols*Y;
-            if E < E_ols
-                n = size(X,1); p = rank(X);
-                sigmar = E/(n-p); sigmals = E_ols/(n-p);
-                MSE = (n*sigmar + p^2*sigmals) / (n+p^2);
-                E = MSE * dfe;
-            end
+                
+        % degrees of freedom
+        % -------------------
+        df = rank(WX)-1;
+        if strcmp(method,'OLS')
+            dfe = size(Y,1)-rank(WX);
+        else
+            dfe = size(Y,1)-size(Y,2)+rank(WX);
         end
         
         % model R^2
@@ -553,10 +543,15 @@ switch method
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
-            df(frame)             = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1;
+            % The number of degrees of freedom can be defined as the minimum number of
+            % independent coordinates that can specify the position of the system completely.
+            % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
+            % use the Satterthwaite approximation
+            df(frame)              = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1;
             dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
             R_ols                  = eye(size(Y,1)) - X*pinv(X);
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
+            % MSE adjustment
             if E < E_ols
                 n = size(X,1); p = rank(X);
                 sigmar = E/(n-p); sigmals = E_ols/(n-p);

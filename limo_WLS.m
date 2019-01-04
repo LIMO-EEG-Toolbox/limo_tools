@@ -8,7 +8,7 @@ function [b,W] = limo_WLS(X,Y)
 %
 % Weights are obtained using a Principal Components Projection
 %
-% FORMAT: [b w] = limo_WLS(X,Y,method)
+% FORMAT: [b w] = limo_WLS(X,Y)
 %
 % INPUTS:
 %   X             = the design matrix 
@@ -25,7 +25,6 @@ function [b,W] = limo_WLS(X,Y)
 % see also LIMO_PCOUT LIMO_IRLS
 %
 % Cyril Pernet v2 January 2014
-% v3 July 2015 incliude an iterative framework (not validated)
 % -----------------------------
 % Copyright (C) LIMO Team 2015
 
@@ -33,14 +32,6 @@ function [b,W] = limo_WLS(X,Y)
 if  nargin < 2      
     error(message('Too Few Inputs'));      
 end 
-
-method = 'simple';
-if nargin == 3;
-    method = cell2mat(varargin{1});
-    if sum([strcmpi(method,'simple') strcmpi(method,'iterative')]) == 0
-        error('imput method must be either ''simple'' or ''iterative''')
-    end
-end
 
 [rows,cols] = size(X);
 if (rows <= cols)
@@ -55,7 +46,7 @@ end
 %% get the weights from PC on adjusted residuals
 
 % Hat matrix; Leverages for each observation
-H = diag(X*pinv(X'*X)*X');
+H = diag(X*pinv(X)); % = diag(X*pinv(X'*X)*X');
 
 % Adjustment factor
 adjfactor = 1 ./ sqrt(1-H);
