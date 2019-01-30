@@ -66,6 +66,7 @@ handles.go  = 0;
 handles.C   = [];
 handles.F   = 0;
 handles.X   = [];
+handles.limofile = [];
 handles.output = hObject;
 guidata(hObject,handles);
 set(hObject,'Tag','figure_limo_contrast_manager');
@@ -81,7 +82,7 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global LIMO 
 
 if isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
