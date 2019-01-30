@@ -1552,12 +1552,15 @@ elseif type == 5
                 elseif size(g.limofiles{i},1) > 1
                     [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
                 end
+                
                 if isempty(Names{cell_nb}); return; end
+
                 if isempty(g.parameters)
-                    parameters(:,i) = check_files(Names,1);
+                    parameters(:,i) = check_files(Names,i);
                 else
-                    parameters(:,i) = check_files(Names,1,g.parameters{i});
+                    parameters(:,i) = check_files(Names,i,g.parameters{i});
                 end
+                
                 if length(parameters(:,i)) ~= prod(factor_nb)
                     error(['the number of parameter chosen (',num2str(length(parameters)), ...
                         ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
@@ -1680,34 +1683,57 @@ elseif type == 5
                 if strcmp(g.analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
-                        data(:,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                        matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                     elseif  strcmpi(g.type,'Components')
-                        data(:,:,:,matrix_index) = tmp(:,begins_at:ends_at,:);
+                        matched_data = tmp(:,begins_at:ends_at,:);
                     end
-                    matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
+                    
+                    if matrix_index == 1
+                        data(:,:,:,matrix_index) = matched_data;
+                    else
+                        if size(matched_data) == size(squeeze(data(:,:,:,1)))
+                            data(:,:,:,matrix_index) = matched_data;
+                        else
+                            error('The data from subject %g have a different size than previous subjects?',i)
+                        end
+                    end
+                    matrix_index = matrix_index+1; 
+                    removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                     
                     % Use single electrode
                 elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
                         if size(limo.design.electrode,2) == 1
-                            data(1,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                             matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                         else
                             out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                            data(1,:,:,matrix_index) = out(i,:,:); % matches the expected chanloc of the subject
+                             matched_data = out(i,:,:); % matches the expected chanloc of the subject
                         end
                     elseif strcmpi(g.type,'Components')
                         if size(limo.design.component,2) == 1
-                            data(1,:,:,matrix_index) = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
+                             matched_data = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
                         else
-                            data(1,:,:,matrix_index) = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
+                             matched_data = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
                         end
                     end
-                    matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
+                    
+                    if matrix_index == 1
+                        data(:,:,:,matrix_index) = matched_data;
+                    else
+                        if size( matched_data) == size(squeeze(data(1,:,:,1)))
+                            data(1,:,:,matrix_index) = matched_data;
+                        else
+                            error('The data from subject %g have a different size than previous subjects?',i)
+                        end
+                    end
+                    matrix_index = matrix_index+1; 
+                    removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
+
                 else
                     fprintf('subject %g gp %g discarded, channel description and data size don''t match',i,h); disp(' ')
                     removed{h}(i) = 1;
                 end
-                clear tmp
+                clear tmp Betas con matched_data
                 subject_index = subject_index+1;
             end
         end
@@ -1788,15 +1814,19 @@ if nargin < 3
     parameters = [];
 end
 
+if iscell(Names)
+    Names = Names{1};
+end
+
 if gp == 1
     
     % one sample case
     % ---------------
     is_beta = []; is_con = [];
     for i=1:size(Names,2)
-        if strcmp(Names{i},'Betas.mat')
+        if strfind(Names{i},'Betas')
             is_beta(i) = 1;
-        elseif strcmp(Names{i}(1:3),'con')
+        elseif strfind(Names{i},'con')
             is_con(i) = 1; con_val(i) = str2num(Names{i}(5:end-4));
         end
     end
@@ -1825,9 +1855,9 @@ elseif gp > 1
     for g = 1:gp
         is_beta = []; is_con = [];
         for i=1:size(Names{g},2)
-            if strcmp(Names{g}(i),'Betas.mat')
+            if contains(Names{g}(i),'Betas')
                 is_beta(i) = 1;
-            elseif strcmp(Names{g}{i}(1:3),'con')
+            elseif strfind(Names{g}{i},'con')
                 is_con(i) = 1;
             end
         end
@@ -1890,12 +1920,26 @@ end
 
 % now loop loading the LIMO.mat for each subject to collect information
 for i=1:size(Paths,2)
-    try
-        cd (Paths{i});
-    catch
-        cd (cell2mat(Paths{i}))
+    if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
+    
+    if exist('LIMO','file')
+        load('LIMO.mat',LIMO); 
+    else 
+        [newpath,betaname]=fileparts(cell2mat(limo.data.data{1}(i)));
+        if ~isempty(betaname(6:end))
+           if exist([newpath filesep 'LIMO' betaname(6:end) '.mat'],'file') 
+               load([newpath filesep 'LIMO' betaname(6:end) '.mat']);
+           else
+               error('LIMO.mat could not be located starting at subject %g',i)
+           end
+        else
+           if exist([newpath filesep 'LIMO.mat'],'file') 
+               load([newpath filesep 'LIMO.mat']);
+           else
+               error('LIMO.mat could not be located starting at subject %g',i)
+           end
+        end
     end
-    load LIMO;
     
     if i==1
         Analysis = LIMO.Analysis;
@@ -1944,7 +1988,7 @@ end
 
 % quick check things are ok
 if  strcmpi(LIMO.Type,'Channels') && ~isempty(ME) && isempty(limo.data.neighbouring_matrix)
-    error(sprintf('some subject(s) have a different channel structure \nplease load an expected chanloc when choosing a test'));
+    error('some subject(s) have a different channel structure \nplease load an expected chanloc when choosing a test');
 end
 
 if (sum(sampling_rate == sampling_rate(1))) ~= length(sampling_rate)
@@ -2041,7 +2085,7 @@ end
 
 function [Names,Paths,Files] = breaklimofiles(cellfiles)
 for ifiles = 1:size(cellfiles,1)
-    [Paths{ifiles} filename ext] = fileparts(cellfiles{ifiles});
+    [Paths{ifiles}, filename, ext] = fileparts(cellfiles{ifiles});
     Names{ifiles} = [filename ext];
     Files{ifiles} = fullfile(Paths{ifiles},[filename ext]);
 end
