@@ -205,9 +205,9 @@ elseif nargin == 1
         is_betas = [];
         is_con   = [];
         for i=1:size(Names,2)
-            if strcmp(Names{i},'Betas.mat')
+            if strfind(Names{i},'Betas')
                 is_betas(i) = 1;
-            elseif strncmp(Names{i},'con',3)
+            elseif strfind(Names{i},'con',3)
                 is_con(i) = 1;
             end
         end
