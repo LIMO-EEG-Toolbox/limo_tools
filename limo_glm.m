@@ -210,9 +210,9 @@ switch method
         % total sum of squares, projection matrix for errors, residuals
         % --------------------------------------------------------------
         T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
-        HM  = WX*pinv(WX);                                                   % Hat matrix, projection onto X
-        R   = eye(size(Y,1)) - WX*pinv(WX);                                  % Projection onto E
-        E   = Y'*R*Y;                                                        % SS Error
+        HM  = WX*pinv(WX);                                                       % Hat matrix, projection onto X
+        R   = eye(size(Y,1)) - WX*pinv(WX);                                      % Projection onto E
+        E   = Y'*R*Y;                                                            % SS Error
                 
         % degrees of freedom
         % -------------------
@@ -220,7 +220,16 @@ switch method
         if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
         else
-            dfe = size(Y,1)-size(Y,2)+rank(WX);
+            % dfe = size(Y,1)-size(Y,2)+rank(WX);
+            % Cheverud 2001
+%             EV  = eig(corr((R*Y)));
+%             M   = length(EV);
+%             V   = sum((EV-1).^2) / (M-1);
+%             dfe = (1 + (M-1)*(1-V/M)) - df;
+            % Li and Ji 2005
+            EV  = abs(eig(corr(R*Y)));
+            x   = single(EV>=1) + (EV - floor(EV));
+            dfe = size(Y,1) - sum(x) + rank(WX) + 1;
         end
         
         % model R^2
