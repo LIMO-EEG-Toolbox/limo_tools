@@ -28,8 +28,8 @@ elseif nargin == 5
     method = varargin{5};
 end
 clear varargin
-nb_comp = size(data,1);
-[n,p]=size(weights);
+% nb_comp = size(data,1);
+% [n,p]=size(weights);
 
 %% down to business
 switch method
