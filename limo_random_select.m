@@ -510,6 +510,7 @@ elseif type == 2
         elseif size(g.limofiles{gp},1) > 1
             [Names{gp},Paths{gp},limo.data.data{gp}] = breaklimofiles(g.limofiles{gp});
         end
+        
         if isempty(Names{gp})
             return
         end
@@ -1915,39 +1916,42 @@ if iscell(Paths{1})
 end
 
 % now loop loading the LIMO.mat for each subject to collect information
+gp     = length(Paths)/length(limo.data.data{1});
+repeat = repmat([1:length(limo.data.data{1})],1,gp);
+
 for i=1:size(Paths,2)
-     try
-        cd (Paths{i});
-    catch
-        cd (cell2mat(Paths{i}))
-     end
-     load LIMO
+%      try
+%         cd (Paths{i});
+%     catch
+%         cd (cell2mat(Paths{i}))
+%      end
+%      load LIMO
      
-%      if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
-%     
-%     if exist('LIMO','file')
-%         load('LIMO.mat',LIMO); 
-%     else 
-%         try
-%             [newpath,betaname]=fileparts(limo.data.data{i});
-%         catch
-%             [newpath,betaname]=fileparts(cell2mat(limo.data.data{1}(i)));
-%         end
-%         
-%         if ~isempty(betaname(6:end))
-%            if exist([newpath filesep 'LIMO' betaname(6:end) '.mat'],'file') 
-%                load([newpath filesep 'LIMO' betaname(6:end) '.mat']);
-%            else
-%                error('LIMO.mat could not be located starting at subject %g',i)
-%            end
-%         else
-%            if exist([newpath filesep 'LIMO.mat'],'file') 
-%                load([newpath filesep 'LIMO.mat']);
-%            else
-%                error('LIMO.mat could not be located starting at subject %g',i)
-%            end
-%         end
-%     end
+     if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
+    
+    if exist([pwd filesep 'LIMO.mat'],'file')
+        load([pwd filesep 'LIMO.mat']); 
+    else 
+        try
+            [newpath,betaname]=fileparts(limo.data.data{i});
+        catch
+            [newpath,betaname]=fileparts(cell2mat(limo.data.data{1}(repeat(i))));
+        end
+        
+        if ~isempty(betaname(6:end))
+           if exist([newpath filesep 'LIMO' betaname(6:end) '.mat'],'file') 
+               load([newpath filesep 'LIMO' betaname(6:end) '.mat']);
+           else
+               error('LIMO.mat could not be located starting at subject %g',i)
+           end
+        else
+           if exist([newpath filesep 'LIMO.mat'],'file') 
+               load([newpath filesep 'LIMO.mat']);
+           else
+               error('LIMO.mat could not be located starting at subject %g',i)
+           end
+        end
+    end
     
     if i==1
         Analysis = LIMO.Analysis;
