@@ -1814,10 +1814,6 @@ if nargin < 3
     parameters = [];
 end
 
-if iscell(Names)
-    Names = Names{1};
-end
-
 if gp == 1
     
     % one sample case
