@@ -80,7 +80,7 @@ g = finputcheck(varargin, { 'nboot'          'integer'  []                      
     'folderpath'     'string'   ''                             ''         ;     % Path to folder to save
     'type'           'string'   {'Channels','Components'}      'Channels' ;     % Type of measure ['ica', 'chan']
     'parameters'     'cell'     {}                             {} ;})     ;     % Parameters to analyze (one cell p/group)
-if isstr(g), error(g); end;
+if isstr(g), error(g); end
 
 clear  chanfile maxchan_indx;
 
