@@ -1557,9 +1557,9 @@ elseif type == 5
                 if isempty(Names{cell_nb}); return; end
 
                 if isempty(g.parameters)
-                    parameters(:,i) = check_files(Names,i);
+                    parameters(:,i) = check_files(Names,1);
                 else
-                    parameters(:,i) = check_files(Names,i,g.parameters{i});
+                    parameters(:,i) = check_files(Names,1,g.parameters{i});
                 end
                 
                 if length(parameters(:,i)) ~= prod(factor_nb)
@@ -1815,12 +1815,18 @@ if nargin < 3
     parameters = [];
 end
 
+if iscell(Names)
+    sn = size(Names{1},2);
+else
+    sn = size(Names,2);
+end
+
 if gp == 1
     
     % one sample case
     % ---------------
     is_beta = []; is_con = [];
-    for i=1:size(Names,2)
+    for i=1:sn
         if strfind(Names{i},'Betas')
             is_beta(i) = 1;
         elseif strfind(Names{i},'con')
@@ -1828,16 +1834,16 @@ if gp == 1
         end
     end
     
-    if (isempty(is_beta)) == 0 && sum(is_beta) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(is_con) ~= size(Names,2)
+    if (isempty(is_beta)) == 0 && sum(is_beta) ~= sn || (isempty(is_con)) == 0 && sum(is_con) ~= sn
         error('file selection failed, only Beta or Con files are supported')
-    elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
+    elseif (isempty(is_beta)) == 0 && sum(is_beta) == sn && nargout ~= 0
         if isempty(parameters)
             parameters = eval(cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option')));
         end
         if isempty(parameters)
             return
         end
-    elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
+    elseif (isempty(is_con)) == 0 && sum(is_con) == sn
         if length(unique(con_val)) == 1
             parameters = unique(con_val);
         else
@@ -1866,9 +1872,9 @@ elseif gp > 1
         end
     end
     
-    if (isempty(is_beta)) == 0 && sum(cell2mat(test)) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(cell2mat(test)) ~= size(Names,2)
+    if (isempty(is_beta)) == 0 && sum(cell2mat(test)) ~= sn || (isempty(is_con)) == 0 && sum(cell2mat(test)) ~= sn
         error('file selection failed, only Beta or Con files are supported');
-    elseif (isempty(is_beta)) == 0 && sum(cell2mat(test)) == size(Names,2) && nargout ~= 0
+    elseif (isempty(is_beta)) == 0 && sum(cell2mat(test)) == sn && nargout ~= 0
         if isempty(parameters)
             parameters = eval(cell2mat(inputdlg('which parameter(s) to test e.g 1','parameters option')));
         elseif ~isempty(parameters) && size(parameters,2) ~=1 && size(parameters,2) ~=gp
@@ -1878,7 +1884,7 @@ elseif gp > 1
         if isempty(parameters) || size(parameters,2) ~=1 && size(parameters,2) ~=gp
             return
         end
-    elseif (isempty(is_con)) == 0 && sum(cell2mat(test)) == size(Names,2)
+    elseif (isempty(is_con)) == 0 && sum(cell2mat(test)) == sn
         parameters = 1;
     end
     
@@ -1916,8 +1922,12 @@ if iscell(Paths{1})
 end
 
 % now loop loading the LIMO.mat for each subject to collect information
-gp     = length(Paths)/length(limo.data.data{1});
-repeat = repmat([1:length(limo.data.data{1})],1,gp);
+gp     = length(Paths)/length(limo.data.data);
+if gp<=1
+    repeat = [1:length(limo.data.data)];
+else
+    repeat = repmat([1:length(limo.data.data{1})],1,gp);
+end
 
 for i=1:size(Paths,2)
 %      try
