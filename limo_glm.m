@@ -220,6 +220,8 @@ switch method
         if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
         else
+            % Satterthwaite approximation 
+            % trace((eye(size(HM))-HM)'*(eye(size(HM))-HM))
             % dfe = size(Y,1)-size(Y,2)+rank(WX);
             % Cheverud 2001
 %             EV  = eig(corr((R*Y)));
