@@ -1556,9 +1556,9 @@ elseif type == 5
                 if isempty(Names{cell_nb}); return; end
 
                 if isempty(g.parameters)
-                    parameters(:,i) = check_files(Names,i);
+                    parameters(:,i) = check_files(Names,1);
                 else
-                    parameters(:,i) = check_files(Names,i,g.parameters{i});
+                    parameters(:,i) = check_files(Names,1,g.parameters{i});
                 end
                 
                 if length(parameters(:,i)) ~= prod(factor_nb)
