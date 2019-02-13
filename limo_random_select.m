@@ -113,10 +113,11 @@ else
     limo.data.neighbouring_matrix = [];
 end
 
+limo.data.data        = [];
 limo.design.bootstrap = g.nboot;
-limo.design.tfce = g.tfce;
-limo.Level = 2;
-limo.Type = g.type;
+limo.design.tfce      = g.tfce;
+limo.Level            = 2;
+limo.Type             = g.type;
 
 % ----------------------------------
 %%  One sample t-test and regression
@@ -434,8 +435,10 @@ if type == 1 || type == 4
             end
             
             if size(X,2)==1 && g.nboot < 599
-                limo.design.bootstrap = 599;
-                disp('nb of bootstrap adjusted to 599 for a simple regression');
+                if g.nboot ~= 0
+                    limo.design.bootstrap = 599;
+                    disp('nb of bootstrap adjusted to 599 for a simple regression');
+                end
             end
             
         catch ME
@@ -447,18 +450,12 @@ if type == 1 || type == 4
         clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
         if parameters == 0; parameters = [1:size(data,3)]; end
         
-        for i=parameters
+        for i=length(parameters)
             cd(LIMO.dir);
-            if length(parameters) > 1 && i == parameters(1)
+            if length(parameters) > 1 
                 foldername = 'parameter_%g';
                 if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
-                mkdir(dir_name); cd(dir_name);
-            elseif length(parameters) > 1 && i ~= parameters(1)
-                cd ..
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
-                dir_name = sprintf(foldername,i);
+                dir_name = sprintf(foldername,parameters(i));
                 mkdir(dir_name); cd(dir_name);
             end
             
@@ -697,21 +694,21 @@ elseif type == 2
     
     % compute
     % --------
-    LIMO = limo; cd(limo.dir);  i=parameters;
+    LIMO = limo; cd(limo.dir);  
     % free some memory
     clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
         if strcmp(g.analysis_type,'1 channel/component only')
-            tmp = squeeze(data{1}(:,:,:,i(1),:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+            tmp                = squeeze(data{1}(:,:,:,1,:));
+            tmp_data1          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,:,i,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
+            tmp                = squeeze(data{2}(:,:,:,1,:));
+            tmp_data2          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,:,i,:));
-            tmp_data2 = squeeze(data{2}(:,:,:,i,:));
+            tmp_data1 = squeeze(data{1}(:,:,:,1,:));
+            tmp_data2 = squeeze(data{2}(:,:,:,1,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
@@ -721,15 +718,15 @@ elseif type == 2
         
     else
         if strcmp(g.analysis_type,'1 channel/component only')
-            tmp = squeeze(data{1}(:,:,i,:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
+            tmp              = squeeze(data{1}(:,:,1,:));
+            tmp_data1        = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,i,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
+            tmp              = squeeze(data{2}(:,:,1,:));
+            tmp_data2        = ones(1,size(tmp,1),size(tmp,2));
             tmp_data2(1,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,i,:));
-            tmp_data2 = squeeze(data{2}(:,:,i,:));
+            tmp_data1 = squeeze(data{1}(:,:,1,:));
+            tmp_data2 = squeeze(data{2}(:,:,1,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
@@ -746,7 +743,7 @@ elseif type == 2
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
     LIMO.design.method = 'Yuen t-test (trimmed means)'; save LIMO LIMO
-    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,i,g.nboot,g.tfce);
+    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
     if exist('data.mat','file')
         try delete data.mat; end
@@ -1815,13 +1812,12 @@ if nargin < 3
     parameters = [];
 end
 
-if iscell(Names)
-    sn = size(Names{1},2);
-else
-    sn = size(Names,2);
-end
-
 if gp == 1
+    
+    if iscell(Names{gp})
+        Names = Names{gp};
+    end
+    sn = size(Names,2);
     
     % one sample case
     % ---------------
@@ -1922,21 +1918,14 @@ if iscell(Paths{1})
 end
 
 % now loop loading the LIMO.mat for each subject to collect information
-gp     = length(Paths)/length(limo.data.data);
+gp = length(Paths)/length(limo.data.data);
 if gp<=1
     repeat = [1:length(limo.data.data)];
 else
     repeat = repmat([1:length(limo.data.data{1})],1,gp);
 end
 
-for i=1:size(Paths,2)
-%      try
-%         cd (Paths{i});
-%     catch
-%         cd (cell2mat(Paths{i}))
-%      end
-%      load LIMO
-     
+for i=1:size(Paths,2)   
      if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
     
     if exist([pwd filesep 'LIMO.mat'],'file')
