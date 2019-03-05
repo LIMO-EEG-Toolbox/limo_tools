@@ -28,37 +28,31 @@ elseif nargin == 5
     method = varargin{5};
 end
 clear varargin
-% nb_comp = size(data,1);
-% [n,p]=size(weights);
 
 %% down to business
 switch method
     
     %------
     case {'sum'} 
-        % average power of ica weights on eletrodes
+        % Average power of ica weights on eletrodes
         W = sqrt(sum((invweights(:,whichic)).^2,1)); 
         combined_ica = mean(data(whichic,:,:).*repmat(W',[1,size(data,2),size(data,3)]),1);
 
     case ('max') 
-        % take ica which has max variance
-        icaact = weights*mean(data,3);
-        varica = var(icaact(whichic,:), [], 2);      
-        [tmp ind] = max(varica);
-        combined_ica = data(ind,:,:);
+        % Takes the ica with max activation variance
+        meanicaact = mean(data,3);
+        [tmp, ind] = max(var(meanicaact(whichic,:), [], 2));      
+        combined_ica = data(whichic(ind),:,:);
         
     case ('maxvar') 
-        % takes the ica which has the max mean variance accounted for
-        icaact = weights*mean(data,3);
+        % Takes the ica which has the max mean variance accounted for
+        meanicaact = mean(data,3);
         for iComp = 1:length(whichic)
             comp = whichic(iComp);
-            dataMinusIca = mean(data,3) - invweights(:,comp)*icaact(comp,:);
+            dataMinusIca = invweights*meanicaact - invweights(:,comp)*meanicaact(comp,:);
             varica(iComp) = mean(var(dataMinusIca, [], 2));
         end
-        [tmp ind] = max(varica);
-        combined_ica = data(ind,:,:);
+        [tmp, ind] = max(varica);
+        combined_ica = data(whichic(ind),:,:);   
+        
 end
-
-
-% figure;plot(mean(data,3)','--','LineWidth',1.5)
-% hold on; plot(mean(combined_ica,3),'k','LineWidth',3); axis tight
