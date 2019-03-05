@@ -84,9 +84,9 @@ switch type
         
         % string time-frequency
         if strcmp(LIMO.Analysis ,'Time-Frequency')
-            Y = limo_tf_4d_reshape(Y);
+            Y     = limo_tf_4d_reshape(Y);
             Betas = limo_tf_4d_reshape(Betas);
-            Res = limo_tf_4d_reshape(Res);
+            Res   = limo_tf_4d_reshape(Res);
         end
         
         % compute Projection onto the error
