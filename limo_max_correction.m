@@ -62,7 +62,8 @@ mask            = squeeze(M) >= max_th;
 smalest_pval = 1/nboot;
 for row =1:a
     for column=1:b
-        p_val(row,column) = 1- (sum(M(row,column) <= sortmaxM) / nboot);
+        tmp = sum(M(row,column) <= sortmaxM) / nboot;
+        p_val(row,column) = min([tmp 1-tmp]);
         if p_val(row,column) == 0; p_val(row,column) = smalest_pval; end
     end
 end
