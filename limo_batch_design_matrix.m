@@ -12,7 +12,7 @@ function limo_batch_design_matrix(LIMOfile)
 
 global EEGLIMO
 load(LIMOfile);
-if exist('EEGLIMO','var')
+if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
         cd (LIMO.data.data_dir);
         disp('reloading data ..');
