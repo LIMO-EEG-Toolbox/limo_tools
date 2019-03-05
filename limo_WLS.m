@@ -68,13 +68,21 @@ re = median(abs(resadj)) ./ 0.6745;
 re(find(re < 1e-5)) = 1e-5;
 r= resadj ./ repmat(tune.*re, size(Y,1),1);
 
-%% do the computation
+%% do the computation for W and WY and WX
 [W,out] = limo_pcout(r); % get weights from residuals
 WY = Y .* repmat(W,1,size(Y,2));
 WX = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
 b = pinv(WX)*WY; % b = inv(X'*W*X)*X'W*Y
 
-%% check this is a valid result
-% b is a generalized least square if X*inv(X'*W*X)*X'*W*Y == Xb
-% WY = WXB+We with e ~N(0,s^2V) 
+%% find b such as  V = I
+% minimize the restricted maximum likelihood objective function: 
+for f=1:size(WY,2)
+    lme    = fitlmematrix(X,Y(:,f),[],[],'CovariancePattern','Diagonal','FitMethod','REML','Weights',W);
+    b(:,f) = lme.fixedEffects;
+end
+
+
+
+
+
 
