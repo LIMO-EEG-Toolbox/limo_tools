@@ -192,7 +192,7 @@ if nargin == 4
     LIMO_files.LIMO = study_root;
     
     % if clustering is used, check subjects' set ordering
-    if model.defaults.icaclustering
+    if isfield(model.defaults, 'icaclustering')
         unique_subjects  = STUDY.design(STUDY.currentdesign).cases.value'; % all designs have the same cases
         for s = 1:length(unique_subjects)
             order{s} = find(strcmp(unique_subjects{s},{STUDY.datasetinfo.subject}));
@@ -226,7 +226,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     
     % build the pipelines
     for s = 1:size(model.set_files,1)
-        if model.defaults.icaclustering
+        if isfield(model.defaults, 'icaclustering')
             subject = order{s}; % allows picking up the order in set_files based in STUDY
         else
             subject = s;
