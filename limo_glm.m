@@ -221,7 +221,7 @@ switch method
             dfe = size(Y,1)-rank(WX);
         else
             % Satterthwaite approximation 
-            % trace((eye(size(HM))-HM)'*(eye(size(HM))-HM))
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
             % dfe = size(Y,1)-size(Y,2)+rank(WX);
             % Cheverud 2001
 %             EV  = eig(corr((R*Y)));
@@ -229,9 +229,9 @@ switch method
 %             V   = sum((EV-1).^2) / (M-1);
 %             dfe = (1 + (M-1)*(1-V/M)) - df;
             % Li and Ji 2005
-            EV  = abs(eig(corr(R*Y)));
-            x   = single(EV>=1) + (EV - floor(EV));
-            dfe = size(Y,1) - sum(x) + rank(WX) + 1;
+%             EV  = abs(eig(corr(R*Y)));
+%             x   = single(EV>=1) + (EV - floor(EV));
+%             dfe = size(Y,1) - sum(x) + rank(WX) + 1;
         end
         
         % model R^2
