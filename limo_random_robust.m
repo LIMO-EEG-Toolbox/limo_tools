@@ -179,7 +179,8 @@ switch type
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
             end
-            [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2),one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
+            [one_sample(electrode,:,4),one_sample(electrode,:,1),trimci,one_sample(electrode,:,2), ...
+                one_sample(electrode,:,5),tcrit,one_sample(electrode,:,3)]=limo_trimci(Y);
             % [one_sample(electrode,:,1),one_sample(electrode,:,3),ci,sd,n,one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
             % one_sample(electrode,:,2) = sd./sqrt(n);
             clear tmp Y
@@ -190,7 +191,7 @@ switch type
         end
         save ([name],'one_sample', '-v7.3')
         if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
-        
+
         % ------------------------------------------------
         % Bootstrap
         if nboot > 0
@@ -313,7 +314,7 @@ switch type
             end
             clear H0_one_sample tfce_H0_one_sample
         end % closes if nboot > 0
-        disp('one sample t-test done')
+        disp('one sample t-test for trimmed means done')
         
         
         %--------------------------------------------------------------------------
@@ -371,7 +372,8 @@ switch type
             fprintf('analyse parameter %g electrode %g',parameter, electrode); disp(' ');
             tmp = data1(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            [two_samples(electrode,:,4),two_samples(electrode,:,1),two_samples(electrode,:,2),CI,two_samples(electrode,:,5),tcrit,two_samples(electrode,:,3)]=limo_yuen_ttest(Y1,Y2); clear Y1 Y2
+            [two_samples(electrode,:,4),two_samples(electrode,:,1),two_samples(electrode,:,2),...
+                CI,two_samples(electrode,:,5),tcrit,two_samples(electrode,:,3)]=limo_yuen_ttest(Y1,Y2); clear Y1 Y2
             % [two_samples(electrode,:,1),two_samples(electrode,:,3),ci,sd,n,two_samples(electrode,:,4),two_samples(electrode,:,5)]=limo_ttest(2,Y1,Y2,.05);
             % sd = sd.^2; a = sd(1,:)./size(Y1,3); b = sd(1,:)./size(Y2,3);
             % two_samples(electrode,:,2) = sqrt(a + b); clear Y1 Y2
@@ -516,7 +518,7 @@ switch type
                 clear H0_two_samples tfce_H0_two_samples;
             end
         end % closes if nboot > 0
-        disp('two samples t-test done')
+        disp('two samples Yuen t-test for trimmed means done')
         
         
         %--------------------------------------------------------------------------
@@ -570,7 +572,8 @@ switch type
             fprintf('analyse parameter %s electrode %g',num2str(parameter')', electrode); disp(' ');
             tmp = data1(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            [paired_samples(electrode,:,4),paired_samples(electrode,:,1),paired_samples(electrode,:,2),CI,paired_samples(electrode,:,5),tcrit,paired_samples(electrode,:,3)]=limo_yuend_ttest(Y1,Y2); clear Y1 Y2
+            [paired_samples(electrode,:,4),paired_samples(electrode,:,1),paired_samples(electrode,:,2),...
+                CI,paired_samples(electrode,:,5),tcrit,paired_samples(electrode,:,3)]=limo_yuend_ttest(Y1,Y2); clear Y1 Y2
             % [paired_samples(electrode,:,1),paired_samples(electrode,:,3),ci,sd,n,paired_samples(electrode,:,4),paired_samples(electrode,:,5)]=limo_ttest(1,Y1,Y2,.05); clear Y1 Y2
             % paired_samples(electrode,:,2) = sd./sqrt(n);
         end
@@ -707,7 +710,7 @@ switch type
                 clear H0_paired_samples tfce_H0_paired_samples;
             end
         end % closes if nboot > 0
-        disp('paired t-test done')
+        disp('Paired Yuen t-test for trimmed means done')
         
         %------------------------------------------------------------------
         % Regression // percentile bootstrap under H0
@@ -850,14 +853,15 @@ switch type
                 if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
                     data = limo_tf_4d_reshape(data);
                     Yhat = NaN(size(data));
-                    Condition_effect_1 = NaN(size(data,1),size(data,2),2);
+                    Condition_effect = NaN(size(data,1),size(data,2),2);
                     array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
                     for e=1:size(array,1)
                         electrode = array(e); fprintf('processing electrode %g \n,',electrode);
-                        [Condition_effect_1(electrode,:,1), Condition_effect_1(electrode,:,2),Yhat(electrode,:,:)] = limo_robust_1way_anova(squeeze(data(electrode,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
+                        [Condition_effect(electrode,:,1), Condition_effect(electrode,:,2),Yhat(electrode,:,:)] = ...
+                            limo_robust_1way_anova(squeeze(data(electrode,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
                     end
-                    Condition_effect_1 = limo_tf_4d_reshape(Condition_effect_1);
-                    save Condition_effect_1 Condition_effect_1; clear Condition_effect_1
+                    Condition_effect = limo_tf_4d_reshape(Condition_effect);
+                    save Condition_effect_1 Condition_effect; clear Condition_effect_1
                     delete Betas.mat % no betas here
                     delete R2.mat % no R2
                     Yhat = limo_tf_4d_reshape(Yhat); % these are the trimmed mean
@@ -865,6 +869,9 @@ switch type
                     Res = data - Yhat;
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
+                    LIMO.design.status = 'done';
+                    LIMO.design.method = 'Generalized Welch''s method';
+                    save LIMO LIMO
                 else
                     LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
@@ -872,65 +879,112 @@ switch type
                 end
             else
                 if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
-                    Condition_effect_1 = NaN(size(data,1),size(data,2),2);
+                    Condition_effect = NaN(size(data,1),size(data,2),2);
                     for e=1:size(data,1)
-                        [Condition_effect_1(e,:,1),Condition_effect_1(e,:,2)] = limo_robust_1way_anova(squeeze(Y(e,:,:)),LIMO.design.X,20);
+                        [Condition_effect(e,:,1),Condition_effect(e,:,2),Yhat(e,:,:)] = ...
+                            limo_robust_1way_anova(squeeze(data(e,:,:)),LIMO.design.X,20);
                     end
-                    save Condition_effect_1 Condition_effect_1
+                    save Condition_effect_1 Condition_effect
                     delete Betas.mat % no betas here
                     delete R2.mat % no R2
                     Res = data - Yhat;
                     save Yhat Yhat; clear Yhat
                     save Res Res; clear Res
+                    LIMO.design.status = 'done';
+                    LIMO.design.method = 'Generalized Welch''s method';
+                    save LIMO LIMO
                 else
                     LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
-                    limo_eeg(4)
+                    limo_eeg(4); 
                 end
             end
         else
             return
         end
         
-        
-        % do the bootsrap for the 1-way ANOVA 
-        % limo_eeg(4) wouild have done for OLS - full factorial designs/ANCOVA
-        % -----------------------------------------------------------------
+        % do the bootsrap for the 1-way robust ANOVA  -- done in limo_eeg(4) for other designs
+        % ------------------------------------------------------------------------------------
         if LIMO.design.bootstrap ~= 0 &&  LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
             mkdir('H0');
             
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC') 
-                data = limo_tf_4d_reshape(data); 
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                data = limo_tf_4d_reshape(data);
             end
             
             for c=1:(size(LIMO.design.X,2)-1) % size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
                 data(:,:,index) = data(:,:,index) - repmat(mean(data(:,:,index),3),[1 1 length(index)]);
             end
-            boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
-            H0_Condition_effect_1 = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
+            boot_table            = limo_create_boot_table(data,nboot);
+            H0_Condition_effect   = NaN(size(data,1),size(data,2),2,nboot);
             
-            for b=1:LIMO.design.bootstrap
+            array = find(~isnan(data(:,1,1))); % skip empty electrodes
+            for b=1:nboot
                 for electrode=1:size(array,1)
-                    e = array(electrode); 
-                    index = find(~isnan(squeeze(data(e,1,:)))); 
-                    X = LIMO.design.X(index,1:end-1);
+                    e     = array(electrode);
+                    index = find(~isnan(squeeze(data(e,1,:))));
+                    X     = LIMO.design.X(index,1:end-1);
+                    fprintf('computing boostrap %g/%g\n',b,LIMO.design.bootstrap);
                     if sum(sum(X) == 0) ==0
-                        disp('compute')
-                        [H0_Condition_effect_1(e,:,1,b), H0_Condition_effect_1(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X,20); % no intercept in this model
+                        [H0_Condition_effect(e,:,1,b), H0_Condition_effect(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X,20); % no intercept in this model
                     end
                 end
             end
             
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                H0_Condition_effect_1 = limo_tf_5d_reshape(H0_Condition_effect_1); 
+            % do TFCE
+            if LIMO.design.tfce ~= 0
+                mkdir('TFCE')
+                
+                % TFCE the observed data
+                fprintf('Creating Condition 1 TFCE scores \n')
+                if size(Condition_effect,1) == 1
+                    tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                else
+                    tfce_score      = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                end
+                
+                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                    tfce_score = limo_tf_5d_reshape(tfce_score);
+                end
+                save(['TFCE' filesep 'tfce_Condition_effect_1.mat'],'tfce_score');
+                clear Condition_effect tfce_score;
+                
+                % TFCE H0 data
+                fprintf('Creating H0 Condition_1 TFCE scores \n');
+                if size(H0_Condition_effect,1) == 1
+                    tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
+                    parfor b=1:nboot
+                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    end
+                else
+                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
+                    parfor b=1:nboot
+                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    end
+                end
+                
+                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                    tfce_H0_score = limo_tf_5d_reshape(tfce_H0_score);
+                end
+                save(['H0' filesep 'tfce_H0_Condition_effect_1.mat'],'tfce_H0_score');
+                clear H0_Condition_effect tfce_H0_score;
             end
-            save H0_Condition_effect_1 H0_Condition_effect_1
+            
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                H0_Condition_effect = limo_tf_5d_reshape(H0_Condition_effect);
+            end
+            save(['H0' filesep 'H0_Condition_effect_1'],'H0_Condition_effect')
+            save(['H0' filesep 'boot_table'],'boot_table');
             clear data
         end
-        disp('ANOVA/ANCOVA analysis done');
-        
-        
+
+        if strcmp(LIMO.design.method,'Generalized Welch''s method')
+            disp('Robust Gp ANOVA for trimmed means (generalization of Welch''s method) done')
+        else
+            disp('ANOVA/ANCOVA analysis done');
+        end
+            
         %----------------------------------------------------------------------------------------------
         % Repeated Measure ANOVA (multivariate approach) - bootstrap centering data
         %----------------------------------------------------------------------------------------------
