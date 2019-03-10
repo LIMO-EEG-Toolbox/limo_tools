@@ -1178,7 +1178,7 @@ elseif type == 5
         
         % Ask for Gp
         % -------------
-        gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. [3 2] for 3x2 ANOVA','Groups')));
+        gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups')));
         if isempty(gp_nb)
             return;
         elseif sum(gp_nb <= 1)
@@ -1484,11 +1484,7 @@ elseif type == 5
         end
         
         LIMO = limo; cd(limo.dir);
-        if size(Cat,2) == 1 && isempty(Cont)
-            LIMO.design.method = 'Robust ANOVA (Trimmed means)';
-        else
-            LIMO.design.method = 'Robust ANOVA (Iterative Reweighted Least Square)';
-        end
+        LIMO.design.method = 'ANOVA';
         
         if strcmp(LIMO.Analysis,'Time-Frequency')
             LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
