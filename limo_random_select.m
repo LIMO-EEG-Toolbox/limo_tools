@@ -1777,6 +1777,10 @@ elseif type == 5
                 gp(from:to) = i;
                 
                 for j=1:prod(factor_nb)
+                    if j>size(size(data,3))
+                        error('The parameter %g requested (gp %g) is not valid, beta max=%g ',j,i,size(data,3))
+                        return
+                    end
                     tmp_data(:,:,from:to,j) = squeeze(data(:,:,current_param(j),from:to));
                 end
             end
