@@ -360,6 +360,7 @@ parfor subject = 1:N
     disp('--------------------------------')
     try
         psom_run_pipeline(pipeline(subject),limopt{subject})
+        
         % example of debugging 
         % ---------------------
         % psom reported with function failed, eg limo_batch_import
