@@ -1777,7 +1777,7 @@ elseif type == 5
                 gp(from:to) = i;
                 
                 for j=1:prod(factor_nb)
-                    if j>size(size(data,3))
+                    if j>size(data,3)
                         error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
                         return
                     end
