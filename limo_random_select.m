@@ -1554,10 +1554,11 @@ elseif type == 5
                     parameters(:,i) = check_files(Names,1,g.parameters{i});
                 end
                 
-                if length(parameters(:,i)) ~= prod(factor_nb)
+                if length(parameters(:,i)) ~= length(factor_nb)
                     error(['the number of parameter chosen (',num2str(length(parameters)), ...
                         ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
                 end
+                
                 N = N + size(Names{cell_nb},2);
                 cell_nb = cell_nb +1;
             end
@@ -1776,8 +1777,8 @@ elseif type == 5
                 else from = from+nb_subjects(i-1); to = to+nb_subjects(i); end
                 gp(from:to) = i;
                 
-                for j=1:prod(factor_nb)
-                    if j>size(data,3)
+                for j=1:length(factor_nb)
+                    if current_param(j)>size(data,3)
                         error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
                         return
                     end
