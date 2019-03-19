@@ -1267,9 +1267,9 @@ switch type
                             end
                         else
                             if size(Rep_ANOVA_Gp_effect,1) == 1
-                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1)),[]);
+                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),[]);
                             else
-                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             end
                         end
                         save(tfce_name, 'tfce_Rep_ANOVA_Gp_effect');
