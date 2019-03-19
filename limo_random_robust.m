@@ -968,7 +968,7 @@ switch type
                     tfce_H0_score = limo_tf_5d_reshape(tfce_H0_score);
                 end
                 save(['H0' filesep 'tfce_H0_Condition_effect_1.mat'],'tfce_H0_score');
-                clear H0_Condition_effect tfce_H0_score;
+                clear tfce_H0_score;
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
@@ -976,7 +976,7 @@ switch type
             end
             save(['H0' filesep 'H0_Condition_effect_1'],'H0_Condition_effect')
             save(['H0' filesep 'boot_table'],'boot_table');
-            clear data
+            clear data H0_Condition_effect ;
         end
 
         if strcmp(LIMO.design.method,'Generalized Welch''s method')
