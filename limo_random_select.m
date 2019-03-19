@@ -1520,7 +1520,12 @@ elseif type == 5
         
         % Ask for Repeated Measures
         % --------------------------
-        factor_nb = eval(cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
+        factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
+        try
+            factor_nb = eval(factor_nb);
+        catch
+            errordlg2('could not evaluate the factors, make sure to use square braquets []')
+        end 
         % in case the inpuit is [] or [0]
         if isempty(factor_nb)
             return;
@@ -1554,7 +1559,7 @@ elseif type == 5
                     parameters(:,i) = check_files(Names,1,g.parameters{i});
                 end
                 
-                if length(parameters(:,i)) ~= length(factor_nb)
+                if length(parameters(:,i)) ~= prod(factor_nb)
                     error(['the number of parameter chosen (',num2str(length(parameters)), ...
                         ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
                 end
@@ -1777,7 +1782,7 @@ elseif type == 5
                 else from = from+nb_subjects(i-1); to = to+nb_subjects(i); end
                 gp(from:to) = i;
                 
-                for j=1:length(factor_nb)
+                for j=1:prod(factor_nb)
                     if current_param(j)>size(data,3)
                         error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
                         return
