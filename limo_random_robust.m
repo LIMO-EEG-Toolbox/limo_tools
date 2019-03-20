@@ -800,13 +800,13 @@ switch type
         data  = varargin{2}; % 3D or 4D
         cat   = varargin{3}; % matrix of values
         cont  = varargin{4}; % matrix of values
-        nboot = varargin{5};
-        tfce  = varargin{6};
+        LIMO  = varargin{5};
+        nboot = varargin{6};
+        tfce  = varargin{7};
         clear varargin
         
         % ------------------------------------------------
         % check the data structure
-        load LIMO
         for e=1:size(data,1)
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 tmp = isnan(data(e,1,1,:));
@@ -875,7 +875,7 @@ switch type
                 else
                     LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
-                    limo_eeg_tf(4)
+                    limo_eeg_tf(4); return
                 end
             else
                 if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
@@ -896,7 +896,7 @@ switch type
                 else
                     LIMO.design.method = 'OLS';
                     save LIMO LIMO; clear data LIMO
-                    limo_eeg(4); 
+                    limo_eeg(4); return
                 end
             end
         else
@@ -905,7 +905,8 @@ switch type
         
         % do the bootsrap for the 1-way robust ANOVA  -- done in limo_eeg(4) for other designs
         % ------------------------------------------------------------------------------------
-        if LIMO.design.bootstrap ~= 0 &&  LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+        if LIMO.design.bootstrap ~= 0 &&  ...
+                LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
             mkdir('H0');
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
@@ -914,18 +915,18 @@ switch type
             
             for c=1:(size(LIMO.design.X,2)-1) % size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
-                data(:,:,index) = data(:,:,index) - repmat(mean(data(:,:,index),3),[1 1 length(index)]);
+                data(:,:,index) = data(:,:,index) - repmat(nanmean(data(:,:,index),3),[1 1 length(index)]);
             end
             boot_table            = limo_create_boot_table(data,nboot);
             H0_Condition_effect   = NaN(size(data,1),size(data,2),2,nboot);
             
             array = find(~isnan(data(:,1,1))); % skip empty electrodes
             for b=1:nboot
+                fprintf('computing boostrap %g/%g\n',b,LIMO.design.bootstrap);
                 for electrode=1:size(array,1)
                     e     = array(electrode);
                     index = find(~isnan(squeeze(data(e,1,:))));
                     X     = LIMO.design.X(index,1:end-1);
-                    fprintf('computing boostrap %g/%g\n',b,LIMO.design.bootstrap);
                     if sum(sum(X) == 0) ==0
                         [H0_Condition_effect(e,:,1,b), H0_Condition_effect(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X,20); % no intercept in this model
                     end
