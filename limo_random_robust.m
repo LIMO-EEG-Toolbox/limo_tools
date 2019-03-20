@@ -154,6 +154,7 @@ switch type
         tfce      = varargin{5};
         clear varargin
         
+<<<<<<< HEAD
         if ndims(data) == 2 % timecourses coming from multivariata analyses
             one_sample = NaN(size(data,1), 5);
             name = sprintf('one_sample_ttest_time');
@@ -166,6 +167,7 @@ switch type
             % ------------------------------------------------
             % Bootstrap
             if nboot > 0
+=======
         % ------------------------------------------------
         % check the data structure
         for e=1:size(data,1)
@@ -232,6 +234,7 @@ switch type
                 disp('making boot table ...')
                 boot_table = limo_create_boot_table(data,nboot);
                 save(['H0', filesep, 'boot_table'], 'boot_table')
+>>>>>>> refs/remotes/origin/master
                 
                 bootex = 1;
                 boot_name = sprintf('H0_one_sample_ttest_time');
@@ -441,11 +444,21 @@ switch type
                     save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
                     clear tfce_H0_one_sample; disp(' .. done')
                 end
+<<<<<<< HEAD
                 clear H0_one_sample tfce_H0_one_sample
             end % closes if nboot > 0
             disp('one sample t-test done')
             
         end
+=======
+                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
+                clear tfce_H0_one_sample; disp(' .. done')
+            end
+            clear H0_one_sample tfce_H0_one_sample
+        end % closes if nboot > 0
+        disp('one sample t-test for trimmed means done')
+        
+>>>>>>> refs/remotes/origin/master
         
         %--------------------------------------------------------------------------
         % Two Samples t-test // percentile bootstrap technique
@@ -520,7 +533,11 @@ switch type
         if nboot > 0
             
             bootex = 1;
+<<<<<<< HEAD
             boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
+=======
+            boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);	
+>>>>>>> refs/remotes/origin/master
             if exist(['H0', filesep, boot_name, '.mat'], 'file')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if strcmp(answer,'Yes')
@@ -1033,6 +1050,7 @@ switch type
             return
         end
         
+<<<<<<< HEAD
         
         % do the bootsrap for the 1-way ANOVA 
         % limo_eeg(4) wouild have done for OLS - full factorial designs/ANCOVA
@@ -1042,12 +1060,23 @@ switch type
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC') 
                 data = limo_tf_4d_reshape(data); 
+=======
+        % do the bootsrap for the 1-way robust ANOVA  -- done in limo_eeg(4) for other designs
+        % ------------------------------------------------------------------------------------
+        if LIMO.design.bootstrap ~= 0 &&  ...
+                LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+            mkdir('H0');
+            
+            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+                data = limo_tf_4d_reshape(data);
+>>>>>>> refs/remotes/origin/master
             end
             
             for c=1:(size(LIMO.design.X,2)-1) % size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
                 data(:,:,index) = data(:,:,index) - repmat(nanmean(data(:,:,index),3),[1 1 length(index)]);
             end
+<<<<<<< HEAD
             boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect_1 = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
             
@@ -1059,6 +1088,7 @@ switch type
                     if sum(sum(X) == 0) ==0
                         disp('compute')
                         [H0_Condition_effect_1(e,:,1,b), H0_Condition_effect_1(e,:,2,b)] = limo_robust_1way_anova(squeeze(data(e,:,boot_table{e}(:,b))),X,20); % no intercept in this model
+=======
             boot_table            = limo_create_boot_table(data,nboot);
             H0_Condition_effect   = NaN(size(data,1),size(data,2),2,nboot);
             
