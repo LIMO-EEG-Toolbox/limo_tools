@@ -257,12 +257,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         
         if nargin == 4
-            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
-                root = [study_root filesep 'sub-' num2str(subject)];
-            else
-                root = [study_root filesep num2str(subject)];
-            end
-            
+            root = [study_root filesep 'sub-' num2str(subject)];
             if exist(root,'dir') ~= 7; mkdir(root); end
             design_name = STUDY.design(STUDY.currentdesign).name; 
             design_name(isspace(design_name)) = [];
@@ -284,13 +279,13 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
 
         if ~isempty(model.cat_files)
-            pipeline(s).import.opt.cat = model.cat_files{subject};
+            pipeline(s).import.opt.cat = model.cat_files{s};
         else
             pipeline().import.opt.cat = [];
         end
         
         if ~isempty(model.cont_files)
-            pipeline(s).import.opt.cont = model.cont_files{subject};
+            pipeline(s).import.opt.cont = model.cont_files{s};
         else
             pipeline(s).import.opt.cont = [];
         end
@@ -371,12 +366,12 @@ save([current filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 % allocate names
 for subject = 1:N
     limopt{subject}= opt;
-    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
+    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(order{s})];
 end
     
 parfor subject = 1:N
     disp('--------------------------------')
-    fprintf('processing subject %g/%g \n',subject,N)
+    fprintf('processing subject %g/%g \n',order{subject},N)
     disp('--------------------------------')
     try
         psom_run_pipeline(pipeline(subject),limopt{subject})
@@ -387,10 +382,10 @@ parfor subject = 1:N
         % put the point brack where needed and call e.g.
         % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
         % limo_batch_design_matrix(pipeline(subject).design.files_in)
-        report{subject} = ['subject ' num2str(subject) ' processed'];
+        report{subject} = ['subject ' order{subject} ' processed'];
         procstatus(subject) = 1;
     catch ME
-        report{subject} = ['subject ' num2str(subject) ' failed'];
+        report{subject} = ['subject ' order{subject} ' failed'];
         if strcmp(option,'model specification') 
             remove_limo(subject) = 1;
         elseif strcmp(option,'both')
