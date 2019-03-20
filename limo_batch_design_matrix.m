@@ -57,7 +57,7 @@ if strcmp(LIMO.Analysis,'Time')
                 error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
             end
             nb_clusters     = size(STUDY.cluster(1).child,2);
-            nb_subjects     = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
+            nb_subjects     = length(STUDY.design(STUDY.currentdesign).cases.value'); % length({STUDY.datasetinfo.subject}); % ;
             Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
             dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
             data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
