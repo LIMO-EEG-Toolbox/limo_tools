@@ -704,7 +704,9 @@ switch varargin{1}
             
             if boot_go == 1
                 try
-                    fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                    if LIMO.Level == 1
+                        fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                    end
                     mkdir H0; load Yr;
                     if size(Yr,1) == 1
                         array = 1;
