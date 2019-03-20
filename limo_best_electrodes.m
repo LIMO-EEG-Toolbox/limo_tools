@@ -31,7 +31,7 @@ current_dir = pwd;
 if FilterIndex ~= 0
     
     if strcmp(name(end-3:end),'.txt')
-        name = importdata(name);
+        name = importdata([pathname name]);
     elseif strcmp(name(end-3:end),'.mat')
         name = load([pathname name]);
         name = getfield(name,cell2mat(fieldnames(name)));
@@ -105,7 +105,7 @@ clear data
 if sum(isnan(electrode_vector)) == 0
     
     if nargin == 0
-        [p,f,filt]=uigetfile('load expected chanlocs');
+        [p,f,filt]=uigetfile('*.mat','load expected chanlocs to check channel positions');
         if filt == 0
             return
         else

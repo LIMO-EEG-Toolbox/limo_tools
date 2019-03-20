@@ -1,4 +1,4 @@
-function [mask,p_val,max_th] = limo_max_correction(M,bootM,p,fig)
+function [mask,p_val,max_th] = limo_max_correction(varargin)
 
 % correction for multiple testing using the max stat value
 % since the type 1 error is the prob to make at least one error
@@ -24,9 +24,20 @@ function [mask,p_val,max_th] = limo_max_correction(M,bootM,p,fig)
 % --------------------------------
 % Copyright (C) LIMO Team 2016
 
-if nargin == 3
-    fig = 1;
+% check inputs 
+M       = varargin{1};
+bootM   = varargin{2};
+if nargin == 2
+    p   = 0.05;
+    fig = [];
+elseif nargin == 3
+    p   = varargin{3};
+    fig = [];
+elseif nargin == 4
+    p   = varargin{3};
+    fig = varargin{4};
 end
+clear varargin
 
 if ndims(bootM) == 3
     [a,b,nboot]=size(bootM);
@@ -40,6 +51,7 @@ if ndims(bootM) == 3
         maxM(boot) = max(data(:)); %
     end
 
+<<<<<<< HEAD
     % get threshold
     maxM(maxM==Inf) = [];
     sortmaxM        = sort(maxM); 
@@ -47,6 +59,13 @@ if ndims(bootM) == 3
     U               = round((1-p).*nboot);
     max_th          = sortmaxM(U);
     mask            = squeeze(M) >= max_th;
+=======
+% collect highest value for each boot
+parfor boot=1:nboot
+    data = squeeze(bootM(:,:,boot));
+    maxM(boot) = max(data(:)); 
+end
+>>>>>>> refs/remotes/origin/master
 
     % get the equivalent bootstrapped p-value
     smalest_pval = 1/nboot;
@@ -57,10 +76,20 @@ if ndims(bootM) == 3
         end
     end
 
+<<<<<<< HEAD
 elseif ndims(bootM) == 2
     [a,nboot]=size(bootM);
     if any(size(M)~=[a 1])
         error('dimension error: matrices of observed and bootstrap values are different')
+=======
+% get the equivalent bootstrapped p-value
+smalest_pval = 1/nboot;
+for row =1:a
+    for column=1:b
+        tmp = sum(M(row,column) <= sortmaxM) / nboot;
+        p_val(row,column) = min([tmp 1-tmp]);
+        if p_val(row,column) == 0; p_val(row,column) = smalest_pval; end
+>>>>>>> refs/remotes/origin/master
     end
     
     % collect highest value for each boot
@@ -89,18 +118,21 @@ elseif ndims(bootM) == 2
 end
 
 %% figure
+if sum(mask(:)) == 0
+    fig = 1 ; 
+end
+
 if fig == 1
     figure('Name','Correction by max: results under H0')
     plot(sortmaxM,'LineWidth',3); grid on; hold on; 
     
     plot(min(find(sortmaxM==max_th)),max_th,'r*','LineWidth',5)
-    txt = 'threashold \rightarrow';
+    txt = ['bootstrap threashold ' num2str(max_th) '\rightarrow'];
     text(min(find(sortmaxM==max_th)),max_th,txt,'FontSize',12,'HorizontalAlignment','right');
     
     [val,loc]=min(abs(sortmaxM-max(M(:)))); 
     plot(loc,max(M(:)),'r*','LineWidth',5)
-    txt = sprintf('maximum');
-    txt = [txt '\rightarrow'];
+    txt = ['maximum observed: ' num2str(max(M(:))) '\rightarrow'];
     text(loc,max(M(:)),txt,'FontSize',12,'HorizontalAlignment','right');
     
     title('Maxima under H0','FontSize',12)
