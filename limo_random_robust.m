@@ -1056,9 +1056,9 @@ switch type
     case {6}
         
         data              = varargin{2}; % e,f,subjects,measures
-        if isempty(data)
+        if isempty(data)  
             load('Yr');
-            data = Yr;
+            data = Yr; 
             clear Yr
         end
         gp_vector         = varargin{3}; % length of data, indices groups
@@ -1150,11 +1150,11 @@ switch type
             Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2);
             tmp_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),length(C),2);
             LIMO.design.C = C;
-            for i= 1:length(factor_levels);
+            for i= 1:length(factor_levels)
                 LIMO.design.effects{i} = ['Main effect ' num2str(i)];
             end
             index = length(factor_levels)+1;
-            for i= 2:length(factor_levels);
+            for i= 2:length(factor_levels)
                 n = nchoosek([1:length(factor_levels)],i);
                 for j=1:size(n,1)
                     LIMO.design.effects{index} = ['Interaction ' num2str(n(j,:))];
@@ -1282,7 +1282,7 @@ switch type
         end
         
         % ----------------------------------------------------------------
-        if nboot > 0
+        if nboot > 0 
             % do tfce now to free memory
             % --------------------------
             if tfce ~= 0
@@ -1332,9 +1332,9 @@ switch type
                             end
                         else
                             if size(Rep_ANOVA_Gp_effect,1) == 1
-                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1)),[]);
+                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),[]);
                             else
-                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                                tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             end
                         end
                         save(tfce_name, 'tfce_Rep_ANOVA_Gp_effect');
@@ -1526,7 +1526,7 @@ switch type
         
         % ------------------------- TFCE ---------------
         if tfce ~= 0 % check if tfce is on and if more than one electrode
-            
+           
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
             for i=1:nb_effects
                 fprintf('analyzing effect %g \n',i);
@@ -1561,7 +1561,7 @@ switch type
                         end
                     end
                 end
-                save(tfce_name, 'tfce_H0_Rep_ANOVA');
+                save(tfce_name, 'tfce_H0_Rep_ANOVA'); 
                 clear tfce_H0_Rep_ANOVA
             end
             
@@ -1576,15 +1576,15 @@ switch type
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     if size(H0_Rep_ANOVA_Gp_effect,1)
-                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
                     else
-                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(limo_tf_5d_reshape(squeeze(3,H0_Rep_ANOVA_Gp_effect(:,:,1,:))),LIMO.data.neighbouring_matrix);
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),LIMO.data.neighbouring_matrix);
                     end
                 else
                     if size(H0_Rep_ANOVA_Gp_effect,1)
-                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(1,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
                     else
-                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(squeeze(2,H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                        tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
                     end
                 end
                 save(tfce_name, 'H0_tfce_Rep_ANOVA_Gp_effect');
