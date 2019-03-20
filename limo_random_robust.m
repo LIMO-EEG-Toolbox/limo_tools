@@ -158,7 +158,8 @@ switch type
             one_sample = NaN(size(data,1), 5);
             name = sprintf('one_sample_ttest_time');
             Y = data;
-            [one_sample(:,4),one_sample(:,1),trimci,one_sample(:,2),one_sample(:,5),tcrit,one_sample(:,3)]=limo_trimci(Y,20, 0.05, 1/LIMO.nb_conditions_fl);
+            [one_sample(:,4),one_sample(:,1),trimci,one_sample(:,2), one_sample(:,5), ...
+                tcrit,one_sample(:,3)]=limo_trimci(Y,20, 0.05, 1/LIMO.nb_conditions_fl);
             
             save ([name],'one_sample', '-v7.3')
             if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
@@ -178,7 +179,7 @@ switch type
                     end
                 end
                 
-                if bootex == 1;
+                if bootex == 1
                     mkdir H0
                     % create a boot one_sample file to store data under H0 and H1
                     H0_one_sample = NaN(size(data,1), 2,nboot); % stores T and p values for each boot under H0
@@ -213,7 +214,7 @@ switch type
                 if tfce ~= 0
                 end
             end % closes if nboot > 0
-            disp('one sample t-test done')
+            disp('one sample t-test for trimmed means done')
             
         else % if data has more than two dimensions
             % ------------------------------------------------
@@ -581,7 +582,7 @@ switch type
                 clear H0_two_samples tfce_H0_two_samples;
             end
         end % closes if nboot > 0
-        disp('two samples t-test done')
+        disp('two samples Yuen t-test for trimmed means done')
         
         
         %--------------------------------------------------------------------------
@@ -772,7 +773,7 @@ switch type
                 clear H0_paired_samples tfce_H0_paired_samples;
             end
         end % closes if nboot > 0
-        disp('paired t-test done')
+        disp('Paired Yuen t-test for trimmed means done')
         
         %------------------------------------------------------------------
         % Regression // percentile bootstrap under H0
