@@ -83,7 +83,6 @@ elseif ndims(bootM) == 2
         tmp = sum(M(row,column) <= sortmaxM) / nboot;
         p_val(row,column) = min([tmp 1-tmp]);
         if p_val(row) == 0; p_val(row) = smalest_pval; end
-
     end
 
 end
