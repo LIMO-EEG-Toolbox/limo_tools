@@ -31,10 +31,10 @@ switch (type)
  
     case(1)
         if data2 ~= 0
-            if ~any(size(data1)==size(data2))
-                error('data1 and data2 are of different dimensions')
-            else
+            try
                 data1 = data1 - data2; % paired t-test
+            catch
+                error('data1 and data2 are of different dimensions')
             end
         end
 
@@ -49,7 +49,6 @@ switch (type)
         
     case(2)
        
-        n = NaN(2,1);
         n(1) = size(data1,nd);
         n(2) = size(data2,nd);
 

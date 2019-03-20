@@ -451,11 +451,7 @@ if type == 1 || type == 4
         
         for i=length(parameters)
             cd(LIMO.dir);
-<<<<<<< HEAD
             if length(parameters) > 1 
-=======
-            if length(parameters) > 1
->>>>>>> refs/remotes/origin/master
                 foldername = 'parameter_%g';
                 if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
                 dir_name = sprintf(foldername,parameters(i));
@@ -703,19 +699,11 @@ elseif type == 2
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
         if strcmp(g.analysis_type,'1 channel/component only')
-<<<<<<< HEAD
             tmp                = squeeze(data{1}(:,:,:,1,:));
             tmp_data1          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:,:) = tmp; clear tmp
             tmp                = squeeze(data{2}(:,:,:,1,:));
             tmp_data2          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
-=======
-            tmp = squeeze(data{1}(:,:,:,1,:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
-            tmp_data1(1,:,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,:,1,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
->>>>>>> refs/remotes/origin/master
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
             tmp_data1 = squeeze(data{1}(:,:,:,1,:));
@@ -729,19 +717,11 @@ elseif type == 2
         
     else
         if strcmp(g.analysis_type,'1 channel/component only')
-<<<<<<< HEAD
             tmp              = squeeze(data{1}(:,:,1,:));
             tmp_data1        = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
             tmp_data1(1,:,:) = tmp; clear tmp
             tmp              = squeeze(data{2}(:,:,1,:));
             tmp_data2        = ones(1,size(tmp,1),size(tmp,2));
-=======
-            tmp = squeeze(data{1}(:,:,1,:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-            tmp_data1(1,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,1,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
->>>>>>> refs/remotes/origin/master
             tmp_data2(1,:,:) = tmp; clear tmp
         else
             tmp_data1 = squeeze(data{1}(:,:,1,:));
@@ -961,11 +941,7 @@ elseif type == 3
                             end
                         else
                             if size(limo.design.electrode,2) == 1
-<<<<<<< HEAD
                                 tmp_data(1,:,:,index)  = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-=======
-                                tmp_data(1,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
->>>>>>> refs/remotes/origin/master
                                 index = index + 1;
                             else
                                 out                    = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
@@ -1202,7 +1178,7 @@ elseif type == 5
         
         % Ask for Gp
         % -------------
-        gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups')));
+        gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. [3 2] for 3x2 ANOVA','Groups')));
         if isempty(gp_nb)
             return;
         elseif sum(gp_nb <= 1)
@@ -1516,7 +1492,11 @@ elseif type == 5
         end
         
         LIMO = limo; cd(limo.dir);
-        LIMO.design.method = 'ANOVA';
+        if size(Cat,2) == 1 && isempty(Cont)
+            LIMO.design.method = 'Robust ANOVA (Trimmed means)';
+        else
+            LIMO.design.method = 'Robust ANOVA (Iterative Reweighted Least Square)';
+        end
         
         if strcmp(LIMO.Analysis,'Time-Frequency')
             LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
@@ -1552,16 +1532,7 @@ elseif type == 5
         
         % Ask for Repeated Measures
         % --------------------------
-<<<<<<< HEAD
         factor_nb = eval(cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
-=======
-        factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
-        try
-            factor_nb = eval(factor_nb);
-        catch
-            errordlg2('could not evaluate the factors, make sure to use square braquets []')
-        end 
->>>>>>> refs/remotes/origin/master
         % in case the inpuit is [] or [0]
         if isempty(factor_nb)
             return;
@@ -1599,7 +1570,6 @@ elseif type == 5
                     error(['the number of parameter chosen (',num2str(length(parameters)), ...
                         ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
                 end
-                
                 N = N + size(Names{cell_nb},2);
                 cell_nb = cell_nb +1;
             end
@@ -1739,17 +1709,10 @@ elseif type == 5
                 elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
                         if size(limo.design.electrode,2) == 1
-<<<<<<< HEAD
                             matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                         else
                             out          = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                             matched_data = out(i,:,:); % matches the expected chanloc of the subject
-=======
-                             matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-                        else
-                            out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                             matched_data = out(i,:,:); % matches the expected chanloc of the subject
->>>>>>> refs/remotes/origin/master
                         end
                     elseif strcmpi(g.type,'Components')
                         if size(limo.design.component,2) == 1
@@ -1831,10 +1794,6 @@ elseif type == 5
                 gp(from:to) = i;
                 
                 for j=1:prod(factor_nb)
-                    if current_param(j)>size(data,3)
-                        error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
-                        return
-                    end
                     tmp_data(:,:,from:to,j) = squeeze(data(:,:,current_param(j),from:to));
                 end
             end
@@ -1860,10 +1819,7 @@ end % closes the function
 
 %% file checking subfunction
 function parameters = check_files(Names,gp,parameters)
-
 % after selecting file, check they are all the same type
-% parameters 
-
 if nargin < 3
     parameters = [];
 end
@@ -1873,20 +1829,12 @@ if gp == 1
     if iscell(Names{gp})
         Names = Names{gp};
     end
-<<<<<<< HEAD
     sn = size(Names,2);
     
     % one sample case
     % ---------------
     is_beta = []; is_con = [];
     for i=1:sn
-=======
-
-    % one sample case
-    % ---------------
-    is_beta = []; is_con = [];
-    for i=1:size(Names,2)
->>>>>>> refs/remotes/origin/master
         if strfind(Names{i},'Betas')
             is_beta(i) = 1;
         elseif strfind(Names{i},'con')
@@ -1903,11 +1851,7 @@ if gp == 1
         if isempty(parameters)
             return
         end
-<<<<<<< HEAD
     elseif (isempty(is_con)) == 0 && sum(is_con) == sn
-=======
-    elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
->>>>>>> refs/remotes/origin/master
         if length(unique(con_val)) == 1
             parameters = unique(con_val);
         else
@@ -1986,7 +1930,6 @@ if iscell(Paths{1})
 end
 
 % now loop loading the LIMO.mat for each subject to collect information
-<<<<<<< HEAD
 gp = length(Paths)/length(limo.data.data);
 if gp<=1
     repeat = [1:length(limo.data.data)];
@@ -2021,18 +1964,6 @@ for i=1:size(Paths,2)
         end
     end
     
-=======
-for i=1:size(Paths,2)
-     try
-        if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
-        load LIMO
-     catch
-         if iscell(Paths{i}); p=cell2mat(Paths{i}); else p=Paths{i}; end
-         error('cannot load/find the LIMO.mat in %s',p)
-     end
-     
-     
->>>>>>> refs/remotes/origin/master
     if i==1
         Analysis = LIMO.Analysis;
     else

@@ -18,10 +18,7 @@ if ~exist('LIMO','var')
         global LIMO
     end
 end
-<<<<<<< HEAD
 
-=======
->>>>>>> refs/remotes/origin/master
 n_freqs = LIMO.data.size4D(2);
 n_times = LIMO.data.size4D(3);
 [n_elec, n_freqs_times, N, n_boot] = size(reshape_in);

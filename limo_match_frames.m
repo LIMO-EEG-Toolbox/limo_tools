@@ -49,10 +49,7 @@ for i=1:size(Paths,2)
             error('LIMO.mat could not be located starting at subject %g',i)
         end
     end
-<<<<<<< HEAD
 
-=======
->>>>>>> refs/remotes/origin/master
     
     if i==1
         Analysis = LIMO.Analysis;

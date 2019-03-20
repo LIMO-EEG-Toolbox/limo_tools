@@ -91,11 +91,6 @@ else
             if LIMO.Level == 2
                 try
                     label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-                    if isfield(LIMO.data,'chanlocs')
-                        label_electrodes{i} = LIMO.data.chanlocs(i).labels;
-                    else
-                        label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-                    end
                 catch
                     label_electrodes{i} = i;
                 end

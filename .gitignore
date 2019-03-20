@@ -3,13 +3,6 @@
 
 *.~m
 
-=======
-## Matlab
-
-+*.asv
-*.m~
-
-## Eclipse
 #################
 
 *.pydevproject

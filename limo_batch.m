@@ -177,7 +177,6 @@ if nargin == 4
     cd(STUDY.filepath); % go to study
 
     % make derivatives directory
-
     if isempty(findstr(STUDY.filepath,'derivatives'))
         if ~exist([STUDY.filepath filesep 'derivatives'],'dir')
             mkdir([STUDY.filepath filesep 'derivatives']);
@@ -272,7 +271,6 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             end
             glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
             batch_contrast.LIMO_files{s} = [root filesep glm_name filesep 'LIMO.mat']; 
-            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});

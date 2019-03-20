@@ -9,11 +9,11 @@ function limo_add_plots
 out = 0;
 turn = 1;
 current = pwd;
+subjects_plot = 0;
 electrode = [];
 
 while out == 0
-    subjects_plot = 0;
-
+    
     %% Data selection
     % ------------------
     [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
@@ -77,24 +77,24 @@ while out == 0
     elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
         Data = squeeze(tmp(:,:,1,:));
     else 
-        if subjects_plot == 0
-            v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));            
+        if subjects_plot == 1
+            v = inputdlg(['which subject to plot, 1 to ' num2str(size(tmp,3))],'plotting option');
         else
-            if ~exist('v','var')
-                v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));            
-            end
+            v = inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option');            
         end
         
-        if isempty(v) 
+        if isempty(v)
             out = 1; return
         elseif strcmp(v,'mean')
             Data = squeeze(nanmean(tmp,3));
-        else        
-            if ischar(v)
-                v = eval(v);
+        else
+            try
+                v = str2num(cell2mat(v));
+            catch
+                v = eval(cell2mat(v));
             end
             
-            if  subjects_plot == 0 && length(v)>1
+            if length(v)>1
                 errordlg2('only 1 parameter value expected')
             else
                 if size(tmp,1) == 1 && size(tmp,3) > 1
@@ -145,7 +145,7 @@ while out == 0
         Data = squeeze(Data(1,:,:)); toplot = [];
     else
         if isempty(electrode)
-            electrode = inputdlg(['which electrode to plot 1 to' num2str(size(Data,1))],'electrode choice');
+            electrode = inputdlg(['which electrode top plot 1 to' num2str(size(Data,1))],'electrode choice');
         end
         
         if strcmp(electrode,'') 
@@ -179,11 +179,7 @@ while out == 0
         colorOrder = get(gca, 'ColorOrder');
         colorindex = 1;
     else
-        if subjects_plot == 0
-            plot(timevect,Data(:,2)','Color',colorOrder(colorindex,:),'LineWidth',3);
-        else
-            plot(timevect,Data,'LineWidth',2);
-        end
+        plot(timevect,Data(:,2)','Color',colorOrder(colorindex,:),'LineWidth',3);
         assignin('base','plotted_data',Data(:,2)')
     end
     
@@ -214,6 +210,10 @@ while out == 0
         colorindex = 1;
     end
     
-    pause(1);
+    if subjects_plot == 1; 
+        out =1; return; 
+    else
+        pause(1);
+    end
 end
     
