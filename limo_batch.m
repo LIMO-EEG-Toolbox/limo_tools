@@ -195,7 +195,7 @@ if nargin == 4
     if isfield(model.defaults, 'icaclustering')
         unique_subjects  = STUDY.design(STUDY.currentdesign).cases.value'; % all designs have the same cases
         for s = 1:length(unique_subjects)
-            order{s} = find(strcmp(unique_subjects{s},{STUDY.datasetinfo.subject}));
+            order{s} = eval(unique_subjects{s}); % find(strcmp(unique_subjects{s},STUDY.subject));
         end
     end
     
@@ -258,9 +258,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         if nargin == 4
             if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
-                root = [study_root filesep 'sub-' STUDY.datasetinfo(subject).subject];
+                root = [study_root filesep 'sub-' num2str(subject)];
             else
-                root = [study_root filesep STUDY.datasetinfo(subject).subject];
+                root = [study_root filesep num2str(subject)];
             end
             
             if exist(root,'dir') ~= 7; mkdir(root); end
