@@ -283,7 +283,7 @@ if type == 1 || type == 4
                 end
             end
             index = index + 1; removed(i) = 0;
-        
+            
         elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
             
             % Use single electrode
@@ -344,7 +344,7 @@ if type == 1 || type == 4
             if length(parameters) > 1 && i == parameters(i)
                 foldername = sprintf('parameter_%g',parameters(i));
                 if ~isempty(g.folderprefix)
-                    g.folderprefix = [g.folderprefix foldername]; 
+                    g.folderprefix = [g.folderprefix foldername];
                 end
                 mkdir(foldername); cd(foldername);
             end
@@ -451,7 +451,7 @@ if type == 1 || type == 4
         
         for i=length(parameters)
             cd(LIMO.dir);
-            if length(parameters) > 1 
+            if length(parameters) > 1
                 foldername = 'parameter_%g';
                 if ~isempty(g.folderprefix), foldername = [g.folderprefix foldername]; end
                 dir_name = sprintf(foldername,parameters(i));
@@ -693,7 +693,7 @@ elseif type == 2
     
     % compute
     % --------
-    LIMO = limo; cd(limo.dir);  
+    LIMO = limo; cd(limo.dir);
     % free some memory
     clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
     
@@ -1426,7 +1426,7 @@ elseif type == 5
         for h=1:prod(gp_nb)
             for i=1:size(Paths{h},2)
                 if removed{h}(i) == 1
-                    limo.data.data{h}(i) = []; 
+                    limo.data.data{h}(i) = [];
                     limo.data.data_dir{h}(i) = []; % somehow to indicate this subject is removed
                 end
             end
@@ -1442,8 +1442,8 @@ elseif type == 5
                 if i==1
                     from = 1; to = nb_subjects(i);
                 else
-                    from = from+nb_subjects(i); 
-                    to = to+nb_subjects(i); 
+                    from = from+nb_subjects(i);
+                    to = to+nb_subjects(i);
                 end
                 current_param = parameters(i); % select only relevant parameters
                 tmp_data(:,:,:,from:to) = squeeze(data(:,:,:,current_param,from:to));
@@ -1454,7 +1454,7 @@ elseif type == 5
                 if i==1
                     from = 1; to = nb_subjects(i);
                 else
-                    from = from+nb_subjects(i); to = to+nb_subjects(i); 
+                    from = from+nb_subjects(i); to = to+nb_subjects(i);
                 end
                 current_param = parameters(i); % select only relevant parameters
                 tmp_data(:,:,from:to) = squeeze(data(:,:,current_param,from:to));
@@ -1528,7 +1528,13 @@ elseif type == 5
         
         % Ask for Repeated Measures
         % --------------------------
-        factor_nb = eval(cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors')));
+        factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
+        try
+            factor_nb = eval(factor_nb);
+        catch
+            errordlg2('could not evaluate the factors, make sure to use square braquets []')
+        end
+        
         % in case the inpuit is [] or [0]
         if isempty(factor_nb)
             return;
@@ -1555,7 +1561,7 @@ elseif type == 5
                 end
                 
                 if isempty(Names{cell_nb}); return; end
-
+                
                 if isempty(g.parameters)
                     parameters(:,i) = check_files(Names,1);
                 else
@@ -1698,7 +1704,7 @@ elseif type == 5
                             error('The data from subject %g have a different size than previous subjects?',i)
                         end
                     end
-                    matrix_index = matrix_index+1; 
+                    matrix_index = matrix_index+1;
                     removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                     
                     % Use single electrode
@@ -1712,9 +1718,9 @@ elseif type == 5
                         end
                     elseif strcmpi(g.type,'Components')
                         if size(limo.design.component,2) == 1
-                             matched_data = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
+                            matched_data = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
                         else
-                             matched_data = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
+                            matched_data = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
                         end
                     end
                     
@@ -1727,9 +1733,9 @@ elseif type == 5
                             error('The data from subject %g have a different size than previous subjects?',i)
                         end
                     end
-                    matrix_index = matrix_index+1; 
+                    matrix_index = matrix_index+1;
                     removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
-
+                    
                 else
                     fprintf('subject %g gp %g discarded, channel description and data size don''t match',i,h); disp(' ')
                     removed{h}(i) = 1;
@@ -1784,12 +1790,15 @@ elseif type == 5
                 if i==1
                     from = 1; to = nb_subjects(i);
                 else
-                    from = from+nb_subjects(i-1); 
-                    to = to+nb_subjects(i); 
+                    from = from+nb_subjects(i-1);
+                    to = to+nb_subjects(i);
                 end
                 gp(from:to) = i;
                 
                 for j=1:prod(factor_nb)
+                    if j>size(data,3)
+                        error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
+                    end
                     tmp_data(:,:,from:to,j) = squeeze(data(:,:,current_param(j),from:to));
                 end
             end
@@ -1933,12 +1942,12 @@ else
     repeat = repmat([1:length(limo.data.data{1})],1,gp);
 end
 
-for i=1:size(Paths,2)   
-     if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
+for i=1:size(Paths,2)
+    if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
     
     if exist([pwd filesep 'LIMO.mat'],'file')
-        load([pwd filesep 'LIMO.mat']); 
-    else 
+        load([pwd filesep 'LIMO.mat']);
+    else
         try
             [newpath,betaname]=fileparts(limo.data.data{i});
         catch
@@ -1946,17 +1955,17 @@ for i=1:size(Paths,2)
         end
         
         if ~isempty(betaname(6:end))
-           if exist([newpath filesep 'LIMO' betaname(6:end) '.mat'],'file') 
-               load([newpath filesep 'LIMO' betaname(6:end) '.mat']);
-           else
-               error('LIMO.mat could not be located starting at subject %g',i)
-           end
+            if exist([newpath filesep 'LIMO' betaname(6:end) '.mat'],'file')
+                load([newpath filesep 'LIMO' betaname(6:end) '.mat']);
+            else
+                error('LIMO.mat could not be located starting at subject %g',i)
+            end
         else
-           if exist([newpath filesep 'LIMO.mat'],'file') 
-               load([newpath filesep 'LIMO.mat']);
-           else
-               error('LIMO.mat could not be located starting at subject %g',i)
-           end
+            if exist([newpath filesep 'LIMO.mat'],'file')
+                load([newpath filesep 'LIMO.mat']);
+            else
+                error('LIMO.mat could not be located starting at subject %g',i)
+            end
         end
     end
     
