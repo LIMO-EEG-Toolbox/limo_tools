@@ -902,6 +902,7 @@ switch varargin{1}
                             cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
                             if size(Condition_effect,1) == 1
                                 tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                            else
                                 tfce_score = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
