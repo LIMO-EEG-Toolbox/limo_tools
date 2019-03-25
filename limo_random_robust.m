@@ -1575,19 +1575,19 @@ switch type
                 end
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(H0_Rep_ANOVA_Gp_effect,1)
+                    if size(H0_Rep_ANOVA_Gp_effect,1) == 1
                         tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
                     else
                         tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),LIMO.data.neighbouring_matrix);
                     end
                 else
-                    if size(H0_Rep_ANOVA_Gp_effect,1)
+                    if size(H0_Rep_ANOVA_Gp_effect,1) == 1
                         tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
                     else
                         tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
                     end
                 end
-                save(tfce_name, 'H0_tfce_Rep_ANOVA_Gp_effect');
+                save(tfce_name, 'tfce_H0_Rep_ANOVA_Gp_effect');
                 clear tfce_H0_Rep_ANOVA_Gp_effect H0_Rep_ANOVA_Gp_effect
                 
                 % interactions
