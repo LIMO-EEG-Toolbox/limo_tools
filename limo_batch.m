@@ -170,11 +170,13 @@ elseif nargin > 1
 end
 
 if nargin == 4
-    STUDY = varargin{4}; clear varargin{4};
+    STUDY = varargin{4}; 
     if isempty(STUDY.filepath)
         STUDY.filepath =pwd;
     end
     cd(STUDY.filepath); % go to study
+
+    % make derivatives directory
     if isempty(findstr(STUDY.filepath,'derivatives'))
         if ~exist([STUDY.filepath filesep 'derivatives'],'dir')
             mkdir([STUDY.filepath filesep 'derivatives']);
@@ -182,14 +184,27 @@ if nargin == 4
         cd('derivatives'); % if study is not in 'derivatives' go to it
     end
     current = pwd; 
+    
+    % make the batch report and study directories
     if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
     if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
     study_root = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     LIMO_files.LIMO = study_root;
+    
+    % if clustering is used, check subjects' set ordering
+    if isfield(model.defaults, 'icaclustering')
+        unique_subjects  = STUDY.design(STUDY.currentdesign).cases.value'; % all designs have the same cases
+        for s = 1:length(unique_subjects)
+            order{s} = eval(unique_subjects{s}); % find(strcmp(unique_subjects{s},STUDY.subject));
+        end
+    end
+    
 else
     current = pwd;
     mkdir('limo_batch_report')
 end
+
+clear varargin
 
 %% -------------------------------------
 %% build pipelines
@@ -210,40 +225,44 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     end
     
     % build the pipelines
-    for subject = 1:size(model.set_files,1)
+    for s = 1:size(model.set_files,1)
+        if isfield(model.defaults, 'icaclustering')
+            subject = order{s}; % allows picking up the order in set_files based in STUDY
+        else
+            subject = s;
+        end
         
         % build LIMO.mat files from import
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
-        pipeline(subject).import.command = command;
-        pipeline(subject).import.files_in = model.set_files{subject};
-        pipeline(subject).import.opt.defaults = model.defaults;
+        pipeline(s).import.command = command;
+        pipeline(s).import.files_in = model.set_files{s};
+        pipeline(s).import.opt.defaults = model.defaults;
 
         if isfield(model.defaults,'type')
-            pipeline(subject).import.opt.defaults.type = model.defaults.type;
+            pipeline(s).import.opt.defaults.type = model.defaults.type;
         else
-            pipeline(subject).import.opt.defaults.type = 'Channels';
+            pipeline(s).import.opt.defaults.type = 'Channels';
         end
         
         if isfield(model.defaults,'method')
-            pipeline(subject).import.opt.defaults.method = model.defaults.method;
+            pipeline(s).import.opt.defaults.method = model.defaults.method;
         else
-            pipeline(subject).import.opt.defaults.method = 'WLS';
+            pipeline(s).import.opt.defaults.method = 'WLS';
         end
         
         if isfield(model.defaults,'type_of_analysis')
-            pipeline(subject).import.opt.defaults.type_of_analysis = model.defaults.type_of_analysis;
+            pipeline(s).import.opt.defaults.type_of_analysis = model.defaults.type_of_analysis;
         else
-            pipeline(subject).import.opt.defaults.type_of_analysis = 'Mass-univariate';
+            pipeline(s).import.opt.defaults.type_of_analysis = 'Mass-univariate';
         end
         
-        
         if nargin == 4
-            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
-                root = [study_root filesep 'sub-' STUDY.datasetinfo(subject).subject];
+            if ~isempty(findstr(model.set_files{s},'sub'))
+                root = [study_root filesep 'sub-' num2str(subject)];
             else
-                root = [study_root filesep STUDY.datasetinfo(subject).subject];
+                root = [study_root filesep num2str(subject)];
             end
-            
+            % root = [study_root filesep 'sub-' num2str(subject)];
             if exist(root,'dir') ~= 7; mkdir(root); end
             design_name = STUDY.design(STUDY.currentdesign).name; 
             design_name(isspace(design_name)) = [];
@@ -251,70 +270,71 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                 design_name = design_name(7:end);
             end
             glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
-            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
+            batch_contrast.LIMO_files{s} = [root filesep glm_name filesep 'LIMO.mat']; 
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
         end
-        pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
+        pipeline(s).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
         if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
-                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+            batch_contrast.LIMO_files{s} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
         end
 
         if ~isempty(model.cat_files)
-            pipeline(subject).import.opt.cat = model.cat_files{subject};
+            pipeline(s).import.opt.cat = model.cat_files{s};
         else
-            pipeline(subject).import.opt.cat = [];
+            pipeline().import.opt.cat = [];
         end
+        
         if ~isempty(model.cont_files)
-            pipeline(subject).import.opt.cont = model.cont_files{subject};
+            pipeline(s).import.opt.cont = model.cont_files{s};
         else
-            pipeline(subject).import.opt.cont = [];
+            pipeline(s).import.opt.cont = [];
         end
-        pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
-        LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
-        LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
+        
+        pipeline(s).import.opt.defaults.name = fileparts(pipeline(s).import.files_out);
+        LIMO_files.mat{s}  = [root filesep glm_name filesep 'LIMO.mat'];
+        LIMO_files.Beta{s} = [root filesep glm_name filesep 'Betas.mat'];
        
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
-        pipeline(subject).design.command = command;
-        pipeline(subject).design.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
+        pipeline(s).design.command = command;
+        pipeline(s).design.files_in = pipeline(s).import.files_out;
+        pipeline(s).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
         
         % run GLM
-        if strcmp(model.defaults.analysis,'Time') || strcmp(model.defaults.analysis,'Frequency');
+        if strcmp(model.defaults.analysis,'Time') || strcmp(model.defaults.analysis,'Frequency')
             command = 'cd(fileparts(files_in)), limo_eeg(4)';
-        else strcmp(model.defaults.analysis,'Time-Frequency');
+        elseif strcmp(model.defaults.analysis,'Time-Frequency')
             command = 'cd(fileparts(files_in)), limo_eeg_tf(4)';
         end
-        pipeline(subject).glm.command = command;
-        pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
+        pipeline(s).glm.command = command;
+        pipeline(s).glm.files_in = pipeline(s).import.files_out;
+        pipeline(s).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
     end
     
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
-    
-    for subject = 1:length(batch_contrast.LIMO_files)
+    for s = 1:length(batch_contrast.LIMO_files)
         command = 'limo_batch_contrast(files_in,opt.C)';
-        pipeline(subject).n_contrast.command = command;
-        pipeline(subject).n_contrast.files_in = batch_contrast.LIMO_files{subject};
+        pipeline(s).n_contrast.command = command;
+        pipeline(s).n_contrast.files_in = batch_contrast.LIMO_files{s};
         if iscell(batch_contrast.mat)
-            pipeline(subject).n_contrast.opt.C = cell2mat(batch_contrast.mat);
+            pipeline(s).n_contrast.opt.C = cell2mat(batch_contrast.mat);
         else
-            pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
+            pipeline(s).n_contrast.opt.C = batch_contrast.mat;
         end
         
         if strcmp(option,'both') % we can only be sure of the number if it's a new model
             for c=1:size(batch_contrast.mat,1)
-                name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
+                name{c} = [fileparts(batch_contrast.LIMO_files{s}) filesep 'con_' num2str(c) '.mat'];
             end
-            pipeline(subject).n_contrast.files_out = name; % name{1};
-            LIMO_files.con{subject} = name;
+            pipeline(s).n_contrast.files_out = name; % name{1};
+            LIMO_files.con{s} = name;
         end
     end
 end
@@ -351,26 +371,26 @@ save([current filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 % allocate names
 for subject = 1:N
     limopt{subject}= opt;
-    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
+    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(order{s})];
 end
     
 parfor subject = 1:N
     disp('--------------------------------')
-    fprintf('processing subject %g/%g \n',subject,N)
+    fprintf('processing subject %g/%g \n',order{subject},N)
     disp('--------------------------------')
     try
         psom_run_pipeline(pipeline(subject),limopt{subject})
-        
         % example of debugging 
         % ---------------------
         % psom reported with function failed, eg limo_batch_import
         % pipeline(subject).import tells you the command line to test
         % put the point brack where needed and call e.g.
         % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
-        report{subject} = ['subject ' num2str(subject) ' processed'];
+        % limo_batch_design_matrix(pipeline(subject).design.files_in)
+        report{subject} = ['subject ' order{subject} ' processed'];
         procstatus(subject) = 1;
     catch ME
-        report{subject} = ['subject ' num2str(subject) ' failed'];
+        report{subject} = ['subject ' order{subject} ' failed'];
         if strcmp(option,'model specification') 
             remove_limo(subject) = 1;
         elseif strcmp(option,'both')
