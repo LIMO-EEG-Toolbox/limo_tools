@@ -56,14 +56,14 @@ if strcmp(LIMO.Analysis,'Time')
             catch
                 error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
             end
-            nb_clusters = size(STUDY.cluster(1).child,2);
-            nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
-            Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            data_dir = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+            nb_clusters     = size(STUDY.cluster(1).child,2);
+            nb_subjects     = length(STUDY.design(STUDY.currentdesign).cases.value'); % length({STUDY.datasetinfo.subject}); % ;
+            Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+            dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+            data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
             current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
-            subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
-            newY = NaN(nb_clusters,size(Y,2),size(Y,3));
+            subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
+            newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
                 n = length(Cluster_matrix.clust(c).subj);
                 tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
