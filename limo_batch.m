@@ -257,7 +257,12 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         
         if nargin == 4
-            root = [study_root filesep 'sub-' num2str(subject)];
+            if ~isempty(findstr(model.set_files{s},'sub'))
+                root = [study_root filesep 'sub-' num2str(subject)];
+            else
+                root = [study_root filesep num2str(subject)];
+            end
+            % root = [study_root filesep 'sub-' num2str(subject)];
             if exist(root,'dir') ~= 7; mkdir(root); end
             design_name = STUDY.design(STUDY.currentdesign).name; 
             design_name(isspace(design_name)) = [];
