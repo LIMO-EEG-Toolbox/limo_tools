@@ -1523,7 +1523,7 @@ switch type
                         tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
                     end
                 end
-                save(tfce_name, 'H0_tfce_Rep_ANOVA_Gp_effect');
+                save(tfce_name, 'tfce_H0_Rep_ANOVA_Gp_effect');
                 clear tfce_H0_Rep_ANOVA_Gp_effect H0_Rep_ANOVA_Gp_effect
                 
                 % interactions
@@ -1560,7 +1560,8 @@ switch type
                             end
                         end
                     end
-                    save(tfce_name, 'tfce_H0_Rep_ANOVA_Interaction_with_gp'); clear tfce_H0_Rep_ANOVA_Interaction_with_gp
+                    save(tfce_name, 'tfce_H0_Rep_ANOVA_Interaction_with_gp'); 
+                    clear tfce_H0_Rep_ANOVA_Interaction_with_gp
                 end
             end
         end
