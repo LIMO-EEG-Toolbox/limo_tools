@@ -29,6 +29,9 @@ data = varargin{1};
 percent = 20/100;
 if nargin > 1
     percent = varargin{2};
+    if percent > 0
+        percent = percent / 100;
+    end
 end
 
 if nargin == 3

@@ -626,7 +626,7 @@ if ~isempty(data)
         disp('Compute 20% Trimmed Mean estimator and 95% CI ...')
         index = 1; h = waitbar(0,'computing','name','% done');
         TM = NaN(size(data,1),size(data,2),size(data,3),3);
-        for k=1:size(data,3)
+        for k=1:size(data,3) % for each parameter
             for electrode =1:size(data,1)
                 waitbar(index/(size(data,3)*size(data,1)));
                 index = index+1;
