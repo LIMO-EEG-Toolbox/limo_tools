@@ -139,7 +139,7 @@ end
 set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
 set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
 axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
-title(sprintf('Connectivity matrix between channels \n'),'FontSize',14)
+title(sprintf('Connectivity matrix between channels \n (click outside the matrix or right click when done)'),'FontSize',14)
 cmap = gray; cmap(1,:) = [0.25 0.25 0.25]; colormap(cmap)
 
 
