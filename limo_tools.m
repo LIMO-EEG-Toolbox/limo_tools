@@ -148,8 +148,8 @@ if strcmp(choice,'Edit')
     
     positive = 1;
     while positive == 1
-        [y,x]=ginput(1);
-        if x<0 || y<0
+        [x, y, button]=ginput(1);
+        if any([x y]< 0) || any([x y]< length(channeighbstructmat)) || button ~= 1
             positive = 0;
         else
             
