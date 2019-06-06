@@ -12,7 +12,7 @@ function TM = limo_trimmed_mean(varargin)
 %
 % OUTPUT
 % TM is a 2D or 3D matrix with the lower CI, the trimmed mean and the high CI
-
+%
 % -----------------------------
 %  Copyright (C) LIMO Team 2018
 
@@ -81,6 +81,11 @@ end
 if reduced_dim == 1
    TM = TM(1,:,:);
 end
+
+% t=(tmdata-nullvalue)./se;
+% p=2.*(1-tcdf(abs(t),df)); % 2-tailed probability
+% tcrit=tinv(1-alphav./2,df); % 1-alpha/2 quantile of Student's distribution with df degrees of freedom
+
 
 end
 
