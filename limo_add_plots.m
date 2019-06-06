@@ -150,13 +150,17 @@ while out == 0
         
         if strcmp(electrode,'') 
             tmp = Data(:,:,2); 
-            if abs(max(tmp(:))) > abs(min(tmp(:)))
-                [electrode,~,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+            if sum(isnan(tmp(:))) == numel(tmp)
+                error('the data file appears empty (only NaNs)')
             else
-                [electrode,~,~] = ind2sub(size(tmp),find(tmp==min(tmp(:))));
+                if abs(max(tmp(:))) > abs(min(tmp(:)))
+                    [electrode,~,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+                else
+                    [electrode,~,~] = ind2sub(size(tmp),find(tmp==min(tmp(:))));
+                end
+                if length(electrode) ~= 1; electrode = electrode(1); end
+                Data = squeeze(Data(electrode,:,:)); fprintf('ploting channel %g\n',electrode)
             end
-            if length(electrode) ~= 1; electrode = electrode(1); end; 
-            Data = squeeze(Data(electrode,:,:)); fprintf('ploting channel %g\n',electrode)
         else
             try
                 Data = squeeze(Data(electrode,:,:));
