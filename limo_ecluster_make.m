@@ -56,7 +56,7 @@ if ndims(bootf)==3 % electrode*time/freq*boot
 
             % get cluster along 1st dim
             if exist('spm_bwlabel','file')~=0
-                [L,NUM] = spm_bwlabel(squeeze(bootp(E,:,kk))<=alphav,6);
+                [L,NUM] = spm_bwlabel(double(squeeze(bootp(E,:,kk))<=alphav),6);
             else
                 if exist('bwlabeln','file')~=0
                     [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);
