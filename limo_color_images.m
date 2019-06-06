@@ -2,7 +2,7 @@ function cm = limo_color_images(scale,LIMO,varargin)
 
 %% limo color map
 % 
-% FORMAT cc = limo_color_images_(scale,LIMO,'map','map_name','limits',[min max])
+% FORMAT cm = limo_color_images_(scale,LIMO,'map','map_name','limits',[min max])
 %
 % INPUT scale if the data to show (typically stat map masked by NaN)
 %       LIMO is the LIMO.mat associated to the data
