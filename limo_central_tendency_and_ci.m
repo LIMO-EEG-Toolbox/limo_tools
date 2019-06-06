@@ -582,12 +582,16 @@ if ~isempty(data)
         end
     else
         result.subjects = data;
-        result.limo = limo;
+        if exist('limo','var')
+            result.limo = limo;
+        end
     end
     
     disp('processing data across subjects ..')
     % --------------------------------------------------------------
-    if nargout == 1; results.limo = limo; end
+    if nargout == 1 && exist('limo','var')
+        results.limo = limo; 
+    end
     
     if strcmp(Estimator2,'Mean') || strcmp(Estimator2,'All')
         disp('Compute the Mean estimator and 95% CI ...')
