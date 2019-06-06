@@ -11,7 +11,7 @@ function [mask,p_val,max_th] = limo_max_correction(varargin)
 % M     = 2D matrix of observed values 
 % bootM = 3D matrix of T^2 or F values for data bootstrapped under H0
 % p     = threshold to apply e.g. 5/100
-% fig   = 1/0 to plot the maximum stat un der H0
+% fig   = 1/0 to plot the maximum stat under H0
 %
 % OUTPUT
 % mask is a binary matrix of the same size as M corresponding to a threshold
