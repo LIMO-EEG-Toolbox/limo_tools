@@ -13,9 +13,10 @@ function combined_ica = limo_combine_components(varargin)
 %
 % OUTPUT combined_ica is the weighted average of comnponents
 %
-% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
+% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components
+% (ICA) - revised in 2019 (bug fix in computations)
 %% ----------------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2019
 
 %% check data orientation
 data       = varargin{1};
