@@ -82,9 +82,9 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO 
+global handles LIMO 
 
-if isempty(handles.limofile)
+if ~isfield(handles,'limofile')
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
 else
     [PathName,FileName] = fileparts(handles.limofile);
@@ -231,12 +231,18 @@ end
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
 global LIMO handles 
 
+if isempty(LIMO)
+    display_matrix_CreateFcn(hObject, eventdata, handles)
+    handles.limofile = [LIMO.dir filesep 'LIMO.mat'];
+end
+
 if isfield(LIMO,'contrast')
     handles.C = LIMO.contrast;
-    previous_con = 1;
+    previous_con = length(LIMO.contrast);
 else
     previous_con = 0;
 end
+
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -269,7 +275,8 @@ end
 handles.output = hObject;
 guidata(hObject,handles)
 
-  
+
+
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 global handles
 
@@ -472,4 +479,5 @@ if isempty(handles.limofile)
 end
 
 clearvars LIMO handles limofile
+clear global handles LIMO
 return
