@@ -82,9 +82,9 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global handles LIMO 
+global LIMO handles 
 
-if ~isfield(handles,'limofile')
+if ~isfield(handles,'limofile') || isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
 else
     [PathName,FileName] = fileparts(handles.limofile);
@@ -270,6 +270,10 @@ else
     display_matrix_CreateFcn(hObject, eventdata, handles)
     % display_matrix_CreateFcn(hObject, eventdata, handles)
 end
+
+allhandles = findobj('Tag','contrast');
+axes(allhandles);
+imagesc([]);
 
 handles.output = hObject;
 guidata(hObject,handles)
