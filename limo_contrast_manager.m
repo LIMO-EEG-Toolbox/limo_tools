@@ -61,11 +61,11 @@ function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
 global handles
 
 % define handles used for the save callback
-handles.dir      = pwd;
-handles.go       = 0;
-handles.C        = [];
-handles.F        = 0;
-handles.X        = [];
+handles.dir = pwd;
+handles.go  = 0;
+handles.C   = [];
+handles.F   = 0;
+handles.X   = [];
 handles.limofile = [];
 handles.output = hObject;
 guidata(hObject,handles);
@@ -82,7 +82,7 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO
+global LIMO 
 
 if isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
@@ -126,6 +126,8 @@ else
     if isempty(Xdisplay)
         uiresume; guidata(hObject, handles);
     else
+        allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        axes(allhandles(end));
         imagesc(Xdisplay); colormap('gray');
         title('design matrix'); drawnow
         handles.output = hObject;
@@ -193,6 +195,8 @@ end
 function contrast_CreateFcn(hObject, eventdata, handles)
 global LIMO handles
 
+allhandles = findobj('Tag','contrast');
+axes(allhandles);
 try 
     imagesc(handles.C);
 catch
