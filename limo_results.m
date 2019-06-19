@@ -1,6 +1,6 @@
 function varargout = limo_results(varargin)
 % Result GUI for the LIMO_eeg toolbox
-% Created using GUIDE 
+% Created using GUIDE
 % Cyril Pernet 20-03-2009 v1
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
@@ -14,11 +14,11 @@ warning off
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @limo_results_OpeningFcn, ...
-                   'gui_OutputFcn',  @limo_results_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @limo_results_OpeningFcn, ...
+    'gui_OutputFcn',  @limo_results_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -69,7 +69,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = limo_results_OutputFcn(hObject, eventdata, handles) 
+function varargout = limo_results_OutputFcn(hObject, eventdata, handles)
 varargout{1} = 'LIMO result terminated';
 
 
@@ -86,11 +86,11 @@ function Image_results_Callback(hObject, eventdata, handles)
 
 [FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
 if FilterIndex == 1
-    cd(PathName); handles.LIMO = load('LIMO.mat');        
+    cd(PathName); handles.LIMO = load('LIMO.mat');
     
     % check if bootstrap or tfce should be computed
     % ---------------------------------------------
-    % 1st level 
+    % 1st level
     if handles.LIMO.LIMO.Level == 1
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') ...
                 && strncmp(FileName,'con',3) == 0 && strncmp(FileName,'ess',3) ==0
@@ -143,64 +143,64 @@ if FilterIndex == 1
             if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                 x = 3;
             else
-                x = size(con,1); 
-                if x~=1 
-                    x=2; 
+                x = size(con,1);
+                if x~=1
+                    x=2;
                 end
             end
             tfce_score = limo_tfce(x,squeeze(con(:,:,2)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            cd TFCE; 
-            filename2 = sprintf('tfce_%s',FileName); 
-            save ([filename2], 'tfce_score'); 
+            cd TFCE;
+            filename2 = sprintf('tfce_%s',FileName);
+            save ([filename2], 'tfce_score');
             clear con tfce_score
-            cd ..; cd H0; 
-            filename = sprintf('H0_%s',FileName); 
+            cd ..; cd H0;
+            filename = sprintf('H0_%s',FileName);
             load(filename);
             tfce_H0_score = limo_tfce(x,squeeze(H0_ess(:,:,2,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            filename2 = sprintf('tfce_%s',filename); 
-            save ([filename2], 'tfce_H0_score'); 
+            filename2 = sprintf('tfce_%s',filename);
+            save ([filename2], 'tfce_H0_score');
             clear H0_con tfce_score
         elseif strncmp(FileName,'ess',3)
             load(FileName);
             if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
                 x = 3;
             else
-                x = size(ess,1); 
+                x = size(ess,1);
                 if x~=1
-                    x=2; 
+                    x=2;
                 end
             end
             tfce_score = limo_tfce(x,squeeze(ess(:,:,2)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            cd TFCE; 
-            filename2 = sprintf('tfce_%s',FileName); 
-            save ([filename2], 'tfce_score'); 
+            cd TFCE;
+            filename2 = sprintf('tfce_%s',FileName);
+            save ([filename2], 'tfce_score');
             clear ess tfce_score
-            cd ..; cd H0; 
+            cd ..; cd H0;
             filename = sprintf('H0_%s',FileName); load(filename);
             tfce_H0_score = limo_tfce(x,squeeze(H0_ess(:,:,2,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-            filename2 = sprintf('tfce_%s',filename); 
-            save ([filename2], 'tfce_H0_score'); 
+            filename2 = sprintf('tfce_%s',filename);
+            save ([filename2], 'tfce_H0_score');
             clear H0_ess tfce_score
         end
     end
     
-    % 2nd level 
+    % 2nd level
     % ------------
     nboot = 1000;
     if handles.LIMO.LIMO.Level == 2
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
             if strncmp(FileName,'one_sample',10)
-                load Yr; 
+                load Yr;
                 limo_random_robust(1,Yr,eval(FileName(28:end-4)),nboot,handles.tfce); clear Yr;
             elseif strncmp(FileName,'two_samples',11)
-                load Y1r; load Y2r; 
+                load Y1r; load Y2r;
                 limo_random_robust(2,Y1r,Y2r,eval(FileName(29:end-4)),nboot,handles.tfce); clear Y1r Y2r;
             elseif strncmp(FileName,'paired_samples',14)
-                load Y1r; load Y2r; 
+                load Y1r; load Y2r;
                 limo_random_robust(3,Y1r,Y2r,eval(FileName(32:end-4)),nboot,handles.tfce); clear Y1r Y2r;
             elseif strncmp(FileName,'Rep_ANOVA',9)
-                LIMO = handles.LIMO.LIMO; 
-                LIMO.design.bootstrap = 1000; 
+                LIMO = handles.LIMO.LIMO;
+                LIMO.design.bootstrap = 1000;
                 LIMO.design.tfce = handles.tfce;
                 save LIMO LIMO
                 limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
@@ -224,7 +224,7 @@ if FilterIndex == 1
                 tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency');
-                    x = size(one_sample,1); 
+                    x = size(one_sample,1);
                     if x==1
                         x=2; LIMO.LIMO.data.neighbouring_matrix = [];
                     else
@@ -246,7 +246,7 @@ if FilterIndex == 1
                 tfce_name = sprintf('tfce_two_samples_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_two_samples_ttest_parameter_%g',parameter);
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency');
-                    x = size(one_sample,1); 
+                    x = size(one_sample,1);
                     if x==1
                         x=2; LIMO.LIMO.data.neighbouring_matrix = [];
                     else
@@ -268,7 +268,7 @@ if FilterIndex == 1
                 tfce_name = sprintf('tfce_paired_samples_ttest_parameter_%g',parameter);
                 tfce_H0_name = sprintf('tfce_H0_paired_samples_ttest_parameter_%g',parameter);
                 if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    x = size(one_sample,1); 
+                    x = size(one_sample,1);
                     if x==1
                         x=2; LIMO.LIMO.data.neighbouring_matrix = [];
                     else
@@ -292,7 +292,7 @@ if FilterIndex == 1
                     tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),handles.LIMO.LIMO.data.neighbouring_matrix);
                 end
                 tfce_name = sprintf('tfce_%s',FileName); save(['tfce', filesep, tfce_name],'tfce_score');
-                clear Covariate_effect tfce_score; 
+                clear Covariate_effect tfce_score;
                 
                 cd('H0'); fprintf('Creating H0 Covariate TFCE scores \n');
                 name = sprintf('H0_Covariate_effect_%s.mat',FileName(18:end-4));
@@ -317,10 +317,10 @@ if FilterIndex == 1
                     end
                 end
                 full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score'); cd ..
-                clear H0_Covariate_effect tfce_H0_score; 
-                                                 
+                clear H0_Covariate_effect tfce_H0_score;
+                
             elseif strncmp(FileName,'Rep_ANOVA',9)
-                LIMO = handles.LIMO.LIMO; 
+                LIMO = handles.LIMO.LIMO;
                 LIMO.design.tfce = handles.tfce;
                 save LIMO LIMO
                 limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
@@ -342,7 +342,7 @@ if FilterIndex == 1
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);
- 
+
 
 % Topoplot
 % ---------------------------------------------------------------
@@ -354,7 +354,7 @@ if FilterIndex == 1
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);
- 
+
 
 % ERP plots
 % ---------------------------------------------------------------
@@ -369,31 +369,31 @@ if FilterIndex == 1
             files = dir('*.mat');
             for i=1:length(files)
                 if strncmp(files(i).name,'one_sample',10)
-                   FileName = files(i).name;
+                    FileName = files(i).name;
                 end
             end
         elseif strncmp(handles.LIMO.LIMO.design.name,'two samples',9)
             files = dir('*.mat');
             for i=1:length(files)
                 if strncmp(files(i).name,'two_samples',11)
-                   FileName = files(i).name;
+                    FileName = files(i).name;
                 end
             end
         elseif strncmp(handles.LIMO.LIMO.design.name,'paired t-test',12)
             files = dir('*.mat');
             for i=1:length(files)
                 if strncmp(files(i).name,'paired_sample',13)
-                   FileName = files(i).name;
+                    FileName = files(i).name;
                 end
             end
         elseif strncmp(handles.LIMO.LIMO.design.name,'Repeated measures ANOVA',22)
-               if handles.LIMO.LIMO.design.nb_conditions == 1 &&  length(handles.LIMO.LIMO.design.repeated_measure) == 1
-                   FileName = 'Rep_ANOVA_Factor_1.mat';
-               else
-                   [FileName,PathName,FilterIndex]=uigetfile('*.mat','Which Effect to plot?');
-               end
+            if handles.LIMO.LIMO.design.nb_conditions == 1 &&  length(handles.LIMO.LIMO.design.repeated_measure) == 1
+                FileName = 'Rep_ANOVA_Factor_1.mat';
+            else
+                [FileName,PathName,FilterIndex]=uigetfile('*.mat','Which Effect to plot?');
+            end
         end
-            
+        
     catch
         LIMO = []; handles.LIMO = LIMO;
     end
@@ -494,6 +494,18 @@ guidata(hObject, handles);
 delete(handles.figure1)
 limo_contrast_manager
 
+% [file,dir_path] = uigetfile('*.mat','select a LIMO.mat file');
+% if file ==0
+%     return
+%     clc; uiresume
+%     guidata(hObject, handles);
+% else
+%     cd(dir_path); handles.LIMO = load('LIMO.mat');
+%     clc; uiresume
+%     guidata(hObject, handles);
+%     delete(handles.figure1)
+%     limo_contrast_manager(handles.LIMO.LIMO);
+% end
 
 
 % Semi-Partial coef
@@ -526,7 +538,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Help_Callback(hObject, eventdata, handles)
 
-origin = which('limo_eeg'); origin = origin(1:end-10); 
+origin = which('limo_eeg'); origin = origin(1:end-10);
 origin = sprintf('%shelp',origin); cd(origin)
 web(['file://' which('limo_results.html')]);
 cd (handles.dir)

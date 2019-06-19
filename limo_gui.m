@@ -91,16 +91,23 @@ limo_results;
 
 % --- Executes on button press in contrasts.
 function contrasts_Callback(hObject, eventdata, handles)
-[file,dir_path] = uigetfile('*.mat','select a LIMO.mat file');
-if file ==0
-    return
-    guidata(hObject, handles);
-else
-    cd(dir_path); handles.LIMO = load('LIMO.mat');
-    uiresume
-    delete(handles.figure1)
-    limo_contrast_manager(handles.LIMO.LIMO);
-end
+
+clc; uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_contrast_manager
+
+
+% [file,dir_path] = uigetfile('*.mat','select a LIMO.mat file');
+% if file ==0
+%     return
+%     guidata(hObject, handles);
+% else
+%     cd(dir_path); handles.LIMO = load('LIMO.mat');
+%     uiresume
+%     delete(handles.figure1)
+%     limo_contrast_manager(handles.LIMO.LIMO);
+% end
 
 % --- Executes on button press in Rdx.
 function Rdx_Callback(hObject, eventdata, handles)
