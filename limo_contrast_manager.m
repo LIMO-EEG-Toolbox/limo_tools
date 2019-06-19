@@ -247,7 +247,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 if previous_con ~=0
     for i=1:previous_con
         if LIMO.contrast{i}.V == 'T'
@@ -274,8 +273,6 @@ end
 
 handles.output = hObject;
 guidata(hObject,handles)
-
-
 
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 global handles
