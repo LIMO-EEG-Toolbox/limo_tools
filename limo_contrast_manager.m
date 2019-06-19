@@ -126,6 +126,8 @@ else
     if isempty(Xdisplay)
         uiresume; guidata(hObject, handles);
     else
+        allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        axes(allhandles(end));
         imagesc(Xdisplay); colormap('gray');
         title('design matrix'); drawnow
         handles.output = hObject;
@@ -193,6 +195,8 @@ end
 function contrast_CreateFcn(hObject, eventdata, handles)
 global LIMO handles
 
+allhandles = findobj('Tag','contrast');
+axes(allhandles);
 try 
     imagesc(handles.C);
 catch
