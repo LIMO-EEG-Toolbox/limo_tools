@@ -26,7 +26,7 @@ Project maintainers (admin) are responsible for clarifying the standards of acce
 
 ## Scope
 
-This Code of Conduct applies to all [LIMO_EEG](https://github.com/LIMO-EEG-Toolbox/limo_eeg) related projects.
+This Code of Conduct applies to all [LIMO_MEEG](https://github.com/LIMO-EEG-Toolbox/limo_eeg) related projects.
 
 ## Enforcement
 
