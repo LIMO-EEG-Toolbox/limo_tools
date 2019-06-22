@@ -1,8 +1,8 @@
-# LInear MOdeling of EEG data
+# LInear MOdeling of MEEG data
 
-The LInear MOdelling of EEG data (LIMO EEG) toolbox is a Matlab toolbox dedicated to the statistical analysis of MEEG data. It is interfaced with EEGLAB to act as a plug in. However, once data are imported all is performed within LIMO EEG and the toolbox can thus work for any data sets.
+The LInear MOdelling of MEEG data (LIMO MEEG) toolbox is a Matlab toolbox dedicated to the statistical analysis of MEEG data. It is curently interfaced with EEGLAB (develop version) to act as a plug in. However, once data are imported all is performed within LIMO MEEG and the toolbox can thus work for any data sets.
 
-This repo is the stable version of LIMO EEG (v2) to be used with EEGLAB (https://sccn.ucsd.edu/eeglab/) for your research applications. The previous version (1.5) is now archived here: http://datashare.is.ed.ac.uk/handle/10283/2190
+This repo is the stable version of LIMO MEEG (v2) to be used with EEGLAB (https://sccn.ucsd.edu/eeglab/) but can be used with in other applications like FieldTrip (http://www.fieldtriptoolbox.org/) or BrainStorm (https://neuroimage.usc.edu/brainstorm/) for your research applications. The previous version (1.5) is now archived here: http://datashare.is.ed.ac.uk/handle/10283/2190
 
 ## Documentation
 in the doc directory (a bit outdated)
