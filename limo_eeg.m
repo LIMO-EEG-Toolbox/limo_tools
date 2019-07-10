@@ -134,9 +134,10 @@ switch varargin{1}
                                 disp('selection aborded');
                                 return
                             else
-                                cd(newpath);
-                                channeighbstructmat = load(file);
-                                channeighbstructmat = getfield(channeighbstructmat,cell2mat(fieldnames(channeighbstructmat)));
+                                channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
+                                fn = fieldnames(channeighbstructmat);
+                                index = find(ismember(fn,'channeighbstructmat'));
+                                channeighbstructmat = getfield(channeighbstructmat,fn{index});
                                 cd(LIMO.dir);
                             end
                         else
