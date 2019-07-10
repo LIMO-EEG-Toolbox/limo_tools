@@ -60,6 +60,7 @@ handles.filter = {'R2.mat','Model fit';
     'paired_samples*.mat','T test between dependent Betas or Cons'; ...
     'Rep_ANOVA*.mat','F test from repeated measure ANOVA'};
 
+
 % set(handles.add_bootstrap,'Enable','off')
 % set(handles.add_tfce,'Enable','off')
 
@@ -75,7 +76,7 @@ varargout{1} = 'LIMO result terminated';
 
 %% Callbacks
 
-%-------------------------
+%------------------------
 %         VISUALIZE
 %------------------------
 
@@ -85,7 +86,7 @@ function Image_results_Callback(hObject, eventdata, handles)
 
 
 [FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
-if FilterIndex == 1
+if FilterIndex ~= 0
     cd(PathName); handles.LIMO = load('LIMO.mat');
     
     % check if bootstrap or tfce should be computed
