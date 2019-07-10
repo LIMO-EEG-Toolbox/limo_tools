@@ -34,6 +34,11 @@ path2file = [];
 
 if nargin >= 1; gp        = varargin{1}; end
 if nargin >= 2; filter    = varargin{2}; end
+if ~ispc
+    filter(:,2) = {';'};
+    filter = filter';
+    filter = strcat(filter(:));
+end
 if nargin >= 3; title     = varargin{3}; end
 if nargin == 4; path2file = varargin{4}; end
 
@@ -41,17 +46,9 @@ go = 1; index = 1;
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
-            if ispc
                 [name,path] = uigetfile(filter,['select a subject file',num2str(index),' ',gp,' or list file']);
-            else
-                [name,path] = uiGetFiles(['select a subject file',num2str(index),' ',gp,' or list file']);
-            end
         else
-            if ispc
                 [name,path] = uigetfile(filter,title);
-            else
-                [name,path] = uiGetFiles(title);
-            end
         end
     else
         if exist(path2file,'file') == 2
