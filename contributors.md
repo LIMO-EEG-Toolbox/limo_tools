@@ -1,5 +1,23 @@
 # Contributors
 
+The following individuals have contributed to the LIMO EEG project (in alphabetical order). If you contributed and
+some icons needs to be added or your name is not listed, please add it.
+
+Arnaud Delorme 🐛💻⚠️🔌🎨📋📢  
+Benedikt Ehinger 🐛💻  
+Carl Gaspar 💻⚠️  
+Cyril Pernet 💬💻📖🎨🤔📋 ✅📢  
+Guillaume Rousselet 💻🎨📖  
+Iege Bassez 💻🎨  
+Ignacio Suay Mas 💻  
+Marco Simões 🐛💻  
+Matt Craddock 🐛💻  
+Marianne Latinus 💻✅  
+Nicolas Chauveau 💻⚠️  
+Ramon Martinez-Cancino 🐛💻⚠️🔌🎨  
+Rand Wilcox  🤔  
+Tom Nichols  🤔  
+
 Legend (source:
 [https://github.com/kentcdodds/all-contributors](https://github.com/kentcdodds/all-contributors))
 
@@ -22,24 +40,8 @@ Legend (source:
 | 🔧    | Tools                                                                       |
 | 🌍    | Translation                                                                 |
 | ⚠️    | Tests                                                                       |
-| ✅     | Tutorials                                                                   |
+| ✅    | Tutorials                                                                   |
 | 📢    | Talks                                                                       |
 | 📹    | Videos                                                                      |
 
-The following individuals have contributed to the LIMO EEG project (in alphabetical order). If you contributed and
-some icons needs to be added or your name is not listed, please add it.
 
-Arnaud Delorme 🐛💻⚠️🔌🎨📋📢
-Benedikt Ehinger 🐛💻
-Carl Gaspar 💻⚠️
-Cyril Pernet 💬💻📖🎨🤔📋 ✅📢
-Guillaume Rousselet 💻🎨📖
-Iege Bassez 💻🎨
-Ignacio Suay Mas 💻
-Marco Simões 🐛💻
-Matt Craddock 🐛💻
-Marianne Latinus 💻✅
-Nicolas Chauveau 💻⚠️
-Ramon Martinez-Cancino 🐛💻⚠️🔌🎨
-Rand Wilcox  🤔
-Tom Nichols  🤔
