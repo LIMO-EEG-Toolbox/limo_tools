@@ -26,8 +26,8 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % optional pval & maxclustersum_th outputs: GAR, Feb 2012
 % Cyril Pernet changed pval to be a map with NaN or the cluster p value May 2013
 % added a warping of NaN Mars 2014 
-% -------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 if nargin<5; alphav=.05;  end

@@ -20,8 +20,8 @@ function [mask,cluster_p] = limo_cluster_correction(M,P,bootM,bootP,neighbouring
 % see also limo_findcluster, limo_cluster_test, limo_chancluster_test
 %
 % Cyril Pernet - outsourced from limo_stat_values
-% ---------------------------------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nargin == 5
     MCC = 2;
