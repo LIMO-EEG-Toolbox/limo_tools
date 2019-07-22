@@ -19,8 +19,8 @@ function boot_table = limo_create_boot_table(data,nboot)
 %
 % Cyril Pernet v1 24-06-2013
 % v2 simple edit to specify up front Nmin
-% --------------------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% edit default
 Nmin = 3; % this is the minimum number of different trials/subjects 

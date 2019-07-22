@@ -25,8 +25,8 @@ function [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEG,nei
 % LIMO_FT_PREPARE_LAYOUT LIMO_EXPECTED_CHANLOCS
 %
 % G.A. Rousselet & C.R. Pernet
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nargin < 2
     error('missing inpouts')

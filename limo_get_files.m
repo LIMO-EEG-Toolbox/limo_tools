@@ -23,8 +23,8 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 % Nicolas Chauveau 07-04-11 - allows txt files
 % CP update for filter and additional format 01-21-2015
 % Arnaud Delorme fixed delimiters and added study option June 2015
-% --------------------------------------------------------------
-%  Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% defaults and inputs
 gp        = [];

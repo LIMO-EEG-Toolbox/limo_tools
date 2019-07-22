@@ -18,8 +18,8 @@ function varargout = limo_contrast_manager(varargin)
 %
 % Nicolas Chauveau & Cyril Pernet 29-04-2009 v2
 % updated for 1st level bootstrap + some fix 20-06-2013
-% ----------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% GUI stuffs
 % -------------------------

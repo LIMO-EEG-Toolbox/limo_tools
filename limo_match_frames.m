@@ -17,8 +17,8 @@ function [first_frame,last_frame,subj_chanlocs,limo] = match_frames(Paths,limo)
 % smallest interval(s) across subjects, which is used for the second leve analysis
 %
 % Cyril Pernet v2 August 2015
-% ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 current = pwd; ME = [];
 

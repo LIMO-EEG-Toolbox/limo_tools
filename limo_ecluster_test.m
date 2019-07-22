@@ -33,8 +33,8 @@ function [sigcluster,pval,maxval] = limo_ecluster_test(orif,orip,th,alpha_value,
 % v1 Guillaume Rousselet, University of Glasgow, August 2010
 % edit Marianne Latinus adding spm_bwlabel
 % Cyril Pernet Edited for return p values + compatible time frequency  
-% ---------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 %
 % See also limo_ecluster_make limo_tfcluster_make
 

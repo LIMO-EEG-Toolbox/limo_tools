@@ -15,8 +15,8 @@ function LIMO_display_image(LIMO,toplot,mask,mytitle,dynamic)
 %
 % the function originates from previous version of LIMO_display_results
 % Cyril Pernet v2 January 2016
-% ----------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nargin == 4
     dynamic = 1;

@@ -20,8 +20,8 @@ function [t,p,dfe]=limo_ttest_permute(Data,n_perm)
 % Cyril Pernet 10-01-2013
 % GAR 18-02-13: embedded electrode loop inside permutation loop so that the
 %               same permutation is applied to every electrode
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% check inputs

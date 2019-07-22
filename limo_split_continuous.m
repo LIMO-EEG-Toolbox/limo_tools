@@ -17,8 +17,8 @@ function new_cont = limo_split_continuous(varargin)
 % condition - if no output specified, user is prompted to save
 %
 % Cyril Pernet 08-April-2014
-% -------------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% INPUT CHECK
 if nargin == 0

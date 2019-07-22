@@ -7,8 +7,8 @@ function nb_items = limo_nb_items(LIMO)
 %
 % silly routine to return the number of trials used in each column of X
 % Cyril Pernet 01/02/2012  updated for all regressors Jan 2014
-% ------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 X = LIMO.design.X;
 P = sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions);

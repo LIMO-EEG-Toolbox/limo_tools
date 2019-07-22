@@ -19,8 +19,8 @@
 %
 % See also limo_ecluster_make limo_ecluster_test limo_tfcluster_make limo_tfcluster_test
 % Cyril Pernet
-% -------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nargin == 4
     alphav = 0.05;

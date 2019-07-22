@@ -21,8 +21,8 @@ function [dist,out] = limo_pcout(x)
 % Vol. 52, pp. 1694-1711, 2008.
 %
 % Ignacio Suay Mas
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % we have ommited dimensions with mad = 0, as this 
 % corresponds to a case with all trials having the same value ! 

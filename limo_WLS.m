@@ -27,8 +27,8 @@ function [b,W] = limo_WLS(X,Y,varargin)
 %
 % Cyril Pernet v2 January 2014
 % v3 July 2015 incliude an iterative framework (not validated)
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% input check
 if  nargin < 2      

@@ -30,8 +30,8 @@ function limo_robust_ci(varargin)
 % Guillaume Rousselet provided the initial code to do the stats
 % Cyril Pernet made the interface, organize to suite EEG data etc .. 
 % version 1. 18 May 2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% file selection and checkings

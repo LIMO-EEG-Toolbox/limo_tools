@@ -27,8 +27,8 @@ function sigcluster = limo_tfcluster_test(orif,orip,th,alphav)
 %         sigcluster.elec_mask corrected p_values
 %
 % See also limo_tfcluster_make 
-% -------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Cyril Pernet v1 June 2014 (adapted from limo_ecluster_test)
 

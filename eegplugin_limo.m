@@ -8,7 +8,7 @@ function version = eegplugin_limo(fig,try_strings,catch_strings)
 % Nicolas Chauveau - Cyril Pernet v1 13/03/2009
 % Cyril Pernet v2 22-06-2013
 % -----------------------------
-%  Copyright (C) LIMO Team 2010
+%  Copyright (C) LIMO Team 2019
 
 version ='LIMO EEG 2.0';
 if nargin < 3

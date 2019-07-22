@@ -42,8 +42,8 @@ function results = limo_rep_anova_old(Y,gp,factors,flag)
 % Cyril Pernet v1 April 2010
 %              v2 July  2010 - changed the Y structure to accommodate
 %              sphericity computation
-% -----------------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 % ------------------------------

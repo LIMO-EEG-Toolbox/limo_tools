@@ -9,8 +9,8 @@ function reshaped = limo_tf_5d_reshape(reshape_in)
 % Copy of limo_tf_4d_reshape with a bootstrap loop
 %
 % Cyril Pernet, January 2014
-% -----------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if ~exist('LIMO','var')
     try load LIMO

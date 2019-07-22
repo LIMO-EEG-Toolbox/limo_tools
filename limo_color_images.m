@@ -14,6 +14,8 @@ function cm = limo_color_images(scale,LIMO,varargin)
 % References:
 % Green, D. A., 2011, `A colour scheme for the display of astronomical intensity images', Bulletin of the Astronomical Society of India, 39, 289.
 % Pernet & Madan. Data visualization for inference in tomographic brain imaging. https://psyarxiv.com/egc6q.
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % defaults
 map_name = [];

@@ -53,8 +53,8 @@ function filepath = limo_random_select(type,expected_chanlocs,varargin)
 %
 % Cyril Pernet - The University of Edinburgh
 % Ramon Martinez-Cancino - UC San Diego
-% ---------------------------------------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% take the inputs and load some parameters
 

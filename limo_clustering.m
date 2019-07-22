@@ -24,8 +24,8 @@ function [mask,cluster_pval,max_th] = limo_clustering(varargin)
 %
 % Cyril Pernet 
 % outsourced from limo_stat_values
-% --------------------------------
-% Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % check inputs 
 M       = varargin{1};

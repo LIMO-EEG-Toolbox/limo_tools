@@ -28,8 +28,8 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 % Cyril Pernet v3 changed output + clean up
 % Cyril Pernet v4 27-05-2015
 %              removed depricated arguments, use 4 MCC, optimized H0
-% ---------------------------------------------------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 Type      = varargin{1}; % type of plot

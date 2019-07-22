@@ -93,8 +93,8 @@ function result = limo_rep_anova(varargin)
 % Cyril Pernet May 2011 - update to run locally the mutlivariate 
 %            analysis + added the time dimension to speed things up
 % GAR April 2013: updated help & comments; added name output
-% -----------------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% input stuff

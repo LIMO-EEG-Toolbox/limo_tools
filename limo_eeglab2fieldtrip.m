@@ -83,7 +83,8 @@ function [data] = limo_eeglab2fieldtrip(EEG, fieldbox, transform)
 % Initial revision
 %
 % renamed for integration in LIMO toolbox: GAR, University of Glasgow, June
-% 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nargin < 2
   help eeglab2fieldtrip

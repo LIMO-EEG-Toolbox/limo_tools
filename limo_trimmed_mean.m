@@ -12,9 +12,8 @@ function TM = limo_trimmed_mean(varargin)
 %
 % OUTPUT
 % TM is a 2D or 3D matrix with the lower CI, the trimmed mean and the high CI
-%
-% -----------------------------
-%  Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Original R code by Rand Wilcox - See also Wilcox p.71, 139
 % GA Rousselet, University of Glasgow, Dec 2007

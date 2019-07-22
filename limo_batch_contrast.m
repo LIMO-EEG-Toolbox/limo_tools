@@ -2,7 +2,7 @@ function limo_batch_contrast(limo_file,C)
 
 % routine to compute T contrasts from the batch mode
 % -----------------------------
-% Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2019
 
 % Cyril Pernet June 2014
 

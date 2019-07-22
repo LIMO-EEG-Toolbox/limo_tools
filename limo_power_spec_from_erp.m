@@ -24,8 +24,8 @@ function [limo_psd,limo_psd_freqlist] = limo_power_spec_from_erp(EEG,options)
 % Cyril Pernet, minor changes and edits Jan 2014
 % Cyril Pernet Nov 20104 - changed input structure to option adding ica
 %                and call spectopo using log + other minor changes
-% -------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% Set defaults if not set

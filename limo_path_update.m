@@ -7,8 +7,8 @@ function limo_path_update
 % select the relevant data set
 %
 % Cyril Pernet v2 13-Sept-2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 source_dir = pwd;

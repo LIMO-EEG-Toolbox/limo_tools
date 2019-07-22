@@ -3,8 +3,8 @@ function varargout = limo_tools(varargin)
 % GUI for the LIMO EEG Tools
 % Created using GUIDE
 % Cyril Pernet
-% -----------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% GUI stuffs
 % -------------------------

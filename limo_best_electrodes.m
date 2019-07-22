@@ -15,8 +15,8 @@ function [electrode_vector,urchan_vector] = limo_best_electrodes(varargin)
 %         urchan_vector the value read from the urchan field (if present)
 %         a frequency map is also presented as graphical output
 %
-% -----------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Cyril Pernet 15 July 2010
 % GAR, 15 August 2010: updated description, uigetfile prompt, frequency figure

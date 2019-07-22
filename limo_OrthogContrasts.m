@@ -15,8 +15,8 @@ function [M,MList]=limo_OrthogContrasts(nTreats)
 %
 % Taken from Matthew Nelson GenOrthogComps.m
 % simplified by Cyril Pernet 16-09-2009
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if length(nTreats) == 1
     error('there must be at least 2 factors')

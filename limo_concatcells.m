@@ -7,8 +7,8 @@ function out = limo_concatcells(in)
 % OUTPUT out is the concatenate matrix
 %
 % Cyril Pernet Nov 2014
-% -----------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% check data in
 if isnumeric(in)

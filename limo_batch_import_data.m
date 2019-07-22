@@ -16,8 +16,8 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 %        the EEG.set file, from EEG.etc
 %
 % see also limo_batch 
-%% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 global EEGLIMO
 

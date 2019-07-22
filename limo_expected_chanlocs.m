@@ -28,8 +28,8 @@ function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varar
 % subjects for tfce
 % Marianne Latinus, May 2014 - create a cap with a minimum number
 % of subjects per electrodes ; loop through all subjects
-% ----------------------------------
-%  Copyright (C) LIMO Team 2017
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% variables set as defaults
 min_subjects = 3; % we want at least 3 subjects per electrode

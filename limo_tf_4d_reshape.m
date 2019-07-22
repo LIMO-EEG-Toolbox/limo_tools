@@ -17,9 +17,8 @@ function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 % The reshaping is done explicitly within simple loops to be clear to read.
 % Could be vectorised and/or use reshape(), but that makes it easier to get
 % lost in dimensions.
-%
-% ------------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Andrew X Stewart, nov13
 % Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014

@@ -43,8 +43,8 @@ function result = limo_robust_rep_anova(varargin)
 % See also limo_rfep_anova, limo_random_robust, limo_OrthogContrasts
 %
 % Cyril Pernet & Guillaume Rousselet April 2014
-% -----------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% input stuff

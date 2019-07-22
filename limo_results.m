@@ -2,8 +2,8 @@ function varargout = limo_results(varargin)
 % Result GUI for the LIMO_eeg toolbox
 % Created using GUIDE
 % Cyril Pernet 20-03-2009 v1
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% GUI stuffs

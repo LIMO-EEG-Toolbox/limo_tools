@@ -61,8 +61,8 @@ function model = limo_glm(varargin)
 % LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG
 %
 % Cyril Pernet v3 07-07-2015 (methods and analysis type)
-% ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% varagin
 

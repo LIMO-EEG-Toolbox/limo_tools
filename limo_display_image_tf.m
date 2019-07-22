@@ -11,8 +11,8 @@ function varargout = limo_display_image_tf(varargin)
 % A. Stewart v1 mar14 axs - basic GUI set up + 3D tf plots from 3 point-of-view 
 % C. Pernet added mask,title, - fixed various bugs - made it show topoplot and time courses +
 % fixed the code to update at each 'click' 9-04-2014
-% ---------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

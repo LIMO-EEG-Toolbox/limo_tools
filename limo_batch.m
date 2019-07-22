@@ -58,7 +58,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
 % ----------------------------------------------------------------------
-% Copyright (C) LIMO Team 2018
+%  Copyright (C) LIMO Team 2019
 
 % programmer help
 % ---------------

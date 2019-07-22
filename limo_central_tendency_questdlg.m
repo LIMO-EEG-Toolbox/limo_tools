@@ -5,8 +5,8 @@ function varargout = limo_central_tendency_questdlg(varargin)
 % Called by limo_central_tendency_and)ci.m
 % created using GUIDE
 % cyril pernet 12-03-2010 v1
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

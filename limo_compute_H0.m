@@ -27,10 +27,10 @@ function varargout=limo_compute_H0(varargin)
 % the drive using dedicated names and format - see limo_random_robust for
 % details of inputs and outputs
 %
-% -------------------------------------------------------------------------
 % see also limo_create_boot_table
 %
-%
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 type = varargin(1);
 

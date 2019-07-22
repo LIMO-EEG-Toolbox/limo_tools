@@ -30,8 +30,8 @@ function [b w] = limo_IRLS(X,Y,tune)
 %    regression".Neuroimage. 26(1):99-113
 %    
 % Ignacio Suay Mas
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if  nargin < 2      
     error(message('Too Few Inputs'));      

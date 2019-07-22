@@ -46,8 +46,8 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
 % see also limo_stat_values topoplot
-% ----------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 try
     options = varargin;

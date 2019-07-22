@@ -5,6 +5,8 @@ function limo_add_plots(varargin)
 % * time * conditions * 3 with this last dim being the low end of the
 % confdidence interval, the estimator (like eg mean), high end of the
 % confidence interval and the variable is called M, TM, Med or HD
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 out = 0;
 turn = 1;

@@ -43,8 +43,8 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %
 %
 % Andrew Stewart v1 Nov 13 % Adapted from Cyril's limo_design_matrix
-% -----------------------------------------------------
-% Copyright (C) LIMO Team 2013
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% varagin stuffs

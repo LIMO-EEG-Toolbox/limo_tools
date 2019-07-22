@@ -5,8 +5,8 @@ function limo_semi_partial_coef(LIMO)
 % See limo_glm for details on computation
 % Cyril Pernet 12-06-2009
 % Cyril Pernet 12-11-2013 update for bootstrap and factorial designs
-% ------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% simple checking
 

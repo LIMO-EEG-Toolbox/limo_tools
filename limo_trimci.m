@@ -28,8 +28,8 @@ function [t,tmdata,trimci,se,p,tcrit,df]=limo_trimci(data, percent, alphav, null
 %
 % Luisa Frei, 23/11/2011: wrote first version
 % GAR, 23/11/2011: edited calculation of confidence intervals & help 
-% -----------------------------
-%  Copyright (C) LIMO Team 2011
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% data checking
 if nargin<4;nullvalue=0;end

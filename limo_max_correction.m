@@ -21,8 +21,8 @@ function [mask,p_val,max_th] = limo_max_correction(varargin)
 %
 % Cyril Pernet v1
 % outsourced from limo_stat_values
-% --------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % check inputs 
 M       = varargin{1};

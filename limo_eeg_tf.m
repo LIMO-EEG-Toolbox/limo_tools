@@ -11,8 +11,8 @@ function limo_eeg_tf(varargin)
 %
 % Andrew X Stewart, Nov 2013
 % Cyril Pernet February 2014
-% ---------------------------
-% Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 global LIMO
 if ~isnumeric(cell2mat(varargin))

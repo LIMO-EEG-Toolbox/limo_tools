@@ -8,8 +8,8 @@ function robust_cov = limo_robust_cov(data,percent)
 % OUTPUT: robust_cov is the covariance of winsorized data
 %
 % Cyril Pernet & Guillaume Rousselet April 2014
-% -----------------------------------------------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% check data in
 if numel(size(data)) ~=2

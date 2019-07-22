@@ -22,8 +22,8 @@ function [m,dfe,ci,sd,n,t,p] = limo_ttest(type,data1,data2,alphav)
 % Cyril Pernet 28-08-2009
 % GAR 02-09-2009: made dimension flexible and updated documentation
 % Cyril 07-09-2009 changed the code to return the dfe
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 nd = ndims(data1);
 

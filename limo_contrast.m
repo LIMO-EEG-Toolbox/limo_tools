@@ -35,8 +35,8 @@ function result = limo_contrast(varargin)
 %
 % Cyril Pernet v4 26/09/2010
 % updated 21-16-2013
-% -----------------------------
-%  Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% nargin stuff

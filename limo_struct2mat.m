@@ -12,8 +12,8 @@ function [out,TimeVect,FreqVect] = limo_struct2mat(in)
 %        frequency vectors
 %
 % Cyril Pernet Novembre 2014
-% ----------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %if char, load the data
 if ischar(in)

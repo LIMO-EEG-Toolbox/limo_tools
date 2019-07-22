@@ -46,8 +46,8 @@ function limo_create_single_trials(EEG,varargin)
 % Author: Cyril Pernet (LIMO Team), The university of Edinburgh, 2014
 %         Arnaud Delorme (EEGLAB), SCCN, 2014
 %
-% ------------------------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% deal with options
 % set defaults

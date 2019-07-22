@@ -8,7 +8,7 @@ function limo_batch_design_matrix(LIMOfile)
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLIMOLAB STUDY
 % see also limo_batch
 %% -----------------------------
-% Copyright (C) LIMO Team 2018
+%  Copyright (C) LIMO Team 2019
 
 global EEGLIMO
 load(LIMOfile);

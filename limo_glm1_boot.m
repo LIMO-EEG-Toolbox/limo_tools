@@ -31,8 +31,8 @@ function model = limo_glm1_boot(varargin)
 %
 % Cyril Pernet v1 18-07-2012
 % Cyril Pernet v2 07-07-2015 (methods and analysis type)
-% --------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% varagin
 nboot = 599; %
