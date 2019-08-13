@@ -197,7 +197,11 @@ else
     end
 end
 
-
-cd(LIMO.dir); save LIMO LIMO; cd ..
-
+if ~exist('LIMO.dir','dir')
+    mkdir(LIMO.dir)
 end
+cd(LIMO.dir); 
+save LIMO LIMO; 
+cd ..
+
+

@@ -57,6 +57,7 @@ if nargin==3
     full_factorial    = varargin{2}.design.fullfactorial;
     chanlocs          = varargin{2}.data.chanlocs;
     type_of_analysis  = varargin{2}.design.type_of_analysis;
+    LIMO              = varargin{2};
     flag              = varargin{3};
     try
         expected_chanlocs = varargin{2}.data.expected_chanlocs;
@@ -283,7 +284,6 @@ if ~isempty(Cat)
         end
     end
     
-        
 %         % get each part of x for the right factors
 %         nb_factors = size(nb_conditions,2);
 %         F{1} = x(:,1:nb_conditions(1)); index = nb_conditions(1)+1;
@@ -358,6 +358,8 @@ if ~isempty(Cat)
         if size(higher_interaction,2) ~= prod(nb_conditions)
             errordlg(sprintf('the design is too unbalanced to be corrected \n can''t run full factorial'))
             nb_interactions = 0; X = [full_design ones(size(Yr,3),1)];
+            full_factorial = 0; LIMO.design.fullfactorial = 0;
+            save('LIMO.mat','LIMO')
         else
             nb_trials = sum(higher_interaction);
             if length(unique(nb_trials)) > 1
@@ -453,7 +455,7 @@ end
 if flag == 1
     figure('Name','LIMO design','Color','w','NumberTitle','off')
     Xdisplay = X;
-    if  add_cont == 1;
+    if  add_cont == 1
         cat_column = sum(nb_conditions)+sum(nb_interactions);
         REGdisplay = Cont + abs(min(Cont(:)));
         Xdisplay(:,cat_column+1:size(X,2)-1) = REGdisplay ./ max(REGdisplay(:));
