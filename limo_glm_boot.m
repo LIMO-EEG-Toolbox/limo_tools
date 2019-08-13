@@ -1,14 +1,14 @@
-function model = limo_glm1_boot(varargin)
+function model = limo_glm_boot(varargin)
 
-% Boostrapped version of limo_glm1
-% Importantly it also runs per electrodes - but do N bootstraps to obtain
-% the distributon of F (and associated p values) under H0
+% Boostrapped version of limo_glm
+% Importantly it runs per electrodes but do N bootstraps to obtain
+% the distributon of F (and associated p values) under H0.
 % H0 is obtained by either by resampling from centered data (categorical designs)
 % or sampling Y but leaving X intact, i.e. breaking the link between Y and X
 %
 % FORMAT:
-% model = limo_glm1_boot(Y,LIMO,boot_table)
-% model = limo_glm1_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,n_freqs,n_times,boot_table)
+% model = limo_glm_boot(Y,LIMO,boot_table)
+% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,n_freqs,n_times,boot_table)
 %
 % INPUTS
 %         Y = 2D matrix of EEG data with format trials x frames
@@ -27,10 +27,9 @@ function model = limo_glm1_boot(varargin)
 %                    the same resampling applies to each channel
 %
 % See also
-% LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG(4)
+% LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
 %
-% Cyril Pernet v1 18-07-2012
-% Cyril Pernet v2 07-07-2015 (methods and analysis type)
+% Cyril Pernet
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
@@ -57,7 +56,7 @@ if nargin == 2 || nargin == 3
     end
     
     if nargin == 2
-        boot_table = randi(size(Y,1),size(Y,1),nboot);
+        boot_table = randi(size(y,1),size(y,1),nboot);
     elseif nargin == 3
         boot_table = varargin{3};
         nboot = size(boot_table,2);
@@ -81,7 +80,7 @@ elseif nargin == 10 || nargin == 11
         nboot = size(boot_table,2);
     end
 else
-    error('varargin error in limo_glm1_boot')
+    error('varargin error in limo_glm_boot')
 end
 
 clear varargin
@@ -134,7 +133,7 @@ if nb_continuous == 0
         
     else
         % create fake interaction to get groups
-        [tmpX interactions] = limo_make_interactions(X(:,1:(end-1)), nb_conditions);
+        [tmpX, interactions] = limo_make_interactions(X(:,1:(end-1)), nb_conditions);
         if length(interactions) == 1
             start_at = sum(nb_conditions);
         else
@@ -143,7 +142,7 @@ if nb_continuous == 0
         
         for cel=(start_at+1):(start_at+interactions(end))
             index = find(tmpX(:,cel));
-            centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),[size(y(index,:),1)],1);
+            centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),size(y(index,:),1),1);
         end
     end
 else
@@ -151,60 +150,45 @@ else
     design = X;
 end
 
-% workout the interaction increment (blocks on interactions terms to add-up)
-if nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
-    for n=2:nb_factors
-        increment(n-1) = size(nchoosek([1:nb_factors],n),1);
-    end
-else
-    increment = [];
-end
-
 % compute for each bootstrap
 % ---------------------------
-parfor B = 1:nboot
-    % fprintf('boot n %g\n',B)
+BETASB = cell(1,nboot);
+MODELR2 = cell(1,nboot);
+MODELF = cell(1,nboot);
+MODELp = cell(1,nboot);
+
+if nb_factors ~= 0
+    F_CONDVALUES = cell(1,nboot);
+    p_CONDVALUES = cell(1,nboot);
+end
+
+if nb_factors >=2
+    F_INTERVALUES  = cell(1,nboot);
+    p_INTERVALUES  = cell(1,nboot);
+end
+
+if nb_continuous ~=0
+    F_CONTVALUES  = cell(1,nboot);
+    p_CONTVALUES  = cell(1,nboot);
+end
+
+for B = 1:nboot
     
     % create data under H0
     if nb_continuous == 0
         % if just categorical variables, sample from the centered data and
-        % the design simultaneously - rezscore if needed
+        % the design simultaneously
         Y = centered_y(boot_table(:,B),:); % resample Y
-        X = design(boot_table(:,B),:); % resample X
-        if z == 1 % rezscore the covariates
-            if isempty(nb_interactions)
-                N = nb_conditions;
-            else
-                N = nb_conditions + nb_interactions;
-            end
-            
-            if N==0 || isempty(N)
-                if sum(mean(X(:,1:end-1),1)) > 10e-15
-                    X(:,1:end-1) = zscore(X(:,1:end-1));
-                end
-            else
-                if sum(mean(X(:,N+1:end-1),1)) > 10e-15
-                    X(:,N+1:end-1) = zscore(X(:,N+1:end-1));
-                end
-            end
-        end
-        
+        X = design(boot_table(:,B),:);     % resample X
     else
         % sample and break the link between Y and X (regression and AnCOVA designs)
         Y = y(boot_table(:,B),:); % resample
-        X = design; % stays the same
+        X = design;               % stays the same
     end
     
     
+    %% Compute model parameters
     % ------------------------------
-    % Compute model parameters
-    % ------------------------------
-    
-    % total sum of squares, projection matrix for errors, residuals and betas
-    % -----------------------------------------------------------------------
-    T     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
-    R     = eye(size(Y,1)) - (X*pinv(X));                                      % Projection on E
-    E     = (Y'*R*Y);                                                          % SS Error
     
     % compute Beta parameters
     if strcmp(method,'OLS')
@@ -213,6 +197,7 @@ parfor B = 1:nboot
         else
             W = ones(size(Y,1),1);
         end
+        WX = X;
         
         if nb_continuous ~=0 && nb_factors == 0
             Betas = X\Y; % numerically more stable than pinv
@@ -222,6 +207,7 @@ parfor B = 1:nboot
         
     elseif strcmp(method,'WLS')
         [Betas,W] = limo_WLS(X,Y);
+        WX        = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
         
     elseif strcmp(method,'WLS-TF')
         % unpack the data
@@ -242,315 +228,352 @@ parfor B = 1:nboot
         end
         
         % get estimates per freq band
-        Betas = NaN(size(X,2),n_freqs*n_times);
-        W = NaN(n_freqs,size(X,1));
         index1 = 1;
+        Betas  = NaN(size(X,2),n_freqs*n_times);
+        W      = NaN(n_freqs,size(X,1));
         for f=1:n_freqs
             [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
             index1=index1+1;
         end
+        WX = X .* repmat(W,1,size(X,2));
         clear reshaped
         
     elseif strcmp(method,'IRLS')
         [Betas,W] = limo_IRLS(X,Y);
     end
-    BETASB(:,:,B) = Betas';
     
-    % compute model R^2
-    % -----------------
-    C = eye(size(X,2));
-    C(:,size(X,2)) = 0;
-    C0 = eye(size(X,2)) - C*pinv(C);
-    X0 = X*C0;  % Reduced model
-    R0 = eye(size(Y,1)) - (X0*pinv(X0));
-    M  = R0 - R;  % Projection matrix onto Xc
-    H  = (Betas'*X'*M*X*Betas);  % SS Effect
-    Rsquare   = diag(H)./diag(T); % Variances explained
-    F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-    p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
+    % Betas bootstap
+    BETASB{B} = Betas';
     
-    % ------------------------------
-    % Compute F for dummy variables
-    % ------------------------------
-    
-    % -------------------------
-    if nb_factors == 1   %  1-way ANOVA
-        % -------------------------
+    switch method
         
-        % compute F for categorical variables
-        % -----------------------------------
-        if nb_conditions ~= 0 && nb_continuous == 0
-            df_conditions   = rank(C)-1;
-            F_conditions    = F_Rsquare;
-            pval_conditions = p_Rsquare;
+        case {'OLS','WLS'}
+            % -----------------------------------------------------------------
             
-        elseif nb_conditions ~= 0 && nb_continuous ~= 0
-            C = eye(size(X,2));
-            C(:,(nb_conditions+1):size(X,2)) = 0;
-            C0 = eye(size(X,2)) - C*pinv(C);
-            X0 = X*C0; % Here the reduced model includes the covariates
-            R0 = eye(size(Y,1)) - (X0*pinv(X0));
-            M  = R0 - R;
-            H  = (Betas'*X'*M*X*Betas);
-            df_conditions = rank(C)-1;
-            F_conditions    = (diag(H)/(rank(C)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-            pval_conditions = 1 - fcdf(F_conditions(:), df_conditions, (size(Y,1)-rank(X)));
-        end
-        
-        F_CONDVALUES{B}  = F_conditions;
-        p_CONDVALUES{B}  = pval_conditions;
-        
-        % ------------------------------------------------
-    elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
-        % ------------------------------------------------
-        
-        % --------------------------------------
-        % compute F and p values of each factor
-        % --------------------------------------
-        
-        df_conditions = zeros(1,length(nb_conditions));
-        F_conditions = zeros(length(nb_conditions),size(Y,2));
-        pval_conditions = zeros(length(nb_conditions),size(Y,2));
-        
-        eoi = zeros(1,size(X,2));
-        eoi(1:nb_conditions(1)) = 1:nb_conditions(1);
-        eoni = [1:size(X,2)];
-        eoni = find(eoni - eoi);
-        
-        for f = 1:length(nb_conditions)
-            C = eye(size(X,2));
-            C(:,eoni) = 0;
-            C0   = eye(size(X,2)) - C*pinv(C);
-            X0   = X*C0;
-            R0   = eye(size(Y,1)) - (X0*pinv(X0));
-            M    = R0 - R;
-            H    = (Betas'*X'*M*X*Betas);
-            df_conditions(f) = rank(C)-1;
-            F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/(size(Y,1)-rank(X)));
-            pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), (size(Y,1)-rank(X)));
+            %% Compute model statistics
+            % ------------------------------
+            % total sum of squares, projection matrix for errors, residuals
+            % --------------------------------------------------------------
+            T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
+            R   = eye(size(Y,1)) - WX*pinv(WX);                                      % Projection onto E
+            E   = Y'*R*Y;                                                            % SS Error
             
-            % update factors
-            if f<length(nb_conditions)
-                update = max(find(eoi));
-                eoi = zeros(1,size(X,2));
-                eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                eoni = [1:size(X,2)];
-                eoni = find(eoni - eoi);
+            % degrees of freedom
+            % -------------------
+            df = rank(WX)-1;
+            if strcmp(method,'OLS')
+                dfe = size(Y,1)-rank(WX);
+            else
+                EV  = abs(eig(corr(R*Y)));
+                x   = single(EV>=1) + (EV - floor(EV));
+                dfe = size(Y,1) - sum(x) + rank(WX) + 1;
             end
-        end
-        
-        F_CONDVALUES{B}  = F_conditions;
-        p_CONDVALUES{B}  = pval_conditions;
-        
-        
-        % ------------------------------------------------
-    elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
-        % ------------------------------------------------
-        
-        % ---------------------------------------------------
-        % start by ANOVA without interaction for main effects
-        % ---------------------------------------------------
-        
-        df_conditions = zeros(1,length(nb_conditions));
-        F_conditions = zeros(length(nb_conditions),size(Y,2));
-        pval_conditions = zeros(length(nb_conditions),size(Y,2));
-        
-        % covariates
-        covariate_columns = [(sum(nb_conditions)+sum(nb_interactions)+1):(size(X,2)-1)];
-        
-        % main effects
-        dummy_columns = 1:sum(nb_conditions);
-        
-        % re-define X
-        x = [X(:,dummy_columns) X(:,covariate_columns) ones(size(X,1),1)];
-        
-        % run same model as above
-        R  = eye(size(Y,1)) - (x*pinv(x));
+            
+            % model R^2
+            % -----------
+            C              = eye(size(X,2));
+            C(:,size(X,2)) = 0;                              % all columns but the constant
+            C0             = eye(size(X,2)) - C*pinv(C);     % only the constant
+            X0             = WX*C0;                          % Reduced model design matrix
+            R0             = eye(size(Y,1)) - (X0*pinv(X0)); % Projection onto error
+            M              = R0 - R;                         % Projection matrix onto Xc
+            H              = (Betas'*X'*M*X*Betas);          % SS Effects
+            Rsquare        = diag(H)./diag(T);               % Variance explained
+            F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
+            p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
 
-        % compute Beta parameters using previsouly found weights from the whole model
-        if strcmp(method,'IRLS')
-            betas = pinv(W*x)*(W*Y);
-        else
-            betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
-        end
-        
-        eoi = zeros(1,size(x,2));
-        eoi(1:nb_conditions(1)) = 1:nb_conditions(1);
-        eoni = [1:size(x,2)];
-        eoni = find(eoni - eoi);
-        
-        for f = 1:length(nb_conditions)
-            C = eye(size(x,2));
-            C(:,eoni) = 0;
-            C0   = eye(size(x,2)) - C*pinv(C);
-            X0   = x*C0;
-            R0   = eye(size(Y,1)) - (X0*pinv(X0));
-            M    = R0 - R;
-            H(f,:) = diag((betas'*x'*M*x*betas));
-            df_conditions(f) = rank(C)-1;
-            F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./(size(Y,1)-rank(X)))';
-            pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), (size(Y,1)-rank(X)));
             
-            % update factors
-            if f<length(nb_conditions)
-                update = max(find(eoi));
-                eoi = zeros(1,size(x,2));
-                eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                eoni = [1:size(x,2)];
-                eoni = find(eoni - eoi);
-            end
-        end
-        
-        F_CONDVALUES{B}  = F_conditions;
-        p_CONDVALUES{B}  = pval_conditions;
-        
-        % ---------------------------
-        % now deal with interactions
-        % ---------------------------
-        
-        if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-            HI = diag(T)' - H(1,:) - H(2,:) - diag(E)';
-            df_interactions = prod(df_conditions);
-            F_interactions  = (HI./df_interactions) ./ (diag(E)/(size(Y,1)-rank(X)))';
-            pval_interactions  = 1 - fcdf(F_interactions, df_interactions, (size(Y,1)-rank(X)));
+            % ----------------------------
+            %% update the model structure
+            % ----------------------------
+            MODELR2{B} = Rsquare;
+            MODELF{B} = F_Rsquare;
+            MODELp{B} = p_Rsquare;
+
+            %% Compute effects
+            % ------------------
             
-        else % run through each interaction
-            
-            % part of X unchanged
-            Main_effects = [X(:,dummy_columns)];
-            Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
-            
-            % check interaction levels
-            increment_count = 1; % where are we in the I increment
-            I_block = 1; % use to count how many I to add togeher
-            start = sum(nb_conditions)+1;
-            for n=1:length(nb_interactions)
-                stop = start+nb_interactions(n)-1;
-                I = X(:,start:stop);
+            % -------------------------
+            if nb_factors == 1   %  1-way ANOVA
+                % -------------------------
                 
-                % re-define X with interactions
-                x = [Main_effects I Cov_and_Mean];
-                SS = size(Main_effects,2);
-                EE = size(I,2);
-                eoi = zeros(1,size(x,2));
-                eoi((SS+1):(SS+EE)) = [(SS+1):(SS+EE)];
-                eoni = [1:size(x,2)];
-                eoni = find(eoni - eoi);
-                start = stop+1; % update for the next round
-                
-                %figure; imagesc(x);
-                I_block = I_block+1;
-                if I_block == sum(increment(1:increment_count))
-                    add_columns_up_to = sum(nb_conditions)+sum(nb_interactions(1:I_block));
-                elseif I_block > sum(increment(1:increment_count))
-                    increment_count = increment_count+1;
-                    Main_effects = [Main_effects X(:,(sum(nb_conditions)+1):add_columns_up_to)]
-                end
-            
-                % run same model as above
-                R  = eye(size(Y,1)) - (x*pinv(x));
-                if strcmp(method,'IRLS')
-                    betas = pinv(Wx)*WY;
-                else
-                    betas = pinv(repmat(W,1,size(x,2)).*x)*(repmat(W,1,size(Y,2)).*Y);
+                % compute F for categorical variables
+                % -----------------------------------
+                if nb_conditions ~= 0 && nb_continuous == 0
+                    F_conditions                     = F_Rsquare;
+                    pval_conditions                  = p_Rsquare;
+                    
+                elseif nb_conditions ~= 0 && nb_continuous ~= 0
+                    C                                = eye(size(X,2));
+                    C(:,(nb_conditions+1):size(X,2)) = 0;
+                    C0                               = eye(size(X,2)) - C*pinv(C);
+                    X0                               = WX*C0; % here the reduced model includes the covariates
+                    R0                               = eye(size(Y,1)) - (X0*pinv(X0));
+                    M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
+                    H                                = (Betas'*X'*M*X*Betas);
+                    df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
+                    F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
+                    pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
                 end
                 
+                F_CONDVALUES{B}  = F_conditions;
+                p_CONDVALUES{B}  = pval_conditions;
                 
-                C = eye(size(x,2));
-                C(:,eoni) = 0;
-                C0   = eye(size(x,2)) - C*pinv(C);
-                X0   = x*C0;
-                R0   = eye(size(Y,1)) - (X0*pinv(X0));
-                M    = R0 - R;
-                HI(n,:) = diag((betas'*x'*M*x*betas))';
+                % ------------------------------------------------
+            elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
+                % ------------------------------------------------
+                
+                % --------------------------------------
+                % compute F and p values of each factor
+                % --------------------------------------
+                
+                df_conditions            = zeros(1,length(nb_conditions));
+                F_conditions             = zeros(length(nb_conditions),size(Y,2));
+                pval_conditions          = zeros(length(nb_conditions),size(Y,2));
+                
+                % define the effect of interest (eoi)
+                eoi                      = zeros(1,size(X,2));
+                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
+                eoni                     = 1:size(X,2);
+                eoni                     = find(eoni - eoi);
+                
+                for f = 1:length(nb_conditions)
+                    C                    = eye(size(X,2));
+                    C(:,eoni)            = 0; % set all but factor of interest to 0
+                    C0                   = eye(size(X,2)) - C*pinv(C);
+                    X0                   = WX*C0; % the reduced model include all but the factor f
+                    R0                   = eye(size(Y,1)) - (X0*pinv(X0));
+                    M                    = R0 - R; % hat matrix for factor f
+                    H                    = (Betas'*X'*M*X*Betas);
+                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    
+                    % update factors
+                    if f<length(nb_conditions)
+                        update           = find(eoi,1,'last'); % max(find(eoi));
+                        eoi              = zeros(1,size(X,2));
+                        eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
+                        eoni             = 1:size(X,2);
+                        eoni             = find(eoni - eoi);
+                    end
+                end
+                
+                F_CONDVALUES{B}  = F_conditions;
+                p_CONDVALUES{B}  = pval_conditions;
+
+                % ------------------------------------------------
+            elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
+                % ------------------------------------------------
+                
+                % ---------------------------------------------------
+                % start by ANOVA without interaction for main effects
+                % ---------------------------------------------------
+                
+                df_conditions     = zeros(1,length(nb_conditions));
+                F_conditions      = zeros(length(nb_conditions),size(Y,2));
+                pval_conditions   = zeros(length(nb_conditions),size(Y,2));
+                
+                % covariates
+                covariate_columns = (sum(nb_conditions)+sum(nb_interactions)+1):(size(X,2)-1);
+                
+                % main effects
+                dummy_columns = 1:sum(nb_conditions);
+                
+                % re-define X
+                x = [X(:,dummy_columns) X(:,covariate_columns) ones(size(X,1),1)];
+                
+                % run same model as above with re-defined model x and
+                % using the weights from the full model
+                wx                       = x.*repmat(W,1,size(x,2));
+                betas                    = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
+                R                        = eye(size(Y,1)) - wx*pinv(wx);
+                eoi                      = zeros(1,size(x,2));
+                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
+                eoni                     = 1:size(x,2);
+                eoni                     = find(eoni - eoi);
+                
+                for f = 1:length(nb_conditions)
+                    C                    = eye(size(x,2));
+                    C(:,eoni)            = 0;
+                    C0                   = eye(size(x,2)) - C*pinv(C);
+                    X0                   = wx*C0;
+                    R0                   = eye(size(Y,1)) - (X0*pinv(X0));
+                    M                    = R0 - R;
+                    H(f,:)               = diag((betas'*x'*M*x*betas));
+                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    
+                    % update factors
+                    if f<length(nb_conditions)
+                        update           = find(eoi,1,'last'); % max(find(eoi));
+                        eoi              = zeros(1,size(x,2));
+                        eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
+                        eoni             = 1:size(x,2);
+                        eoni             = find(eoni - eoi);
+                    end
+                end
+                
+                F_CONDVALUES{B}  = F_conditions;
+                p_CONDVALUES{B}  = pval_conditions;
+                
+                % ---------------------------
+                % now deal with interactions
+                % ---------------------------
+                
+                if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
+                    HI                 = diag(T)' - H(1,:) - H(2,:) - diag(E)';
+                    df_interactions    = prod(df_conditions);
+                    F_interactions     = (HI./df_interactions) ./ (diag(E)/dfe)';
+                    pval_interactions  = 1 - fcdf(F_interactions, df_interactions, dfe);
+                    
+                else % run through each interaction
+                    
+                    % part of X unchanged
+                    Main_effects = X(:,dummy_columns);
+                    Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
+                    
+                    % get interactions
+                    start = size(Main_effects,2)+1;
+                    for i=1:length(nb_interactions)
+                        I{i} = X(:,start:(start+nb_interactions(i)-1));
+                        start = start+nb_interactions(i);
+                    end
+                    start = size(Main_effects,2)+1;
+                    
+                    % check interaction levels
+                    index = 1;
+                    for n=2:nb_factors
+                        combinations = nchoosek(1:nb_factors,n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
+                        for c = 1:size(combinations,1)
+                            interaction{index} = combinations(c,:);
+                            index = index + 1;
+                        end
+                    end
+                    
+                    add = 0; start_at_I = 1;
+                    % run substituting and/or incrementing parts of X
+                    for f = 1:length(nb_interactions)
+                        
+                        % re-define X with interactions
+                        test = size(interaction{f},2);
+                        if test == 2
+                            x = [Main_effects I{f} Cov_and_Mean];
+                            add = add+1;
+                        else
+                            if add == test
+                                for a = start_at_I:add
+                                    Main_effects = [Main_effects I{a}];
+                                end
+                                start = size(Main_effects,2)+1;
+                                start_at_I = add+1;
+                            end
+                            x = [Main_effects I{f} Cov_and_Mean];
+                        end
+                        
+                        % run same model as above
+                        wx    = x.*repmat(W,1,size(x,2));
+                        betas = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
+                        R                                       = eye(size(Y,1)) - (wx*pinv(wx));
+                        eoi                                     = zeros(1,size(x,2));
+                        eoi(start:(start-1+nb_interactions(f))) = start:(start-1+nb_interactions(f));
+                        eoni                                    = 1:size(x,2);
+                        eoni                                    = find(eoni - eoi);
+                        C                                       = eye(size(x,2));
+                        C(:,eoni)                               = 0;
+                        C0                                      = eye(size(x,2)) - C*pinv(C);
+                        X0                                      = wx*C0;
+                        R0                                      = eye(size(Y,1)) - (X0*pinv(X0));
+                        M                                       = R0 - R;
+                        HI(f,:)                                 = diag((betas'*x'*M*x*betas))';
+                    end
+                    
+                    % get appropriate df and F/p values
+                    df_interactions            = zeros(1,length(nb_interactions));
+                    F_interactions             = zeros(length(nb_interactions),size(Y,2));
+                    pval_interactions          = zeros(length(nb_interactions),size(Y,2));
+                    
+                    for f = 1:length(nb_interactions)
+                        dfs                    = df_conditions(interaction{f});
+                        df_interactions(f)     = prod(dfs);
+                        F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
+                        pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
+                    end
+                end
+                
+                if nb_factors >=2
+                    F_INTERVALUES{B}  = F_interactions;
+                    p_INTERVALUES{B}  = pval_interactions;
+                end
             end
-        end
-        
-        % get appropriate df and F/p values
-        df_interactions = zeros(1,length(nb_interactions));
-        F_interactions = zeros(length(nb_interactions),size(Y,2));
-        pval_interactions = zeros(length(nb_interactions),size(Y,2));
-        
-        I_index = 1;
-        for n=2:nb_factors
-            combinations = nchoosek([1:nb_factors],n);
-            for c = 1:size(combinations,1)
-                df_interactions(I_index) = prod(df_conditions(combinations(c,:)));
-                F_interactions(I_index,:) = (HI(I_index,:)./df_interactions(I_index)) ./ (diag(E)/(size(Y,1)-rank(X)))';
-                pval_interactions(I_index,:) = 1 - fcdf(F_interactions(I_index,:), df_interactions(I_index), (size(Y,1)-rank(X)));
-                I_index = I_index +1;
+            
+            % -----------------------------------
+            %% compute F for continuous variables
+            % -----------------------------------
+            
+            if nb_continuous ~=0
+                
+                if nb_factors == 0 && nb_continuous == 1 % simple regression
+                    F_CONTVALUES{B}  = F_Rsquare;
+                    p_CONTVALUES{B}  = p_Rsquare;
+                    
+                else  % ANCOVA
+                    
+                    % pre-allocate space
+                    df_continuous   = zeros(nb_continuous,size(Y,2));
+                    F_continuous    = zeros(nb_continuous,size(Y,2));
+                    pval_continuous = zeros(nb_continuous,size(Y,2));
+                    
+                    % compute
+                    N_conditions = sum(nb_conditions) + sum(nb_interactions);
+                    for n = 1:nb_continuous
+                        C                                = zeros(size(X,2));
+                        C(N_conditions+n,N_conditions+n) = 1; % pick up one regressor at a time
+                        C0                               = eye(size(X,2)) - C*pinv(C);
+                        X0                               = WX*C0; % all but rehressor of interest
+                        R0                               = eye(size(Y,1)) - (X0*pinv(X0));
+                        M                                = R0 - R; % hat matrix for regressor of interest
+                        H                                = Betas'*X'*M*X*Betas;
+                        df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
+                        F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
+                        pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
+                    end
+                    
+                    F_CONTVALUES{B}  = F_continuous';
+                    p_CONTVALUES{B}  = pval_continuous';
+                end
             end
-        end
-        
-        if nb_factors ~= 0
-            F_INTERVALUES{B}  = F_interactions;
-            p_INTERVALUES{B}  = pval_interactions;
-        end
+                        
+        %% ---------------------------------------------------------------------
+        case 'IRLS'
+            
+            
     end
-   
-    % -----------------------------------
-    %% compute F for continuous variables
-    % -----------------------------------
-    
-    if nb_continuous ~=0
-        
-        if nb_factors == 0 && nb_continuous == 1 % simple regression
-            F_CONTVALUES{B}  = F_Rsquare;
-            p_CONTVALUES{B}  = p_Rsquare;
-            
-        else  % ANCOVA
-            
-            % pre-allocate space
-            F_continuous = zeros(nb_continuous,size(Y,2));
-            pval_continuous = zeros(nb_continuous,size(Y,2));
-            
-            % compute
-            N_conditions = sum(nb_conditions) + sum(nb_interactions);
-            for n = 1:nb_continuous
-                C    = zeros(size(X,2));
-                C(N_conditions+n,N_conditions+n) = 1;
-                C0   = eye(size(X,2)) - C*pinv(C);
-                X0   = X*C0;
-                R0   = eye(size(Y,1)) - (X0*pinv(X0));
-                M    = R0 - R;
-                H    = Betas'*X'*M*X*Betas;
-                F_continuous(n,:) = (diag(H)./(rank(C))) ./ (diag(E)/(size(Y,1)-rank(X)));
-                pval_continuous(n,:) = 1 - fcdf(F_continuous(n,:), 1, (size(Y,1)-rank(X)));
-            end
-            
-            F_CONTVALUES{B}  = F_continuous';
-            p_CONTVALUES{B}  = pval_continuous';
-        end
-    end
-    
-    % ----------------------------
-    %% update the model structure
-    % ----------------------------
-    MODELR2{B} = Rsquare;
-    MODELF{B} = F_Rsquare;
-    MODELp{B} = p_Rsquare;
 end
 
-model.R2 = MODELR2;
-model.F = MODELF;
-model.p = MODELp;
-model.Betas = BETASB;
+% update the model structure with boostraped values 
+% (parfor doesn't take structure)
+model.R2    = MODELR2; clear MODELR2
+model.F     = MODELF; clear MODELF
+model.p     = MODELp; clear MODELp
+model.Betas = BETASB; clear BETASB
 
-try
+if exist('F_CONDVALUES','var')
     model.conditions.F = F_CONDVALUES;
     model.conditions.p  = p_CONDVALUES;
+    clear F_CONDVALUES p_CONDVALUES
 end
 
-try
+if exist('F_INTERVALUES','var')
     model.interactions.F = F_INTERVALUES;
     model.interactions.p = p_INTERVALUES;
+    clear F_INTERVALUES p_INTERVALUES
 end
 
-try
+if exist('F_CONTVALUES','var')
     model.continuous.F = F_CONTVALUES;
     model.continuous.p = p_CONTVALUES;
+    clear F_CONTVALUES p_CONTVALUES
 end
-
-end
-
 
