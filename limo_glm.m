@@ -1,27 +1,26 @@
 function model = limo_glm(varargin)
 
-% General Linear model analysis of EEG data
-% The model consider trials/subjects as independent observations
-% i.e. this is similar as running a N-way ANOVA or ANCOVA
-% Analyses are performed at one electrode only, but for all
-% trials and all time points.
+% General Linear model analysis of EEG data.
+% The model consider trials/subjects as independent observations and analyses
+% are performed at one channel only, but for all frames (time and/or freq) points.
+% see the <https://www.hindawi.com/journals/cin/2011/831409/ LIMO EEG paper>
 %
 % FORMAT:
 % model = limo_glm1(Y,LIMO)
 % model = limo_glm1(Y,X,nb_conditions,nb_interactions,nb_continuous, method,analysis type,n_freqs,n_times)
 %
 % INPUTS:
-%   Y             = 2D matrix of EEG data with format trials x frames
-%   LIMO          = structure that contains the above information (except Y)
-%   or input info that are in LIMO.mat
-%   X             = 2 dimensional design matrix
-%   nb_conditions = a vector indicating the number of conditions per factor
+%   Y               = 2D matrix of EEG data with format trials x frames
+%   LIMO            = structure that contains the above information (except Y)
+%                     or input info that are in LIMO.mat
+%   X               = 2 dimensional design matrix
+%   nb_conditions   = a vector indicating the number of conditions per factor
 %   nb_interactions = a vector indicating number of columns per interactions
-%   nb_continuous = number of covariates
-%   method        = 'OLS', 'WLS', 'IRLS' (bisquare)
-%   analysis type =  'Time', 'Frequency' or 'Time-Frequency'
-%   n_freqs       = the nb of frequency bins
-%   n_times       = the nb of time bins
+%   nb_continuous   = number of covariates
+%   method          = 'OLS', 'WLS', 'IRLS' (bisquare)
+%   analysis type   = 'Time', 'Frequency' or 'Time-Frequency'
+%   n_freqs         = the nb of frequency bins
+%   n_times         = the nb of time bins
 %
 % OUTPUTS:
 %   model.R2_univariate = the R2 of the model
@@ -47,10 +46,10 @@ function model = limo_glm(varargin)
 % and no correction is provided - a design created by limo_design_matrix
 % would have sampled trials to make sure the number of trials is identical
 % across interaction terms. For time*frequency analyses, limo_eeg_tf sends a
-% vector of length freq*time that is unwrapped after running limo_glm1 -
-% however, weights cannot be computed that way and thus one calls LIMO.Analysis
+% vector of length freq*time that is unwrapped after running limo_glm. However,
+% weights cannot be computed that way and thus one calls LIMO.Analysis
 % to unwrap and then rewarp to get the right weights and betas -- this
-% implies that to the run 'by hand' limo_glm1 for time freqency with WLS,
+% implies that to the run 'by hand' limo_glm for time freqency with WLS,
 % you need to run per freq bin.
 %
 % References
@@ -61,9 +60,9 @@ function model = limo_glm(varargin)
 % See also
 % LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG
 %
-% Cyril Pernet v3 07-07-2015 (methods and analysis type)
-% ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% Cyril Pernet 
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% varagin
 
@@ -110,7 +109,7 @@ if ~isreal(Y)
 end
 
 if size(Y,1)~=size(X,1)
-    error('The number of events in Y and the design matrix are different')
+    error('The number of events in the data (Y) and the design (X) are different')
 end
 
 if nb_interactions == 0
@@ -137,10 +136,11 @@ if strcmp(method,'OLS')
     end
     
 elseif strcmp(method,'WLS')
+    % WY = WBX+e 
     [Betas,W] = limo_WLS(X,Y);
-    P = X*(X'*W*X)*X'W;
-    Y = Y .* repmat(W,1,size(Y,2));
-    X = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+    P         = X*(X'*W*X)*X'*W;
+    Y         = Y .* repmat(W,1,size(Y,2));
+    X         = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -159,16 +159,16 @@ elseif strcmp(method,'WLS-TF')
         reshaped(:,:,tr) = eft_3d;
     end
     
-     % get estimates per freq band
-    Betas = NaN(size(X,2),n_freqs*n_times);
-    W = NaN(n_freqs,size(X,1));
-    index1 = 1; 
+    % get estimates per freq band
+    index1 = 1;
+    Betas  = NaN(size(X,2),n_freqs*n_times);
+    W      = NaN(n_freqs,size(X,1));
     for f=1:n_freqs
         [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
         index1=index1+1; 
     end
     clear reshaped
-    P = X*(X'*W*X)*X'W;
+    P = X*(X'*W*X)*X'*W;
     Y = Y .* repmat(W,1,size(Y,2));
     X = X .* repmat(W,1,size(X,2));
     
