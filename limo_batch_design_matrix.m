@@ -289,6 +289,12 @@ else  % for time or power use limo_design_matrix
         LIMO.design.nb_continuous] = limo_design_matrix(Y, LIMO,0);
 end
 
+% check the full factorial
+if LIMO.design.fullfactorial == 1 && LIMO.design.nb_interactions == 0
+    % ie failed to build the interaction
+    LIMO.design.fullfactorial = 0;
+end
+
 % update LIMO.mat
 LIMO.design.name  = 'batch processing';
 LIMO.design.status = 'to do';
