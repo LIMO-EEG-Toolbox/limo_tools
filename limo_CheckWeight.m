@@ -25,8 +25,8 @@ function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 %        results in it
 %
 % Cyril Pernet 21-08-2015
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% if no input do it all
 limo = struct('plotrank','on','testdifference','on','checkbias','on');

@@ -3,6 +3,8 @@ function [extend_mask, height_mask, extend, height, H0_extend, H0_height] = limo
 % dataH0 is 4D [electrode,time frames,[F,p],resamples)
 % neighbouring_matrix is the matrix describing which electrodes are neighbour
 % p_value is the cluster forming threshold and min p value of the cluster
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % observed data
 F_map = squeeze(data(:,:,1));

@@ -16,8 +16,8 @@ function channeighbstructmat = limo_neighbourdist(EEG)
 %
 % Guillaume Rousselet v1 11 July 2010
 % adapted from code by Arnaud Delorme
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 tmpcfg = limo_eeglab2fieldtrip(EEG, 'preprocessing', 'none');
 lay = limo_ft_prepare_layout(tmpcfg, tmpcfg); % fieldtrip function

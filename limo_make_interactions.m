@@ -11,8 +11,8 @@ function [tmpX interactions] = limo_make_interactions(x, nb_conditions)
 %
 % Cyril Pernet v1 - 21-06-2013
 % v2 fixed bug for designs > 3 factors - 05-07-2013
-% -------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 if nb_conditions == 0
     disp('number of condition = 0')

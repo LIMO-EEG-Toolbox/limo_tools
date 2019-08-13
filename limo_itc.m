@@ -35,8 +35,8 @@ function limo_itc(varargin)
 %
 %
 % Andrew Stewart, May 2014 - adapted from limo_batch
-% -----------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % psom stuff see mode for parallel computing
 opt.mode = 'session'; % run one after the other in the current matlab session

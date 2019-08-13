@@ -21,8 +21,8 @@ function diff = limo_plot_difference(varargin)
 % diff is a 3D matrix of difference with CI
 %
 % Cyril Pernet 01/11/2011
-% -----------------------------
-% Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% check inputs
 

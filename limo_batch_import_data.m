@@ -16,12 +16,13 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 %        the EEG.set file, from EEG.etc
 %
 % see also limo_batch 
-%% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 global EEGLIMO
 
-EEGLIMO                      = pop_loadset(setfile);
+EEGLIMO                      = load('-mat',setfile);
+EEGLIMO                      = EEGLIMO.EEG;
 [root,name,ext]              = fileparts(setfile); 
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
@@ -180,7 +181,8 @@ else
     if strcmp(cat(end-3:end),'.txt')
         LIMO.data.Cat = load(cat);
     else strcmp(cat(end-3:end),'.mat')
-        load(cat); LIMO.data.Cat = eval(cat(1:end-4));
+        name = load(cat); f = fieldnames(name);
+        LIMO.data.Cat = getfield(name,f{1});
     end
 end
 
@@ -190,7 +192,8 @@ else
     if strcmp(cont(end-3:end),'.txt')
         LIMO.data.Cont = load(cont);
     else strcmp(cont(end-3:end),'.mat')
-        load(cont); LIMO.data.Cont = eval(cont(1:end-4));
+        [filepath,name,ext] = fileparts(cont);
+        load(cont); LIMO.data.Cont = eval(name);
     end
 end
 

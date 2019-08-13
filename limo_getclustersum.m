@@ -14,8 +14,8 @@ function maxclustersum = limo_getclustersum(f,p,channeighbstructmat,minnbchan,al
 % OUTPUTS: maxclustersum = max cluster sum across all clusters of significant F values
 %
 % See also LIMO_CLUSTER_TEST LIMO_FT_FINDCLUSTER
-% -----------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % v1: GAR, University of Glasgow, June 2010
 

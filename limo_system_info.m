@@ -4,8 +4,8 @@ function limo_system_info
 % either by allowing large arrays and or multithreading using psom
 %
 % Cyril Pernet May 2014
-% -----------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 root = fileparts(which('limo_eeg'));
 new = ~exist([root filesep 'system_info.mat'],'file');

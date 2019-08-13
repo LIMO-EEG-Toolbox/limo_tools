@@ -16,8 +16,8 @@ function bse = limo_bootse(varargin)
 % GA Rousselet, University of Glasgow, Dec 2007
 % C Pernet make it work with LIMO_EEG
 % Version 1 June 2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 x = varargin{1};
 nboot = varargin{2};

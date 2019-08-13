@@ -21,8 +21,8 @@ function [m,dfe,ci,sd,n,t,p] = limo_bootttest1(varargin)
 % Based on limo_ttest
 % Cyril 01-03-2011
 % removed electrode loop in 3D case: GAR 06-12-2011
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
  
 %% check inputs
 if nargin == 1

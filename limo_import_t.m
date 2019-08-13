@@ -4,8 +4,8 @@ function varargout = limo_import_t(varargin)
 % created using GUIDE -- import the various
 % information needed to process the data
 % cyril pernet 18-03-2009 v1
-% -----------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% GUI stuffs

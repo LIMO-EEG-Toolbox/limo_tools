@@ -33,9 +33,8 @@ function [Ty,diff,se,CI,p,tcrit,df]=limo_yuend_ttest(a,b,percent,alpha)
 % procedure for dependent groups.
 %
 % See also LIMO_TTEST LIMO_YUEN_TTEST 
-
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % original version: GAR, University of Glasgow, Dec 2007
 % 3D, standalone version: GAR, University of Glasgow, June 2010

@@ -7,8 +7,8 @@ function varargout = limo_import_tf(varargin)
 % Andrew X Stewart, January 2014
 % Fixed folder locations, time/freq components in .data
 % updated data format Cyril v2. Feb 2014
-% -----------------------------
-%  Copyright (C) LIMO Team 2013
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% GUI stuffs

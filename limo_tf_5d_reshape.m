@@ -9,10 +9,15 @@ function reshaped = limo_tf_5d_reshape(reshape_in)
 % Copy of limo_tf_4d_reshape with a bootstrap loop
 %
 % Cyril Pernet, January 2014
-% -----------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
-global LIMO
+if ~exist('LIMO','var')
+    try load LIMO
+    catch no_limo
+        global LIMO
+    end
+end
 n_freqs = LIMO.data.size4D(2);
 n_times = LIMO.data.size4D(3);
 [n_elec, n_freqs_times, N, n_boot] = size(reshape_in);

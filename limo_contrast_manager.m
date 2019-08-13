@@ -18,8 +18,8 @@ function varargout = limo_contrast_manager(varargin)
 %
 % Nicolas Chauveau & Cyril Pernet 29-04-2009 v2
 % updated for 1st level bootstrap + some fix 20-06-2013
-% ----------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% GUI stuffs
 % -------------------------
@@ -66,6 +66,7 @@ handles.go  = 0;
 handles.C   = [];
 handles.F   = 0;
 handles.X   = [];
+handles.limofile = [];
 handles.output = hObject;
 guidata(hObject,handles);
 set(hObject,'Tag','figure_limo_contrast_manager');
@@ -81,30 +82,25 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global LIMO handles 
 
-if isempty(handles.limofile)
+if ~isfield(handles,'limofile') || isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
 else
     [PathName,FileName] = fileparts(handles.limofile);
     if isempty(PathName), PathName = pwd; end
     FilterIndex = 1;
 end
+
 if FilterIndex ==0
     clear all; 
     varargout{1} = 'contrast cancelled';
 else
     cd(PathName); load('LIMO.mat');
-    if LIMO.Level == 2 && strcmp(LIMO.design.name,'one sample t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'one sample t-test one electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'paired t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'paired t-test one electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'two sample t-test all electrodes') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name,'two sample t-test one electrodes')
-        warndlg('no contrast can be performed for a t-test'); guidata(hObject, handles);
-    end
-    
-    if LIMO.Level == 2 && strcmp(LIMO.design.name(1:11),'Mixed ANOVA') || ...
+    if LIMO.Level == 2 && ~isempty(strfind(LIMO.design.name,'t-test'))
+        warndlg('no contrast can be performed for a t-test','modal'); 
+        Xdisplay = []; 
+    elseif LIMO.Level == 2 && strcmp(LIMO.design.name(1:11),'Mixed ANOVA') || ...
             LIMO.Level == 2 && strcmp(LIMO.design.name(1:8),'Repeated') % always F
         if LIMO.design.nb_conditions == 1 % only one gp
             Xdisplay = LIMO.design.X;
@@ -112,7 +108,9 @@ else
             Xdisplay = LIMO.design.X(1:prod(LIMO.design.repeated_measure),1:prod(LIMO.design.repeated_measure));
         end
     else
-        if sum(LIMO.design.nb_conditions) ~=0 && LIMO.design.nb_continuous == 0
+        if ~isfield(LIMO.design,'nb_conditions') && ~isfield(LIMO.design,'nb_continuous')
+            Xdisplay = [];
+        elseif sum(LIMO.design.nb_conditions) ~=0 && LIMO.design.nb_continuous == 0
             Xdisplay = LIMO.design.X;
         elseif sum(LIMO.design.nb_conditions) == 0
             Xdisplay = [zscore(LIMO.design.X(:,1:end-1)) LIMO.design.X(:,end)];
@@ -125,25 +123,17 @@ else
         end
     end
     
-    imagesc(Xdisplay); colormap('gray');
-    title('design matrix'); drawnow
-    handles.output = hObject;
-    guidata(hObject,handles)
+    if isempty(Xdisplay)
+        uiresume; guidata(hObject, handles);
+    else
+        allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        axes(allhandles(end));
+        imagesc(Xdisplay); colormap('gray');
+        title('design matrix'); drawnow
+        handles.output = hObject;
+        guidata(hObject,handles)
+    end
 end
-
-% --- Display selected contrasts
-% ---------------------------------------------------------------
-function contrast_CreateFcn(hObject, eventdata, handles)
-global handles
-
-try
-    imagesc(handles.C);
-catch
-    imagesc([]);
-end
-handles.output = hObject;
-guidata(hObject,handles)
-
 
 % --- Evaluate New Contrast
 % ---------------------------------------------------------------
@@ -200,6 +190,21 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Display selected contrasts
+% ---------------------------------------------------------------
+function contrast_CreateFcn(hObject, eventdata, handles)
+global LIMO handles
+
+allhandles = findobj('Tag','contrast');
+axes(allhandles);
+try 
+    imagesc(handles.C);
+catch
+    imagesc([]);
+end
+handles.output = hObject;
+guidata(hObject,handles)
+
 
 % --- Executes on button press in F_contrast.
 % ---------------------------------------------------------------
@@ -224,26 +229,24 @@ end
 % --- Previous Contrast
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
-global LIMO handles limofile
+global LIMO handles 
 
-if exist('limofile','var') == 1 && ~isempty(limofile)
-    handles.limofile = limofile;
-else
-    handles.limofile = [];
+if isempty(LIMO)
+    display_matrix_CreateFcn(hObject, eventdata, handles)
+    handles.limofile = [LIMO.dir filesep 'LIMO.mat'];
 end
-clear global limofile
+
+if isfield(LIMO,'contrast')
+    handles.C = LIMO.contrast;
+    previous_con = length(LIMO.contrast);
+else
+    previous_con = 0;
+end
 
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
-previous_con = 0;
-try
-    previous_con = size(LIMO.contrast,2);
-catch
-    previous_con = 0;
-end
- 
 if previous_con ~=0
     for i=1:previous_con
         if LIMO.contrast{i}.V == 'T'
@@ -268,11 +271,13 @@ else
     % display_matrix_CreateFcn(hObject, eventdata, handles)
 end
 
+allhandles = findobj('Tag','contrast');
+axes(allhandles);
+imagesc([]);
+
 handles.output = hObject;
 guidata(hObject,handles)
 
-
-  
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 global handles
 
@@ -295,7 +300,7 @@ guidata(hObject,handles)
 function Done_Callback(hObject, eventdata, handles)
 global LIMO handles
 
-if ~isempty(handles.C);
+if ~isempty(handles.C)
     if handles.go == 1
         
         if LIMO.design.bootstrap ==1
@@ -332,7 +337,7 @@ if ~isempty(handles.C);
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
                 % -------------------------------------------------------
-                result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
+                limo_contrast(Yr, Betas, LIMO, handles.F,1);
                 
                 if LIMO.design.bootstrap ~= 0
                     if strcmp(LIMO.Analysis ,'Time-Frequency')
@@ -344,11 +349,11 @@ if ~isempty(handles.C);
                            tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
                         end
                         clear H0_Betas; cd ..; load Yr; cd(H0);
-                        result = limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
+                        limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
                         clear tmp
                     else
                         clear Betas; cd H0; load H0_Betas
-                        result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
+                        limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
                     end
                     clear Yr ; cd ..
                 end
@@ -391,7 +396,7 @@ if ~isempty(handles.C);
                 
                 LIMO.contrast = handles.F;
                 save LIMO LIMO
-                result = limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
+                limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
                 
             end
             
@@ -413,30 +418,41 @@ if ~isempty(handles.C);
             
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'F';
+            LIMO.contrast{index}.V = 'F'; % always F since we use Hotelling test
             C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
             load Yr; save LIMO LIMO
-            result = limo_contrast(Yr,LIMO,3);
+            limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
                 cd H0; limo_contrast(Yr, LIMO, 4); cd ..
             end
             
             if LIMO.design.tfce == 1
-                filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
-                tfce_score = limo_tfce(squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
+                if numel(size(Yr)) == 5
+                    if size(Yr,1)==1 % ERSP 1 channel
+                        type = 2;
+                    else
+                        type = 3;
+                    end
+                else % ERP - Spec
+                    if size(Yr,1)>1 % many channels
+                        type = 2;
+                    else
+                        type = 1;
+                    end
+                end
+                filename = sprintf('ess_%g.mat',index); load(filename);
+                    tfce_score = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
                 filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
             end
             
             clear Yr LIMO
             disp('contrast evaluation done ...')
-               
-                
         end 
         
     else
@@ -464,4 +480,5 @@ if isempty(handles.limofile)
 end
 
 clearvars LIMO handles limofile
+clear global handles LIMO
 return

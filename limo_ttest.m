@@ -22,8 +22,8 @@ function [m,dfe,ci,sd,n,t,p] = limo_ttest(type,data1,data2,alphav)
 % Cyril Pernet 28-08-2009
 % GAR 02-09-2009: made dimension flexible and updated documentation
 % Cyril 07-09-2009 changed the code to return the dfe
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 nd = ndims(data1);
 
@@ -31,10 +31,10 @@ switch (type)
  
     case(1)
         if data2 ~= 0
-            try
-                data1 = data1 - data2; % paired t-test
-            catch
+            if ~any(size(data1)==size(data2))
                 error('data1 and data2 are of different dimensions')
+            else
+                data1 = data1 - data2; % paired t-test
             end
         end
 
@@ -49,6 +49,7 @@ switch (type)
         
     case(2)
        
+        n = NaN(2,1);
         n(1) = size(data1,nd);
         n(2) = size(data2,nd);
 

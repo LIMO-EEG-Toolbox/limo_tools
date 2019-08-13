@@ -22,8 +22,8 @@ function cat = limo_read_events(varargin)
 %        cat is the variable to be passed in limo_design matrix(_tf)
 %
 % Cyril Pernet 13-10-2014
-% ------------------------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % get input file to get the EEG structure
 if nargin == 0

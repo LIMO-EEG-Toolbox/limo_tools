@@ -35,8 +35,8 @@ function [th,boot_values] = limo_ecluster_make(bootf,bootp,alphav)
 % Cyril Pernet - removed some useless computations to speed things up, June 2014
 % GAR - commented out last line which crashed the function - September 2015
 % CP added boot_values to then compute the p values
-% ----------------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 %
 % See also LIMO_TFCLUSTER_MAKE LIMO_ECLUSTER_TEST
 
@@ -55,12 +55,14 @@ if ndims(bootf)==3 % electrode*time/freq*boot
         for kk=1:b % bootstrap samples
 
             % get cluster along 1st dim
-            if exist('bwlabeln','file')~=0
-                [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);
-            elseif exist('bwlabeln','file')==0 && exist('spm_bwlabel','file')~=0
-                [L,NUM] = spm_bwlabel(squeeze(bootp(E,:,kk))<=alphav,6);
+            if exist('spm_bwlabel','file')~=0
+                [L,NUM] = spm_bwlabel(double(squeeze(bootp(E,:,kk))<=alphav),6);
             else
-                errordlg('You need either the Image Processing Toolbox or SPM in your path to execute this function');
+                if exist('bwlabeln','file')~=0
+                    [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);
+                else
+                    errordlg('You need either the Image Processing Toolbox or SPM in your path to execute this function');
+                end
             end
             
             if NUM~=0
@@ -77,7 +79,6 @@ if ndims(bootf)==3 % electrode*time/freq*boot
 
     sortSC = sort(boot_values,2);
     th.elec = sortSC(:,U); % threshold at each electrode
-
     maxSC = max(boot_values,[],1); % max across electrodes
     sortmaxSC = sort(maxSC);
     th.max = sortmaxSC(U); % threshold of max across electrodes

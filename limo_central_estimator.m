@@ -21,8 +21,8 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 % see also mean, median, limo_trimmed_mean, limo_harrell_davis
 %
 % Guillaume Rousselet & Cyril Pernet February 2016
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 Nb = 1000; % number of bootstrap samples 
 

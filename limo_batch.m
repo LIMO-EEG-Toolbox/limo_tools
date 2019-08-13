@@ -30,6 +30,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
+%
 %       contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
@@ -57,7 +58,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
 % ----------------------------------------------------------------------
-% Copyright (C) LIMO Team 2015
+%  Copyright (C) LIMO Team 2019
 
 % programmer help
 % ---------------
@@ -66,22 +67,28 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
 
-opt.mode = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
-opt.max_queued = Inf; % with a maximum of possible sessions
+opt.mode                = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
+opt.max_queued          = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
-opt.flag_pause = false; % don't bother asking to start jobs
-opt.flag_debug = true; % report a bit more of issues
+opt.flag_pause          = false; % don't bother asking to start jobs
+opt.flag_debug          = true; % report a bit more of issues
 psom_gb_vars
 
 % Initializing Outputs
-LIMO_files = []; procstatus = [];
+LIMO_files = [];
+procstatus = [];
 
 %% what to do
 
-if nargin == 0
-    option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
-    if isempty(option)
-        return
+if nargin <= 1
+    
+    if nargin == 0
+        option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
+        if isempty(option)
+            return
+        end
+    else
+        option = varargin{1};
     end
     
     % model
@@ -145,7 +152,7 @@ if nargin == 0
             disp('limo batch aborded'); return
         end
     end
-else
+elseif nargin > 1
     option = varargin{1};
     
     % model
@@ -167,13 +174,20 @@ if nargin == 4
     if isempty(STUDY.filepath)
         STUDY.filepath =pwd;
     end
-    cd(STUDY.filepath); current =pwd;
+    cd(STUDY.filepath); % go to study
+    if isempty(findstr(STUDY.filepath,'derivatives'))
+        if ~exist([STUDY.filepath filesep 'derivatives'],'dir')
+            mkdir([STUDY.filepath filesep 'derivatives']);
+        end
+        cd('derivatives'); % if study is not in 'derivatives' go to it
+    end
+    current = pwd; 
     if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
     if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
-    study_root = [STUDY.filepath filesep ['LIMO_' STUDY.filename(1:end-6)]];
+    study_root = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     LIMO_files.LIMO = study_root;
 else
-    current =pwd;
+    current = pwd;
     mkdir('limo_batch_report')
 end
 
@@ -224,11 +238,21 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         
         if nargin == 4
-            if exist([study_root filesep cell2mat(STUDY.names(subject))],'dir') ~= 7, mkdir([study_root filesep cell2mat(STUDY.names(subject))]); end
-            root = [study_root filesep cell2mat(STUDY.names(subject))];
-            glm_name = ['GLM' num2str(STUDY.design_index) model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
+            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
+                root = [study_root filesep 'sub-' STUDY.datasetinfo(subject).subject];
+            else
+                root = [study_root filesep STUDY.datasetinfo(subject).subject];
+            end
+            
+            if exist(root,'dir') ~= 7; mkdir(root); end
+            design_name = STUDY.design(STUDY.currentdesign).name; 
+            design_name(isspace(design_name)) = [];
+            if findstr(design_name,'STUDY.')
+                design_name = design_name(7:end);
+            end
+            glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
-            pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
+            % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
@@ -336,6 +360,13 @@ parfor subject = 1:N
     disp('--------------------------------')
     try
         psom_run_pipeline(pipeline(subject),limopt{subject})
+        
+        % example of debugging 
+        % ---------------------
+        % psom reported with function failed, eg limo_batch_import
+        % pipeline(subject).import tells you the command line to test
+        % put the point brack where needed and call e.g.
+        % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
@@ -369,31 +400,38 @@ end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
     for c=1:size(batch_contrast.mat,1)
-        index = 1;
+        index = 1; clear name
         for subject = 1:N
             if strcmp(option,'contrast only')
-                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(c) '.mat'];                
+                load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
+                for l=1:size(LIMO.contrast,2)
+                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:))
+                        con_num = l; break
+                    end
+                end
+                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+                con_num = c;
             end
             index = index + 1;
         end
         name = name';
-        if exist('remove_con','var')
-        cell2csv(['con_files_' glm_name '.txt'], name(find(~remove_con),:));
+        
+        if sum(remove_con) ~= 0
+            cell2csv(['con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         else
-        cell2csv(['con_files_' glm_name '.txt'], name);
+            cell2csv(['con' num2str(con_num) '_files_'  glm_name '.txt'], name);
         end
     end
 end
-
 % save the report from psom
 cd([current filesep 'limo_batch_report'])
 cell2csv(['batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
-for subject=1:N; 
+for subject=1:N
     if strfind(report{subject},'failed')
         failed = 1;
     end
@@ -406,5 +444,3 @@ else
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
 disp('The Pipeline System for Octave and Matlab. Front. Neuroinform. 6:7')
-
-

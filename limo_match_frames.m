@@ -17,8 +17,8 @@ function [first_frame,last_frame,subj_chanlocs,limo] = match_frames(Paths,limo)
 % smallest interval(s) across subjects, which is used for the second leve analysis
 %
 % Cyril Pernet v2 August 2015
-% ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 current = pwd; ME = [];
 
@@ -37,12 +37,18 @@ end
 
 % now loop loading the LIMO.mat for each subject to collect information
 for i=1:size(Paths,2)
-    try
-        cd (Paths{i});
-    catch
-        cd (cell2mat(Paths{i}))
+    if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
+    
+    if exist('LIMO','file')
+        load('LIMO.mat');
+    else
+        limofile = dir('LIMO*.mat');
+        if size(limofile,1) == 1
+            load(limofile.name)
+        else
+            error('LIMO.mat could not be located starting at subject %g',i)
+        end
     end
-    load LIMO;
     
     if i==1
         Analysis = LIMO.Analysis;

@@ -6,8 +6,8 @@ function limo_review(varargin)
 %        limo_review(LIMO)
 %
 % Cyril Pernet v2 19-06-2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 

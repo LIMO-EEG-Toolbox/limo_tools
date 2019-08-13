@@ -22,33 +22,11 @@ function limo_eeg(varargin)
 %                 e.g. C = [1 1 -1 -1; 1 -1 1 -1]; limo_eeg(6,C) would do those
 %                 two contrasts for the data located in the current dir
 %
-% LIMO_EEGLIMO was primarily designed by Cyril Pernet and Guillaume Rousselet,
-% with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar, 
-% Luisa Frei, Ignacio Suay Mas and Marianne Latinus. These authors are thereafter
-% referred as the LIMO Team
-%
-% THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
-% APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS
-% AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS�? WITHOUT WARRANTY OF ANY KIND,
-% EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-% WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-% THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.
-% SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
-% REPAIR OR CORRECTION.
-%
-% IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL ANY
-% COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS THE PROGRAM AS
-% PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL
-% OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING
-% BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR
-% THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH
-% HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-%
 % Cyril Pernet & Andrew Stewart v6 21/01/2014
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % make sure paths are ok
 root = fileparts(which('limo_eeg'));
@@ -63,7 +41,7 @@ end
 
 
 % in case data are already there
-if isempty(varargin);
+if isempty(varargin)
     varargin={1};
 end
 
@@ -134,9 +112,10 @@ switch varargin{1}
                                 disp('selection aborded');
                                 return
                             else
-                                cd(newpath);
-                                channeighbstructmat = load(file);
-                                channeighbstructmat = getfield(channeighbstructmat,cell2mat(fieldnames(channeighbstructmat)));
+                                channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
+                                fn = fieldnames(channeighbstructmat);
+                                index = find(ismember(fn,'channeighbstructmat'));
+                                channeighbstructmat = getfield(channeighbstructmat,fn{index});
                                 cd(LIMO.dir);
                             end
                         else
@@ -241,11 +220,22 @@ switch varargin{1}
                         Y = limo_concatcells(Y);
                     end
                 else
-                    disp('the field EEGLIMO.etc.datafiles.daterp or .icaerp pointing to the data is missing - using EEGLIMO.data')
-                    Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+                    disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); spec = dir('*.datspec');
+                        for d=1:length(spec)
+                            Y{d} = load('-mat',spec(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
-                clear EEGLIMO
+                Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
             end
+            clear EEGLIMO
+            
             
         elseif strcmp(LIMO.Analysis,'Frequency')
             if strcmp(LIMO.Type,'Components')
@@ -287,8 +277,19 @@ switch varargin{1}
                         Y = limo_concatcells(Y); clear EEGLIMO
                     end
                 else
-                    error('the field EEGLIMO.etc.datspec pointing to the data is missing')
+                    disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); spec = dir('*.datspec');
+                        for d=1:length(spec)
+                            Y{d} = load('-mat',spec(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
+                Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
             end
             clear EEGLIMO
             
@@ -342,10 +343,20 @@ switch varargin{1}
                         end
                     end
                 else
-                    error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
+                    disp('no data found, the field EEG.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing - using a hack')
+                    try
+                        cd(LIMO.data.data_dir); ersp = dir('*.dattimef');
+                        for d=1:length(ersp)
+                            Y{d} = load('-mat',ersp(d).name);
+                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                        end
+                        Y = limo_concatcells(Y);
+                    catch
+                        Y = EEGLIMO.data;
+                    end
                 end
+                Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
             end
-            
             LIMO.data.size4D= size(Y);
             LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
         end
@@ -672,7 +683,9 @@ switch varargin{1}
             
             if boot_go == 1
                 try
-                    fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                    if LIMO.Level == 1
+                        fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                    end
                     mkdir H0; load Yr;
                     if size(Yr,1) == 1
                         array = 1;
@@ -870,7 +883,8 @@ switch varargin{1}
                             cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
                             if size(Condition_effect,1) == 1
                                 tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                                tfce_score = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                            else
+                                tfce_score      = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
                             end
                             full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
                             clear Condition_effect tfce_score; cd ..
@@ -1296,14 +1310,18 @@ switch varargin{1}
         % code of the contrast manager)
         
         % load LIMO and C
-        if ~exist(LIMO,'var')
-            load LIMO; cd (LIMO.dir);
+        if exist('LIMO.mat','file')
+            load LIMO; F = getfield(LIMO,'contrast');
+            for f=1:length(F)
+                C(f,:) = F{f}.C;
+            end
         else
             [LIMO_file,LIMO_dir] = uigetfile('.mat','select a LIMO.mat file');
             cd (LIMO_dir); load LIMO.mat;
         end
         
-        if ~exist(C,'var')
+        previous_con = 0;
+        if ~exist('C','var')
             [contrast_file,contrast_dir] = uigetfile({'*.mat';'*.txt'},'select your contrast file');
             cd (contrast_dir); load(contrast_file);  % problm here it has to be named C
             if strcmp(FileName(end-3:end),'.txt')
@@ -1313,18 +1331,15 @@ switch varargin{1}
                 C = getfield(contrast_file,cell2mat(fieldnames(contrast_file)));
             end
             cd (LIMO.dir);
+            if isfield(LIMO,'contrast')
+                previous_con = size(LIMO.contrast,2);
+            end
         end
         
         % Check dimensions
         C = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
         
         % Perform the analysis
-        try
-            previous_con = size(LIMO.contrast,2);
-        catch
-            previous_con = 0;
-        end
-        
         load Yr; load Betas;
         
         for i=1:size(C,1)  % for each contrast
@@ -1345,22 +1360,17 @@ switch varargin{1}
             save ([filename], 'con'); clear con;
             
             % update con file
-            fprintf('compute contrast %g',i); disp(' ');
-            % loop for each electrodes
-            for electrode = 1:size(Yr,1)
-                fprintf('electrode %g',electrode); disp(' ');
-                result = limo_contrast(squeeze(Yr(electrode,:,:))', squeeze(Betas(electrode,:,:))', electrode, LIMO);
-                
-                % update multivariate results
-                if LIMO.Method == 2
-                    LIMO.contrast{i}.multivariate{electrode} = result;
-                end
+            fprintf('computing contrast %g',i); disp(' ');
+            result = limo_contrast(Yr, Betas, LIMO, 0,1);
+            
+            % update multivariate results
+            if strfind(LIMO.design.type_of_analysis,'multivariate')
+                LIMO.contrast{i}.multivariate = result;
             end
             save LIMO LIMO
         end
         
         clear Yr LIMO_dir LIMO_file contrast_dir contrast_file electrode filename previous_con result C;
-        
         
         
     case{7}

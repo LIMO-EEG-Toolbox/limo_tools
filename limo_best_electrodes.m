@@ -15,8 +15,8 @@ function [electrode_vector,urchan_vector] = limo_best_electrodes(varargin)
 %         urchan_vector the value read from the urchan field (if present)
 %         a frequency map is also presented as graphical output
 %
-% -----------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % Cyril Pernet 15 July 2010
 % GAR, 15 August 2010: updated description, uigetfile prompt, frequency figure
@@ -31,7 +31,7 @@ current_dir = pwd;
 if FilterIndex ~= 0
     
     if strcmp(name(end-3:end),'.txt')
-        name = importdata(name);
+        name = importdata([pathname name]);
     elseif strcmp(name(end-3:end),'.mat')
         name = load([pathname name]);
         name = getfield(name,cell2mat(fieldnames(name)));
@@ -105,7 +105,7 @@ clear data
 if sum(isnan(electrode_vector)) == 0
     
     if nargin == 0
-        [p,f,filt]=uigetfile('load expected chanlocs');
+        [p,f,filt]=uigetfile('*.mat','load expected chanlocs to check channel positions');
         if filt == 0
             return
         else
