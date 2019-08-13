@@ -19,7 +19,11 @@ cd (LIMO.dir);
 %% Compute GLM and save stats files
 
 if strcmp(LIMO.design.status,'to do')
-    load Yr; load Yhat; load Res; load R2; load Betas;
+    Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));  
+    Yhat  = load('Yhat');  Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
+    Res   = load('Res');   Res   = Res.(cell2mat(fieldnames(Res)));
+    R2    = load('R2');    R2    = R2.(cell2mat(fieldnames(R2)));
+    Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
     
     % ------------ prepare condition/covariates -------------------
     if LIMO.design.nb_conditions ~=0
@@ -43,11 +47,10 @@ if strcmp(LIMO.design.status,'to do')
     
     % ------------- prepare weight matrix  -------------------------------------
     try
-        [dist,out] = limo_pcout(squeeze(Yr(array(1),:,:))');
+        limo_pcout(squeeze(Yr(array(1),:,:))');
     catch pcout_error
         if strcmp(pcout_error,'Principal Component Projection cannot be computed, more observations than variables are needed')
-            LIMO.design.method = 'OLS';
-            disp('Cannot use WLS, not enough observations - switching to OLS')
+            LIMO.design.method = 'OLS'; disp('Cannot use WLS, not enough observations - switching to OLS')
         end
     end
     
@@ -70,7 +73,7 @@ if strcmp(LIMO.design.status,'to do')
             LIMO.design.X = X(index,:);
             model = limo_glm(Y',LIMO); warning on;
             if isempty(index)
-                index = [1:size(Y,2)];
+                index = 1:size(Y,2);
             end
         else % level 1 we should not have any NaNs
             if strcmp(LIMO.Type,'Channels')
@@ -78,7 +81,7 @@ if strcmp(LIMO.design.status,'to do')
             else
                 fprintf('analyzing component %g/%g \n',e,size(array,1));
             end
-            index = [1:size(Yr,3)];
+            index = 1:size(Yr,3);
             model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
         end
         
@@ -229,7 +232,8 @@ if LIMO.design.bootstrap ~=0
                 disp('selection aborded');
                 return
             else
-                cd(newpath); load(file); cd(LIMO.dir);
+                channeighbstructmat = load([newpath filesep file]); 
+                channeighbstructmat = channeighbstructmat.channeighbstructmat;
             end
         else
             channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
@@ -241,10 +245,13 @@ end
 
 if boot_go == 1
     try
-        if LIMO.Level == 1
-            fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+        mkdir H0; fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping GLM, ... \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+        
+        if ~exist('Yr','var')
+            Yr = load('Yr');
+            Yr = Yr.(cell2mat(fieldnames(Yr)));
         end
-        mkdir H0; load Yr;
+        
         if size(Yr,1) == 1
             array = 1;
         else
@@ -252,18 +259,18 @@ if boot_go == 1
         end
         
         if LIMO.design.bootstrap <= 800
-            nboot = 800;
-        else
-            nboot = LIMO.design.bootstrap;
+            fprintf('setting bootstrap to the minumm required, i.e. 800 instead of %g\n',LIMO.design.bootstrap)
+            LIMO.design.bootstrap = 800;
         end
+        nboot = LIMO.design.bootstrap;
         
         if LIMO.Level == 2
             boot_table = limo_create_boot_table(Yr,nboot);
         else
             boot_table = randi(size(Yr,3),size(Yr,3),nboot);
         end
+        H0_R2    = NaN(size(Yr,1), size(Yr,2), 3, nboot); % stores R, F and p values for each boot
         H0_Betas = NaN(size(Yr,1), size(Yr,2), size(LIMO.design.X,2), nboot);
-        H0_R2 = NaN(size(Yr,1), size(Yr,2), 3, nboot); % stores R, F and p values for each boot
         
         if LIMO.design.nb_conditions ~= 0
             tmp_H0_Conditions = NaN(size(Yr,1), size(Yr,2), length(LIMO.design.nb_continuous), 2, nboot);
@@ -289,7 +296,6 @@ if boot_go == 1
                 index = find(~isnan(Y(1,:)));
                 model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
             else
-                % index = [1:size(Yr,3)];
                 model = limo_glm_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);
             end
             
