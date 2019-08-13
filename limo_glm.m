@@ -65,7 +65,7 @@ function model = limo_glm(varargin)
 % Yandell, B.S. 1997. Practical Data Analysis For Designed Experiments. Chapman & Hall
 %
 % See also
-% LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS, LIMO_EEG
+% LIMO_GLM_HANDLING, LIMO_DESIGN_MATRIX, LIMO_WLS, LIMO_IRLS
 %
 % Cyril Pernet
 % ------------------------------
@@ -157,17 +157,18 @@ elseif strcmp(method,'WLS-TF')
     end
 
     for tr = 1:N
+        eft_3d = NaN(n_freqs,n_times);
         for tm = 1:n_times
             this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
             eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
         end
-        reshaped(:,:,tr) = eft_3d;
+        reshaped(:,:,tr) = eft_3d; clear eft_3d
     end
 
-    % get estimates per frequency band
+% get estimates per frequency band
+    index1 = 1;
     Betas  = NaN(size(X,2),n_freqs*n_times);
     W      = NaN(n_freqs,size(X,1));
-    index1 = 1;
     for f=1:n_freqs
         [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
         index1=index1+1;
@@ -182,15 +183,29 @@ end
 
 %% ------------------------------------
 
-%% Compute model statistics
-% ------------------------------
-
 switch method
-
-    % ---------------------------------------------------------------------
+    
     case {'OLS','WLS'}
         % -----------------------------------------------------------------
-
+        % preallocate variable in memory
+        if ~isempty(nb_interactions)
+            I = cell(1,length(nb_interactions));
+        end
+        
+        if nb_factors > 1  && ~isempty(nb_interactions)
+            index = 0;
+            for n=2:nb_factors
+                combinations = nchoosek(1:nb_factors,n); 
+                for c = 1:size(combinations,1)
+                    index = index + 1;
+                end
+            end
+            interaction = cell(1,index);
+        end
+        
+        % -----------------------------------------------------------------
+        %% Compute model statistics
+        % ------------------------------
         % total sum of squares, projection matrix for errors, residuals
         % --------------------------------------------------------------
         T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
@@ -269,7 +284,7 @@ switch method
                 R0                               = eye(size(Y,1)) - (X0*pinv(X0));
                 M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
                 H                                = (Betas'*X'*M*X*Betas);
-                df_conditions                    = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS; same as tr(M)?
+                df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                 F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
                 pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
             end
@@ -309,16 +324,16 @@ switch method
                 R0                   = eye(size(Y,1)) - (X0*pinv(X0));
                 M                    = R0 - R; % hat matrix for factor f
                 H                    = (Betas'*X'*M*X*Betas);
-                df_conditions(f)     = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS;
+                df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                 F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
                 pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
 
                 % update factors
                 if f<length(nb_conditions)
-                    update           = max(find(eoi));
+                    update           = find(eoi,1,'last'); % max(find(eoi));
                     eoi              = zeros(1,size(X,2));
                     eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                    eoni             = [1:size(X,2)];
+                    eoni             = 1:size(X,2);
                     eoni             = find(eoni - eoi);
                 end
             end
@@ -370,13 +385,13 @@ switch method
                 R0                   = eye(size(Y,1)) - (X0*pinv(X0));
                 M                    = R0 - R;
                 H(f,:)               = diag((betas'*x'*M*x*betas));
-                df_conditions(f)     = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS;
+                df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                 F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
                 pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
 
                 % update factors
                 if f<length(nb_conditions)
-                    update           = max(find(eoi));
+                    update           = find(eoi,1,'last'); % max(find(eoi));
                     eoi              = zeros(1,size(x,2));
                     eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
                     eoni             = 1:size(x,2);
@@ -419,7 +434,7 @@ switch method
                 % check interaction levels
                 index = 1;
                 for n=2:nb_factors
-                    combinations = nchoosek([1:nb_factors],n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
+                    combinations = nchoosek(1:nb_factors,n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
                     for c = 1:size(combinations,1)
                         interaction{index} = combinations(c,:);
                         index = index + 1;
@@ -428,6 +443,7 @@ switch method
 
                 add = 0; start_at_I = 1;
                 % run substituting and/or incrementing parts of X
+                HI = NaN(nb_interactions,length(diag(Betas)));
                 for f = 1:length(nb_interactions)
 
                     % re-define X with interactions
@@ -518,7 +534,7 @@ switch method
                     R0                               = eye(size(Y,1)) - (X0*pinv(X0));
                     M                                = R0 - R; % hat matrix for regressor of interest
                     H                                = Betas'*X'*M*X*Betas;
-                    df_continuous(n)                 = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C) if OLS;
+                    df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
                     F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
                     pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                 end
@@ -570,7 +586,7 @@ switch method
             % independent coordinates that can specify the position of the system completely.
             % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
             % use the Satterthwaite approximation
-            df(frame)              = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1;
+            df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
             dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
             R_ols                  = eye(size(Y,1)) - X*pinv(X);
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
@@ -617,7 +633,7 @@ switch method
                     R0                               = eye(size(Y,1)) - (X0*pinv(X0));
                     M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
                     H                                = (Betas(:,frame)'*X'*M*X*Betas(:,frame));
-                    df_conditions(frame)             = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS; same as tr(M)?
+                    df_conditions(frame)             = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                     F_conditions(frame)              = (H/df_conditions(frame)) ./ (diag(E)/dfe(frame));
                     pval_conditions(frame)           = 1 - fcdf(F_conditions(frame), df_conditions(frame), dfe(frame));
                 end
@@ -644,16 +660,16 @@ switch method
                     R0                       = eye(size(Y,1)) - (X0*pinv(X0));
                     M                        = R0 - R; % hat matrix for factor f
                     H                        = (Betas(:,frame)'*X'*M*X*Betas(:,frame));
-                    df_conditions(f,frame)   = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS;
+                    df_conditions(f,frame)   = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                     F_conditions(f,frame)    = (H/df_conditions(f,frame)) ./ (E/dfe(frame));
                     pval_conditions(f,frame) = 1 - fcdf(F_conditions(f,frame), df_conditions(f,frame), dfe(frame));
 
                     % update factors
                     if f<length(nb_conditions)
-                        update           = max(find(eoi));
+                        update           = find(eoi,1,'last'); % max(find(eoi));
                         eoi              = zeros(1,size(X,2));
                         eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                        eoni             = [1:size(X,2)];
+                        eoni             = 1:size(X,2);
                         eoni             = find(eoni - eoi);
                     end
                 end
@@ -693,13 +709,13 @@ switch method
                     R0                       = eye(size(Y,1)) - (X0*pinv(X0));
                     M                        = R0 - R;
                     H(f,frame)               = betas'*x'*M*x*betas;
-                    df_conditions(f,frame)   = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C)-1 if OLS;
+                    df_conditions(f,frame)   = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                     F_conditions(f,frame)    = (H(f,frame)./df_conditions(f,frame)) ./ (diag(E)./dfe(frame))'; % note dfe from full model
                     pval_conditions(f,frame) = 1 - fcdf(F_conditions(f,frame), df_conditions(f,frame), dfe(frame));
 
                     % update factors
                     if f<length(nb_conditions)
-                        update           = max(find(eoi));
+                        update           = find(eoi,1,'last'); % max(find(eoi));
                         eoi              = zeros(1,size(x,2));
                         eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
                         eoni             = 1:size(x,2);
@@ -734,7 +750,7 @@ switch method
                     % check interaction levels
                     index = 1;
                     for n=2:nb_factors
-                        combinations = nchoosek([1:nb_factors],n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
+                        combinations = nchoosek(1:nb_factors,n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
                         for c = 1:size(combinations,1)
                             interaction{index} = combinations(c,:);
                             index = index + 1;
@@ -803,7 +819,7 @@ switch method
                     R0                               = eye(size(Y,1)) - (X0*pinv(X0));
                     M                                = R0 - R; % hat matrix for regressor of interest
                     H                                = Betas(:,frame)'*X'*M*X*Betas(:,frame);
-                    df_continuous(n,frame)           = trace(M'*M)^2/trace(M'*M*M'*M); % same as rank(C) if OLS;
+                    df_continuous(n,frame)           = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
                     F_continuous(n,frame)            = (H./(df_continuous(n,frame))) ./ (E/dfe(frame));
                     pval_continuous(n,frame)         = 1 - fcdf(F_continuous(n,frame), 1, dfe(frame)); % dfe same as size(Y,1)-rank(X) if OLS
                 end
