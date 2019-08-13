@@ -367,6 +367,8 @@ parfor subject = 1:N
         % pipeline(subject).import tells you the command line to test
         % put the point brack where needed and call e.g.
         % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
+        % limo_batch_design_matrix(pipeline(subject).design.files_in)
+        % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
