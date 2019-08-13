@@ -139,19 +139,19 @@ end
 function analysis_type_Callback(hObject, eventdata, handles)
 
 content = get(hObject,'Value');
-if content == 1
+if content == 2
     handles.Analysis = 'Time';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
     set(handles.low_freq,'Enable','off')
     set(handles.high_freq,'Enable','off')
-elseif content == 2
+elseif content == 3
     handles.Analysis = 'Frequency';
     set(handles.Starting_point,'Enable','off')
     set(handles.ending_point,'Enable','off')
     set(handles.low_freq,'Enable','on')
     set(handles.high_freq,'Enable','on')
-elseif content == 3
+elseif content == 4
     handles.Analysis = 'Time-Frequency';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
