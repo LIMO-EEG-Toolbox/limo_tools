@@ -38,8 +38,9 @@ function model = limo_glm(varargin)
 % NOTES:
 %
 % - The parameters can be computed using 3 methods: ordinary least squares
-% (OLS), weighted least squares (WLS) and iterative reweighted least squares
-% (IRLS).
+% (OLS), weighted least squares (WLS) which attribute unique weights per trial
+% and iterative reweighted least squares (IRLS) which attribute weights for
+% each observations
 % - For WLS, since this weights are derived for the entire trial, there is a
 % depencies similar to a multivariate approach, for which we have no analytical 
 % solution and the p-values must then be derived post-hoc via bootstrap.
