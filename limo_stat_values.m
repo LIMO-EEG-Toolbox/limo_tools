@@ -87,17 +87,9 @@ if strcmp(FileName,'R2.mat')
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_F_values = squeeze(H0_R2(:,:,2,:)); clear H0_R2;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = (M >= sorted_values(:,:,U));
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
-                mytitle = sprintf('R^2 : uncorrected threshold \n using bootstraped F values');
+                H0_values = squeeze(H0_R2(:,:,2,:)); clear H0_R2;
+                [mask,M]  = boot_threshold(H0_values,p,M);
+                mytitle   = sprintf('R^2 : uncorrected threshold \n using bootstraped F values');
             else 
                 mask    = squeeze(R2(:,:,2));
                 M       = squeeze(R2(:,:,3)); 
@@ -167,18 +159,10 @@ elseif strncmp(FileName,'Condition_effect',16)
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_F_values = squeeze(H0_Condition_effect(:,:,1,:)); clear H0_Condition;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                H0_values = squeeze(H0_Condition_effect(:,:,1,:)); clear H0_Condition;
+                [mask,M]= boot_threshold(H0_values,p,M);
                 mytitle = sprintf('Condition %g: uncorrected threshold \n using bootstraped F values',effect_nb);
-            else 
+            else
                 mask = squeeze(Condition_effect(:,:,2)) ;
                 M = squeeze(Condition_effect(:,:,2)); 
                 mytitle = sprintf('unthresholded effect \n no p-values available without bootstrap');
@@ -249,16 +233,8 @@ elseif strncmp(FileName,'Covariate_effect',16)
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_F_values = squeeze(H0_Covariate_effect(:,:,1,:)); clear H0_Covariates;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                H0_values = squeeze(H0_Covariate_effect(:,:,1,:)); clear H0_Covariates;
+                [mask,M]= boot_threshold(H0_values,p,M);
                 mytitle = sprintf('Covariate %g: uncorrected threshold \n using bootstraped F values',effect_nb);
             else
                 mask = squeeze(Covariate_effect(:,:,2));
@@ -332,16 +308,8 @@ elseif strncmp(FileName,'Interaction_effect',18)
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_F_values = squeeze(H0_Interaction(:,:,1,:)); clear H0_Interaction;
-                sorted_values = sort(H0_F_values,3); clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                H0_values = squeeze(H0_Interaction(:,:,1,:)); clear H0_Interaction;
+                [mask,M]= boot_threshold(H0_values,p,M);
                 mytitle = sprintf('Interaction %g: uncorrected threshold \n using bootstraped F values',effect_nb);
             else
                 mask = squeeze(Interaction_effect(:,:,2));
@@ -413,18 +381,9 @@ elseif strncmp(FileName,'semi_partial_coef',17)
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_F_values = squeeze(H0_semi_partial_coef(:,:,2,:)); % get F values
+                H0_values = squeeze(H0_semi_partial_coef(:,:,2,:)); % get F values
                 clear H0_semi_partial_coef;
-                sorted_values = sort(H0_F_values,3);
-                clear H0_F_values
-                U = round((1-p)*size(sorted_values,3));
-                mask = M >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                [mask,M]= boot_threshold(H0_values,p,M);
                 mytitle = sprintf('Semi partial coef %g: uncorrected threshold \n using on bootstraped F values',effect_nb);
             else
                 mask = squeeze(semi_partial_coef(:,:,3));
@@ -497,18 +456,9 @@ elseif strncmp(FileName,'con_',4)
         if strcmp(LIMO.design.method,'WLS') 
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
-                H0_T_values  = squeeze(boot_H0_con(:,:,2,:)); % T values under H0
-                sorted_values = sort(H0_T_values,3);
-                clear boot_H0_con H0_F_values
-                low = round(p*size(sorted_values,3)/2);
-                high = size(sorted_values,3) - low;
-                mask = (M <= sorted_values(:,:,low))+(M >= sorted_values(:,:,high));
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = min((tmp ./ size(sorted_values,3)), 1- (tmp ./ size(sorted_values,3))) ; % p values
+                H0_values  = squeeze(boot_H0_con(:,:,2,:)); % T values under H0
+                clear boot_H0_con
+                [mask,M]= boot_threshold(H0_values,p,M);
             else
                 mask = con(:,:,5);
                 M = con(:,:,5);
@@ -590,15 +540,8 @@ elseif strncmp(FileName,'ess_',4)
             if exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
                 % sort all F values
-                sorted_values = sort(squeeze(boot_H0_ess(:,:,end-1,:)),3);
-                U = round((1-p)*LIMO.design.nboot);
-                mask = ess(:,:,end-1) >= sorted_values(:,:,U);
-                for row = 1:size(M,1)
-                    for column = 1:size(M,2)
-                        tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-                    end
-                end
-                M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+                H0_values = squeeze(boot_H0_ess(:,:,end-1,:));
+                [mask,M]= boot_threshold(H0_values,p,M);
                 mytitle = sprintf('Contrast F %g: threshold using bootstrapped F values',effect_nb);
             else
                 mask = squeeze(ess(:,:,end));
@@ -1110,5 +1053,29 @@ elseif strncmp(FileName,'LI_Map',6)
 else
     errordlg2('unidentified FileName - no thresholding done');
 end
-end
 
+
+function [mask,M]= boot_threshold(H0_values,p,M)
+% computes the cell-wise p value using bootrap
+
+sorted_values = sort(H0_values,3); clear H0_values;
+if all(sorted_values(:))>=0 % i.e. F values
+    U = round((1-p)*size(sorted_values,3));
+    mask = (M >= sorted_values(:,:,U));
+    for row = 1:size(M,1)
+        for column = 1:size(M,2)
+            tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+        end
+    end
+    M = 1- (tmp ./ size(sorted_values,3)) ; % p values
+else % i.e. T values
+    low = round(p*size(sorted_values,3)/2);
+    high = size(sorted_values,3) - low;
+    mask = (M <= sorted_values(:,:,low))+(M >= sorted_values(:,:,high));
+    for row = 1:size(M,1)
+        for column = 1:size(M,2)
+            tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
+        end
+    end
+    M = min((tmp ./ size(sorted_values,3)), 1- (tmp ./ size(sorted_values,3))) ; % p values
+end
