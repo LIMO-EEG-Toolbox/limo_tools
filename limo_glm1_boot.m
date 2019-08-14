@@ -146,7 +146,7 @@ if nb_continuous == 0
             centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),[size(y(index,:),1)],1);
         end
     end
-    clear y
+    % clear y
 else
     centered_y = y;
     design = X;
@@ -173,7 +173,12 @@ parfor B = 1:nboot
         Y = centered_y(boot_table(:,B),:); % resample Y
         X = design(boot_table(:,B),:); % resample X
         if z == 1 % rezscore the covariates
-            N = nb_conditions + nb_interactions;
+            if isempty(nb_interactions)
+                N = nb_conditions;
+            else
+                N = nb_conditions + nb_interactions;
+            end
+            
             if N==0 || isempty(N)
                 if sum(mean(X(:,1:end-1),1)) > 10e-15
                     X(:,1:end-1) = zscore(X(:,1:end-1));

@@ -3,9 +3,8 @@ function varargout = limo_batch_gui(varargin)
 % BATCH INTERFACE
 % created using GUIDE 
 % Based on limo_import_tf
-% Cyril Pernet v1. May 2014
 % -----------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2018
 
 
 %% GUI stuffs

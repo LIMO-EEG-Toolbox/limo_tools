@@ -30,6 +30,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
+%
 %       contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
@@ -57,7 +58,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
 % ----------------------------------------------------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2018
 
 % programmer help
 % ---------------
@@ -79,10 +80,15 @@ procstatus = [];
 
 %% what to do
 
-if nargin == 0
-    option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
-    if isempty(option)
-        return
+if nargin <= 1
+    
+    if nargin == 0
+        option = questdlg('batch mode','option','model specification','contrast only','both','model specification');
+        if isempty(option)
+            return
+        end
+    else
+        option = varargin{1};
     end
     
     % model
@@ -146,7 +152,7 @@ if nargin == 0
             disp('limo batch aborded'); return
         end
     end
-else
+elseif nargin > 1
     option = varargin{1};
     
     % model
@@ -239,7 +245,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             end
             
             if exist(root,'dir') ~= 7; mkdir(root); end
-            design_name = STUDY.design.name; 
+            design_name = STUDY.design(STUDY.currentdesign).name; 
             design_name(isspace(design_name)) = [];
             if findstr(design_name,'STUDY.')
                 design_name = design_name(7:end);
@@ -354,6 +360,13 @@ parfor subject = 1:N
     disp('--------------------------------')
     try
         psom_run_pipeline(pipeline(subject),limopt{subject})
+        
+        % example of debugging 
+        % ---------------------
+        % psom reported with function failed, eg limo_batch_import
+        % pipeline(subject).import tells you the command line to test
+        % put the point brack where needed and call e.g.
+        % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
@@ -392,19 +405,20 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
                 for l=1:size(LIMO.contrast,2)
-                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:));
+                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:))
                         con_num = l; break
                     end
                 end
                 name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+                con_num = c;
             end
             index = index + 1;
         end
         name = name';
         
-        if exist('remove_con','var')
+        if sum(remove_con) ~= 0
             cell2csv(['con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         else
             cell2csv(['con' num2str(con_num) '_files_'  glm_name '.txt'], name);
@@ -430,5 +444,3 @@ else
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
 disp('The Pipeline System for Octave and Matlab. Front. Neuroinform. 6:7')
-
-
