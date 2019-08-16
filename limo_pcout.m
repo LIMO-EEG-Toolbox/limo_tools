@@ -1,14 +1,16 @@
-function [dist,out] = limo_pcout(x)
+function [dist,out] = limo_pcout(varargin)
 
 % LIMO_pcout Limo Principal Components Projection
 % This method uses simple properties of Principal Components to identify
 % outliers in the Multivariate space. This function use Filzmoser, Moronna
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
-% FORMAT [dist out] = limo_pcout(x)
+% FORMAT [dist out] = limo_pcout(x,resample,'on')
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
+%   resample      = option [on/off] to resample if the number of frames is
+%                   too large
 %
 % OUTPUTS:
 %   dist          = weights (distance) for each trial. Outliers have a near to zero weight.
@@ -27,6 +29,7 @@ function [dist,out] = limo_pcout(x)
 % we have ommited dimensions with mad = 0, as this 
 % corresponds to a case with all trials having the same value ! 
 
+x = varargin{1};
 x = x(:,mad(x,1) > 1e-6); 
 if isempty(x)
     error('WLS cannot be computed, for at least 1 frame, all trials have the same values')
@@ -34,7 +37,17 @@ end
 
 [n,p] = size(x);
 if n<p
-    error('Principal Component Projection cannot be computed, more observations than variables are needed')
+    if nargin == 3 
+        if strcmpi(varargin{2},'resample') && strcmp(varargin{3},'on')
+            disp('LIMO trial rejection and weighting: more observations (trials) than variables (time points) are needed, resampling data')
+            x = resample(x',1,ceil(p/n))';
+            [n,p] = size(x);
+        else
+            error('Principal Component Projection cannot be computed, resampling option not valid');
+        end
+    else
+        error('Principal Component Projection cannot be computed, more observations than variables are needed')
+    end
 end
 
 %% 1st Phase: Detect location outliers
