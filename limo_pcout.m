@@ -34,9 +34,7 @@ end
 
 [n,p] = size(x);
 if n<p
-    disp('LIMO trial rejection and weighting: more observations (trials) than variables (time points) are needed, resampling data')
-    x = resample(x',1,ceil(p/n))';
-    [n,p] = size(x);
+    error('Principal Component Projection cannot be computed, more observations than variables are needed')
 end
 
 %% 1st Phase: Detect location outliers
