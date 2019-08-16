@@ -19,7 +19,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %                          micro-volts per std of the predictor variable.
 %   full_factorial     = [0/1] - if 1 create interaction terms between the
 %                        factors described in Cat
-%   flag               = figure on/off
+%   flag               = figure on/off [1/0]
 %
 % OUTPUTS: 
 %   X             = 2 dimensional matrix that describes the experiments' events
