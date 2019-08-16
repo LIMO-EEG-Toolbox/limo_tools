@@ -86,7 +86,7 @@ if strcmp(LIMO.design.status,'to do')
         end
         
         % update the LIMO.mat (do it only once)
-        if update == 1
+        if update == 1 && ~strcmpi(LIMO.design.method,'IRLS')
             LIMO.model.model_df = model.df;
             if LIMO.design.nb_conditions ~=0
                 LIMO.model.conditions_df  = model.conditions.df;
@@ -98,11 +98,22 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
+        elseif update == 1
+            LIMO.model.model_df(electrode,:) = model.df;
+            if LIMO.design.nb_conditions ~=0
+                LIMO.model.conditions_df(electrode,:,:)  = model.conditions.df;
+            end
+            if LIMO.design.nb_interactions ~=0
+                LIMO.model.interactions_df(electrode,:,:)  = model.interactions.df;
+            end
+            if LIMO.design.nb_continuous ~=0
+                LIMO.model.continuous_df(electrode,:,:)  = model.continuous.df;
+            end
         end
         
         % update the files to be stored on the disk
         if strcmp(LIMO.design.method,'IRLS')
-            W(electrode,:,index) = model.W;
+            W(electrode,:,index) = model.W';
         elseif strcmp(LIMO.design.method,'WLS')
             W(electrode,index) = model.W;
         end
@@ -128,14 +139,9 @@ if strcmp(LIMO.design.status,'to do')
         end
         
         if LIMO.design.fullfactorial == 1
-            if length(LIMO.design.nb_interactions) == 1
-                tmp_Interaction_effect(electrode,:,1,1) = model.interactions.F;
-                tmp_Interaction_effect(electrode,:,1,2) = model.interactions.p;
-            else
-                for i=1:length(LIMO.design.nb_interactions)
-                    tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(:,i);
-                    tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(:,i);
-                end
+            for i=1:length(LIMO.design.nb_interactions)
+                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(i,:);
+                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(i,:);
             end
         end
         
