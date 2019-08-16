@@ -155,7 +155,7 @@ cd(directory);
 
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
-    check = find(sum(isnan(Cat),2)==size(Cat,2));
+    check = find(sum(isnan(Cat),2));
     Cat(check,:) = [];
     if ~isempty(Cont)
         Cont(check,:) = [];
@@ -164,7 +164,7 @@ if ~isempty(Cat)
 end
 
 if ~isempty(Cont)
-    check = find(sum(isnan(Cont),2)==size(Cont,2));
+    check = find(sum(isnan(Cont),2));
     Cont(check,:) = [];
     if ~isempty(Cat)
         Cat(check,:) = [];
@@ -233,7 +233,7 @@ if ~isempty(Cat)
     % sort Cat column wise - apply to Cont and Y
     [Cat,index] = sortrows(Cat,[1:size(Cat,2)]);
     
-    if add_cont == 1
+    if add_cont == 1;
         for i=1:size(Cont,2)
             Cont(:,i) = Cont(index,i);
         end
@@ -272,15 +272,11 @@ if ~isempty(Cat)
     for f=1:length(indices_conditions)
         x(indices_conditions{f},f) = 1;
     end
-    full_design = x;
+    % basic_design = x;
     
     % add interactions if requested
     if full_factorial == 1
-        if nb_factors == 1
-            disp('full factorial impossible, only 1 factor specificied')
-        else
-            [x, nb_interactions] = limo_make_interactions(x, nb_conditions);
-        end
+        [x nb_interactions] = limo_make_interactions(x, nb_conditions);
     end
     
         
@@ -345,7 +341,7 @@ if ~isempty(Cat)
 %     end
     
     % add the continuous regressors and the constant
-    if add_cont == 1
+    if add_cont == 1;
         X = [x Cont ones(size(Yr,3),1)];
     else
         X = [x ones(size(Yr,3),1)];
@@ -357,7 +353,8 @@ if ~isempty(Cat)
         higher_interaction = X(:,start_at:(end-nb_continuous-1));
         if size(higher_interaction,2) ~= prod(nb_conditions)
             errordlg(sprintf('the design is too unbalanced to be corrected \n can''t run full factorial'))
-            nb_interactions = 0; X = [full_design ones(size(Yr,3),1)];
+            nb_interactions = 0;
+            X = [basic_design ones(size(Yr,3),1)];
         else
             nb_trials = sum(higher_interaction);
             if length(unique(nb_trials)) > 1
@@ -365,7 +362,7 @@ if ~isempty(Cat)
                 if sample_to_n == 1
                     errordlg(sprintf('the design is over-specified, \n only one observation per condition \n can''t run full factorial'))
                     nb_interactions = 0;
-                    X = [full_design ones(size(Yr,3),1)];
+                    X = [basic_design ones(size(Yr,3),1)];
                 else % sample
                     s = 1; % now list rows to keep
                     for c=1:size(higher_interaction,2)
@@ -444,7 +441,7 @@ try
     if nb_continuous ~=0; clear tmp_Covariate_effect; end
     
 catch FileError
-    sprintf('%s',FileError.message)
+    sprintf('%s',FileError)
     error('error while memory mapping futur results')
 end
 

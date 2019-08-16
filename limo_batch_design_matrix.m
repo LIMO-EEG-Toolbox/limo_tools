@@ -1,18 +1,18 @@
 function limo_batch_design_matrix(LIMOfile)
 
-% this function wraps around the LIMO.mat file structure from the batch and
+% this function wrap aound the LIMOfile structure from the batch and
 % calls limo_design_matrix - of special interest is the ability to
 % rearrange data per components based on the study structure clustering
-% output - this allows easier group statistics at the 2nd level.
+% output - this allowing group statistics at the 2nd level.
 %
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLIMOLAB STUDY
 % see also limo_batch
 %% -----------------------------
-% Copyright (C) LIMO Team 2018
+% Copyright (C) LIMO Team 2015
 
 global EEGLIMO
 load(LIMOfile);
-if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
+if exist('EEGLIMO','var')
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
         cd (LIMO.data.data_dir);
         disp('reloading data ..');
@@ -25,7 +25,6 @@ end
 
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
-        % 1st load ICA data
         if isfield(EEGLIMO.etc.datafiles,'icaerp')
             if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
                 Y = load(EEGLIMO.etc.datafiles.icaerp);
@@ -48,22 +47,20 @@ if strcmp(LIMO.Analysis,'Time')
             signal = eeg_getdatact(EEGLIMO,'component',[1:size(EEGLIMO.icawinv,2)]);
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
-        
-        % 2nd if cluster present, reorder
         if isfield(LIMO.data,'cluster')
             try
                 STUDY = evalin('base','STUDY');
             catch
                 error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
             end
-            nb_clusters     = size(STUDY.cluster(1).child,2);
-            nb_subjects     = length(STUDY.design(STUDY.currentdesign).cases.value'); % length({STUDY.datasetinfo.subject}); % ;
-            Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+            nb_clusters = size(STUDY.cluster(1).child,2);
+            nb_subjects = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
+            Cluster_matrix = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+            dsetinfo = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+            data_dir = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
             current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
-            subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
-            newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
+            subject_name = {STUDY.datasetinfo(current_subject(1)).subject};
+            newY = NaN(nb_clusters,size(Y,2),size(Y,3));
             for c=1:nb_clusters
                 n = length(Cluster_matrix.clust(c).subj);
                 tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));

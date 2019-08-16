@@ -2,7 +2,7 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 
 % routine to get multifiles from different directories
 %
-% FORMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
+% FORNMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
 %
 % INPUT can be left empty, in the case ask for .mat or .txt
 %       gp  is a simple numerical value, so the selection question reminds
@@ -24,11 +24,11 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 % CP update for filter and additional format 01-21-2015
 % Arnaud Delorme fixed delimiters and added study option June 2015
 % --------------------------------------------------------------
-%  Copyright (C) LIMO Team 2018
+%  Copyright (C) LIMO Team 2015
 
 %% defaults and inputs
 gp        = [];
-title     = 'select a subject file or list file';
+title     = ['select a subject file or list file'];
 filter    = {'*.mat;*.txt'};
 path2file = [];
 
@@ -41,17 +41,9 @@ go = 1; index = 1;
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
-            if ispc
-                [name,path] = uigetfile(filter,['select a subject file',num2str(index),' ',gp,' or list file']);
-            else
-                [name,path] = uiGetFiles(['select a subject file',num2str(index),' ',gp,' or list file']);
-            end
+            [name,path] = uigetfile(filter,['select a subject file',num2str(index),' ',gp,' or list file']);
         else
-            if ispc
-                [name,path] = uigetfile(filter,title);
-            else
-                [name,path] = uiGetFiles(title);
-            end
+            [name,path] = uigetfile(filter,title);
         end
     else
         if exist(path2file,'file') == 2

@@ -5,7 +5,7 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 % See Wilcox 2012: 
 % Introduction to Robust Estimation and Hypothesis testing p 293
 %
-% FORMAT: [F,p,YM] = limo_robust_1way_anova(Y,X)
+% FORMAT: [F,p] = limo_robust_1way_anova(Y,X)
 %
 % INPUT: Y is a 2D matrix frames x trials/subjects
 %        X is a design matrix of 1 and 0, one column per group
@@ -28,49 +28,46 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 %  Copyright (C) LIMO Team 2014
 
 if nargin<3 || isempty(percent)
-    percent = 20;
+percent = 20;
 end
 
-% check dimensions
-J    = size(X,2);   % groups
-Nf   = size(Y,1);   % observations
-h    = zeros(1,J);  % same for all frames
-w    = zeros(Nf,J); % inverse of the adjusted variance 
-xbar = cell(J,1);   % trimmed means
+J = size(X,2);
+Nf = size(Y,1);
+h = zeros(1,J); % same for all frames
+w = zeros(Nf,J); % inverse of the adjusted variance 
+xbar = cell(J,1); % trimmed means
 
-%% step 1
 % for each group, trim the data, get the sample size and winsorized variance
 % compute w the inverse of the adjusted variance d
 for gp = 1:J
     data = Y(:,X(:,gp)==1);
-    na   = size(data,2); % how many subjects
-    ga   = floor((percent/100)*na);% number of items to trim / winsorize
+    na = size(data,2); % how many subjects
+    ga=floor((percent/100)*na);% number of items to trim / winsorize
     if ga == 0
         ga = 1; % with low count still remove 2 subjects (highest / lowest values)
     end
-    asort           = sort(data,2);
-    trimdata        = asort(:,(ga+1):(na-ga),:); % trimmed data
-    YM{gp}          = trimdata;
-    h(gp)           = size(trimdata,2); % effective sample size
-    xbar{gp}        = nanmean(trimdata,2);
-    wa              = asort; 
-    wa(:,1:ga+1)    = repmat(asort(:,ga+1),1, ga+1); % substitute lower values
-    wa(:,na-ga:end) = repmat(asort(:,na-ga),1, ga+1); % substitute higher values
-    wva             = nanvar(wa,0,2); % windsorized variances
+    asort=sort(data,2);
+    trimdata=asort(:,(ga+1):(na-ga),:); % trimmed data
+    YM{gp} = trimdata;
+    h(gp) = size(trimdata,2); % effective sample size
+    xbar{gp} = nanmean(trimdata,2);
+    wa=asort; 
+    wa(:,1:ga+1)=repmat(asort(:,ga+1),1, ga+1);
+    wa(:,na-ga:end)=repmat(asort(:,na-ga),1, ga+1);
+    wva=nanvar(wa,0,2); % windsorized variances
     
     d = ((na-1).*wva) ./ (h(gp)*(h(gp)-1));
     w(:,gp) = 1./d;
 end
-
-% the modelled data and therefore the trimmed means
-U   = sum(w,2);
+    
+U = sum(w,2);
 tmp = nan(size(Y));
 for gp = 1:J
     tmp(:,X(:,gp)==1) = repmat(nanmean(YM{gp},2),[1 sum(X(:,gp))]); % each subject = mean of trimmed data
 end
 YM = tmp; clear tmp
 
-%% step 2
+
 % weighted marginal mean
 % ----------------------
 M=zeros(Nf,J);
@@ -94,10 +91,10 @@ B = f .* sum(((1 - (w./repmat(U,1,J))).^2) ./ repmat((h-1),size(Y,1),1),2);
 
 % F and p values
 % --------------
-F   = A./ (1+B);
-df  = J-1;
+F = A./ (1+B);
+df = J-1;
 dfe = ((3/(J^2-1)) .* (sum(((1 - (w./repmat(U,1,J))).^2) ./ repmat((h-1),size(Y,1),1),2))).^-1;
-p   = 1 - fcdf(F, df, dfe);
+p = 1 - fcdf(F, df, dfe);
 
 
 

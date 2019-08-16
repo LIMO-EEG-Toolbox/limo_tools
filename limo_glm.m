@@ -205,33 +205,32 @@ switch method
     case {'OLS','WLS'}
         % -----------------------------------------------------------------
         % -----------------------------------------------------------------
-              
+        
+        
         % total sum of squares, projection matrix for errors, residuals
         % --------------------------------------------------------------
         T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
-        HM  = WX*pinv(WX);                                                       % Hat matrix, projection onto X
-        R   = eye(size(Y,1)) - WX*pinv(WX);                                      % Projection onto E
-        E   = Y'*R*Y;                                                            % SS Error
-                
-        % degrees of freedom
-        % -------------------
-        df = rank(WX)-1;
-        if strcmp(method,'OLS')
-            dfe = size(Y,1)-rank(WX);
-        else
-%             Satterthwaite approximation
-%             dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-%             Multivariate df
-%             dfe = size(Y,1)-size(Y,2)+rank(WX);
-%             Cheverud 2001
-%             EV  = eig(corr((R*Y)));
-%             M   = length(EV);
-%             V   = sum((EV-1).^2) / (M-1);
-%             dfe = (1 + (M-1)*(1-V/M)) - df;
-%             Li and Ji 2005
-            EV  = abs(eig(corr(R*Y)));
-            x   = single(EV>=1) + (EV - floor(EV));
-            dfe = size(Y,1) - sum(x) + rank(WX) + 1;
+        HM  = WX*pinv(WX);                                                   % Hat matrix, projection onto X
+        R   = eye(size(Y,1)) - WX*pinv(WX);                                  % Projection onto E
+        E   = Y'*R*Y;                                                        % SS Error
+        
+        % The number of degrees of freedom can be defined as the minimum number of
+        % independent coordinates that can specify the position of the system completely.
+        % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS
+        df  = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1; % Satterthwaite approximation
+        dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+        
+        % do an adjustement if MSE robust < MSE least squares
+        % Dumouchel, W. H., and F. L. O'Brien. 1989
+        if strcmp(method,'WLS')
+            R_ols = eye(size(Y,1)) - X*pinv(X);
+            E_ols = Y'*R_ols*Y;
+            if E < E_ols
+                n = size(X,1); p = rank(X);
+                sigmar = E/(n-p); sigmals = E_ols/(n-p);
+                MSE = (n*sigmar + p^2*sigmals) / (n+p^2);
+                E = MSE * dfe;
+            end
         end
         
         % model R^2
@@ -250,19 +249,15 @@ switch method
         % update the model structure
         % ----------------------------
         
-        model.W                 = W;
+        model.R2_univariate     = Rsquare;
+        model.F                 = F_Rsquare;
+        model.p                 = p_Rsquare;
         model.betas             = Betas;
+        model.df                = [df dfe];
+        model.W                 = W;
         model.betas_se          = Betas;
         for b=1:size(Y,2)
             model.betas_se(:,b) = sqrt(diag((E(b,b)/dfe)*pinv(WX'*WX)));
-        end
-        model.R2_univariate     = Rsquare;
-        model.F                 = F_Rsquare;
-        model.df                = [df dfe];
-        if strcmp(method,'WLS')
-            model.p             = NaN(size(p_Rsquare)); % p values aren't valid in this scheme
-        else
-            model.p             = p_Rsquare;
         end
         
         %% Compute effects
@@ -291,16 +286,10 @@ switch method
                 F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
                 pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
             end
-            
             model.conditions.F                   = F_conditions;
+            model.conditions.p                   = pval_conditions;
             model.conditions.df                  = [df_conditions ; dfe];
-            if strcmp(method,'WLS')
-                model.conditions.p               = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p               = pval_conditions;
-            end
-
-        
+            
             % ------------------------------------------------
         elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
             % ------------------------------------------------
@@ -342,12 +331,8 @@ switch method
             end
             
             model.conditions.F      = F_conditions;
+            model.conditions.p      = pval_conditions;
             model.conditions.df     = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            if strcmp(method,'WLS')
-                model.conditions.p  = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p  = pval_conditions;
-            end
             
             % ------------------------------------------------
         elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
@@ -403,12 +388,8 @@ switch method
             end
             
             model.conditions.F       = F_conditions;
+            model.conditions.p       = pval_conditions;
             model.conditions.df      = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            if strcmp(method,'WLS')
-                model.conditions.p   = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p   = pval_conditions;
-            end
             
             % ---------------------------
             % now deal with interactions
@@ -493,14 +474,9 @@ switch method
                     pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
                 end
             end
-            
             model.interactions.F           = F_interactions;
+            model.interactions.p           = pval_interactions;
             model.interactions.df          = [df_interactions ; repmat(dfe,1,numel(df_interactions))]';
-            if strcmp(method,'WLS')
-                model.interactions.p       = NaN(size(pval_interactions)); % p values aren't valid in this scheme
-            else
-                model.interactions.p       = pval_interactions;
-            end
         end
         
         
@@ -512,12 +488,8 @@ switch method
             
             if nb_factors == 0 && nb_continuous == 1 % simple regression
                 model.continuous.F  = F_Rsquare;
+                model.continuous.p  = p_Rsquare;
                 model.continuous.df = [1 (size(Y,1)-rank(X))];
-                if strcmp(method,'WLS')
-                    model.continuous.p         = NaN(size(p_Rsquare)); % p values aren't valid in this scheme
-                else
-                    model.continuous.p       = p_Rsquare;
-                end
                 
             else % ANCOVA type of deisgns
                 
@@ -540,14 +512,9 @@ switch method
                     F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
                     pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                 end
-                
                 model.continuous.F                   = F_continuous';
+                model.continuous.p                   = pval_continuous';
                 model.continuous.df                  = [1 dfe];
-                if strcmp(method,'WLS')
-                    model.continuous.p               = NaN(size(pval_continuous')); % p values aren't valid in this scheme
-                else
-                    model.continuous.p               = pval_continuous';
-                end
             end
         end
         
@@ -586,15 +553,10 @@ switch method
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
-            % The number of degrees of freedom can be defined as the minimum number of
-            % independent coordinates that can specify the position of the system completely.
-            % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
-            % use the Satterthwaite approximation
-            df(frame)              = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1;
+            df(frame)             = trace(HM'*HM)^2/trace(HM'*HM*HM'*HM)-1;
             dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
             R_ols                  = eye(size(Y,1)) - X*pinv(X);
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
-            % MSE adjustment
             if E < E_ols
                 n = size(X,1); p = rank(X);
                 sigmar = E/(n-p); sigmals = E_ols/(n-p);

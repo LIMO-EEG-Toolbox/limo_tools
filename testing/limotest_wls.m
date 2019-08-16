@@ -28,6 +28,8 @@ for avg = 1:100
     wls(avg) = sum(pvalues<0.05)/length(pvalues);
 end
 wls = wls.*100;
+
+
 [meanwls,ciwls]=rst_data_plot(wls,'estimator','mean','newfig','yes');
 
 % one way ANOVA

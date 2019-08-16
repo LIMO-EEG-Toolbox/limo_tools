@@ -139,7 +139,7 @@ end
 set(gca,'YTick',[1:3:length(expected_chanlocs)],'YTickLabel', label(1:3:length(expected_chanlocs)))
 set(gca,'XTick',[2:3:length(expected_chanlocs)],'XTickLabel', label(2:3:length(expected_chanlocs)))
 axis([1 length(expected_chanlocs) 1 length(expected_chanlocs)]); axis square
-title(sprintf('Connectivity matrix between channels \n (click outside the matrix or right click when done)'),'FontSize',14)
+title(sprintf('Connectivity matrix between channels \n'),'FontSize',14)
 cmap = gray; cmap(1,:) = [0.25 0.25 0.25]; colormap(cmap)
 
 
@@ -148,8 +148,8 @@ if strcmp(choice,'Edit')
     
     positive = 1;
     while positive == 1
-        [x, y, button]=ginput(1);
-        if any([x y]< 0) || any([x y]< length(channeighbstructmat)) || button ~= 1
+        [y,x]=ginput(1);
+        if x<0 || y<0
             positive = 0;
         else
             
