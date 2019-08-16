@@ -539,6 +539,7 @@ switch method
         end
         
         if nb_interactions ~=0
+            H                 = NaN(length(nb_conditions),size(Y,2));
             HI                = NaN(length(nb_interactions),size(Y,2));
             F_interactions    = NaN(length(nb_interactions),size(Y,2));
             pval_interactions = NaN(length(nb_interactions),size(Y,2));
@@ -719,10 +720,10 @@ switch method
                 % ---------------------------
                 
                 if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-                    HI                       = diag(T)' - H(1,:) - H(2,:) - E';
-                    df_interactions(frame)   = prod(df_conditions);
-                    F_interactions(frame)    = (HI./df_interactions) ./ (E/dfe(frame))';
-                    pval_interactions(frame) = 1 - fcdf(F_interactions, df_interactions, dfe(frame));
+                    HI(frame)                = T(frame,frame) - sum(H(:,frame)) - E;
+                    df_interactions(frame)   = prod(df_conditions(frame));
+                    F_interactions(frame)    = (HI(frame)./df_interactions(frame)) ./ (E/dfe(frame))';
+                    pval_interactions(frame) = 1 - fcdf(F_interactions(frame), df_interactions(frame), dfe(frame));
                     
                 else % run through each interaction
                     
@@ -795,7 +796,7 @@ switch method
         model.F                 = F_Rsquare';
         model.p                 = p_Rsquare';
         model.betas             = Betas;
-        model.df                = median(dof,2)'; % not the true dof but a summary
+        model.df                = mean(dof,2)'; % not the true dof but a summary
         model.W                 = W;
         model.betas_se          = betas_se;
         
