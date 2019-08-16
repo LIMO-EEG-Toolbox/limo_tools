@@ -5,7 +5,7 @@ function [dist,out] = limo_pcout(varargin)
 % outliers in the Multivariate space. This function use Filzmoser, Moronna
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
-% FORMAT [dist out] = limo_pcout(x,resample,'on')
+% FORMAT [dist out] = limo_pcout(x,'resample','on')
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
@@ -37,7 +37,7 @@ end
 
 [n,p] = size(x);
 if n<p
-    if nargin == 3 
+    if nargin >1 
         if strcmpi(varargin{2},'resample') && strcmp(varargin{3},'on')
             disp('LIMO trial rejection and weighting: more observations (trials) than variables (time points) are needed, resampling data')
             x = resample(x',1,ceil(p/n))';
