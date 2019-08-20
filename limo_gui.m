@@ -2,8 +2,9 @@ function varargout = limo_gui(varargin)
 
 % GUI of LIMO_eeg toolbox
 % created using GUIDE
+% cyril pernet 12-03-2010 v1
 % ------------------------------------------
-% Copyright (C) LIMO Team 2018
+% Copyright (C) LIMO Team 2014
 
 
 %% GUI stuffs
@@ -50,36 +51,40 @@ varargout{1} = 'LIMO terminated';
 
 %% Callbacks
 
-% --- Executes on button press in import
-function import_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in import_menu.
+function import_menu_Callback(hObject, eventdata, handles)
+handles.import = get(hObject,'Value');
 uiresume
+guidata(hObject, handles);
 delete(handles.figure1)
-limo_batch('model specification');
+limo_eeg(2,handles.import);
+
+
+% --- Executes during object creation, after setting all properties.
+function import_menu_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
 
 % --- Executes on button press in analyse.
 function analyse_Callback(hObject, eventdata, handles)
 [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
-[Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt'},'Select a LIMO.mat file or a list of such files');
-if isempty(Names)
+if file ==0
     return
     guidata(hObject, handles);
 else
-    for f=1:size(Files,2)
-        load(Files{f});
-        if LIMO.Level ~=1
-            fprintf('cannot reprocessing 2nd level LIMO.mat\n %s\n',Paths{f})
-        else
-            cd(LIMO.dir)
-            LIMO.design.status = 'to do';
-            save('LIMO','LIMO');
-            fprintf('reprocessing \n %s\n',Paths{f})
-            limo_eeg(4);
-            if isfield(LIMO,'contrast')
-                limo_eeg(6);
-            end
-        end
-        uiresume; delete(handles.figure1);
-        cd (dir_path); limo_results;
+    load([dir_path file]);
+    if strcmp(LIMO.design.status,'done');
+        answer=questdlg('This design was already estimated, redo it?','Estimation','Yes','No','Yes');
+    else
+        answer = 'Yes';
+    end
+    
+    if strcmp(answer ,'Yes')
+        uiresume; delete(handles.figure1); 
+        cd (dir_path); LIMO.design.status ='to do';
+        save LIMO LIMO; clear LIMO; limo_eeg(4); limo_results;
     end
 end
 

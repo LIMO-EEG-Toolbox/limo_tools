@@ -80,9 +80,9 @@ elseif ndims(bootM) == 2
     % get the equivalent bootstrapped p-value
     smalest_pval = 1/nboot;
     for row =1:a
-        tmp = sum(M(row,column) <= sortmaxM) / nboot;
-        p_val(row,column) = min([tmp 1-tmp]);
+        p_val(row) = (sum(M(row) <= sortmaxM) / nboot);
         if p_val(row) == 0; p_val(row) = smalest_pval; end
+
     end
 
 end
