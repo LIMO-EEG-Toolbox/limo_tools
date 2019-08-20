@@ -130,16 +130,17 @@ title(mytitle2,'FontSize',12)
 
 % topoplot at max time
 % ---------------------
+cc = color_images_(scale,LIMO);
 if size(toplot,1) ~= 1
     if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
         ax(2) = subplot(3,3,6);
         chans = LIMO.data.chanlocs;
-        opt = {'maplimits','maxmin','verbose','off'};
+        opt = {'maplimits','maxmin','verbose','off','colormap', cc};
         
         if isfield(LIMO,'Type')
             if strcmp(LIMO.Type,'Components')
-                opt = {'maplimits','absmax','electrodes','off','verbose','off'};
+                opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', cc};
                 topoplot(toplot(:,f),chans,opt{:});
             else
                 topoplot(toplot(:,f),chans,opt{:});
@@ -171,6 +172,7 @@ if size(toplot,1) ~= 1
                 end
             end
         end
+        colormap(gca, cc(2:end,:));
     end
 end
 
@@ -179,8 +181,10 @@ end
 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
 if strcmp(LIMO.Analysis,'Time')
     imagesc(timevect,1:size(toplot,1),scale);
+    colormap(gca, cc);
 elseif strcmp(LIMO.Analysis,'Frequency')
     imagesc(freqvect,1:size(toplot,1),scale);
+    colormap(gca, cc);
 end
 
 try
@@ -196,7 +200,6 @@ try
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
-cc = color_images_(scale,LIMO);
 
 % ------------------------
 % update with mouse clicks
@@ -231,7 +234,6 @@ if dynamic == 1
                 elseif size(toplot,1)> 1 && y<1
                     y = 1;
                 end
-            
                 
                 if strcmp(LIMO.Analysis,'Time') 
                     
@@ -247,6 +249,7 @@ if dynamic == 1
                         else
                             title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
                         end
+                        colormap(gca, cc(2:end,:));
                     end
                     
                     subplot(3,3,9,'replace');
@@ -289,6 +292,7 @@ if dynamic == 1
                         else
                             title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
                         end
+                        colormap(gca, cc(2:end,:));
                     end
                     
                     subplot(3,3,9,'replace');
@@ -324,7 +328,6 @@ if dynamic == 1
                 
             end
             
-            colormap(cc); 
             try
                 p_values = evalin('base','p_values');
                 if ~isnan(p_values(round(y),frame))
