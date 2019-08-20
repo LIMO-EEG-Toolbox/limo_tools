@@ -1429,23 +1429,32 @@ switch type
                 save(['H0', filesep, 'boot_table'], 'boot_table')
                 
                 % compute bootstrap under H0 for F and p
-                for B=1:nboot
+                tmp_boot_H0_Rep_ANOVA_cell1 = cell(1, nboot);
+                tmp_boot_H0_Rep_ANOVA_cell2 = cell(1, nboot);
+                H0_Rep_ANOVA_Gp_effect_cell1 = cell(1, nboot);
+                H0_Rep_ANOVA_Gp_effect_cell2 = cell(1, nboot);
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1 = cell(1, nboot);
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2 = cell(1, nboot);
+                
+                parfor B=1:nboot
                     fprintf('Repeated Measures ANOVA bootstrap %g \n ...', B);
                     array = find(~isnan(data(:,1,1,1)));
+                    Xtmp = X;
+                    
                     for e = 1:length(array)
                         electrode = array(e);
                         tmp = squeeze(centered_data(electrode,:,boot_table{electrode}(:,B),:));
                         if size(centered_data,2) == 1
                             Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
-                            gp = gp_vector(find(~isnan(Y(1,:,1))),:);
-                            Y = Y(:,find(~isnan(Y(1,:,1))),:);
+                            gp = gp_vector(~isnan(Y(1,:,1)),:);
+                            Y = Y(:,~isnan(Y(1,:,1)),:);
                         else
-                            Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                            gp = gp_vector(find(~isnan(tmp(1,:,1))));
+                            Y = tmp(:,~isnan(tmp(1,:,1)),:);
+                            gp = gp_vector(~isnan(tmp(1,:,1)));
                         end
                         
                         if type == 3 || type == 4
-                            XB = X(find(~isnan(tmp(1,:,1))));
+                            XB2 = Xtmp(~isnan(tmp(1,:,1)));
                         end
                         
                         if type == 1
@@ -1454,45 +1463,76 @@ switch type
                             else
                                 result = limo_rep_anova(Y,gp,factor_levels,C);
                             end
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = result.F;
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = result.p;
+                            tmp_boot_H0_Rep_ANOVA_cell1{B} = result.F;
+                            tmp_boot_H0_Rep_ANOVA_cell2{B} = result.p;
                         elseif type == 2
                             if strcmp(LIMO.design.method,'Trimmed Mean')
                                 result = limo_robust_rep_anova(Y,gp,factor_levels,C);
                             else
                                 result = limo_rep_anova(Y,gp,factor_levels,C);
                             end
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = result.F';
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = result.p';
+                            tmp_boot_H0_Rep_ANOVA_cell1{B} = result.F';
+                            tmp_boot_H0_Rep_ANOVA_cell2{B} = result.p';
                         elseif type == 3
                             if strcmp(LIMO.design.method,'Trimmed Mean')
                                 result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
                             else
                                 result = limo_rep_anova(Y,gp,factor_levels,C,XB);
                             end
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = result.repeated_measure.F;
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = result.repeated_measure.p;
-                            H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = result.gp.F;
-                            H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = result.gp.p;
-                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,1,B) = result.interaction.F;
-                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,2,B) = result.interaction.p;
+                            tmp_boot_H0_Rep_ANOVA_cell1{B} = result.repeated_measure.F;
+                            tmp_boot_H0_Rep_ANOVA_cell2{B} = result.repeated_measure.p;
+                            H0_Rep_ANOVA_Gp_effect_cell1{B} = result.gp.F;
+                            H0_Rep_ANOVA_Gp_effect_cell2{B} = result.gp.p;
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1{B} = result.interaction.F;
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2{B} = result.interaction.p;
                         elseif type == 4
                             if strcmp(LIMO.design.method,'Trimmed Mean')
-                                result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
+                                result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB2);
                             else
-                                result = limo_rep_anova(Y,gp,factor_levels,C,XB);
+                                result = limo_rep_anova(Y,gp,factor_levels,C,XB2);
                             end
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = result.repeated_measure.F';
-                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = result.repeated_measure.p';
-                            H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = result.gp.F;
-                            H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = result.gp.p;
-                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,1,B) = result.interaction.F';
-                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,2,B) = result.interaction.p';
-                            clear y result
+                            tmp_boot_H0_Rep_ANOVA_cell1{B} = result.repeated_measure.F';
+                            tmp_boot_H0_Rep_ANOVA_cell2{B} = result.repeated_measure.p';
+                            H0_Rep_ANOVA_Gp_effect_cell1{B} = result.gp.F;
+                            H0_Rep_ANOVA_Gp_effect_cell2{B} = result.gp.p;
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1{B} = result.interaction.F';
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2{B} = result.interaction.p';
+                            %clear y result
                         end
-                        clear XB Y gp tmp
+                        %clear XB Y gp tmp
                     end
                 end
+                
+                % copy boostrap results (code unallowed by parfor loop)
+                for B=1:nboot
+                    for e = 1:length(array)
+                        electrode = array(e);
+                        if type == 1
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = tmp_boot_H0_Rep_ANOVA_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = tmp_boot_H0_Rep_ANOVA_cell2{B};
+                        elseif type == 2
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = tmp_boot_H0_Rep_ANOVA_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = tmp_boot_H0_Rep_ANOVA_cell2{B};
+                        elseif type == 3
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = tmp_boot_H0_Rep_ANOVA_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = tmp_boot_H0_Rep_ANOVA_cell2{B};
+                            H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = H0_Rep_ANOVA_Gp_effect_cell1{B};
+                            H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = H0_Rep_ANOVA_Gp_effect_cell2{B};
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,1,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,2,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2{B};
+                        elseif type == 4
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = tmp_boot_H0_Rep_ANOVA_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = tmp_boot_H0_Rep_ANOVA_cell2{B};
+                            H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = H0_Rep_ANOVA_Gp_effect_cell1{B};
+                            H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = H0_Rep_ANOVA_Gp_effect_cell2{B};
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,1,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1{B};
+                            tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,2,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2{B};
+                        end
+                    end
+                end
+                
+                % erase results to free up RAM
+                clear tmp_boot_H0_Rep_ANOVA_cell1 tmp_boot_H0_Rep_ANOVA_cell2 H0_Rep_ANOVA_Gp_effect_cell1 H0_Rep_ANOVA_Gp_effect_cell2 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2;
                 
                 % save
                 for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
