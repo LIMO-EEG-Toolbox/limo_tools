@@ -1422,9 +1422,9 @@ switch type
                             tmp_boot_H0_Rep_ANOVA_cell2{B} = result.p';
                         elseif type == 3
                             if strcmp(LIMO.design.method,'Trimmed Mean')
-                                result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
+                                result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB2);
                             else
-                                result = limo_rep_anova(Y,gp,factor_levels,C,XB);
+                                result = limo_rep_anova(Y,gp,factor_levels,C,XB2);
                             end
                             tmp_boot_H0_Rep_ANOVA_cell1{B} = result.repeated_measure.F;
                             tmp_boot_H0_Rep_ANOVA_cell2{B} = result.repeated_measure.p;
@@ -1444,9 +1444,7 @@ switch type
                             H0_Rep_ANOVA_Gp_effect_cell2{B} = result.gp.p;
                             tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1{B} = result.interaction.F';
                             tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2{B} = result.interaction.p';
-                            %clear y result
                         end
-                        %clear XB Y gp tmp
                     end
                 end
                 
