@@ -1,6 +1,6 @@
 function model = limo_glm_boot(varargin)
 
-% Boostrapped version of limo_glm
+% Boostrapped version for limo_glm
 % Importantly it runs per electrodes but do N bootstraps to obtain
 % the distributon of F (and associated p values) under H0.
 % H0 is obtained by either by resampling from centered data (categorical designs)
@@ -8,7 +8,7 @@ function model = limo_glm_boot(varargin)
 %
 % FORMAT:
 % model = limo_glm_boot(Y,LIMO,boot_table)
-% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,zscore,method,analysis type,n_freqs,n_times,boot_table)
+% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,n_freqs,n_times,boot_table)
 %
 % INPUTS
 %         Y = 2D matrix of EEG data with format trials x frames
@@ -22,7 +22,7 @@ function model = limo_glm_boot(varargin)
 %         n_freqs is the nb of frequency bins
 %         n_times is the nb of time bins
 %         boot_table is an optional argument - this is the resampling table
-%                    if one calls limo_glm1_boot to loop throughout channels,
+%                    if one calls limo_glm_boot to loop throughout channels,
 %                    this might a good idea to provide such table so that
 %                    the same resampling applies to each channel
 %
@@ -42,7 +42,6 @@ if nargin == 2 || nargin == 3
     nb_conditions   = varargin{2}.design.nb_conditions;
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
-    z               = varargin{2}.design.zscore;
     method          = varargin{2}.design.method;
     Analysis        = varargin{2}.Analysis;
     if strcmp(Analysis,'Time-Frequency')
@@ -68,11 +67,10 @@ elseif nargin == 10 || nargin == 11
     nb_conditions   = varargin{3};
     nb_interactions = varargin{4};
     nb_continuous   = varargin{5};
-    z               = varargin{6};
-    method          = varargin{7};
-    Analysis        = varargin{8};
-    n_freqs         = varargin{9};
-    n_times         = varargin{10};
+    method          = varargin{6};
+    Analysis        = varargin{7};
+    n_freqs         = varargin{8};
+    n_times         = varargin{9};
     if nargin == 10
         boot_table = randi(size(y,1),size(y,1),nboot);
     elseif nargin == 11
@@ -89,7 +87,6 @@ if nb_factors == 1 && nb_conditions == 0
     nb_factors = 0;
 end
 
-
 % -----------
 %% Data check
 % -----------
@@ -102,10 +99,9 @@ if nb_interactions == 0
     nb_interactions = [];
 end
 
-% ----------
-%% Bootstrap
-% -----------
-design = X;
+% ---------------
+%% Make null data
+% ---------------
 
 % if categorical design, center data 1st
 % ---------------------------------------
@@ -131,7 +127,7 @@ if nb_continuous == 0
             centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),length(index),1);
         end
         
-    else
+    elseif size(nb_conditions,2) > 1
         % create fake interaction to get groups
         [tmpX, interactions] = limo_make_interactions(X(:,1:(end-1)), nb_conditions);
         if length(interactions) == 1
@@ -145,24 +141,26 @@ if nb_continuous == 0
             centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),size(y(index,:),1),1);
         end
     end
-else
-    centered_y = y;
-    design = X;
+else 
+    centered_y = y; % actually not centered
 end
+
+clear y
+design = X;
 
 % compute for each bootstrap
 % ---------------------------
-BETASB = cell(1,nboot);
+BETASB  = cell(1,nboot);
 MODELR2 = cell(1,nboot);
-MODELF = cell(1,nboot);
-MODELp = cell(1,nboot);
+MODELF  = cell(1,nboot);
+MODELp  = cell(1,nboot);
 
 if nb_factors ~= 0
     F_CONDVALUES = cell(1,nboot);
     p_CONDVALUES = cell(1,nboot);
 end
 
-if nb_factors >=2
+if ~isempty(nb_interactions)
     F_INTERVALUES  = cell(1,nboot);
     p_INTERVALUES  = cell(1,nboot);
 end
@@ -172,83 +170,76 @@ if nb_continuous ~=0
     p_CONTVALUES  = cell(1,nboot);
 end
 
-for B = 1:nboot
+switch method
     
-    % create data under H0
-    if nb_continuous == 0
-        % if just categorical variables, sample from the centered data and
-        % the design simultaneously
-        Y = centered_y(boot_table(:,B),:); % resample Y
-        X = design(boot_table(:,B),:);     % resample X
-    else
-        % sample and break the link between Y and X (regression and AnCOVA designs)
-        Y = y(boot_table(:,B),:); % resample
-        X = design;               % stays the same
-    end
-    
-    
-    %% Compute model parameters
-    % ------------------------------
-    
-    % compute Beta parameters
-    if strcmp(method,'OLS')
-        if strcmp(Analysis,'Time-Frequency')
-            W = ones(n_freqs,size(X,1));
-        else
-            W = ones(size(Y,1),1);
-        end
-        WX = X;
-        
-        if nb_continuous ~=0 && nb_factors == 0
-            Betas = X\Y; % numerically more stable than pinv
-        else
-            Betas = pinv(X)*Y;
-        end
-        
-    elseif strcmp(method,'WLS')
-        [Betas,W] = limo_WLS(X,Y);
-        WX        = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
-        
-    elseif strcmp(method,'WLS-TF')
-        % unpack the data
-        [n_freq_times, N] = size(Y');
-        if n_freq_times ~= n_freqs*n_times
-            error('dimensions disagreement to reshape freq*time')
-        else
-            reshaped = nan(n_freqs, n_times, N);
-        end
-        
-        for tr = 1:N
-            eft_3d = nan(n_freqs,n_times);
-            for tm = 1:n_times
-                this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
-                eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+        % -----------------------------------------------------------------
+    case {'OLS','WLS'}
+        parfor B = 1:nboot
+            
+            % create data under H0
+            Y = centered_y(boot_table(:,B),:); % resample Y
+            if nb_continuous == 0
+                % if just categorical variables, sample from the centered data and
+                % the design simultaneously
+                X = design(boot_table(:,B),:);     % resample X
+            else
+                % sample and break the link between Y and X (regression and AnCOVA designs)
+                X = design;                        % stays the same
             end
-            reshaped(:,:,tr) = eft_3d;
-        end
-        
-        % get estimates per freq band
-        index1 = 1;
-        Betas  = NaN(size(X,2),n_freqs*n_times);
-        W      = NaN(n_freqs,size(X,1));
-        for f=1:n_freqs
-            [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
-            index1=index1+1;
-        end
-        WX = X .* repmat(W,1,size(X,2));
-        clear reshaped
-        
-    elseif strcmp(method,'IRLS')
-        [Betas,W] = limo_IRLS(X,Y);
-    end
-    
-    % Betas bootstap
-    BETASB{B} = Betas';
-    
-    switch method
-        
-        case {'OLS','WLS'}
-            % -----------------------------------------------------------------
+            
+            %% Compute model parameters
+            % ------------------------------
+            
+            % compute Beta parameters
+            if strcmp(method,'OLS')
+                if strcmp(Analysis,'Time-Frequency')
+                    W = ones(n_freqs,size(X,1));
+                else
+                    W = ones(size(Y,1),1);
+                end
+                WX = X;
+                
+                if nb_continuous ~=0 && nb_factors == 0
+                    Betas = X\Y; % numerically more stable than pinv
+                else
+                    Betas = pinv(X)*Y;
+                end
+                
+            elseif strcmp(method,'WLS')
+                [Betas,W] = limo_WLS(X,Y);
+                WX        = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+                
+            elseif strcmp(method,'WLS-TF')
+                % unpack the data
+                [n_freq_times, N] = size(Y');
+                if n_freq_times ~= n_freqs*n_times
+                    error('dimensions disagreement to reshape freq*time')
+                else
+                    reshaped = nan(n_freqs, n_times, N);
+                end
+                
+                for tr = 1:N
+                    eft_3d = nan(n_freqs,n_times);
+                    for tm = 1:n_times
+                        this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
+                        eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+                    end
+                    reshaped(:,:,tr) = eft_3d;
+                end
+                
+                % get estimates per freq band
+                index1 = 1;
+                Betas  = NaN(size(X,2),n_freqs*n_times);
+                W      = NaN(n_freqs,size(X,1));
+                for f=1:n_freqs
+                    [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+                    index1=index1+1;
+                end
+                WX = X .* repmat(W,1,size(X,2));
+            end
+            
+            % Betas bootstap
+            BETASB{B} = Betas';
             
             %% Compute model statistics
             % ------------------------------
@@ -281,15 +272,15 @@ for B = 1:nboot
             Rsquare        = diag(H)./diag(T);               % Variance explained
             F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
             p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
-
+            
             
             % ----------------------------
             %% update the model structure
             % ----------------------------
             MODELR2{B} = Rsquare;
-            MODELF{B} = F_Rsquare;
-            MODELp{B} = p_Rsquare;
-
+            MODELF{B}  = F_Rsquare;
+            MODELp{B}  = p_Rsquare;
+            
             %% Compute effects
             % ------------------
             
@@ -361,7 +352,7 @@ for B = 1:nboot
                 
                 F_CONDVALUES{B}  = F_conditions;
                 p_CONDVALUES{B}  = pval_conditions;
-
+                
                 % ------------------------------------------------
             elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
                 % ------------------------------------------------
@@ -370,9 +361,14 @@ for B = 1:nboot
                 % start by ANOVA without interaction for main effects
                 % ---------------------------------------------------
                 
-                df_conditions     = zeros(1,length(nb_conditions));
-                F_conditions      = zeros(length(nb_conditions),size(Y,2));
-                pval_conditions   = zeros(length(nb_conditions),size(Y,2));
+                H                 = NaN(length(nb_conditions),size(Y,2));
+                df_conditions     = NaN(1,length(nb_conditions));
+                F_conditions      = NaN(length(nb_conditions),size(Y,2));
+                pval_conditions   = NaN(length(nb_conditions),size(Y,2));
+                HI                = NaN(length(nb_interactions),size(Y,2));
+                df_interactions   = NaN(1,length(nb_interactions));
+                F_interactions    = NaN(length(nb_interactions),size(Y,2));
+                pval_interactions = NaN(length(nb_interactions),size(Y,2));
                 
                 % covariates
                 covariate_columns = (sum(nb_conditions)+sum(nb_interactions)+1):(size(X,2)-1);
@@ -434,78 +430,58 @@ for B = 1:nboot
                     Main_effects = X(:,dummy_columns);
                     Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
                     
-                    % get interactions
-                    start = size(Main_effects,2)+1;
-                    for i=1:length(nb_interactions)
-                        I{i} = X(:,start:(start+nb_interactions(i)-1));
-                        start = start+nb_interactions(i);
-                    end
-                    start = size(Main_effects,2)+1;
-                    
-                    % check interaction levels
                     index = 1;
+                    Ifactors = NaN(1,length(nb_interactions));
+                    interaction = cell(1,length(nb_interactions));
                     for n=2:nb_factors
-                        combinations = nchoosek(1:nb_factors,n); % note it matches I above because computed with nchoosek the same way in limo_design_matrix
+                        combinations = nchoosek(1:nb_factors,n); % note it matches X below because computed the same way in limo_design_matrix
                         for c = 1:size(combinations,1)
+                            Ifactors(index) = length(combinations(c,:));
                             interaction{index} = combinations(c,:);
                             index = index + 1;
                         end
                     end
                     
-                    add = 0; start_at_I = 1;
-                    % run substituting and/or incrementing parts of X
-                    for f = 1:length(nb_interactions)
-                        
-                        % re-define X with interactions
-                        test = size(interaction{f},2);
-                        if test == 2
-                            x = [Main_effects I{f} Cov_and_Mean];
-                            add = add+1;
-                        else
-                            if add == test
-                                for a = start_at_I:add
-                                    Main_effects = [Main_effects I{a}];
-                                end
-                                start = size(Main_effects,2)+1;
-                                start_at_I = add+1;
-                            end
-                            x = [Main_effects I{f} Cov_and_Mean];
+                    % loop through interactions
+                    % substituting and/or incrementing parts of X
+                    Istart     = size(Main_effects,2)+1; % where we start interaction in X
+                    Ilowbound  = size(Main_effects,2)+1;
+                    for f=1:length(nb_interactions)
+                        I              = X(:,Istart:(Istart+nb_interactions(f)-1));
+                        if length(interaction{f}) == 2 % 1st oder interaction is main + I
+                            x          = [Main_effects I Cov_and_Mean];
+                        else % higher oder inteaction includes lower levels
+                            Isize      = sum(nb_interactions(1:find(Ifactors == Ifactors(f),1) - 1));
+                            Ihighbound = size(Main_effects,2)+Isize;
+                            x          = [Main_effects X(:,Ilowbound:Ihighbound) I Cov_and_Mean];
                         end
+                        eoibound = size(x,2) - size(I,2) - size(Cov_and_Mean,2);
                         
                         % run same model as above
-                        wx    = x.*repmat(W,1,size(x,2));
-                        betas = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
-                        R                                       = eye(size(Y,1)) - (wx*pinv(wx));
-                        eoi                                     = zeros(1,size(x,2));
-                        eoi(start:(start-1+nb_interactions(f))) = start:(start-1+nb_interactions(f));
-                        eoni                                    = 1:size(x,2);
-                        eoni                                    = find(eoni - eoi);
-                        C                                       = eye(size(x,2));
-                        C(:,eoni)                               = 0;
-                        C0                                      = eye(size(x,2)) - C*pinv(C);
-                        X0                                      = wx*C0;
-                        R0                                      = eye(size(Y,1)) - (X0*pinv(X0));
-                        M                                       = R0 - R;
-                        HI(f,:)                                 = diag((betas'*x'*M*x*betas))';
-                    end
-                    
-                    % get appropriate df and F/p values
-                    df_interactions            = zeros(1,length(nb_interactions));
-                    F_interactions             = zeros(length(nb_interactions),size(Y,2));
-                    pval_interactions          = zeros(length(nb_interactions),size(Y,2));
-                    
-                    for f = 1:length(nb_interactions)
-                        dfs                    = df_conditions(interaction{f});
-                        df_interactions(f)     = prod(dfs);
+                        wx                     = x.*repmat(W,1,size(x,2));
+                        betas                  = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
+                        R                      = eye(size(Y,1)) - (wx*pinv(wx));
+                        eoi                    = zeros(1,size(x,2));
+                        eoi(eoibound+1:(eoibound+nb_interactions(f))) = eoibound+1:(eoibound+nb_interactions(f));
+                        eoni                   = 1:size(x,2);
+                        eoni                   = find(eoni - eoi);
+                        C                      = eye(size(x,2));
+                        C(:,eoni)              = 0;
+                        C0                     = eye(size(x,2)) - C*pinv(C);
+                        X0                     = wx*C0;
+                        R0                     = eye(size(Y,1)) - (X0*pinv(X0));
+                        M                      = R0 - R;
+                        HI(f,:)                = diag((betas'*x'*M*x*betas))';
+                        df_interactions(f)     = prod(df_conditions(interaction{f}));
                         F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
                         pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
+                        Istart                 = Istart+nb_interactions(f);
                     end
                 end
                 
-                if nb_factors >=2
-                    F_INTERVALUES{B}  = F_interactions;
-                    p_INTERVALUES{B}  = pval_interactions;
-                end
+                F_INTERVALUES{B}  = F_interactions;
+                p_INTERVALUES{B}  = pval_interactions;
+                
             end
             
             % -----------------------------------
@@ -544,36 +520,61 @@ for B = 1:nboot
                     p_CONTVALUES{B}  = pval_continuous';
                 end
             end
-                        
+        end
+        
         %% ---------------------------------------------------------------------
-        case 'IRLS'
+    case 'IRLS'
+        parfor B = 1:nboot
             
+            % create data under H0
+            Y = centered_y(boot_table(:,B),:); % resample Y
+            if nb_continuous == 0
+                % if just categorical variables, sample from the centered data and
+                % the design simultaneously
+                X = design(boot_table(:,B),:);     % resample X
+            else
+                % sample and break the link between Y and X (regression and AnCOVA designs)
+                X = design;                        % stays the same
+            end
             
-    end
+            tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis, n_freqs, n_times);
+            BETASB{B}  = tmp.betas;
+            MODELR2{B} = tmp.R2_univariate;
+            MODELF{B}  = tmp.F;
+            MODELp{B}  = tmp.p;
+            
+            if nb_factors ~= 0
+                F_CONDVALUES{B} = tmp.conditions.F;
+                p_CONDVALUES{B} = tmp.conditions.p;
+            end
+            
+            if ~isempty(nb_interactions)
+                F_INTERVALUES{B}  = tmp.interactions.F;
+                p_INTERVALUES{B}  = tmp.interactions.F;
+            end
+            
+            if nb_continuous ~=0
+                F_CONTVALUES{B}  = tmp.continuous.F;
+                p_CONTVALUES{B}  = tmp.continuous.F;
+            end
+        end
 end
 
-% update the model structure with boostraped values 
-% (parfor doesn't take structure)
-model.R2    = MODELR2; clear MODELR2
-model.F     = MODELF; clear MODELF
-model.p     = MODELp; clear MODELp
-model.Betas = BETASB; clear BETASB
-
-if exist('F_CONDVALUES','var')
-    model.conditions.F = F_CONDVALUES;
-    model.conditions.p  = p_CONDVALUES;
-    clear F_CONDVALUES p_CONDVALUES
+model.R2_univariate  = MODELR2; clear MODELR2
+model.F              = MODELF;  clear MODELF
+model.p              = MODELp;  clear MODELp
+model.betas          = BETASB;  clear BETASB
+if nb_factors ~= 0
+    model.conditions.F   = F_CONDVALUES; clear F_CONDVALUES
+    model.conditions.p   = p_CONDVALUES; clear p_CONDVALUES
+end
+if ~isempty(nb_interactions)
+    model.interactions.F = F_INTERVALUES; clear F_INTERVALUES
+    model.interactions.p = p_INTERVALUES; clear p_INTERVALUES
+end
+if nb_continuous ~=0
+    model.continuous.F   = F_CONTVALUES; clear F_CONTVALUES
+    model.continuous.p   = p_CONTVALUES; clear p_CONTVALUES
 end
 
-if exist('F_INTERVALUES','var')
-    model.interactions.F = F_INTERVALUES;
-    model.interactions.p = p_INTERVALUES;
-    clear F_INTERVALUES p_INTERVALUES
-end
-
-if exist('F_CONTVALUES','var')
-    model.continuous.F = F_CONTVALUES;
-    model.continuous.p = p_CONTVALUES;
-    clear F_CONTVALUES p_CONTVALUES
-end
 
