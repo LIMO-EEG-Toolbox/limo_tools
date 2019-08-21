@@ -131,7 +131,7 @@ title(mytitle2,'FontSize',12)
 % topoplot at max time
 % ---------------------
 if size(toplot,1) ~= 1
-    if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
+    if ~isfield(LIMO.design,'name') || isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
         ax(2) = subplot(3,3,6);
         chans = LIMO.data.chanlocs;
@@ -235,7 +235,7 @@ if dynamic == 1
                 
                 if strcmp(LIMO.Analysis,'Time') 
                     
-                    if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
+                    if ~isfield(LIMO.design,'name') || isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
                             topoplot(toplot(:,1),chans,opt{:});
