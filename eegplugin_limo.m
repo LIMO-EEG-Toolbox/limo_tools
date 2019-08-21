@@ -50,7 +50,7 @@ if isempty(vnum) || vnum >= 15
 %     cb_limoreschan = [ nocheck 'pop_limoresults(STUDY,''dat'');' e_hist];
 %     cb_limorescomp = [ nocheck 'pop_limoresults(STUDY,''ica'');' e_hist];
     limo_eeg = uimenu(menu,'Label','LInear MOdeling of EEG Data (BETA)' , 'userdata', onstudy,'Tag','limoeeg','separator', 'on');
-    uimenu( limo_eeg, 'Label', 'Estimate Model Parameters (channnel)'        , 'userdata', onstudy, 'CallBack', cb_limorunchan);
+    uimenu( limo_eeg, 'Label', 'Estimate Model Parameters (channels)'       , 'userdata', onstudy, 'CallBack', cb_limorunchan);
     uimenu( limo_eeg, 'Label', 'Estimate Model Parameters (components)'     , 'userdata', onstudy, 'CallBack', cb_limoruncomp);
     uimenu( limo_eeg, 'Label', '2nd level analysis','callback','limo_random_effect', 'userdata', onstudy,'separator', 'on');
     uimenu( limo_eeg, 'Label', 'LIMO EEG results (1st and 2nd level)','callback','limo_results', 'userdata', onstudy);
