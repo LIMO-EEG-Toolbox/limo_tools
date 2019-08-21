@@ -8,6 +8,9 @@ function model = limo_glm(varargin)
 %
 % see the <https://www.hindawi.com/journals/cin/2011/831409/ LIMO EEG paper>
 %
+% FORMATS: model = limo_glm(Y,LIMO)
+%          model = limo_glm(Y, X, nb_conditions, nb_interactions, ...
+%                  nb_continuous, method, Analysis, n_freqs, n_times)
 % INPUTS:
 %   Y               = 2D matrix of EEG data with format trials x frames
 %   LIMO            = structure that contains the above information (except Y)
@@ -28,9 +31,12 @@ function model = limo_glm(varargin)
 %   model.p             = the p value of the model
 %   model.betas         = the beta parameters (dimensions nb of paramters x frames)
 %   model.W             = the weights for ea ch trial/subject (and frames if IRLS)
-%   model.conditions    = categorical effects
+%   model.conditions    = main categorical effects
 %          --> F/p in rows are the factors, in columns time frames
 %          --> df row 1 = df, row 2 = dfe, columns are factors
+%   model.interactions  = interaction effects
+%          --> F/p in rows are the factors, in columns time frames
+%          --> df row 1 = df, row 2 = dfe, columns are interaction levels
 %   model.continuous = continuous effects
 %          --> F/p in rows are the variables, in columns time frames
 %          --> df column 1 = df, column2 2 = dfe (same for all covariates)
