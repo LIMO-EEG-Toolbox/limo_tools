@@ -163,6 +163,7 @@ if strcmp(LIMO.design.status,'to do')
     LIMO.design.X       = X;
     LIMO.design.weights = W;
     LIMO.design.status = 'done';
+    LIMO.design.name   = 'GLM';
     save LIMO LIMO; save Yhat Yhat -v7.3;
     save Res Res; save Betas Betas -v7.3;
     save R2 R2 -v7.3; clear Yhat Res Betas R2
@@ -265,7 +266,7 @@ if boot_go == 1
         end
         
         if LIMO.design.bootstrap <= 800
-            fprintf('setting bootstrap to the minumm required, i.e. 800 instead of %g\n',LIMO.design.bootstrap)
+            fprintf('setting bootstrap to the minimum required, i.e. 800 instead of %g\n',LIMO.design.bootstrap)
             LIMO.design.bootstrap = 800;
         end
         nboot = LIMO.design.bootstrap;
@@ -299,17 +300,16 @@ if boot_go == 1
             fprintf('bootstrapping electrode %g \n',electrode);
             if LIMO.Level == 2
                 Y = squeeze(Yr(electrode,:,:));
-                index = find(~isnan(Y(1,:)));
-                model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
+                index = find(~isnan(Y(1,:))); % because across subjects, we can have missing data
+                model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
             else
                 model = limo_glm_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);
             end
             
             % update the files to be stored on the disk
-            H0_Betas(electrode,:,:,:) = model.Betas;
-            
             for B = 1:nboot % now loop because we use cells
-                H0_R2(electrode,:,1,B) = model.R2{B};
+                H0_Betas(electrode,:,:,B) = model.betas{B}';
+                H0_R2(electrode,:,1,B) = model.R2_univariate{B};
                 H0_R2(electrode,:,2,B) = model.F{B};
                 H0_R2(electrode,:,3,B) = model.p{B};
                 
