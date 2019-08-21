@@ -78,7 +78,7 @@ re(find(re < 1e-5)) = 1e-5;
 r= resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
-[W,out] = limo_pcout(r); % get weights from residuals
+[W,out] = limo_pcout(r, 'resample', 'on'); % get weights from residuals
 WY = Y .* repmat(W,1,size(Y,2));
 WX = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
 b = pinv(WX)*WY; % b = inv(X'*W*X)*X'W*Y
