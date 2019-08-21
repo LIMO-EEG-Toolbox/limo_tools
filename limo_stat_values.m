@@ -34,7 +34,7 @@ MCC       = varargin{4}; % multiple comparison option
 LIMO      = varargin{5}; % LIMO.mat
 
 if isfield(LIMO,'Type')
-    if strcmp(LIMO.Type,'Components') && MCC ~= 1, MCC = 4; end;
+    if strcmp(LIMO.Type,'Components') && MCC ~= 1, MCC = 4; end
 else
     LIMO.Type = 'channels';
 end
@@ -85,15 +85,20 @@ if strcmp(FileName,'R2.mat')
     if MCC == 1
         
         if strcmp(LIMO.design.method,'WLS') 
-            if exist(['H0' filesep MCC_data],'file')
+            if all(isnan(squeeze(R2(:,size(R2,2)/2,3)))) && exist(['H0' filesep MCC_data],'file')
                 load(['H0' filesep MCC_data]);
                 H0_values = squeeze(H0_R2(:,:,2,:)); clear H0_R2;
                 [mask,M]  = boot_threshold(H0_values,p,M);
                 mytitle   = sprintf('R^2 : uncorrected threshold \n using bootstraped F values');
-            else 
-                mask    = squeeze(R2(:,:,2));
-                M       = squeeze(R2(:,:,3)); 
-                mytitle = sprintf('unthresholded R^2 \n no p-values available without bootstrap');
+                R2(:,:,3) = M; save(FileName,'R2','-v7.3');
+            elseif all(isnan(squeeze(R2(:,size(R2,2)/2,3)))) && ~exist(['H0' filesep MCC_data],'file')
+                M         = squeeze(R2(:,:,3));
+                mask      = ones(size(R2,1),size(R2,2));
+                mytitle   = sprintf('unthresholded R^2 values \n no p-values available without bootstrap');
+            else
+                M         = squeeze(R2(:,:,3));
+                mask      = squeeze(R2(:,:,3))< p;
+                mytitle   = sprintf('R^2 : uncorrected threshold \n using bootstraped F values');
             end
         else
             mask    = squeeze(R2(:,:,3)) < p;
@@ -104,14 +109,38 @@ if strcmp(FileName,'R2.mat')
         % cluster correction for multiple testing
         % ---------------------------------------
     elseif MCC == 2
-        try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
-            [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-             Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
-             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-            mytitle = sprintf('R^2 values \n cluster correction (%g %s)', Nclust, Mclust);
-        catch ME
+        if exist(['H0' filesep MCC_data],'file')
+            try 
+                H0_R2 = load(['H0' filesep MCC_data]); 
+                bootM = squeeze(H0_R2.H0_R2(:,:,2,:)); % get all F values under H0
+                bootP = squeeze(H0_R2.H0_R2(:,:,3,:)); % get all P values under H0
+                if all(isnan(bootP(:)))
+                    disp('WLS 1st pass - getting p values for null data')
+                    Pboot = cell(1,size(bootP,3));
+                    parfor boot = 1:size(bootP,3)
+                        index = 1:size(bootP,3); index(boot) = [];
+                        [~,Pboot{boot}]  = boot_threshold(bootM(:,:,index),p,bootM(:,:,boot));
+                    end
+                    bootP = reshape(cell2mat(Pboot),size(bootM)); clear Pboot;
+                    H0_R2 = H0_R2.H0_R2; H0_R2(:,:,3,:) = bootP;
+                    save(['H0' filesep MCC_data],'H0_R2','-v7.3'); 
+                    disp('null p-values saved')
+                end
+                clear H0_R2
+                
+                if all(isnan(squeeze(R2(:,size(R2,2)/2,3))))
+                    [~,M]  = boot_threshold(bootM,p,M);
+                    R2(:,:,3) = M; save(FileName,'R2','-v7.3');
+                end
+                [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+                Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+                mytitle = sprintf('R^2 values \n cluster correction (%g %s)', Nclust, Mclust);
+            catch ME
+                fprintf('someting went wrong load H0 data %s \n',ME.message)
+                return
+            end
+        else
             errordlg('no bootstrap file was found to compute the cluster distribution','missing data')
             return
         end
@@ -119,26 +148,37 @@ if strcmp(FileName,'R2.mat')
         % correction using the max
         % --------------------------
     elseif MCC == 4 % Stat max
-        try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_R2(:,:,2,:)); % get all F values under H0
-            [mask,M] = limo_max_correction(M,bootM,p);
-            mytitle = sprintf('R^2 values: \n correction by F max');
-        catch ME
+        if exist(['H0' filsesep MCC_data],'file')
+            try 
+                H0_R2    = load(['H0' filesep MCC_data]); 
+                bootM    = squeeze(H0_R2.H0_R2(:,:,2,:)); % get all F values under H0
+                clear H0_R2; 
+                [mask,M] = limo_max_correction(M,bootM,p);
+                mytitle  = sprintf('R^2 values: \n correction by F max');
+            catch ME
+                fprintf('someting went wrong load H0 data %s \n',ME.message)
+                return
+            end
+        else
             errordlg('no bootstrap file was found to compute the max distribution','missing data')
-            return
         end
         
         
         % correction using TFCE
         % --------------------------
     elseif MCC == 3 % Stat max
-        try cd('TFCE'); load('tfce_R2.mat'); cd ..
-            cd('H0');load('tfce_H0_R2.mat'); cd ..
-            [mask,M] = limo_max_correction(tfce_score,tfce_H0_score,p);
-            mytitle = sprintf('R^2 values: \n correction using TFCE');
-        catch ME
+        if exist(['TFCE' filesep 'tfce_R2.mat'],'file')
+            try 
+                score    = load(['TFCE' filesep 'tfce_R2.mat']); 
+                H0_score = load(['H0' filesep 'tfce_H0_R2.mat']); 
+                [mask,M] = limo_max_correction(score.tfce_score,H0_score.tfce_H0_score,p);
+                mytitle  = sprintf('R^2 values: \n correction using TFCE');
+            catch ME
+                fprintf('someting went wrong load H0 data %s \n',ME.message)
+                return
+            end
+        else
             errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
-            return
         end
     end
     
