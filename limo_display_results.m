@@ -32,40 +32,32 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % topoplot and ERP like figures can't be automated since they require user
 % input
 %
-% Cyril Pernet, Guillaume Rousselet v3 06-05-2009
-% Carl Gaspar 03-09-2009 - fixed some axis issues for 3D plots (see subfunction time_vect_)
-% Cyril P. v4 09-09-2009 allows random effect results to be displayed (+ some clean up)
-% Cyril P. v5. 10-03-2010 split the whole file into 2 parts based on LIMO.level (1 or 2)
-% Guillaume Rousselet v4 06-07-2010 added the max(T)/max(F) and cluster stats for random effect
-% Cyril Pernet v4 16-05-2010 fixed the random effect to automatically load bootstrap and get the neighbouring matrix for clusters
-% Nicolas Chauveau 08-12-2011 fixed the ERP plot of gp*repeated measures (for levels>2)
-% Cyril Pernet v5 10-10-2012 added tfce and redesigned CI with filling
-% Andrew Stewart 10-11-2013 added options for spectral power and time-freq
-% Cyril Pernet 21-03-2014 made time-freq to work with the new display +
-% changed limo_stat values to take timne-freq
-% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
+% Cyril Pernet, Guillaume Rousselet, Carl Gaspar,  
+% Nicolas Chauveau, Andrew Stewart, Ramon Martinez-Cancino
 %
-% see also limo_stat_values topoplot
-% ------------------------------
+% see also limo_stat_values limo_display_image topoplot
+% -----------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 try
     options = varargin;
-    if ~isempty( varargin ),
+    if ~isempty( varargin )
         for i = 1:2:numel(options)
             g.(options{i}) = options{i+1};
         end
-    else g = []; end;
+    else
+        g = []; 
+    end
 catch
     disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
-end;
+end
 
-try g.channels;   catch, g.channels  = [];  end; % No default values
-try g.regressor;  catch, g.regressor = [];  end; % No default values
-try g.plot3type;  catch, g.plot3type = [];  end; % No default values
+try g.channels;   catch, g.channels  = [];  end % No default values
+try g.regressor;  catch, g.regressor = [];  end % No default values
+try g.plot3type;  catch, g.plot3type = [];  end % No default values
 
 cd(PathName)
-load (FileName);
+load(FileName);
 if nargin <= 6
     flag = 1;
 end
@@ -122,7 +114,7 @@ if LIMO.Level == 1
                                 data_cached = 0;
                             elseif sum(mask(:)) == 0
                                 warndlg('  no values under threshold  ','no significant effect','modal');
-                                toplot = []; return
+                                return
                             else
                                 M = LIMO.cache.fig.pval;
                                 mytitle = LIMO.cache.fig.title;
@@ -133,6 +125,7 @@ if LIMO.Level == 1
                             end
                         end
                     catch no_cache
+                        fprintf('could not load cached data %s',no_cache.message)
                         data_cached = 0;
                     end
                 end
@@ -149,7 +142,7 @@ if LIMO.Level == 1
                     end
                     
                     if isempty(mask)
-                        return
+                        disp('no values computed'); return
                     elseif sum(mask(:)) == 0
                         warndlg('  no values under threshold  ','no significant effect','modal');
                         LIMO.cache.fig.name       = FileName;
@@ -160,7 +153,7 @@ if LIMO.Level == 1
                         LIMO.cache.fig.mask       = mask;
                         LIMO.cache.fig.title      = mytitle;
                         save LIMO LIMO
-                        toplot = []; return
+                        return
                     else
                         assignin('base','p_values',M)
                         assignin('base','mask',mask)
@@ -233,17 +226,15 @@ if LIMO.Level == 1
                         errordlg2('file not supported');
                         return
                     end
-                    
-                    update_cache = 1;
                 end
                 
 % -------------------------------------------------------------------------
 %              Actual plot takes place here
 % -------------------------------------------------------------------------
-                if ~isempty(toplot)
+                if ~isempty(toplot) 
                     
                     % cache the results for next time
-                    if data_cached == 0
+                    if data_cached == 0 && ~all(mask(:)==1)
                         LIMO.cache.fig.name       = FileName;
                         LIMO.cache.fig.MCC        = MCC;
                         LIMO.cache.fig.stats      = toplot;
@@ -254,12 +245,11 @@ if LIMO.Level == 1
                         save LIMO LIMO
                     end
                     
-                    
                     if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
-                        limo_display_image(LIMO,toplot,mask,mytitle)
+                        limo_display_image(LIMO,toplot,mask,mytitle,flag)
                                                
                     else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
-                        limo_display_results_tf(LIMO,toplot,mask,mytitle);
+                        limo_display_results_tf(LIMO,toplot,mask,mytitle,flag);
                     end
                 end
                 
@@ -452,7 +442,7 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');      
                     end
-                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1')
+                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',flag)
 
 %                     figure;set(gcf,'Color','w');
 %                     for t=1:size(Discriminant_coeff,2)
@@ -958,7 +948,7 @@ if LIMO.Level == 1
                         end
                     end
                 else % Adjusted
-                    all = [1:size(LIMO.design.X,2)-1]; all(regressor)=[];
+                    allvar = [1:size(LIMO.design.X,2)-1]; allvar(regressor)=[];
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         load Yr; Yr = squeeze(Yr(electrode,freq_index,:,:));
                         load Betas; Betas = squeeze(Betas(electrode,freq_index,:,:));
@@ -966,7 +956,7 @@ if LIMO.Level == 1
                         load Yr; Yr = squeeze(Yr(electrode,:,:));
                         load Betas; Betas = squeeze(Betas(electrode,:,:));
                     end
-                    confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                    confounds = (LIMO.design.X(:,allvar)*Betas(:,allvar)')';
                     Ya = Yr - confounds; clear Yr Betas confounds;
                     if sum(regressor <= categorical) == length(regressor) % for categorical variables
                         for i=1:length(regressor)
@@ -1342,7 +1332,7 @@ elseif LIMO.Level == 2
         % image all results
         % ------------------
         if Type == 1 && ~strcmp(LIMO.Analysis,'Time-Frequency') && ~strcmp(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle)
+            limo_display_image(LIMO,toplot,mask,mytitle,flag)
                         
         elseif Type == 1 && strcmp(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmp(LIMO.Analysis,'ITC')
@@ -1847,15 +1837,15 @@ elseif LIMO.Level == 2
                     end
                 end
             else % Adjusted
-                all = [1:size(LIMO.design.X,2)-1]; all(regressor)=[];
+                allvar = [1:size(LIMO.design.X,2)-1]; allvar(regressor)=[];
                 if strcmp(LIMO.Analysis,'Time-Frequency')
                     Yr = squeeze(Yr(electrode,freq_index,:,:));
                     load Betas; Betas = squeeze(Betas(electrode,freq_index,:,:));
-                    confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                    confounds = (LIMO.design.X(:,allvar)*Betas(:,allvar)')';
                 else
                     Yr = squeeze(Yr(electrode,:,:));
                     load Betas; Betas = squeeze(Betas(electrode,:,:));
-                    confounds = (LIMO.design.X(:,all)*Betas(:,all)')';
+                    confounds = (LIMO.design.X(:,allvar)*Betas(:,allvar)')';
                 end
                 Ya = Yr - confounds; clear Yr Betas confounds;
                 
