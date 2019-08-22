@@ -237,7 +237,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             Y = newY; clear newY;
         end
     else % channels
-        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef') && ~isempty(EEGLIMO.etc.datafiles.dattimef)
             for d=1:length(EEGLIMO.etc.datafiles.dattimef)
                 Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
                 if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
@@ -268,9 +268,11 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         end
         Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
     end
-    clear EEGLIMO
-    LIMO.data.size4D= size(Y);
+    tmpY = Y;
+    tmpY(:,:,:,isnan(LIMO.data.Cat)) = [];
+    LIMO.data.size4D= size(tmpY);
     LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
+    clear EEGLIMO tmpY
 end
 
 clear ALLEEGLIMO
