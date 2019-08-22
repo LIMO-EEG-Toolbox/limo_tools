@@ -178,15 +178,25 @@ elseif strcmp(method,'WLS-TF')
     end
     
     % get estimates per frequency band
-    Betas  = NaN(size(X,2),n_freqs*n_times);
+    % Betas  = NaN(size(X,2),n_times,n_freqs);
+    Betas  = NaN(size(X,2),n_freqs,n_times);
     W      = NaN(n_freqs,size(X,1));
-    index1 = 1;
     for f=1:n_freqs
-        [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
-        index1=index1+1;
+        %[Betas(:,:,f),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+        [limotmp,W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+        Betas(:,f,:) = reshape(limotmp, size(X,2),1,n_times);
     end
+    Betas = reshape(Betas, size(X,2),n_freqs*n_times);
+%     Betas  = NaN(size(X,2),n_freqs*n_times);
+%     W      = NaN(n_freqs,size(X,1));
+%     index1 = 1;
+%     for f=1:n_freqs
+%         [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+%         index1=index1+1;
+%     end
     clear reshaped
-    WX = X .* repmat(W,1,size(X,2));
+    % WX = repmat(reshape(X,1,size(X,1),size(X,2)), [n_freqs 1 1]) .* repmat(W,1,1,size(X,2));
+    WX = X .* repmat( mean(W)',1,size(X,2));
     
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
@@ -202,7 +212,7 @@ switch method
     
     % ---------------------------------------------------------------------
     % ---------------------------------------------------------------------
-    case {'OLS','WLS'}
+    case {'OLS','WLS','WLS-TF'}
         % -----------------------------------------------------------------
         % -----------------------------------------------------------------
         
