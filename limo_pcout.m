@@ -29,6 +29,8 @@ function [dist,out] = limo_pcout(varargin)
 % we have ommited dimensions with mad = 0, as this 
 % corresponds to a case with all trials having the same value ! 
 
+persistent warningmsg;
+
 x = varargin{1};
 x = x(:,mad(x,1) > 1e-6); 
 if isempty(x)
@@ -39,7 +41,10 @@ end
 if n<p
     if nargin >1 
         if strcmpi(varargin{2},'resample') && strcmp(varargin{3},'on')
-            disp('LIMO trial rejection and weighting: more observations (trials) than variables (time points) are needed, resampling data')
+            if isempty(warningmsg)
+                disp('LIMO trial rejection and weighting: more observations (trials) than variables (time points) are needed, resampling data')
+                warningmsg = 1;
+            end
             x = resample(x',1,ceil(p/n))';
             [n,p] = size(x);
         else
