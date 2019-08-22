@@ -53,7 +53,7 @@ switch varargin{1}
             % --------- load files created by limo_design_matrix ------------------
             load Yr; % load a 4D Yr with tf data,
             if sum(size(Yr) ~= LIMO.data.size4D)~=0; % then check it is so
-                errordlg('Is 4D data given to limo_design_matrix_tf?','LIMO.data.size4D'); return
+                errordlg('Error: Is 4D data given to limo_design_matrix_tf?','LIMO.data.size4D'); return
             end
             
             Yr = limo_tf_4d_reshape(Yr); % reshape to 3D
@@ -107,14 +107,14 @@ switch varargin{1}
                         if size(LIMO.design.X,1) <= size(LIMO.design.X,2)
                             fprintf('skipping channel %g not enough data \n',electrode);
                         else
-                            model = limo_glm1(Y',LIMO); warning on;
+                            model = limo_glm(Y',LIMO); warning on;
                         end
                         if isempty(index)
                             index = [1:size(Y,2)];
                         end
                     else % level 1 we should not have any NaNs
                         index = [1:size(Yr,3)];
-                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO);
+                        model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
                     end
                     
                     % update the LIMO.mat (do it only once)
@@ -136,7 +136,7 @@ switch varargin{1}
                     if strcmp(LIMO.design.method,'IRLS')
                         W(electrode,:,:,index) = model.W';
                     else
-                        W(electrode,:,index) = model.W';
+                        W(electrode,:,index) = reshape(model.W,1,size(model.W,1),size(model.W,2));
                     end
                     fitted_data = LIMO.design.X*model.betas;
                     Yhat(electrode,:,index) = fitted_data';
