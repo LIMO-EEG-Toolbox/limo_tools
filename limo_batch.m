@@ -66,6 +66,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % design - calls limo_batch_design_matrix
 % glm calls limo_eeg(4) or limo_eeg_tf(4)
 
+clear limo_pcout; % so warning shows up
 opt.mode                = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
 opt.max_queued          = Inf; % with a maximum of possible sessions
 opt.time_between_checks = 2; % and 2sec between job submission
@@ -348,23 +349,29 @@ for subject = 1:N
     limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
     
-parfor subject = 1:N
-    disp('--------------------------------')
-    fprintf('processing subject %g/%g \n',subject,N)
-    disp('--------------------------------')
-    try
-        psom_run_pipeline(pipeline(subject),limopt{subject})
+limo_settings_script;
+for subject = 1:N
+    fprintf('--------------------------------\nprocessing subject %g/%g \n--------------------------------\n',subject,N)
+    
+    if ~limo_settings.psom
+        psom_pipeline_debug(pipeline(subject));
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
-    catch ME
-        report{subject} = ['subject ' num2str(subject) ' failed'];
-        if strcmp(option,'model specification') 
-            remove_limo(subject) = 1;
-        elseif strcmp(option,'both')
-            remove_limo(subject) = 1;
-            remove_con(subject) = 1;
-        elseif strcmp(option,'contrast only')
-            remove_con(subject) = 1;
+    else
+        try
+            psom_run_pipeline(pipeline(subject),limopt{subject})
+            report{subject} = ['subject ' num2str(subject) ' processed'];
+            procstatus(subject) = 1;
+        catch ME
+            report{subject} = ['subject ' num2str(subject) ' failed'];
+            if strcmp(option,'model specification') 
+                remove_limo(subject) = 1;
+            elseif strcmp(option,'both')
+                remove_limo(subject) = 1;
+                remove_con(subject) = 1;
+            elseif strcmp(option,'contrast only')
+                remove_con(subject) = 1;
+            end
         end
     end
 end
