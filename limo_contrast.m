@@ -31,10 +31,9 @@ function result = limo_contrast(varargin)
 % these files are of dimension [nb of channels, time/freq, C*Beta/se/df/t/p]
 %
 % *****************************************************
-% See also limo_glm1, limo_results, limo_contrast_manager
+% See also limo_glm, limo_results, limo_contrast_manager
 %
-% Cyril Pernet v4 26/09/2010
-% updated 21-16-2013
+% Cyril Pernet
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
@@ -48,8 +47,8 @@ result = [];
 %% Analyses
 
 if type == 1 || type == 2
-    Y           = varargin{1}; % 3D data
-    Betas       = varargin{2}; % 3D betas
+    Y           = varargin{1}; 
+    Betas       = varargin{2}; 
     LIMO        = varargin{3};
     X           = LIMO.design.X;
     nb_beta     = size(LIMO.design.X,2);
@@ -84,23 +83,22 @@ switch type
         
         % string time-frequency
         if strcmp(LIMO.Analysis ,'Time-Frequency')
-            Y = limo_tf_4d_reshape(Y);
+            Y     = limo_tf_4d_reshape(Y);
             Betas = limo_tf_4d_reshape(Betas);
-            Res = limo_tf_4d_reshape(Res);
+            Res   = limo_tf_4d_reshape(Res);
         end
         
-        % compute Projection onto the error
-        load Res; % rather than projecting Y onto error use Res
-        % because Res depends on how the GLM was done (OLS,WLS,IRLS)
+        % get residuals 
+        Res = load([LIMO.dir filesep 'Res.mat']); Res = Res.Res;
         
         if strcmp(Method,'Mass-univariate')
             
             % create con or ess file
             if Test == 0
-                con = NaN(size(Y,1),size(Y,2),5); % dim 3 = C*Beta/se/df/t/p
+                con      = NaN(size(Y,1),size(Y,2),5); % dim 3 = C*Beta/se/df/t/p
                 filename = sprintf('con_%g.mat',size(LIMO.contrast,2));
             else
-                ess = NaN(size(Y,1),size(Y,2),size(C,1)+4); % dim 3 = C*Beta/se/df/F/p
+                ess      = NaN(size(Y,1),size(Y,2),size(C,1)+4); % dim 3 = C*Beta/se/df/F/p
                 filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
             end
             
@@ -114,9 +112,9 @@ switch type
                     fprintf('applying contrast on component %g/%g \n',e,size(array,1));
                 end
                 
-                % T contrast
+                % contrasts
                 % -----------
-                if Test == 0
+                if Test == 0 % T contrast
                     
                     var = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
                     % Update con file [mean value, se, df, t, p]
@@ -126,11 +124,9 @@ switch type
                     con(electrode,:,4) = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
                     con(electrode,:,5) = 1-tcdf(squeeze(con(electrode,:,4)), dfe);
                     
-                    % F contrast
-                    % ----------
-                else
-                    % Update ess file [mean value, se, df, F, p]
-                    ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ; % contrast
+                else % F contrast
+                    % Update ess file [mean values, se, df, F, p]
+                    ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ; 
                     R = eye(size(Y,3)) - (X*pinv(X));
                     E = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
                     c = zeros(length(C));
@@ -138,11 +134,7 @@ switch type
                         c(n,n) = C(n);
                     end
                     
-                    try
-                        C0 = eye(rank(X)+1) - c*pinv(c);
-                    catch ME
-                        C0 = eye(rank(X)) - c*pinv(c);
-                    end
+                    C0 = eye(size(c,1)) - c*pinv(c);
                     X0 = X*C0;
                     R0 = eye(size(Y,3)) - (X0*pinv(X0));
                     M  = R0 - R;
@@ -170,17 +162,17 @@ switch type
  
             % save files
             if Test == 0
-                save ([filename], 'con');
+                save (filename,'con');
                 clear con
             else
-                save ([filename], 'ess');
+                save (filename,'ess');
                 clear ess
             end
             
         elseif strcmp(Method,'Multivariate')
             % ------------------------------
             
-            con = NaN(size(Y,2),2); %  F /p values (always the same no matter Roy or Pillai)
+            con = NaN(size(Y,2),2); %  F /p values (always the same no matter RoY or Pillai)
             for time = 1:size(Y,2)
                 fprintf('time frame %g \n',time);
                 
@@ -215,14 +207,18 @@ switch type
         % -----------------------------------------------------------------
         % bootstraps
         % -----------------------------------------------------------------
+        nboot = LIMO.design.bootstrap;
+        if nboot == 1
+            nboot = 800;
+        end
         
         % make data files
         % ----------------
         if Test == 0
-            H0_con = NaN(size(y,1),size(y,2),3,nboot); % dim 3 = C*Beta/t/p
+            H0_con   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = t/p
             filename = sprintf('H0_con_%g.mat',size(LIMO.contrast,2));
         else
-            H0_ess = NaN(size(y,1),size(y,2),size(C,1)+2,nboot); % dim 3 = C*Beta/F/p
+            H0_ess   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = F/p
             filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
         end
         
@@ -232,8 +228,8 @@ switch type
         % if categorical design, center data 1st
         % ---------------------------------------
         if LIMO.design.nb_continuous == 0
-            for e=1:size(y,1)
-                centered_data = NaN(size(y,1),size(y,2),size(y,3));
+            for e=1:size(Y,1)
+                centered_data = NaN(size(Y,1),size(Y,2),size(Y,3));
                 if LIMO.design.nb_interactions ~=0
                     % look up the last interaction to get unique groups
                     if length(LIMO.design.nb_interactions) == 1
@@ -244,19 +240,19 @@ switch type
                     
                     for cel=(start_at+1):(start_at+LIMO.design.nb_interactions(end))
                         index = find(X(:,cel));
-                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,length(index));
+                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(mean(squeeze(Y(e,:,index)),2),1,length(index));
                     end
                     
                 elseif size(LIMO.design.nb_conditions,2) == 1
                     % no interactions because just 1 factor
                     for cel=1:LIMO.design.nb_conditions
                         index = find(X(:,cel));
-                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(nanmean(squeeze(y(e,:,index)),2),1,length(index));
+                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(nanmean(squeeze(Y(e,:,index)),2),1,length(index));
                     end
                     
                 else
                     % create fake interaction to get groups
-                    [tmpX interactions] = make_interactions(X, LIMO.design.nb_conditions);
+                    [XI,interactions] = limo_make_interactions(X(:,1:sum(LIMO.design.nb_conditions)), LIMO.design.nb_conditions);
                     if length(interactions) == 1
                         start_at = sum(LIMO.design.nb_conditions);
                     else
@@ -264,18 +260,17 @@ switch type
                     end
                     
                     for cel=(start_at+1):(start_at+interactions(end))
-                        index = find(X(:,cel));
-                        centered_data(e,:,index) = squeeze(y(e,:,index)) - repmat(mean(squeeze(y(e,:,index)),2),1,[size(y(index,:),1)]);
+                        index = find(XI(:,cel));
+                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(mean(squeeze(Y(e,:,index)),2),1,length(index));
                     end
                 end
             end
         end
         
-        
         % start the analysis
         % -------------------
         load boot_table
-        array = find(~isnan(y(:,1,1))); % skip empty electrodes
+        array = find(~isnan(Y(:,1,1))); % skip empty electrodes
         design = X;
         
         if strcmp(Method,'Mass-univariate')
@@ -297,8 +292,8 @@ switch type
                         X = design(resampling_index,:); % resample X as Y
                     else
                         % sample and break the link between Y and (regression and AnCOVA designs)
-                        Y = squeeze(y(electrode,:,resampling_index))';
-                        X = design(find(~isnan(y(electrode,1,:))),:);
+                        Y = squeeze(Y(electrode,:,resampling_index))';
+                        X = design(find(~isnan(Y(electrode,1,:))),:);
                         if LIMO.design.zscore == 1 % rezscore the covariates
                             N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
                             if N==0
@@ -313,53 +308,81 @@ switch type
                         end
                     end
                     
-                    % compute Projection onto the error
-                    R = eye(size(Y,1)) - (X*pinv(X));
-                    
-                    % T contrast
-                    % -----------
-                    if Test == 0
+                    if strcmp(LIMO.design.method,'OLS') || strcmp(LIMO.design.method,'WLS') 
+                        % compute Projection onto the error
+                        WX = [X(:,1:end-1).*repmat(LIMO.design.weights(electrode,:)',1,size(X,2)-1) X(:,end)];
+                        R  = eye(size(Y,1)) - WX*pinv(WX);
                         
-                        var   = ((R*Y)'*(R*Y)) / dfe; % error of H0 data
-                        H0_con(electrode,:,1,B) = C*squeeze(Betas(electrode,:,:,B))' ;  % contrast using betas H0
-                        H0_con(electrode,:,2,B) = (C*squeeze(Betas(electrode,:,:,B))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % T value
-                        H0_con(electrode,:,3,B) = 1-tcdf(squeeze(H0_con(electrode,:,2,B)), dfe); % p value
-                        
+                        % T contrast
+                        % -----------
+                        if Test == 0
+                            var   = ((R*Y)'*(R*Y)) / dfe; % error of H0 data
+                            H0_con(electrode,:,1,B) = (C*squeeze(Betas(electrode,:,:,B))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % T value
+                            H0_con(electrode,:,2,B) = 1-tcdf(squeeze(H0_con(electrode,:,2,B)), dfe); % p value
+                            
                         % F contrast
                         % ----------
-                    else
-                        H0_ess(electrode,:,1:size(C,1),B) = (C*squeeze(Betas(electrode,:,:,B))')' ; % contrast
-                        
-                        E = (Y'*R*Y);
-                        c = zeros(length(C));
-                        for n=1:length(C)
-                            c(n,n) = C(n);
-                        end
-                        
-                        try
-                            C0 = eye(rank(X)+1) - c*pinv(c);
-                        catch ME
-                            C0 = eye(rank(X)) - c*pinv(c);
-                        end
-                        X0 = X*C0;
-                        R0 = eye(size(Y,1)) - (X0*pinv(X0));
-                        M = R0 - R;
-                        H = (squeeze(Betas(electrode,:,:,B))*X'*M*X*squeeze(Betas(electrode,:,:,B))');
-                        if rank(c) == 1
-                            df = 1;
                         else
+                            E = (Y'*R*Y);
+                            c = zeros(length(C));
+                            for n=1:length(C)
+                                c(n,n) = C(n);
+                            end
+                            C0 = eye(size(c,2)) - c*pinv(c);
+                            X0 = X*C0;
+                            R0 = eye(size(Y,1)) - (X0*pinv(X0));
+                            M = R0 - R;
+                            H = (squeeze(Betas(electrode,:,:,B))*X'*M*X*squeeze(Betas(electrode,:,:,B))');
                             df = rank(c) - 1;
+                            if df == 0
+                                df = 1;                         
+                            end
+                            H0_ess(electrode,:,1,B) = (diag(H)/df)./(diag(E)/dfe);  % F value
+                            H0_ess(electrode,:,2,B) = 1 - fcdf(H0_ess(electrode,:,end-1,B), rank(c)-1, dfe);   % p value
                         end
-                        H0_ess(electrode,:,end-1,B)    = (diag(H)/df)./(diag(E)/dfe);  % F value
-                        H0_ess(electrode,:,end,B) = 1 - fcdf(H0_ess(electrode,:,end-1,B), rank(c)-1, dfe);   % p value
+                    else % -------- IRLS ------------
+                        for frame = 1:size(Y,2)
+                            WX  = [X(:,1:end-1).*repmat(LIMO.design.weights(electrode,frame,:),1,size(X,2)-1) X(:,end)];
+                            HM  = WX*pinv(WX);
+                            R   = eye(size(Y,1)) - HM;
+                            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+
+                            % T contrast
+                            % -----------
+                            if Test == 0
+                                var   = ((R*Y(:,frame))'*(R*Y(:,frame))) / dfe; % error of H0 data
+                                H0_con(electrode,frame,1,B) = (C*squeeze(Betas(electrode,frame,:,B))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % T value
+                                H0_con(electrode,frame,2,B) = 1-tcdf(squeeze(H0_con(electrode,frame,2,B)), dfe); % p value
+                                
+                                % F contrast
+                                % ----------
+                            else
+                                E = (Y(:,frame)'*R*Y(:,frame));
+                                c = zeros(length(C));
+                                for n=1:length(C)
+                                    c(n,n) = C(n);
+                                end
+                                C0 = eye(size(c,2)) - c*pinv(c);
+                                X0 = X*C0;
+                                R0 = eye(size(Y,1)) - (X0*pinv(X0));
+                                M = R0 - R;
+                                H = (squeeze(Betas(electrode,:,:,B))*X'*M*X*squeeze(Betas(electrode,:,:,B))');
+                                df = rank(c) - 1;
+                                if df == 0
+                                    df = 1;
+                                end
+                                H0_ess(electrode,frame,1,B) = (diag(H)/df)./(diag(E)/dfe);  % F value
+                                H0_ess(electrode,frame,2,B) = 1 - fcdf(H0_ess(electrode,frame,end-1,B), rank(c)-1, dfe);   % p value
+                            end
+                        end
                     end
                 end
             end
             
             if Test == 0
-                save ([filename], 'H0_con'); clear H0_con
+                save (filename, 'H0_con'); clear H0_con
             else
-                save ([filename], 'H0_ess'); clear H0_ess
+                save (filename, 'H0_ess'); clear H0_ess
             end
         end
         
@@ -367,7 +390,7 @@ switch type
         if strcmp(Method,'Multivariate')
             % ----------------------------------------
             
-            for e = 1:size(y,1)
+            for e = 1:size(Y,1)
                 electrode = array(e); warning off;
                 fprintf('compute bootstrap electrode %g ... \n',electrode)
                 for B = 1:nboot
@@ -378,7 +401,7 @@ switch type
                         X = design(boot_table(:,B)); % resample X as Y
                     else
                         % sample and break the link between Y and (regression and AnCOVA designs)
-                        Y = y(boot_table(:,B));
+                        Y = Y(boot_table(:,B));
                         if LIMO.design.zscore == 1 % rezscore the covariates
                             N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
                             if sum(mean(X(:,N+1:end-1),1)) ~= 0
