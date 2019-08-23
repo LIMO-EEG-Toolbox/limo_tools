@@ -30,10 +30,8 @@ function [sigcluster,pval,maxval] = limo_ecluster_test(orif,orip,th,alpha_value,
 %               more conservative way to control for multiple comparisons 
 %               than using a spatial-temporal clustering technique.
 %
-% v1 Guillaume Rousselet, University of Glasgow, August 2010
-% edit Marianne Latinus adding spm_bwlabel
-% Cyril Pernet Edited for return p values + compatible time frequency  
-% ------------------------------
+% Guillaume Rousselet, Marianne Latinus, Cyril Pernet 
+% -------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 %
 % See also limo_ecluster_make limo_tfcluster_make
@@ -65,10 +63,12 @@ if isfield(th, 'max')
         end
         
         maxval = zeros(1,NUM);
+        cluster_label = 1;
         for C = 1:NUM % for each cluster compute cluster sums & compare to bootstrap threshold
             maxval(C) = sum(abs(orif(E,L==C)));
-            if  maxval(C) >= th.max;
-                sigcluster.max_mask(E,L==C)=1; % flag clusters above threshold
+            if  maxval(C) >= th.max
+                sigcluster.max_mask(E,L==C)= cluster_label; % flag clusters above threshold
+                cluster_label =  cluster_label + 1;
             end
         end
         maxval = max(maxval);
@@ -92,11 +92,12 @@ if isfield(th, 'elec')
     end
 
     maxval = zeros(1,NUM);
+    cluster_label = 1;
     for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(abs(orif(L==C)));
         if maxval(C) >= th.elec
-            sigcluster.elec_mask(L==C)=1; % flag clusters above threshold
-
+            sigcluster.elec_mask(L==C)= cluster_label; % flag clusters above threshold
+             cluster_label =  cluster_label+1;
             if ~isempty(boot_maxclustersum)
                 p = 1 - sum(maxval(C) >= boot_maxclustersum)/length(boot_maxclustersum);            
                 if p ==0
