@@ -52,7 +52,7 @@ c = clock; disp(' ');
 % -----------------------------
 if MCC ~= 1
     if MCC == 2
-        disp('Ref for Clustering:')
+        disp('Ref for Clustering & Bootstrap:')
         disp('Maris, E. & Oostenveld, R. 2007')
         disp('Nonparametric statistical testing of EEG- and MEG-data.')
         disp('Journal of Neuroscience Methods, 164, 177-190')
@@ -60,14 +60,15 @@ if MCC ~= 1
         disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2015).')
         disp('Cluster-based computational methods for mass univariate analyses')
         disp('of event-related brain potentials/fields: A simulation study.')
-        disp('Journal of Neuroscience methods,250,83-95')
-        
+        disp('Journal of Neuroscience methods, 250, 83-95')
+        disp(' ');
     elseif MCC == 3
         disp('Ref for TFCE:')
         disp('Pernet, C., Latinus, M., Nichols, T. & Rousselet, G.A. (2015).')
         disp('Cluster-based computational methods for mass univariate analyses')
         disp('of event-related brain potentials/fields: A simulation study.')
-        disp('Journal of Neuroscience methods,250,83-95')
+        disp('Journal of Neuroscience methods, 250, 83-95')
+        disp(' ');
     end
 end
 fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6));
@@ -117,7 +118,7 @@ elseif strncmp(FileName,'con_',4)
 elseif strncmp(FileName,'ess_',4)
     effect_nb = eval(FileName(6:end-4));
     M         = squeeze(ess(:,:,end-1));
-    Pval      = squeeze(ess(:,:,5));
+    Pval      = squeeze(ess(:,:,end));
     MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
     titlename = sprintf('Contrast %g F values',effect_nb);
 end
@@ -131,42 +132,36 @@ if ~isempty(M) && MCC == 1
             H0_data   = load(['H0' filesep MCC_data]);
             H0_data   = H0_data.(cell2mat(fieldnames(H0_data)));
             % get T/F values
-            if strcmp(FileName,'R2.mat') || strncmp(FileName,'semi_partial_coef',17)
+            if strcmp(FileName,'R2.mat') 
                 H0_values = squeeze(H0_data(:,:,2,:)); clear H0_data;
-                [mask,M]  = boot_threshold(H0_values,p,M);
-                if strcmp(FileName,'R2.mat')
-                    R2(:,:,3) = M; save(FileName,'R2','-v7.3');
-                else
-                    semi_partial_coef(:,:,3) = M; save(FileName,'semi_partial_coef','-v7.3');
-                end
-            elseif strncmp(FileName,'con_',4) || strncmp(FileName,'ess_',4)
-                H0_values = squeeze(H0_data(:,:,4,:)); clear H0_data;
-                [mask,M]  = boot_threshold(H0_values,p,M);
-                if strncmp(FileName,'con_',4)
-                    con(:,:,5) = M; save(FileName,'con','-v7.3');
-                else
-                    ess(:,:,5) = M; save(FileName,'ess','-v7.3');
-                end
-            else % condition/covariate/interaction
-                H0_values = squeeze(H0_data(:,:,1,:)); clear H0_data;
-                [mask,M]  = boot_threshold(H0_values,p,M);
+                [mask,M]  = limo_boot_threshold(M,H0_values,p);
+                 R2(:,:,3) = M; save(FileName,'R2','-v7.3');
+            else
+                H0_values = squeeze(H0_data(:,:,end-1,:)); clear H0_data;
+                [mask,M]  = limo_boot_threshold(M,H0_values,p);
                 if strncmp(FileName,'Condition_effect',16)
                     Condition_effect(:,:,2) = M; save(FileName,'Condition_effect','-v7.3');
                 elseif strncmp(FileName,'Covariate_effect',16)
                     Covariate_effect(:,:,2) = M; save(FileName,'Covariate_effect','-v7.3');
-                else
+                elseif strncmp(FileName,'Interaction_effect',18)
                     Interaction_effect(:,:,2) = M; save(FileName,'Interaction_effect','-v7.3');
+                elseif strncmp(FileName,'semi_partial_coef',17)
+                    semi_partial_coef(:,:,2) = M; save(FileName,'semi_partial_coef','-v7.3');
+                elseif strncmp(FileName,'con_',4)
+                    con(:,:,5) = M; save(FileName,'con','-v7.3');
+                elseif strncmp(FileName,'ess_',4)
+                    ess(:,:,end) = M; save(FileName,'ess','-v7.3');
                 end
             end
-            mytitle   = sprintf('%s: uncorrected threshold \n using bootstrap',titlename);
+            mytitle   = sprintf('%s:\n uncorrected threshold using bootstrap',titlename);
         elseif all(isnan(Pval(:))) && ~exist(['H0' filesep MCC_data '.mat'],'file')
             M         = Pval;
             mask      = ones(size(M,1),size(M,2));
-            mytitle   = sprintf('unthresholded %s\n no p-values available without bootstrap',titlename);
+            mytitle   = sprintf('unthresholded %s:\n no p-values available without bootstrap',titlename);
         else % because it has been computed as above and stored on disk
             M         = Pval;
             mask      = Pval < p;
-            mytitle   = sprintf('%s: uncorrected threshold \n using bootstrap',titlename);
+            mytitle   = sprintf('%s:\n uncorrected threshold using bootstrap',titlename);
         end
     else % OLS/IRLS
         M       = Pval;
@@ -181,7 +176,7 @@ elseif ~isempty(M) && MCC == 2
         try
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
-            if strcmp(FileName,'R2.mat') || strncmp(FileName,'semi_partial_coef',17)
+            if strcmp(FileName,'R2.mat') 
                 bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
                 bootP = squeeze(H0_data(:,:,3,:)); % get all P values under H0
             else
@@ -194,38 +189,38 @@ elseif ~isempty(M) && MCC == 2
                 Pboot = cell(1,size(bootP,3));
                 parfor boot = 1:size(bootP,3)
                     index = 1:size(bootP,3); index(boot) = [];
-                    [~,Pboot{boot}]  = boot_threshold(bootM(:,:,index),p,bootM(:,:,boot));
+                    [~,Pboot{boot}]  = limo_boot_threshold(bootM(:,:,boot),bootM(:,:,index),p);
                 end
                 bootP = reshape(cell2mat(Pboot),size(bootM)); clear Pboot;
-                
+               
                 % save it so we can reuse this anytime
                 if strcmp(FileName,'R2.mat')
                     H0_R2 = H0_data; clear H0_data;
-                    H0_R2(:,:,3,:) = bootP; clear H0_R2;
+                    H0_R2(:,:,3,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_R2','-v7.3');
                 elseif strncmp(FileName,'Condition_effect',16)
                     H0_Condition_effect = H0_data; clear H0_data;
-                    H0_Condition_effect(:,:,3,:) = bootP; clear H0_Condition_effect;
+                    H0_Condition_effect(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_Condition_effect','-v7.3');
                 elseif strncmp(FileName,'Covariate_effect',16)
                     H0_Covariate_effect = H0_data; clear H0_data;
-                    H0_Covariate_effect(:,:,3,:) = bootP; clear H0_Covariate_effect;
+                    H0_Covariate_effect(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_Covariate_effect','-v7.3');
                 elseif strncmp(FileName,'Interaction_effect',18)
                     H0_Interaction_effect = H0_data; clear H0_data;
-                    H0_Interaction_effect(:,:,3,:) = bootP; clear H0_Interaction_effect;
+                    H0_Interaction_effect(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_Interaction_effect','-v7.3');
                 elseif strncmp(FileName,'semi_partial_coef',17)
                     H0_semi_partial_coef = H0_data; clear H0_data;
-                    H0_semi_partial_coef(:,:,3,:) = bootP; clear H0_semi_partial_coef;
+                    H0_semi_partial_coef(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_semi_partial_coef','-v7.3');
                 elseif strncmp(FileName,'con_',4)
                     H0_con = H0_data; clear H0_data;
-                    H0_con(:,:,3,:) = bootP; clear H0_con;
+                    H0_con(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_con','-v7.3');
                 elseif strncmp(FileName,'ess_',4)
                     H0_ess = H0_data; clear H0_data;
-                    H0_ess(:,:,3,:) = bootP; clear H0_ess;
+                    H0_ess(:,:,2,:) = bootP; 
                     save(['H0' filesep MCC_data],'H0_ess','-v7.3');
                 end
                 disp('null p-values saved')
@@ -233,42 +228,27 @@ elseif ~isempty(M) && MCC == 2
             
             % likely we don't have observed p-val
             if all(isnan(Pval(:)))
-                [~,M] = boot_threshold(bootM,p,M);
+                [~,Pval] = limo_boot_threshold(M,bootM,p);
                 if strcmp(FileName,'R2.mat')
-                    R2(:,:,3) = M; save(FileName,'R2','-v7.3');
+                    R2(:,:,3) = Pval; save(FileName,'R2','-v7.3');
                 elseif strncmp(FileName,'Condition_effect',16)
-                    Condition_effect(:,:,2) = M; save(FileName,'Condition_effect','-v7.3');
+                    Condition_effect(:,:,2) = Pval; save(FileName,'Condition_effect','-v7.3');
                 elseif strncmp(FileName,'Covariate_effect',16)
-                    Covariate_effect(:,:,2) = M; save(FileName,'Covariate_effect','-v7.3');
+                    Covariate_effect(:,:,2) = Pval; save(FileName,'Covariate_effect','-v7.3');
                 elseif strncmp(FileName,'Interaction_effect',18)
-                    Interaction_effect(:,:,2) = M; save(FileName,'Interaction_effect','-v7.3');
+                    Interaction_effect(:,:,2) = Pval; save(FileName,'Interaction_effect','-v7.3');
                 elseif strncmp(FileName,'semi_partial_coef',17)
-                    semi_partial_coef(:,:,3) = M; save(FileName,'semi_partial_coef','-v7.3');
+                    semi_partial_coef(:,:,3) = Pval; save(FileName,'semi_partial_coef','-v7.3');
                 elseif strncmp(FileName,'con_',4)
                     con(:,:,5) = M; save(FileName,'con','-v7.3');
                 elseif strncmp(FileName,'ess_',4)
-                    ess(:,:,5) = M; save(FileName,'ess','-v7.3');
+                    ess(:,:,end-1) = Pval; save(FileName,'ess','-v7.3');
                 end
             end
             
             % finally get cluster mask and corrected p-values
-            if strcmp(FileName,'R2.mat')
-                [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'Condition_effect',16)
-                [mask,M] = limo_clustering(M,squeeze(Condition_effect(:,:,2)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'Covariate_effect',16)
-                [mask,M] = limo_clustering(M,squeeze(Covariate_effect(:,:,2)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'Interaction_effect',18)
-                [mask,M] = limo_clustering(M,squeeze(Interaction_effect(:,:,2)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'semi_partial_coef',17)
-                [mask,M] = limo_clustering(M,squeeze(semi_partial_coef(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'con_',4)
-                [mask,M] = limo_clustering(M,squeeze(con(:,:,5)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            elseif strncmp(FileName,'ess_',4)
-                [mask,M] = limo_clustering(M,squeeze(ess(:,:,5)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            end
-                
-            Nclust = unique(mask); Nclust = length(Nclust-1); mask = mask>0;
+            [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            Nclust = unique(mask); Nclust = length(Nclust)-1; mask = mask>0;
             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
             mytitle = sprintf('%s\n cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
@@ -287,7 +267,7 @@ elseif ~isempty(M) && MCC == 4 % Stat max
         try
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
-            if strcmp(FileName,'R2.mat') || strncmp(FileName,'semi_partial_coef',17)
+            if strcmp(FileName,'R2.mat') 
                 bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
             else
                 bootM = squeeze(H0_data(:,:,1,:));
@@ -317,7 +297,7 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             return
         end
     else
-        errordlg('no tfce bootstrap or tfce file was found to compute the tfce distribution','missing data')
+        errordlg('no tfce tfce file was found','missing data')
     end
 end
 
@@ -774,29 +754,4 @@ if strncmp(FileName,'LI_Map',6)
             return
         end
     end
-end
-
-%% computes the cell-wise p value using bootrap 
-function [mask,M]= boot_threshold(H0_values,p,M)
-
-sorted_values = sort(H0_values,3); clear H0_values;
-if all(sorted_values(:))>=0 % i.e. F values
-    U = round((1-p)*size(sorted_values,3));
-    mask = (M >= sorted_values(:,:,U));
-    for row = 1:size(M,1)
-        for column = 1:size(M,2)
-            tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-        end
-    end
-    M = 1- (tmp ./ size(sorted_values,3)) ; % p values
-else % i.e. T values
-    low = round(p*size(sorted_values,3)/2);
-    high = size(sorted_values,3) - low;
-    mask = (M <= sorted_values(:,:,low))+(M >= sorted_values(:,:,high));
-    for row = 1:size(M,1)
-        for column = 1:size(M,2)
-            tmp(row,column) = sum(M(row,column)>squeeze(sorted_values(row,column,:)));
-        end
-    end
-    M = min((tmp ./ size(sorted_values,3)), 1- (tmp ./ size(sorted_values,3))) ; % p values
 end
