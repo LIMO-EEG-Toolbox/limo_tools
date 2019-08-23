@@ -4,11 +4,7 @@ function limo_glm_handling(LIMO)
 % this function calls limo_glm, limo_glm_boot to get the analysis done, and
 % organize all the files around that - externalized from limo_eeg(4)
 %
-% FORMAT limo_glm_handling(varargin)
-%
-% INPUTS
-%
-% OUTPUTS
+% FORMAT limo_glm_handling(LIMO)
 %
 % Cyril Pernet
 % ------------------------------------------------------------------
@@ -308,10 +304,10 @@ if boot_go == 1
             
             % update the files to be stored on the disk
             for B = 1:nboot % now loop because we use cells
-                H0_Betas(electrode,:,:,B) = model.betas{B}';
-                H0_R2(electrode,:,1,B) = model.R2_univariate{B};
-                H0_R2(electrode,:,2,B) = model.F{B};
-                H0_R2(electrode,:,3,B) = model.p{B};
+                H0_Betas(electrode,:,:,B) = model.betas{B};
+                H0_R2(electrode,:,1,B)    = model.R2_univariate{B};
+                H0_R2(electrode,:,2,B)    = model.F{B};
+                H0_R2(electrode,:,3,B)    = model.p{B};
                 
                 if prod(LIMO.design.nb_conditions) ~=0
                     if length(LIMO.design.nb_conditions) == 1
@@ -407,7 +403,7 @@ if LIMO.design.tfce == 1
     if isfield(LIMO.data,'neighbouring_matrix') && LIMO.design.bootstrap ~=0
         % clear Yr;
         if exist('TFCE','dir')
-            if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
+            if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No')
                 return
             end
         end
@@ -416,7 +412,8 @@ if LIMO.design.tfce == 1
         mkdir TFCE; PCT_test = ver('distcomp');
         
         % R2
-        load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
+        R2 = load('R2'); R2 = R2.(cell2mat(fieldnames(R2)));
+        fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
         if size(R2,1) == 1
             tfce_score(1,:) = limo_tfce(1, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
         else
@@ -424,7 +421,8 @@ if LIMO.design.tfce == 1
         end
         save('tfce_R2','tfce_score'); clear R2; cd ..;
         
-        cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
+        cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); 
+        H0_R2 = load('H0_R2'); H0_R2 = H0_R2.(cell2mat(fieldnames(H0_R2)));
         if size(H0_R2,1) == 1
             if ~isempty(PCT_test)
                 tfce_H0_score = NaN(1,size(H0_R2,2),LIMO.design.bootstrap);
