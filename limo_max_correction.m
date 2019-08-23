@@ -19,8 +19,8 @@ function [mask,p_val,max_th] = limo_max_correction(varargin)
 % p_val are the p-values obtained via the matrix bootM (non-corrected)
 % max_th is the threshold controlling the type 1 FWER
 %
-% Cyril Pernet v1
 % outsourced from limo_stat_values
+% Cyril Pernet 
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
@@ -62,8 +62,8 @@ mask            = squeeze(M) >= max_th;
 smalest_pval = 1/nboot;
 for row =1:a
     for column=1:b
-        tmp = sum(M(row,column) <= sortmaxM) / nboot;
-        p_val(row,column) = min([tmp 1-tmp]);
+        tmp = sum(M(row,column) >= sortmaxM) / nboot;
+        p_val(row,column) = 1-tmp;
         if p_val(row,column) == 0; p_val(row,column) = smalest_pval; end
     end
 end
