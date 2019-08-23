@@ -10,7 +10,7 @@ function model = limo_glm(varargin)
 %
 % FORMATS: model = limo_glm(Y,LIMO)
 %          model = limo_glm(Y, X, nb_conditions, nb_interactions, ...
-%                  nb_continuous, method, Analysis, n_freqs, n_times)
+%                  nb_continuous, method, Analysis type, n_freqs, n_times)
 % INPUTS:
 %   Y               = 2D matrix of EEG data with format trials x frames
 %   LIMO            = structure that contains the above information (except Y)
@@ -144,9 +144,9 @@ if strcmp(method,'OLS')
     WX = X;
     
     if nb_continuous ~=0 && nb_factors == 0
-        Betas = X\Y; % numerically more stable than pinv
+        Betas = WX\Y; % numerically more stable than pinv
     else
-        Betas = pinv(X)*Y;
+        Betas = pinv(WX)*Y;
     end
     
 elseif strcmp(method,'WLS')
@@ -545,7 +545,6 @@ switch method
         end
         
         if nb_interactions ~=0
-            H                 = NaN(length(nb_conditions),size(Y,2));
             HI                = NaN(length(nb_interactions),size(Y,2));
             F_interactions    = NaN(length(nb_interactions),size(Y,2));
             pval_interactions = NaN(length(nb_interactions),size(Y,2));
