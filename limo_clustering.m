@@ -17,7 +17,7 @@ function [mask,cluster_pval,max_th] = limo_clustering(varargin)
 %         significant values)
 %
 % OUTPUT
-% mask is a binary matrix of the same size as M corresponding to a threshold
+% mask is a labelled matrix of the same size as M corresponding to a threshold
 %      p corrected for multiple comparisons
 % cluster_p are the p-values obtained via the matrix bootM (corrected)
 % max_th is the cluster mass threshold controlling the type 1 FWER
@@ -83,7 +83,7 @@ if MCC == 2 && size(bootM,1)>1
     end
     
     % 3rd threshold observed cluster mass by the distribution of cluster
-    % max conputed in step 2
+    % max computed in step 2
     [mask, cluster_pval, maxval, max_th] = limo_cluster_test(M,P,...
         boot_maxclustersum,channeighbstructmat,minnbchan,p);
 end
