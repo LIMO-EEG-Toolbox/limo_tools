@@ -1,12 +1,41 @@
-function limo_semi_partial_coef(LIMO)
+function limo_semi_partial_coef(varargin)
 
 % This function returns the semi-partial correlation coefficient
 % A coef is simply the difference between the full and a reduced model
+%
+% FORMAT limo_semi_partial_coef(LIMO)
+%        limo_semi_partial_coef(data_path,analysis type,X,W,nb_conditions,nb_interactions,nb_continuous,method)
+%
+% INPUTS LIMO is the LIMO.mat structure after running limo_glm
+%        data_path       = where to find the data and R2
+%        analysis type   = 'Time', 'Frequency' or 'Time-Frequency'
+%        X               = the design matrix
+%        W               = weights to apply to X and Y
+%        nb_conditions   = a vector indicating the number of conditions per factor
+%        nb_interactions = a vector indicating number of columns per interactions
+%        nb_continuous   = number of covariates
+%        method          = 'OLS', 'WLS', 'IRLS'
+%
 % See limo_glm for details on computation
-% Cyril Pernet 12-06-2009
-% Cyril Pernet 12-11-2013 update for bootstrap and factorial designs
+% Cyril Pernet
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
+
+%% chech data input
+if nargin == 1
+    LIMO                        = varargin{1};
+else
+    LIMO.dir                    = varargin{1};
+    LIMO.Analysis               = varargin{2};
+    LIMO.design.X               = varargin{3};
+    LIMO.design.weights         = varargin{4};
+    LIMO.design.nb_conditions   = varargin{5};
+    LIMO.design.nb_interactions = varargin{6};
+    LIMO.design.nb_continuous   = varargin{7};
+    LIMO.design.method          = varargin{8};
+    LIMO.model.model_df         = varargin{9};
+end
+clear varargin
 
 %% simple checking
 
@@ -135,7 +164,7 @@ end
 
 clear Yr
 disp('semi-partial coefficent analysis done ...')
-
+cd(LIMO.dir)
 
 end
 
@@ -146,12 +175,14 @@ function Partial_coef = compute(LIMO,Yr,R2,flag)
 % R2 is the R2 data
 % flag is to indicate to print what's going on or not
 
-N = 1:size(LIMO.design.X,2);
-df = LIMO.model.model_df(1);
+N  = 1:size(LIMO.design.X,2);
 
 % set the columns of the reduced designs
 % --------------------------------------
-index = 1;
+
+index      = 1;
+Nreg       = length(LIMO.design.nb_conditions)+length(LIMO.design.nb_interactions)+LIMO.design.nb_continuous;
+regressors = cell(1,Nreg);
 
 % categorical variables
 for i=1:length(LIMO.design.nb_conditions)
@@ -186,12 +217,14 @@ if LIMO.design.nb_continuous~=0
     end
 end
 
+% quick check
+if Nreg ~= (index-1)
+   error('could not figure out the number of variables to regress') 
+end
+
 % compute reduced R2 and do the stat
 % ----------------------------------
-
 Partial_coef = NaN(size(Yr,1),size(Yr,2),length(regressors),3);
-
-
 for r=1:length(regressors)
     
     if flag ~=0
@@ -202,30 +235,67 @@ for r=1:length(regressors)
         end
     end
     
-    X = LIMO.design.X(:,regressors{r});
-    df_reduced = rank(X)-1;
-    dfe = (df-df_reduced);
-    
-    % fit the model
-    for i = 1:size(Yr,1)
-        if flag ~= 0
-            fprintf('...electrode %g \n',i);
+    X  = LIMO.design.X(:,regressors{r});
+    if strcmp(LIMO.design.method,'OLS') || strcmp(LIMO.design.method,'WLS')
+        
+        for i = 1:size(Yr,1)
+            if flag ~= 0
+                fprintf('...%s %g \n',LIMO.Type,i);
+            end
+            Y                     = squeeze(Yr(i,:,:))';
+            T                     = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
+            [Betas,W]             = limo_WLS(X,Y); 
+            WX                    = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+            R                     = eye(size(Y,1)) - (WX*pinv(WX));
+            C                     = eye(size(X,2));
+            C(:,size(X,2))        = 0;
+            C0                    = eye(size(X,2)) - C*pinv(C);
+            X0                    = WX*C0;
+            R0                    = eye(size(Y,1)) - (X0*pinv(X0));
+            M                     = R0 - R;
+            H                     = (Betas'*X'*M*X*Betas);
+            R2_reduced            = diag(H)./diag(T);  % dim [freq/time]
+            Partial_coef(i,:,r,1) = abs(squeeze(R2(i,:,1))- R2_reduced');  % dim electrode i * [freq/time] * regressor r -->R2
+            df                    = rank([X(:,1:end-1).*repmat(LIMO.design.weights(i,:)',1,size(X,2)-1) X(:,end)])-1;
+            df_reduced            = rank(WX)-1;
+            dfe                   = (df-df_reduced);
+            Partial_coef(i,:,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,:,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,:,1)))); % --> F
+            if strcmp(LIMO.design.method,'OLS') 
+                Partial_coef(i,:,r,3) = 1 - fcdf(squeeze(Partial_coef(i,:,r,2)), df, dfe); % --> p
+            end
         end
-        Y = squeeze(Yr(i,:,:))';
-        T = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-        R = eye(size(Y,1)) - (X*pinv(X));
-        Betas = pinv(X)*Y;
-        C = eye(size(X,2));
-        C(:,size(X,2)) = 0;
-        C0   = eye(size(X,2)) - C*pinv(C);
-        X0   = X*C0;
-        R0   = eye(size(Y,1)) - (X0*pinv(X0));
-        M    = R0 - R;
-        H    = (Betas'*X'*M*X*Betas);
-        R2_reduced = diag(H)./diag(T);      % dim [freq/time]
-        Partial_coef(i,:,r,1)= squeeze(R2(i,:,1)) -  R2_reduced';  % dim electrode i * [freq/time] * regressor r -->R2
-        Partial_coef(i,:,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,:,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,:,1)))); % --> F
-        Partial_coef(i,:,r,3) = 1 - fcdf(squeeze(Partial_coef(i,:,r,2)), df, dfe); % --> p
+        
+    else % IRLS
+
+        for i = 1:size(Yr,1)
+            if flag ~= 0
+                fprintf('...%s %g \n',LIMO.Type,i);
+            end
+            % got to iterate for each cell
+            for j=1:size(Yr,2)
+                Y                     = squeeze(Yr(i,j,:))';
+                T                     = (Y-mean(Y))'*(Y-mean(Y));
+                WX                    = [X(:,1:end-1).*repmat(LIMO.design.weights(i,j,:),1,size(X,2)-1) X(:,end)];
+                R                     = eye(size(Y,1)) - (WX*pinv(WX));
+                C                     = eye(size(X,2));
+                C(:,size(X,2))        = 0;
+                C0                    = eye(size(X,2)) - C*pinv(C);
+                X0                    = WX*C0;
+                R0                    = eye(size(Y,1)) - (X0*pinv(X0));
+                M                     = R0 - R;
+                Betas                 = pinv(WX)*(Y.*LIMO.design.weights(i,j,:)');
+                H                     = (Betas'*X'*M*X*Betas);
+                R2_reduced            = H./T;  % dim [freq/time]
+                Partial_coef(i,j,r,1) = squeeze(R2(i,j,1)) -  R2_reduced';  % dim electrode i * [freq/time] * regressor r -->R2
+                
+                df_reduced            = rank(WX)-1;
+                dfe                   = (df-df_reduced);
+                Partial_coef(i,j,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,j,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,j,1)))); % --> F
+                if strcmp(LIMO.design.method,'OLS')
+                    Partial_coef(i,j,r,3) = 1 - fcdf(squeeze(Partial_coef(i,j,r,2)), df, dfe); % --> p
+                end
+            end
+        end
     end
 end
 end
