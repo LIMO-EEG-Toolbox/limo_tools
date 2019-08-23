@@ -136,9 +136,9 @@ if LIMO.Level == 1
                 if data_cached == 0
                     
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice);
+                        [M, mask, mytitle] = limo_stat_values_tf(FileName,p,MCC,LIMO,choice);
                     else
-                        [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice);
+                        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice);
                     end
                     
                     if isempty(mask)
@@ -1037,10 +1037,10 @@ if LIMO.Level == 1
                                 end
                             else
                                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                                    [M, mask, mytitle2] = limo_stat_values_tf(1,name,p,MCC,LIMO,choice);
+                                    [M, mask, mytitle2] = limo_stat_values_tf(name,p,MCC,LIMO,choice);
                                     sig = single(squeeze(mask(electrode,freq_index,:))); sig(find(sig==0)) = NaN;
                                 else
-                                    [M, mask, mytitle2] = limo_stat_values(1,name,p,MCC,LIMO,choice);
+                                    [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                                     sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                                 end
                             end
@@ -1079,10 +1079,10 @@ if LIMO.Level == 1
                                     end
                                 else
                                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                                        [M, mask, mytitle2] = limo_stat_values_tf(1,name,p,MCC,LIMO,choice);
+                                        [M, mask, mytitle2] = limo_stat_values_tf(name,p,MCC,LIMO,choice);
                                         sig = single(squeeze(mask(electrode,freq_index,:))); sig(find(sig==0)) = NaN;
                                     else
-                                        [M, mask, mytitle2] = limo_stat_values(1,name,p,MCC,LIMO,choice);
+                                        [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                                         sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                                     end
                                 end
@@ -1219,9 +1219,9 @@ elseif LIMO.Level == 2
         if data_cached == 0 
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                [M, mask, mytitle] = limo_stat_values_tf(Type,FileName,p,MCC,LIMO,choice,[]);
+                [M, mask, mytitle] = limo_stat_values_tf(FileName,p,MCC,LIMO,choice,[]);
             else
-                [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,choice,[]);
+                [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
             end
             
             if isempty(mask)
@@ -1911,7 +1911,7 @@ elseif LIMO.Level == 2
                     if length(regressor) == length(effect)
                         if mean(regressor == effect) == 1
                             name = sprintf('Condition_effect_%g.mat',i);
-                            load(name); [M, mask, mytitle2] = limo_stat_values(1,name,p,MCC,LIMO,choice);
+                            load(name); [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                             sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                             h = axis;
                             if strcmp(LIMO.Analysis,'Time')
@@ -1936,7 +1936,7 @@ elseif LIMO.Level == 2
                         if length(regressor) == length(effect)
                             if mean(regressor == effect) == 1
                                 name = sprintf('Interaction_effect_%g.mat',i);
-                                load(name); [M, mask, mytitle2] = limo_stat_values(1,name,p,MCC,LIMO,choice);
+                                load(name); [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                                 sig = single(mask(electrode,:)); sig(find(sig==0)) = NaN;
                                 h = axis;
                                 if LIMO.analysis_flag == 1
@@ -2384,7 +2384,7 @@ elseif LIMO.Level == 2
     
 elseif strcmp(LIMO.Level,'LI')
     
-    [M, mask, mytitle] = limo_stat_values(Type,FileName,p,MCC,LIMO,[],[]);
+    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,[],[]);
     
     if Type == 1
         %--------------------------
