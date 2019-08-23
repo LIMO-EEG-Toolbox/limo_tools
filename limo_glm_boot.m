@@ -34,7 +34,7 @@ function model = limo_glm_boot(varargin)
 %  Copyright (C) LIMO Team 2019
 
 %% varagin
-nboot = 599; %
+nboot = 800; %
 
 if nargin == 2 || nargin == 3
     y               = varargin{1};
