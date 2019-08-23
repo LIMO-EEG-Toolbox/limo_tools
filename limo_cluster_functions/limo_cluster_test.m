@@ -21,11 +21,7 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %
 % See also limo_clustering limo_getcluster_test limo_getclustersum
 % 
-% Guillaume Rousselet, University of Glasgow, June 2010
-% optional L & NUM outputs: GAR, Feb 2012
-% optional pval & maxclustersum_th outputs: GAR, Feb 2012
-% Cyril Pernet changed pval to be a map with NaN or the cluster p value May 2013
-% added a warping of NaN Mars 2014 
+% Guillaume Rousselet & Cyril Pernet
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
@@ -51,20 +47,22 @@ maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
 
 % compute the mask: for each cluster do the sum and set significant if > maxclustersum_th
 mask = zeros(size(ori_f));
+cluster_label = 1; 
 if nposclusters~=0
     for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(ori_f(posclusterslabelmat==C));
         if  maxval(C)>= maxclustersum_th
-            mask(posclusterslabelmat==C)=1; % flag clusters above threshold
+            mask(posclusterslabelmat==C)= cluster_label; % flag clusters above threshold
+            cluster_label = cluster_label+1;
         end
     end
 end
 maxval = max(maxval);   % biggest cluster
-mask   = logical(mask); % logical - faster for masking
+mask2  = logical(mask); % logical - faster for masking
 
 % compute corrected p-values: number of times observed mass > bootstrap
-if sum(mask(:))>0
-    L=posclusterslabelmat.*mask;  
+if sum(mask2(:))>0
+    L=posclusterslabelmat.*mask2; % remove non significant clusters
     CL_list=setdiff(unique(L),0);
     pval = NaN(size(L));
     for CL=1:length(CL_list)
