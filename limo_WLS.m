@@ -57,19 +57,19 @@ b = pinv(X)*Y;
 tune = 4.685; 
 
 % Get residuals from previous fit
-res    = Y - X*b;
-resadj = res .* repmat(adjfactor, 1, size(Y,2));
+res                 = Y - X*b;
+resadj              = res .* repmat(adjfactor, 1, size(Y,2));
 
 % re - Robust Estimator
 % 0.6745 is the 0.75- quantile of the standard normal distribution
 % (makes the estimate unbiased)
-re = median(abs(resadj)) ./ 0.6745;
+re                  = median(abs(resadj)) ./ 0.6745;
 re(find(re < 1e-5)) = 1e-5;
-r= resadj ./ repmat(tune.*re, size(Y,1),1);
+r                   = resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
-[W,~] = limo_pcout(r);
-WY    = Y .* repmat(W,1,size(Y,2));
-WX    = X .* repmat(W,1,size(X,2));
-b     = pinv(WX)*WY;
+[W,~]               = limo_pcout(r);
+WY                  = Y .* repmat(W,1,size(Y,2));
+WX                  = X .* repmat(W,1,size(X,2));
+b                   = pinv(WX)*WY;
 
