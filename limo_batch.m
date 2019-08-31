@@ -198,14 +198,22 @@ end
 if strcmp(option,'model specification') || strcmp(option,'both')
     % quick check
     if ~isempty(model.cat_files)
-        if size(model.cat_files,1) ~= size(model.set_files,1)
+        if size(model.set_files,1) == 1 % single subject
+            if ~isnumeric(model.cat_files) && size(model.cat_files,1)~= 1
+                error('categorical data appear bigger than 1 (one .set selected)')
+            end 
+        elseif size(model.cat_files,1) ~= size(model.set_files,1)
             error('the number of set and cat files disagree')
         end
     end
     
     if ~isempty(model.cont_files)
-        if size(model.cont_files,1) ~= size(model.set_files,1)
-            error('the number of set and cat files disagree')
+        if size(model.set_files,1) == 1 % single subject
+            if ~isnumeric(model.cont_files) && size(model.cont_files,1)~= 1
+                error('continuous data appear bigger than 1 (one .set selected)')
+            end 
+        elseif size(model.cont_files,1) ~= size(model.set_files,1)
+            error('the number of set and cont files disagree')
         end
     end
     
@@ -265,12 +273,21 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
 
         if ~isempty(model.cat_files)
-            pipeline(subject).import.opt.cat = model.cat_files{subject};
+            if isnumeric(model.cat_files)
+                pipeline(subject).import.opt.cat = model.cat_files;
+            else
+                pipeline(subject).import.opt.cat = model.cat_files{subject};
+            end
         else
             pipeline(subject).import.opt.cat = [];
         end
+        
         if ~isempty(model.cont_files)
-            pipeline(subject).import.opt.cont = model.cont_files{subject};
+            if isnumeric(model.cont_files)
+                pipeline(subject).import.opt.cont = model.cont_files;
+            else
+                pipeline(subject).import.opt.cont = model.cont_files{subject};
+            end
         else
             pipeline(subject).import.opt.cont = [];
         end
