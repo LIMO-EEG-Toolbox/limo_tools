@@ -1,8 +1,12 @@
 function varargout = limo_batch_gui(varargin)
 
-% BATCH INTERFACE
-% created using GUIDE 
-% Based on limo_import_tf
+% BATCH IMPORT INTERFACE - created using GUIDE 
+%
+% FORMAT: [model.set_files,model.cat_files,model.cont_files,model.defaults]
+%            = limo_batch_gui
+%
+% OUTPUT model is the structure that can be used within limo_batch
+%
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
@@ -58,7 +62,6 @@ handles.method              = 'OLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
 handles.quit                = 0;
-
 guidata(hObject, handles);
 uiwait(handles.figure1);
 
@@ -107,10 +110,10 @@ if FilterIndex ~= 0
     elseif strcmp(FileName(end-3:end),'.txt') ||  strcmp(FileName(end-3:end),'.mat') % use .mat or .txt
         
         if strcmp(FileName(end-3:end),'.txt')
-            FileName = importdata(FileName);
+            FileName = importdata([PathName FileName]);
         elseif strcmp(FileName(end-3:end),'.mat')
             FileName = load([PathName FileName]);
-            FileName = getfield(FileName,cell2mat(fieldnames(FileName)));
+            FileName = FileName.cell2mat(fieldnames(FileName));
         end
     
         disp('checking files .. ')
@@ -140,18 +143,24 @@ function analysis_type_Callback(hObject, eventdata, handles)
 
 content = get(hObject,'Value');
 if content == 1
+    handles.Analysis = '';
+    set(handles.Starting_point,'Enable','off')
+    set(handles.ending_point,'Enable','off')
+    set(handles.low_freq,'Enable','off')
+    set(handles.high_freq,'Enable','off')
+elseif content == 2
     handles.Analysis = 'Time';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
     set(handles.low_freq,'Enable','off')
     set(handles.high_freq,'Enable','off')
-elseif content == 2
+elseif content == 3
     handles.Analysis = 'Frequency';
     set(handles.Starting_point,'Enable','off')
     set(handles.ending_point,'Enable','off')
     set(handles.low_freq,'Enable','on')
     set(handles.high_freq,'Enable','on')
-elseif content == 3
+elseif content == 4
     handles.Analysis = 'Time-Frequency';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
@@ -215,6 +224,7 @@ function high_freq_Callback(hObject, eventdata, handles)
 
 handles.highf = str2double(get(hObject,'String'));
 guidata(hObject, handles);
+
 
 %---------------------------
 %      ANALYSIS
@@ -326,27 +336,34 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function categorical_variable_input_Callback(hObject, eventdata, handles)
 
-[CatName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','on');
+[CatName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','off');
 if FilterIndex == 1
-    if ischar(CatName) % NOT multiselect
+    if ischar(CatName) % a single subject or a list of subjects
         if strcmp(CatName(end-3:end),'.txt')
-            if ~isnumeric(importdata([PathName CatName]))
-                CatName = importdata([PathName CatName]);
+            if exist([PathName CatName],'file')
+                fprintf('%s found \n',[PathName CatName]);
+                CatName = importdata([PathName CatName]); % numeric if a subject or 
+                if iscell(CatName) % cell array of text for many subjects
+                    for f=1:size(CatName,1)
+                        if exist(CatName{f},'file')
+                            fprintf('%s found \n',CatName{f});
+                        else
+                            errordlg('%s \n file not found',CatName);
+                        end
+                    end
+                end
             else
-                tmp = CatName; clear CatName;
-                CatName{1} = [PathName tmp]; clear tmp; % a single subject
-            end
-        elseif strcmp(CatName(end-3:end),'.mat')
-            CatName = load([PathName CatName]);
-            CatName = getfield(CatName,cell2mat(fieldnames(CatName)));
-        end
-        
-        for f=1:size(CatName,1)
-            if ~exist(CatName{f},'file')
-                errordlg(sprintf('%s \n file not found',CatName{f}));
+                errordlg('%s \n file not found',CatName);
                 return
+            end
+        elseif strcmp(CatName(end-3:end),'.mat') % a single subject .mat
+            if exist([PathName CatName],'file')
+                fprintf('%s found \n',[PathName CatName]);
+                CatName = load([PathName CatName]);
+                CatName = CatName.(cell2mat(fieldnames(CatName))); % numeric
             else
-                fprintf('%s found \n',CatName{f});
+                errordlg('%s \n file not found',CatName);
+                return
             end
         end
     else
@@ -375,27 +392,34 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function continuous_variable_input_Callback(hObject, eventdata, handles)
 
-[ContName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO continuous data','Multiselect','on');
+[ContName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','LIMO categorical data','Multiselect','off');
 if FilterIndex == 1
-    if ischar(ContName) % NOT multiselect
+    if ischar(ContName) % a single subject or a list of subjects
         if strcmp(ContName(end-3:end),'.txt')
-            if ~isnumeric(importdata([PathName ContName]))
-                ContName = importdata([PathName ContName]);
+            if exist([PathName ContName],'file')
+                fprintf('%s found \n',[PathName ContName]);
+                ContName = importdata([PathName ContName]); % numeric if a subject or 
+                if iscell(ContName) % cell array of text for many subjects
+                    for f=1:size(ContName,1)
+                        if exist(ContName{f},'file')
+                            fprintf('%s found \n',ContName{f});
+                        else
+                            errordlg('%s \n file not found',ContName);
+                        end
+                    end
+                end
             else
-                tmp = ContName; clear ContName;
-                ContName{1} = [PathName tmp]; clear tmp; % a single subject
-            end
-        elseif strcmp(ContName(end-3:end),'.mat')
-            ContName = load([PathName ContName]);
-            ContName = getfield(ContName,cell2mat(fieldnames(ContName)));
-        end
-        
-        for f=1:size(ContName,1)
-            if ~exist(ContName{f},'file')
-                errordlg(sprintf('%s \n file not found',ContName{f}));
+                errordlg('%s \n file not found',ContName);
                 return
+            end
+        elseif strcmp(ContName(end-3:end),'.mat') % a single subject .mat
+            if exist([PathName ContName],'file')
+                fprintf('%s found \n',[PathName ContName]);
+                ContName = load([PathName ContName]);
+                ContName = ContName.(cell2mat(fieldnames(ContName))); % numeric
             else
-                fprintf('%s found \n',ContName{f});
+                errordlg('%s \n file not found',ContName);
+                return
             end
         end
     else
@@ -455,9 +479,9 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
     if whatsup == 1
         try
             channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
-            fn = fieldnames(channeighbstructmat);
-            index = find(ismember(fn,'expected_chanlocs'));
-            test = getfield(channeighbstructmat,fn{index});
+            fn                  = fieldnames(channeighbstructmat);
+            index               = find(ismember(fn,'expected_chanlocs'));
+            test                = getfield(channeighbstructmat,fn{index});
         catch
             test = eval(chan_file(1:end-4));
         end
@@ -475,12 +499,12 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
 end
 handles.defaults = defaults;
 
-if isempty(handles.CatName) && isempty(handles.ContName);
+if isempty(handles.CatName) && isempty(handles.ContName)
     errordlg('no regressors were loaded','error')
     return
 else
-    uiresume
-    guidata(hObject, handles);
+    % limo_batch_import_data('model specification',handles)
+    uiresume; guidata(hObject, handles);
 end
 
 % --- Executes on button press in Quit.
@@ -494,14 +518,3 @@ handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
 
-
-
-
-
-% --- Executes on button press in checkbox13.
-function checkbox13_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox13 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox13
