@@ -109,6 +109,10 @@ else
     error('varargin error')
 end
 
+if isempty(nb_conditions);   nb_conditions = 0; end
+if isempty(nb_interactions); nb_interactions = 0; end
+if isempty(nb_continuous);   nb_continuous = 0; end
+    
 nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
     nb_factors = 0;
