@@ -61,7 +61,7 @@ if nargin == 2 || nargin == 3
         nboot = size(boot_table,2);
     end
     
-elseif nargin == 10 || nargin == 11
+elseif nargin == 9 || nargin == 10
     y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
@@ -71,15 +71,19 @@ elseif nargin == 10 || nargin == 11
     Analysis        = varargin{7};
     n_freqs         = varargin{8};
     n_times         = varargin{9};
-    if nargin == 10
+    if nargin == 9
         boot_table = randi(size(y,1),size(y,1),nboot);
-    elseif nargin == 11
-        boot_table = varargin{11};
-        nboot = size(boot_table,2);
+    elseif nargin == 10
+        boot_table = varargin{10};
+        nboot       = size(boot_table,2);
     end
 else
     error('varargin error in limo_glm_boot')
 end
+
+if isempty(nb_conditions);   nb_conditions = 0; end
+if isempty(nb_interactions); nb_interactions = 0; end
+if isempty(nb_continuous);   nb_continuous = 0; end
 
 clear varargin
 nb_factors = numel(nb_conditions);
