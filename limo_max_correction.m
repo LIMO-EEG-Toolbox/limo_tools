@@ -69,7 +69,7 @@ for row =1:a
 end
 
 %% figure
-if sum(mask(:)) == 0
+if sum(mask(:)) == 0 && isempty(fig)
     fig = 1 ; 
 end
 

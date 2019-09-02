@@ -101,8 +101,8 @@ end
 
 %% plot
 % when nothing is significant, always show why
-if sum(mask(:)) == 0
-    fig = 1 ; 
+if sum(mask(:)) == 0 && isempty(fig)
+    fig = 1 ;
 end
 
 if fig == 1 
