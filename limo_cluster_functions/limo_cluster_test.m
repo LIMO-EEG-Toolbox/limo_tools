@@ -57,7 +57,12 @@ if nposclusters~=0
         end
     end
 end
-maxval = max(maxval);   % biggest cluster
+
+if exist('maxval','var')
+     maxval = max(maxval);   % biggest cluster
+else
+     maxval = 0;
+end
 mask2  = logical(mask); % logical - faster for masking
 
 % compute corrected p-values: number of times observed mass > bootstrap
