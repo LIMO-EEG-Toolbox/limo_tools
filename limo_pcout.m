@@ -1,18 +1,22 @@
-function [dist,out] = limo_pcout(x)
+function [dist,out,w1,w2] = limo_pcout(x,varargin)
 
 % LIMO_pcout Limo Principal Components Projection
 % This method uses simple properties of Principal Components to identify
 % outliers in the Multivariate space. This function use Filzmoser, Moronna
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
-% FORMAT [dist out] = limo_pcout(x)
+% FORMAT [dist out] = limo_pcout(x,'figure',option)
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
+%   'figure'      = indicate you want a figure out
+%   option        = 'new' or 'on' to plot on a new figure or the current one
 %
 % OUTPUTS:
 %   dist          = weights (distance) for each trial. Outliers have a near to zero weight.
 %   out           = The out is a binary vector where False values are outliers
+%   w1            = the kurtosis weighted robust Euclidian distance (location)
+%   w2            = the robust Euclidian distance (scatter)
 %
 % References:
 % Filzmoser, R. Maronna, and M. Werner. 
@@ -20,9 +24,19 @@ function [dist,out] = limo_pcout(x)
 % Computational Statistics and Data Analysis, 
 % Vol. 52, pp. 1694-1711, 2008.
 %
-% Ignacio Suay Mas
+% Ignacio Suay Mas - Cyril Pernet 
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
+
+if nargin == 3 
+   if strcmpi(varargin{1},'figure')
+       fig = varargin{2};
+   else
+      disp(''); fig = 'off'; 
+   end
+else
+    fig = 'off';
+end
 
 % we have ommited dimensions with mad = 0, as this 
 % corresponds to a case with all trials having the same value ! 
@@ -39,26 +53,26 @@ end
 
 %% 1st Phase: Detect location outliers
 
-%robustly rescale each component
-madx = mad(x,1) .* 1.4826; % median erp normally scaled
-x2 = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1);
-x3 = x2 - repmat(mean(x2),n,1);
+% robustly rescale each component
+madx    = mad(x,1) .* 1.4826; % median erp normally scaled
+x2      = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1); % robust standardization
+x3      = x2 - repmat(mean(x2),n,1); % standardization
  
-%calculate the principal components
-a = svd(x3).^2./(n-1);
-paux =(1:p)' .* ((cumsum(a)./sum(a) > 0.99));
-paux2 = paux(paux > 0);
-p1 = paux2(1);
-[U S V] = svd(x3);
-%Project x in the principal components
-xpc = x2 * V(:,1:p1); 
+% calculate the principal components (retain 99% of variance)
+a       = svd(x3).^2./(n-1);
+paux    = (1:p)' .* ((cumsum(a)./sum(a) > 0.99));
+paux2   = paux(paux > 0);
+p1      = paux2(1);
+[~,~,V] = svd(x3);
 
-[n2,p2] = size(xpc);
-madxpc = mad(xpc,1) * 1.4826;
+% Project x in the principal components
+xpc     = x2 * V(:,1:p1); 
+madxpc  = mad(xpc,1) * 1.4826;
 
-%rescale pc 
-xpcsc = (xpc - repmat(median(xpc),n,1)) ./ repmat(madxpc,n,1);
+% rescale pc 
+xpcsc   = (xpc - repmat(median(xpc),n,1)) ./ repmat(madxpc,n,1);
 
+%% Location Outliers 
 % calculate the absolute value of robust kurtosis measure
 % kurtosis = 0 -> no outliers; kurtosis != 0 -> outliers
 wp = abs(mean(xpcsc.^4) - 3);
@@ -78,7 +92,7 @@ w1 = ( 1 - ((xdist1 - M1)./(const1 - M1)).^2).^2;
 w1(xdist1 < M1) = 1;
 w1(xdist1 > const1) = 0;
 
-%% 2nd Phase: Detect scatter outliers. 
+%% Scatter outliers. 
 % Similar to the first phase but without the kurtosis weigthed function. 
 
 xpcnorm = sqrt(sum(xpcsc.^2,2));
@@ -96,5 +110,14 @@ s = 0.25;
 dist = (w1 + s) .* (w2 + s) ./ ((1 + s)^2);
 out = round(dist + s);
 
+if strcmpi(fig,'new') || strcmpi(fig,'on')
+    if strcmpi(fig,'new')
+        figure('Name','limo_pcout projection')
+    end
+    plot(xpc'); 
+    scale = range(xpc(:))*0.01; grid on; box on
+    axis([-0.5 size(xpc,2) min(xpc(:))-scale max(xpc(:))+scale]); ylabel('A.U.');
+    xlabel(sprintf('%g time comp / %g time frames)',size(xpc,2),size(x,2)));
+    title('Trials projected onto the PC space')
 end
 
