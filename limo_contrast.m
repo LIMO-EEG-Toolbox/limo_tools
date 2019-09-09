@@ -531,10 +531,16 @@ switch type
             filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
             
             % prepare the boostrap centering the data
-            load centered_data
+            if exist('centered_data',file)
+                load('centered_data');
+                load('boot_table');
+            else
+                load(['H0' filesep 'centered_data']);
+                load(['H0' filesep 'boot_table']);
+            end
 
             %  compute
-            load boot_table; clear Yr
+            clear Yr
             for b = 1:LIMO.design.bootstrap
                 fprintf('contrast bootstrap %g \n',b);
                 for electrode = 1:size(centered_data,1)
@@ -542,7 +548,7 @@ switch type
                     resampling_index = boot_table{electrode}(:,b);
                     tmp = squeeze(centered_data(electrode,:,resampling_index,:));
                     Y = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
-                    gp = LIMO.data.Cat(find(~isnan(tmp(1,1,:))),:);
+                    gp = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
                     % F and p
                     result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
                     H0_ess(electrode,:,1,b) = result.F;
