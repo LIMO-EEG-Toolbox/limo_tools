@@ -1999,7 +1999,7 @@ elseif LIMO.Level == 2
             
             
             
-        elseif strncmp(FileName,'Rep_ANOVA',9);   % All stuffs for repeated measures ANOVA
+        elseif strncmp(FileName,'Rep_ANOVA',9)   % All stuffs for repeated measures ANOVA
             % -----------------------------------------------------------------------------
             
             
