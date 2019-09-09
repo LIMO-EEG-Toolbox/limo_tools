@@ -110,13 +110,13 @@ elseif strncmp(FileName,'semi_partial_coef',17)
     MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
     titlename = sprintf('Semi Partial Coef %g',effect_nb);
 elseif strncmp(FileName,'con_',4)
-    effect_nb = eval(FileName(6:end-4));
+    effect_nb = eval(FileName(5:end-4));
     M         = squeeze(con(:,:,4));
     Pval      = squeeze(con(:,:,5));
     MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
     titlename = sprintf('Contrast %g T values',effect_nb);
 elseif strncmp(FileName,'ess_',4)
-    effect_nb = eval(FileName(6:end-4));
+    effect_nb = eval(FileName(5:end-4));
     M         = squeeze(ess(:,:,end-1));
     Pval      = squeeze(ess(:,:,end));
     MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
