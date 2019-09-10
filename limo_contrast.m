@@ -532,11 +532,9 @@ switch type
             
             % prepare the boostrap centering the data
             if exist('centered_data','file')
-                load('centered_data');
-                load('boot_table');
-            else
-                load(['H0' filesep 'centered_data']);
-                load(['H0' filesep 'boot_table']);
+                load('centered_data'); load('boot_table');
+            elseif exist(['H0' filesep 'centered_data'],'file')
+                cd('H0'); load('centered_data'); load('boot_table');
             end
 
             %  compute
