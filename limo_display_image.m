@@ -15,8 +15,8 @@ function LIMO_display_image(LIMO,toplot,mask,mytitle,dynamic)
 %
 % the function originates from previous version of LIMO_display_results
 % Cyril Pernet v2 January 2016
-% ------------------------------
-%  Copyright (C) LIMO Team 2019
+% ----------------------------------
+%  Copyright (C) LIMO Team 2016
 
 if nargin == 4
     dynamic = 1;
@@ -130,16 +130,17 @@ title(mytitle2,'FontSize',12)
 
 % topoplot at max time
 % ---------------------
+cc = color_images_(scale,LIMO);
 if size(toplot,1) ~= 1
-    if ~isfield(LIMO.design,'name') || isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
+    if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
         ax(2) = subplot(3,3,6);
         chans = LIMO.data.chanlocs;
-        opt = {'maplimits','maxmin','verbose','off'};
+        opt = {'maplimits','maxmin','verbose','off','colormap', cc};
         
         if isfield(LIMO,'Type')
             if strcmp(LIMO.Type,'Components')
-                opt = {'maplimits','absmax','electrodes','off','verbose','off'};
+                opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', cc};
                 topoplot(toplot(:,f),chans,opt{:});
             else
                 topoplot(toplot(:,f),chans,opt{:});
@@ -171,6 +172,7 @@ if size(toplot,1) ~= 1
                 end
             end
         end
+        colormap(gca, cc(2:end,:));
     end
 end
 
@@ -179,8 +181,10 @@ end
 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
 if strcmp(LIMO.Analysis,'Time')
     imagesc(timevect,1:size(toplot,1),scale);
+    colormap(gca, cc);
 elseif strcmp(LIMO.Analysis,'Frequency')
     imagesc(freqvect,1:size(toplot,1),scale);
+    colormap(gca, cc);
 end
 
 try
@@ -196,7 +200,6 @@ try
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
-cc = limo_color_images(scale,LIMO);
 
 % ------------------------
 % update with mouse clicks
@@ -231,11 +234,10 @@ if dynamic == 1
                 elseif size(toplot,1)> 1 && y<1
                     y = 1;
                 end
-            
                 
                 if strcmp(LIMO.Analysis,'Time') 
                     
-                    if ~isfield(LIMO.design,'name') || isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
+                    if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
                             topoplot(toplot(:,1),chans,opt{:});
@@ -247,6 +249,7 @@ if dynamic == 1
                         else
                             title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
                         end
+                        colormap(gca, cc(2:end,:));
                     end
                     
                     subplot(3,3,9,'replace');
@@ -289,6 +292,7 @@ if dynamic == 1
                         else
                             title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
                         end
+                        colormap(gca, cc(2:end,:));
                     end
                     
                     subplot(3,3,9,'replace');
@@ -324,7 +328,6 @@ if dynamic == 1
                 
             end
             
-            colormap(cc); 
             try
                 p_values = evalin('base','p_values');
                 if ~isnan(p_values(round(y),frame))
@@ -336,4 +339,96 @@ if dynamic == 1
 end
 end
 
+%% color map
+% -------------------------------------------------------------------------
+% just use ready made map from https://github.com/CPernet/brain_colours
+% Reference: Pernet & Madan. Data visualization for inference in
+% tomographic brain imaging. In prep.
+
+function cc = color_images_(scale,LIMO)
+
+if min(scale(:)) >= 0
+    cc=cubehelixmap('increase',64);
+elseif min(scale(:)) <= 0
+    cc=cubehelixmap('decrease',64);   
+else
+    cc = zeros(64,3);
+    tmp = scale.*(scale>0);
+    cc(33:64,:)=cubehelixmap('increase',32);
+    tmp = scale.*(scale<0);  
+    cc(1:32,:)=cubehelixmap('decrease',32);
+end
+
+% color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
+% cc = load([color_path 'diverging_bgy.mat']); cc = cc.diverging_bgy;
+% % cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+% if min(scale(:)) >= 0
+%     cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+%     cc = cc(floor(length(cc)/2):end,:);
+%     %cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+% elseif max(scale(:)) <= 0
+%     cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
+% else
+%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+%     cc = flipud(cc(1:ceil(length(cc)/2),:));
+%     % cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
+% end
+
+% else
+%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+% end
+
+if sum(isnan(scale(:))) ~= 0
+    cc(1,:)=[.9 .9 .9]; % set NaNs to gray
+end
+colormap(cc);
+
+set(gca,'XMinorTick','on','LineWidth',2)
+try
+    set(gca,'YTick',1:length(LIMO.data.expected_chanlocs));
+catch ME
+    set(gca,'YTick',1:length(LIMO.data.chanlocs));
+end
+
+if strcmp(LIMO.Analysis,'Time')
+    xlabel('Time in ms','FontSize',10)
+elseif strcmp(LIMO.Analysis,'Frequency')
+    xlabel('Frequency in Hz','FontSize',10)
+end
+
+if strcmp(LIMO.Type,'Components')
+    if size(scale,1) == 1
+        label_electrodes = ' ';
+        ylabel('optimized component','FontSize',10);
+    else
+        ylabel('Components','FontSize',10);
+        for i=1:size(scale,1)
+            label_electrodes{i} = i;
+        end
+    end
+else
+    if size(scale,1) == 1
+        label_electrodes = ' ';
+        ylabel('optimized electrode','FontSize',10);
+    else
+        ylabel('Electrodes','FontSize',10);
+        for i = 1:length(LIMO.data.chanlocs)
+            if LIMO.Level == 2
+                try
+                    label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
+                catch
+                    label_electrodes{i} = i;
+                end
+            else
+                try
+                    label_electrodes{i} = LIMO.data.chanlocs(i).labels;
+                catch
+                    label_electrodes{i} = i;
+                end
+            end
+        end
+    end
+end
+set(gca,'YTickLabel', label_electrodes);
+end
 
