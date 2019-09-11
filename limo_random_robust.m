@@ -59,7 +59,7 @@ function filepath = limo_random_robust(varargin)
 %                    nboot = nb of resamples (0 for none)
 %                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(6,y,gp,factor_levels,LIMO,nboot,tfce)
+% limo_random_robust(6,y,gp,factor_levels,LIMO,nboot,tfce,'go',option)
 %                    6 = Repeated measures ANOVA/ANCOVA using multivariate approach
 %                    y = data (dim electrodes, time or freq, subjects, measures)
 %                      = data (dim electrodes, freq, time, subjects, measures)
@@ -68,6 +68,9 @@ function filepath = limo_random_robust(varargin)
 %                    LIMO the basic structure with data, design and channel info
 %                    nboot = nb of resamples (0 for none)
 %                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
+%                    'go' is optional and prompt or not the pseudo-design
+%                    with N condition, options are 'yes' (prompt, default), 
+%                    or 'no' (no prompt, usuful for scripting) 
 %
 % OUPUT
 % write on the disk matrices correponding to the test (Yr and LIMO.mat are generated in limo_random_select,
@@ -993,9 +996,7 @@ switch type
         
         data              = varargin{2}; % e,f,subjects,measures
         if isempty(data)  
-            load('Yr');
-            data = Yr; 
-            clear Yr
+            load('Yr'); data = Yr; clear Yr
         end
         gp_vector         = varargin{3}; % length of data, indices groups
         factor_levels     = varargin{4}; % vector eg [2 3]
@@ -1009,6 +1010,11 @@ switch type
         end
         nboot             = varargin{6};
         tfce              = varargin{7};
+        if nargin > 7
+            if strcmpi(varargin{8},'go')
+                go = varargin{9};
+            end
+        end
         clear varargin
         
         % ------------------------------------------------
@@ -1108,10 +1114,15 @@ switch type
             figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc(LIMO.design.X);
             colormap('gray'); title('ANOVA model','FontSize',16);xlabel('regressors');
             ylabel('subjects'); drawnow;
-            go = questdlg('start the analysis?');
-            if strcmp(go,'No')
-                return
+            if ~exist('go','var')
+                if ~strcmpi('go','yes')
+                    go = questdlg('start the analysis?');
+                    if ~strcmpi(go,'Yes')
+                        return
+                    end
+                end
             end
+                
             save LIMO LIMO;
             
             % do the analysis
