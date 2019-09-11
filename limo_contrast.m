@@ -531,9 +531,9 @@ switch type
             filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
             
             % prepare the boostrap centering the data
-            if exist('centered_data','file')
+            if exist('centered_data.mat','file')
                 load('centered_data'); load('boot_table');
-            elseif exist(['H0' filesep 'centered_data'],'file')
+            elseif exist(['H0' filesep 'centered_data.mat'],'file')
                 cd('H0'); load('centered_data'); load('boot_table');
             end
 
