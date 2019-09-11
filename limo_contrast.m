@@ -546,10 +546,9 @@ switch type
                 fprintf('contrast bootstrap %g \n',b);
                 for electrode = 1:size(centered_data,1)
                     % Inputs
-                    resampling_index = boot_table{electrode}(:,b);
-                    tmp = squeeze(centered_data(electrode,:,resampling_index,:));
-                    Y = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
-                    gp = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
+                    tmp = squeeze(centered_data(electrode,:,boot_table{electrode}(:,b),:));
+                    Y   = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
+                    gp  = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
                     % F and p
                     result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
                     H0_ess(electrode,:,1,b) = result.F;
@@ -559,35 +558,46 @@ switch type
             save (filename, 'H0_ess');
             
         else
-            H0_ess = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
+            H0_ess  = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
             H0_ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
             % design matrix for gp effects
-            k = LIMO.design.nb_conditions;
-            gp_vector = LIMO.data.Cat;
-            gp_values = unique(gp_vector); k = length(gp_values); X = NaN(size(gp_vector,1),k+1);
-            for g =1:k; X(:,g) = gp_vector == gp_values(g); end; X(:,end) = 1; % design matrix for gp effects
+            k         = LIMO.design.nb_conditions;
+            gp_vector = LIMO.data.Cat; 
+            gp_values = unique(gp_vector); 
+            k         = length(gp_values); 
+            X         = NaN(size(gp_vector,1),k+1);
+            for g =1:k
+                X(:,g) = gp_vector == gp_values(g); 
+            end 
+            X(:,end) = 1; % design matrix for gp effects
             
             % call rep anova
             for electrode = 1:size(Yr,1)
                 fprintf('electrode %g \n',electrode);
                 % Inputs
-                tmp = squeeze(Yr(electrode,:,:,:));
-                Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                gp = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
-                XB = X(find(~isnan(tmp(1,:,1))),:);
+                tmp = squeeze(centered_data(electrode,:,boot_table{electrode}(:,b),:));
+                Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:); % adjust gp as Y
+                XB  = X(find(~isnan(tmp(1,:,1))),:); % adjust X as well 
                 % mean, se, df
                 n = size(Y,2);
-                g=floor((20/100)*n);
+                g = floor((20/100)*n);
                 for time=1:size(Y,1)
-                    [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
-                    TD(time,:,:) = v((g+1):(n-g),:); % trimmed data
+                    % main effect
+                    [v,indices]              = sort(squeeze(Y(time,:,:))); % sorted data
+                    TD(time,:,:)             = v((g+1):(n-g),:); % trimmed data
                     H0_ess(electrode,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
-                    I = zeros(1,1,n); I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
+                    % gp interaction
+                    I = zeros(1,1,n); 
+                    I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; 
                     H0_ess2(electrode,time,1) = limo_trimmed_mean(I);
-                    v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
-                    v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
-                    [~,reorder] = sort(indices);
-                    for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
+                    
+                    v(1:g+1,:)   = repmat(v(g+1,:),g+1,1);
+                    v(n-g:end,:) = repmat(v(n-g,:),g+1,1); % winsorized data
+                    [~,reorder]  = sort(indices);
+                    for j = 1:size(Y,3)
+                        SD(:,j) = v(reorder(:,j),j); % restore the order of original data
+                    end 
                     S(time,:,:) = cov(SD); % winsorized covariance
                     H0_ess(electrode,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
                     H0_ess2(electrode,time,2) = NaN;
