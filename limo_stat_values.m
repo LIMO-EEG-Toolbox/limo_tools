@@ -909,26 +909,27 @@ elseif strncmp(FileName,'Rep_ANOVA',9)
     elseif MCC == 3 % Stat tfce
         MCC_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
         tfce_data = sprintf('tfce%stfce_%s',filesep, FileName);
-        try load(tfce_data);
+        try 
+            load(tfce_data);
             load(MCC_tfce_data)
-            
-            if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Interaction_with_gp, tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
-            elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Gp_effect, tfce_H0_Rep_ANOVA_Gp_effect,p);
-            elseif strncmp(FileName,'Rep_ANOVA',9)
-                [mask,M] = limo_max_correction(tfce_Rep_ANOVA, tfce_H0_Rep_ANOVA,p);
-            end
-            if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                mytitle = sprintf('Rep ANOVA Interaction: \n correction using TFCE');
-            elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                mytitle = sprintf('Rep ANOVA Gp effect: \n correction using TFCE');
-            elseif strncmp(FileName,'Rep_ANOVA',9)
-                mytitle = sprintf('Rep ANOVA: \n correction using TFCE');
-            end
         catch ME
             errordlg('no tfce bootstrap file was found to compute the max distribution','missing data')
             return
+        end
+            
+        if strncmp(FileName,'Rep_ANOVA_Interaction',21)
+            [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Interaction_with_gp, tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
+        elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
+            [mask,M] = limo_max_correction(tfce_Rep_ANOVA_Gp_effect, tfce_H0_Rep_ANOVA_Gp_effect,p);
+        elseif strncmp(FileName,'Rep_ANOVA',9)
+            [mask,M] = limo_max_correction(tfce_Rep_ANOVA, tfce_H0_Rep_ANOVA,p);
+        end
+        if strncmp(FileName,'Rep_ANOVA_Interaction',21)
+            mytitle = sprintf('Rep ANOVA Interaction: \n correction using TFCE');
+        elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
+            mytitle = sprintf('Rep ANOVA Gp effect: \n correction using TFCE');
+        elseif strncmp(FileName,'Rep_ANOVA',9)
+            mytitle = sprintf('Rep ANOVA: \n correction using TFCE');
         end
     end
     
