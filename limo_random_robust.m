@@ -1382,11 +1382,11 @@ switch type
                 H0_Rep_ANOVA_Gp_effect_cell2 = cell(1, nboot);
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell1 = cell(1, nboot);
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_cell2 = cell(1, nboot);
+                if ~exist('X', 'var'), X = []; end; % for parfor below
                 
+                array = find(~isnan(data(:,1,1,1)));
                 parfor B=1:nboot
                     fprintf('Repeated Measures ANOVA bootstrap %g \n ...', B);
-                    array = find(~isnan(data(:,1,1,1)));
-                    Xtmp = X;
                     
                     for e = 1:length(array)
                         electrode = array(e);
@@ -1401,7 +1401,7 @@ switch type
                         end
                         
                         if type == 3 || type == 4
-                            XB2 = Xtmp(~isnan(tmp(1,:,1)));
+                            XB2 = X(~isnan(tmp(1,:,1)));
                         end
                         
                         if type == 1
