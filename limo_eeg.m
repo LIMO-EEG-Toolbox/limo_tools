@@ -562,7 +562,7 @@ switch varargin{1}
                     
                     % update the files to be stored on the disk
                     if strcmp(LIMO.design.method,'IRLS')
-                        W(electrode,:,index) = model.W;
+                        W(electrode,:,index) = model.W';
                     elseif strcmp(LIMO.design.method,'WLS')
                         W(electrode,index) = model.W;
                     end
