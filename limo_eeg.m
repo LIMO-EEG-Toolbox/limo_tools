@@ -364,7 +364,6 @@ switch varargin{1}
         clear ALLCOM ALLEEGLIMO CURRENTSET CURRENTSTUDY LASTCOM STUDY 
         cd (LIMO.dir) ; save LIMO LIMO
 
-
         % make the design matrix
         disp('computing design matrix');
         if strcmp(LIMO.Analysis,'Time-Frequency') % use limo_design_matrix_tf
@@ -464,8 +463,10 @@ switch varargin{1}
             %% ---------------- multivariate analysis ------------------
             % --------------------------------------------------------
        
-        
         elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
+           
+            % to do limo_glm_handling(LIMO)
+
             update = 1;
             
             % --------- load files created by limo_design_matrix ------------------
@@ -828,8 +829,7 @@ switch varargin{1}
         % ------------------------------------------------------------------------
         %                       Gp Effects
         % ------------------------------------------------------------------------
-        
-        
+
         limo_random_effect
 end
 

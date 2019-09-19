@@ -11,9 +11,9 @@ function result = limo_contrast(varargin)
 %
 % INPUT:
 % Y              = 3D data
-% Betas          = betas computed in limo_glm1
+% Betas          = betas computed in limo_glm
 % LIMO           = the LIMO.mat with the design matrix and contrast
-% contrast type  = 0 for T test, 1 for F test
+% contrast type  = 0 or 'T' for T test, 1 or 'F' for F test
 % analysis type  = 1 Contrast for 1st level analyses and 2nd level regression/ANOVA/ANCOVA
 %                  2 for 1/2nd level bootrapped ANOVA/ANCOVA
 %
@@ -50,6 +50,9 @@ if type == 1 || type == 2
     Y           = varargin{1};
     Betas       = varargin{2};
     LIMO        = varargin{3};
+    if LIMO.Level == 2
+        error('2nd level Analysis detected - limo_contrast wrong case');
+    end
     X           = LIMO.design.X;
     nb_beta     = size(LIMO.design.X,2);
     contrast_nb = size(LIMO.contrast,2);
@@ -58,9 +61,14 @@ if type == 1 || type == 2
     if isfield(LIMO.model,'model_df')
         dfe     = LIMO.model.model_df(2);
     else
-        dfe     = size(Y,1)-rank(X); %% hapens for 2nd level N-way ANOVA or ANCOVA
+        dfe     = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
     end
     Test        = varargin{4};
+    if strcmpi(Test,'T')
+        Test = 0;
+    elseif strcmpi(Test,'F')
+        Test = 1;
+    end
 elseif type == 3 || type == 4
     Yr         = varargin{1};
     LIMO       = varargin{2};
@@ -70,6 +78,7 @@ elseif type == 3 || type == 4
     gp_values  = LIMO.design.nb_conditions;
     index      = size(LIMO.contrast,2);
     C          = LIMO.contrast{index}.C;
+    Test       = 2; % always a F-test
 end
 clear varargin
 
@@ -118,7 +127,7 @@ switch type
                     
                     var = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
                     % Update con file [mean value, se, df, t, p]
-                    con(electrode,:,1) = C*squeeze(Betas(electrode,:,:))' ;
+                    con(electrode,:,1) = C*squeeze(Betas(electrode,:,:))';
                     con(electrode,:,2) = sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
                     con(electrode,:,3) = dfe;
                     con(electrode,:,4) = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
@@ -161,14 +170,18 @@ switch type
             end
             
             % save files
-            if Test == 0
-                save (filename,'con');
-                clear con
+            if nargout == 1 && Test == 0
+                result = con;
+            elseif nargout == 1 && Test == 1
+                result = ess;
             else
-                save (filename,'ess');
-                clear ess
+                if Test == 0
+                    save (filename,'con'); clear con
+                else
+                    save (filename,'ess'); clear ess
+                end
             end
-            
+                     
         elseif strcmp(Method,'Multivariate')
             % ------------------------------
             
