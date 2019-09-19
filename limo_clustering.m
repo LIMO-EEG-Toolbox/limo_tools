@@ -117,7 +117,7 @@ if fig == 1
     [val,loc]=min(abs(mass-maxval)); 
     plot(loc,maxval,'r*','LineWidth',5)
     txt = ['biggest observed cluster mass: ' num2str(maxval) '\rightarrow'];
-    text(loc,maxval,txt,'FontSize',10,'HorizontalAlignment','right');
+    text(loc,double(maxval),txt,'FontSize',10,'HorizontalAlignment','right');
     
     title('Cluster-mass Maxima under H0','FontSize',12)
     xlabel('sorted bootstrap iterations','FontSize',12); 
