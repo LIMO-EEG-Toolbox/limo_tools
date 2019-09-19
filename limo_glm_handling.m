@@ -63,14 +63,14 @@ if strcmp(LIMO.design.status,'to do')
         electrode = array(e); warning off;
         if LIMO.Level == 2
             fprintf('analyzing channel %g/%g \n',e,size(array,1));
-            Y = squeeze(Yr(electrode,:,:));
-            index = find(~isnan(Y(1,:)));
-            Y = Y(:,index);
-            LIMO.design.X = X(index,:);
-            model = limo_glm(Y',LIMO); warning on;
+            Y             = squeeze(Yr(electrode,:,:));
+            index         = find(~isnan(Y(1,:)));
             if isempty(index)
-                index = 1:size(Y,2);
+                index     = 1:size(Y,2);
             end
+            Y             = Y(:,index);
+            LIMO.design.X = X(index,:);
+            model         = limo_glm(Y',LIMO); warning on;
         else % level 1 we should not have any NaNs
             if strcmp(LIMO.Type,'Channels')
                 fprintf('analyzing channel %g/%g \n',e,size(array,1));
@@ -113,14 +113,14 @@ if strcmp(LIMO.design.status,'to do')
         elseif strcmp(LIMO.design.method,'WLS')
             W(electrode,index) = model.W;
         end
-        fitted_data = LIMO.design.X*model.betas;
+        fitted_data             = LIMO.design.X*model.betas;
         Yhat(electrode,:,index) = fitted_data';
         Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data';
         clear fitted_data
-        R2(electrode,:,1) = model.R2_univariate;
-        R2(electrode,:,2) = model.F;
-        R2(electrode,:,3) = model.p;
-        Betas(electrode,:,:,1) = model.betas';
+        R2(electrode,:,1)       = model.R2_univariate;
+        R2(electrode,:,2)       = model.F;
+        R2(electrode,:,3)       = model.p;
+        Betas(electrode,:,:,1)  = model.betas';
         
         if prod(LIMO.design.nb_conditions) ~=0
             if length(LIMO.design.nb_conditions) == 1
@@ -158,8 +158,8 @@ if strcmp(LIMO.design.status,'to do')
     disp('saving data to disk')
     LIMO.design.X       = X;
     LIMO.design.weights = W;
-    LIMO.design.status = 'done';
-    LIMO.design.name   = 'GLM';
+    LIMO.design.status  = 'done';
+    LIMO.design.name    = 'GLM';
     save LIMO LIMO; save Yhat Yhat -v7.3;
     save Res Res; save Betas Betas -v7.3;
     save R2 R2 -v7.3; clear Yhat Res Betas R2
@@ -168,11 +168,11 @@ if strcmp(LIMO.design.status,'to do')
         for i=1:length(LIMO.design.nb_conditions)
             name = sprintf('Condition_effect_%g',i);
             if size(tmp_Condition_effect,1) == 1
-                tmp = squeeze(tmp_Condition_effect(1,:,i,:));
-                Condition_effect = NaN(1,size(tmp_Condition_effect,2),2);
+                tmp                     = squeeze(tmp_Condition_effect(1,:,i,:));
+                Condition_effect        = NaN(1,size(tmp_Condition_effect,2),2);
                 Condition_effect(1,:,:) = tmp;
             else
-                Condition_effect = squeeze(tmp_Condition_effect(:,:,i,:));
+                Condition_effect        = squeeze(tmp_Condition_effect(:,:,i,:));
             end
             save(name,'Condition_effect','-v7.3')
         end
@@ -183,11 +183,11 @@ if strcmp(LIMO.design.status,'to do')
         for i=1:length(LIMO.design.nb_interactions)
             name = sprintf('Interaction_effect_%g',i);
             if size(tmp_Interaction_effect,1) == 1
-                tmp = squeeze(tmp_Interaction_effect(1,:,i,:));
-                Interaction_effect = NaN(1,size(tmp_Interaction_effect,2),2);
+                tmp                       = squeeze(tmp_Interaction_effect(1,:,i,:));
+                Interaction_effect        = NaN(1,size(tmp_Interaction_effect,2),2);
                 Interaction_effect(1,:,:) = tmp;
             else
-                Interaction_effect = squeeze(tmp_Interaction_effect(:,:,i,:));
+                Interaction_effect        = squeeze(tmp_Interaction_effect(:,:,i,:));
             end
             save(name,'Interaction_effect','-v7.3')
         end
@@ -198,11 +198,11 @@ if strcmp(LIMO.design.status,'to do')
         for i=1:LIMO.design.nb_continuous
             name = sprintf('Covariate_effect_%g',i);
             if size(tmp_Covariate_effect,1) == 1
-                tmp = squeeze(tmp_Covariate_effect(1,:,i,:));
-                Covariate_effect = NaN(1,size(tmp_Covariate_effect,2),2);
+                tmp                     = squeeze(tmp_Covariate_effect(1,:,i,:));
+                Covariate_effect        = NaN(1,size(tmp_Covariate_effect,2),2);
                 Covariate_effect(1,:,:) = tmp;
             else
-                Covariate_effect = squeeze(tmp_Covariate_effect(:,:,i,:));
+                Covariate_effect        = squeeze(tmp_Covariate_effect(:,:,i,:));
             end
             save(name,'Covariate_effect','-v7.3')
         end
@@ -261,9 +261,13 @@ if boot_go == 1
             array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
         end
         
-        if LIMO.design.bootstrap <= 800
-            fprintf('setting bootstrap to the minimum required, i.e. 800 instead of %g\n',LIMO.design.bootstrap)
-            LIMO.design.bootstrap = 800;
+        if LIMO.design.bootstrap <= 800 
+            if LIMO.design.bootstrap == 101
+                fprintf('bootstrap set to 101, this is a testing hack, otherwise the minimum required would be 800\n')
+            else
+                fprintf('setting bootstrap to the minimum required, i.e. 800 instead of %g\n',LIMO.design.bootstrap)
+                LIMO.design.bootstrap = 800;
+            end
         end
         nboot = LIMO.design.bootstrap;
         
