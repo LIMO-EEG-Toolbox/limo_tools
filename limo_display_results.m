@@ -781,7 +781,7 @@ if LIMO.Level == 1
                     else electrode = eval(cell2mat(electrode)); end
                     if size(electrode) > 1
                         errordlg('invalid electrode choice'); return
-                    elseif electrode > size(LIMO.data.chanlocs,2) || electrode < 1
+                    elseif electrode > length(LIMO.data.chanlocs,2) || electrode < 1
                         errordlg('invalid electrode number'); return
                     end
                     
@@ -802,7 +802,7 @@ if LIMO.Level == 1
                 electrode = eval(cell2mat(electrode));
                 if size(electrode) > 1
                     errordlg('invalid electrode choice'); return
-                elseif electrode > size(LIMO.data.chanlocs,1) || electrode < 1
+                elseif electrode > length(LIMO.data.chanlocs,1) || electrode < 1
                     errordlg('invalid electrode number'); return
                 end
                 
