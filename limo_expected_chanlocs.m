@@ -1,4 +1,4 @@
-function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varargin)
+function [expected_chanlocs,channeighbstructmat,neighbours,savename] = limo_expected_chanlocs(varargin)
 
 % This function loads an EEG dataset to create a file with the
 % location of all expected channels and to create a neighbourhood
@@ -14,8 +14,12 @@ function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varar
 %        neighbour distance is the distance between channels to buid the neighbourhood matrix
 %        channeighbstructmat is the neighbourhood matrix
 % 
-% OUTPUTS expected_chanlocs structure that lists all the electrodes with their neighbours.
-%         channeighbstructmat a matrix of electrode neighbourhood used in cluster analyses.
+% OUTPUTS expected_chanlocs structure that lists all the electrodes 
+%         --> same as chanloc per subject
+%         --> build across all subjects (should be like your cap before bad channel removal)
+%         channeighbstructmat a matrix of electrode neighbourhood used in cluster analyses
+%         neighbours the expected chanloc structure with the neighbours of each channel
+%         savename, the default name generated to save data (not saved in nargout)
 %
 % See also LIMO_NEIGHBOURDIST LIMO_GET_CHANNEIGHBSTRUCMAT
 % similar version from eeglab [STUDY neighbors] = std_prepare_neighbors( STUDY, ALLEEG, 'key', val)
@@ -32,7 +36,7 @@ function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varar
 %  Copyright (C) LIMO Team 2019
 
 %% variables set as defaults
-min_subjects = 3; % we want at least 3 subjects per electrode
+min_subjects = 3; % we want at least 3 subjects per electrode for a set
 
 global EEGLIMO
 current_dir = pwd;
@@ -89,22 +93,23 @@ if strcmp(quest,'One')
             return
         end
     end
-
- %   try
-        EEGLIMO=pop_loadset('filename', fullfile(PathName, FileName));
-        expected_chanlocs = EEGLIMO.chanlocs;
-        fprintf('Data set %s loaded \n',FileName);
-        [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
-        if sum(channeighbstructmat(:)) == 0
-            msg = sprintf('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
-            error(msg)
-        end
+    
+    EEGLIMO=pop_loadset('filename', fullfile(PathName, FileName));
+    expected_chanlocs = EEGLIMO.chanlocs;
+    fprintf('Data set %s loaded \n',FileName);
+    [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
+    for n=1:length(neighbours); N(n)=length(neighbours{n}.neighblabel); end
+    if sum(channeighbstructmat(:)) == 0
+       error('the neighbouring matrix is empty, it''s likely a distance issue, see imo_ft_neighbourselection.m');
+    else
         cd (current_dir);
+        savename = fullfile(PathName,[FileName(1:end-4) '_' num2str(round(mean(N))) '_neighbour_matrix']);
         if nargout == 0
-            save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
+            save(savename, 'neighbours', 'expected_chanlocs', 'channeighbstructmat') % save all in one file
             fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
         end
-     
+    end
+    
 elseif strcmp(quest,'Set')   % from a set of subjects
     % -------------------------------------------
     
@@ -162,9 +167,10 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     end
     
     if index == 2
-        errordlg('you choose to create from a set and selected only one file?? ')
-        expected_chanlocs = [];
+        expected_chanlocs   = [];
         channeighbstructmat = [];
+        neighbours          = [];
+        errordlg('you choose to create from a set and selected only one file?? ')
     end
     
     %% retreive all chanlocs and make up a cap where we have a least 3 subjects
@@ -174,8 +180,8 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     % retreive all chanlocs
     for i=1:length(Paths)
         load(Files{i})
-        chanlocs{i}      = LIMO.data.chanlocs;
-        size_chanlocs(i) = size(LIMO.data.chanlocs,2);
+        chanlocs{i}        = LIMO.data.chanlocs;
+        size_chanlocs(i)   = size(LIMO.data.chanlocs,2);
         clear LIMO
         for c = 1:size_chanlocs(i)
             chan_labs{i,c} = chanlocs{i}(c).labels;
@@ -252,18 +258,19 @@ elseif strcmp(quest,'Set')   % from a set of subjects
     
     % make up fake data
     EEGLIMO.nbchan = length(EEGLIMO.chanlocs);
-    EEGLIMO.data = zeros(EEGLIMO.nbchan, EEGLIMO.pnts, EEGLIMO.trials);
+    EEGLIMO.data   = zeros(EEGLIMO.nbchan, EEGLIMO.pnts, EEGLIMO.trials);
     cd (current_dir);
 
     % now we have 1 cap we can do as if we had a single subject to process
-    [~,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO, neighbourdist);
+    [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO, neighbourdist);
     if sum(channeighbstructmat(:)) == 0
-        error('the neighbouring matrix is empty, it''s likely a distance issue \n see imo_ft_neighbourselection.m');
-    end
-    
-    if nargout == 0
-         save expected_chanlocs expected_chanlocs channeighbstructmat % save all in one file
-         fprintf('expected_chanlocs & channeighbstructmatfile saved\n');
+        error('the neighbouring matrix is empty, it''s likely a distance issue, see imo_ft_neighbourselection.m');
+    else
+        savename = [pwd filesep 'gp_level_expected_chanlocs.mat'];
+        if nargout == 0
+            save(savename, 'expected_chanlocs' ,'channeighbstructmat', 'neighbours') % save all in one file
+            fprintf('expected_chanlocs with all matrices saved\n');
+        end
     end
 end
 
