@@ -131,7 +131,7 @@ switch type
                     con(electrode,:,2) = sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
                     con(electrode,:,3) = dfe;
                     con(electrode,:,4) = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                    con(electrode,:,5) = 1-tcdf(squeeze(con(electrode,:,4)), dfe);
+                    con(electrode,:,5) = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
                     
                 else % F contrast
                     % Update ess file [mean values, se, df, F, p]
