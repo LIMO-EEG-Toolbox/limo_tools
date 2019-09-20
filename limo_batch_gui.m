@@ -61,6 +61,7 @@ handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'OLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
+handles.neighbouring_matrix = [];
 handles.quit                = 0;
 guidata(hObject, handles);
 uiwait(handles.figure1);
@@ -475,21 +476,12 @@ defaults.type              = handles.type;
 % load the expected channel locations
 % -----------------------------------------
 if handles.bootstrap == 1 && ~strcmp(handles.type,'Components') 
-    [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
+    [chan_file,chan_path,whatsup]=uigetfile('*.mat','Select channel location file');
     if whatsup == 1
-        try
-            channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
-            fn                  = fieldnames(channeighbstructmat);
-            index               = find(ismember(fn,'expected_chanlocs'));
-            test                = getfield(channeighbstructmat,fn{index});
-        catch
-            test = eval(chan_file(1:end-4));
-        end
-        
-        if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
-                && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
-                && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
-            defaults.chanloc = test; disp('channel location loaded');
+        channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
+        if isfield(channeighbstructmat,'channeighbstructmat') && ...
+                isfield(channeighbstructmat,'expected_chanlocs')
+            defaults.neighbouring_matrix = channeighbstructmat ;
         else
             warndlg('this file is not recognize as a channel location file or informations are missing','file error')
         end
