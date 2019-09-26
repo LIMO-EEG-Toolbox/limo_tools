@@ -59,7 +59,7 @@ if type == 1 || type == 2
     C           = LIMO.contrast{size(LIMO.contrast,2)}.C;
     Method      = LIMO.design.type_of_analysis;
     if isfield(LIMO.model,'model_df')
-        dfe     = LIMO.model.model_df(2);
+        dfe = LIMO.model.model_df(2);
     else
         dfe     = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
     end
@@ -125,38 +125,56 @@ switch type
                 % -----------
                 if Test == 0 % T contrast
                     
-                    var = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
                     % Update con file [mean value, se, df, t, p]
-                    con(electrode,:,1) = C*squeeze(Betas(electrode,:,:))';
-                    con(electrode,:,2) = sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                    con(electrode,:,3) = dfe;
-                    con(electrode,:,4) = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                    con(electrode,:,5) = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
-                    
+                    var                            = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
+                    con(electrode,:,1)             = C*squeeze(Betas(electrode,:,:))';
+                    con(electrode,:,2)             = sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % var is weighted already no need to use WX
+                    con(electrode,:,3)             = dfe;
+                    con(electrode,:,4)             = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
+                    if strcmpi(LIMO.design.method,'OLS')
+                        con(electrode,:,5)         = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
+                    elseif strcmpi(LIMO.design.method,'IRLS')
+                        for frame = 1:size(Betas,2)
+                            con(electrode,frame,5) = (1-tcdf(squeeze(abs(con(electrode,frame,4))), dfe)).*2;
+                        end
+                    end
                 else % F contrast
                     % Update ess file [mean values, se, df, F, p]
+                    E = diag(squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
                     ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ;
-                    R = eye(size(Y,3)) - (X*pinv(X));
-                    E = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
-                    c = zeros(length(C));
-                    for n=1:length(C)
-                        c(n,n) = C(n);
-                    end
-                    
-                    C0 = eye(size(c,1)) - c*pinv(c);
-                    X0 = X*C0;
-                    R0 = eye(size(Y,3)) - (X0*pinv(X0));
-                    M  = R0 - R;
-                    H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
-                    if rank(c) == 1
+                    ess(electrode,:,end-3)       = E/dfe;
+                    if rank(diag(C)) == 1
                         df = 1;
                     else
-                        df = rank(c) - 1;
+                        df = rank(diag(C)) - 1; 
                     end
-                    ess(electrode,:,end-3) = diag(E)/dfe;
-                    ess(electrode,:,end-2) = df;
-                    ess(electrode,:,end-1) = (diag(H)/df)./(diag(E)/dfe);  % F value
-                    ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), rank(c)-1, dfe);   % p value
+                    ess(electrode,:,end-2)       = df;
+                    
+                    c  = zeros(length(C));
+                    C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
+                    if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
+                        WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,:))',1,size(X,2)-1) X(:,end)];
+                        R  = eye(size(Y,3)) - (WX*pinv(WX));
+                        X0 = X*C0;
+                        R0 = eye(size(Y,3)) - (X0*pinv(X0));
+                        M  = R0 - R;
+                        H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
+                        ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
+                        if strcmpi(LIMO.design.method,'OLS')
+                            ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
+                        end
+                    else
+                        for frame = 1:size(Betas,2)
+                            WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,frame,:)),1,size(X,2)-1) X(:,end)];
+                            R  = eye(size(Y,3)) - (WX*pinv(WX));
+                            X0 = X*C0;
+                            R0 = eye(size(Y,3)) - (X0*pinv(X0));
+                            M  = R0 - R;
+                            H  = (squeeze(Betas(electrode,frame,:))'*X'*M*X*squeeze(Betas(electrode,frame,:)));
+                            ess(electrode,frame,end-1) = (H/df)./(E(frame)/dfe);  % F value
+                            ess(electrode,frame,end)   = 1 - fcdf(ess(electrode,frame,end-1), df, dfe); % p value
+                        end
+                    end
                 end
             end
             
