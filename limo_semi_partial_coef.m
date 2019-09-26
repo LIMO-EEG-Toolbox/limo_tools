@@ -45,7 +45,7 @@ clear varargin
 if LIMO.design.nb_continuous == 0 && length(LIMO.design.nb_conditions) == 1
     errordlg('there is only 1 categorical factor, nothing to compute')
     return
-elseif sum(LIMO.design.nb_conditions)==0 && length(LIMO.design.nb_continuous) == 1
+elseif sum(LIMO.design.nb_conditions)==0 && LIMO.design.nb_continuous == 0
     errordlg('there is only 1 continuous factor, nothing to compute')
     return
 end
@@ -65,9 +65,9 @@ if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
     clear R2
     
     for i=1:size(tmp,3)
-        name = sprintf('semi_partial_coef_%g',i);
+        name = sprintf('semi_partial_coef_%g.mat',i);
         semi_partial_coef = squeeze(tmp(:,:,i,:));
-        save(name,'semi_partial_coef','-v7.3')
+        save(name,'semi_partial_coef')
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
@@ -80,7 +80,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
     clear R2
     
     for i=1:size(tmp,3)
-        name = sprintf('semi_partial_coef_%g',i);
+        name = sprintf('semi_partial_coef_%g.mat',i);
         tmp2 = squeeze(tmp(:,:,i,:));
         semi_partial_coef = limo_tf_4d_reshape(tmp2);
         save(name,'semi_partial_coef','-v7.3')
@@ -109,7 +109,7 @@ if isfield(LIMO.design,'boostrap')
             end
             
             for i=1:size(H0,3)
-                name = sprintf('H0_semi_partial_coef_%g',i);
+                name = sprintf('H0_semi_partial_coef_%g.mat',i);
                 H0_semi_partial_coef = squeeze(H0(:,:,i,[2 3],:)); % only keep F and p
                 save(name,'H0_semi_partial_coef','-v7.3')
             end
@@ -124,7 +124,7 @@ if isfield(LIMO.design,'boostrap')
             end
             
             for i=1:size(H0,3)
-                name = sprintf('H0_semi_partial_coef_%g',i);
+                name = sprintf('H0_semi_partial_coef_%g.mat',i);
                 tmp = squeeze(H0(:,:,i,[2 3],:)); % only keep F and p
                 H0_semi_partial_coef = limo_tf_5d_reshape(tmp);
                 save(name,'H0_semi_partial_coef','-v7.3')
@@ -186,13 +186,6 @@ N  = 1:size(LIMO.design.X,2);
 % --------------------------------------
 
 index      = 1;
-if LIMO.design.nb_interactions == 0
-    Nreg   = length(LIMO.design.nb_conditions)+LIMO.design.nb_continuous;
-else
-    Nreg   = length(LIMO.design.nb_conditions)+length(LIMO.design.nb_interactions)+LIMO.design.nb_continuous;
-end
-regressors = cell(1,Nreg);
-
 % categorical variables
 for i=1:length(LIMO.design.nb_conditions)
     if i == 1
@@ -200,8 +193,11 @@ for i=1:length(LIMO.design.nb_conditions)
     else
         effect = index:index+LIMO.design.nb_conditions(i)-1;
     end
-    regressors{i} = setdiff(N,effect); % all but the effect of interest
-    index = index+LIMO.design.nb_conditions(i);
+    
+    if ~isempty(effect)
+        regressors{i} = setdiff(N,effect); % all but the effect of interest
+        index = index+LIMO.design.nb_conditions(i);
+    end
 end
 
 % interactions
@@ -212,15 +208,23 @@ if LIMO.design.nb_interactions ~= 0
         else
             effect = index:index+LIMO.design.nb_interactions(i)-1;
         end
-        regressors{i+j} = setdiff(N,effect);
-        index = index+LIMO.design.nb_interactions(i);
+        
+        if ~isempty(effect)
+            regressors{i+j} = setdiff(N,effect);
+            index = index+LIMO.design.nb_interactions(i);
+        end
     end
 end
 
 % continuous variables
 if LIMO.design.nb_continuous~=0
-    s = length(regressors);
-    for k=1:length(LIMO.design.nb_continuous)
+    if exist('regressors','var')
+        s = length(regressors);
+    else
+        s = 0;
+    end
+    
+    for k=1:LIMO.design.nb_continuous
         regressors{s+k} = setdiff(N,index);
         index = index+1;
     end
@@ -233,11 +237,7 @@ Partial_coef = NaN(size(Yr,1),size(Yr,2),length(regressors),3);
 for r=1:length(regressors)
     
     if flag ~=0
-        if r<length(LIMO.design.nb_conditions)+length(LIMO.design.nb_interactions)
-            fprintf('computing coef. for the categorical variable %g ,',r);
-        else
-            fprintf('computing coef. for the continuous variable %g ,',r-length(LIMO.design.nb_conditions)-length(LIMO.design.nb_interactions));
-        end
+        fprintf('computing coef. for variable %g ,',r);
     end
     
     X  = LIMO.design.X(:,regressors{r});

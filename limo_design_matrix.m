@@ -283,67 +283,7 @@ if ~isempty(Cat)
             [x, nb_interactions] = limo_make_interactions(x, nb_conditions);
         end
     end
-    
-%         % get each part of x for the right factors
-%         nb_factors = size(nb_conditions,2);
-%         F{1} = x(:,1:nb_conditions(1)); index = nb_conditions(1)+1;
-%         for f = 2:nb_factors
-%             F{f} = x(:,index:(index+nb_conditions(f)-1));
-%             index = index+nb_conditions(f);
-%         end
-%        
-%         % look for which factors to combine
-%         index = 1; for n=2:nb_factors
-%         interaction{index} = nchoosek([1:nb_factors],n);
-%         index = index + 1; end; index = 1;
-%          
-%         % combine those factors
-%         for i =1:size(interaction,2) 
-%             for j=1:size(interaction{i},1)
-%                 combination = interaction{i}(j,:);
-%                 if size(combination,2) == 2 % 2 factors
-%                     I = [];
-%                     a = F{combination(1)};
-%                     b = F{combination(2)};
-%                     for m=1:size(a,2)
-%                         tmp = repmat(a(:,m),1,size(b,2)).*b;
-%                         I = [I tmp];
-%                     end
-%                     I = I(:,find(sum(I))); % removes the silly zero columns
-%                     
-%                 else % > 2 factors
-%                     l = 1; 
-%                     while l < size(combination,2)
-%                         if l == 1
-%                             I = [];
-%                             a = F{combination(l)};
-%                             b = F{combination(l+1)};
-%                             for m=1:size(a,2)
-%                                 tmp = repmat(a(:,m),1,size(b,2)).*b;
-%                                 I = [I tmp];
-%                             end
-%                             I = I(:,find(sum(I)));
-%                             C{l} = I; l = l+1;
-%                         else
-%                             I = [];
-%                             a = C{l-1};
-%                             b = F{combination(l+1)};
-%                             for m=1:size(a,2)
-%                                 tmp = repmat(a(:,m),1,size(b,2)).*b;
-%                                 I = [I tmp];
-%                             end
-%                             I = I(:,find(sum(I)));
-%                             C{l} = I; l = l+1;
-%                         end
-%                     end
-%                     I = C{end};
-%                 end
-%                 nb_interactions(index) = size(I,2);
-%                 x = [x I]; index = index +1;
-%             end
-%         end
-%     end
-    
+       
     % add the continuous regressors and the constant
     if add_cont == 1
         X = [x Cont ones(size(Yr,3),1)];
@@ -420,7 +360,8 @@ try
     
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = NaN(size(Yr,1),size(Yr,2),3); save R2 R2;
+        R2 = NaN(size(Yr,1),size(Yr,2),3); 
+        save('R2.mat','R2');
     end
     
     % these ones will be created in limo_eeg
@@ -436,10 +377,10 @@ try
         tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
     end
     
-    save Yhat Yhat; clear Yhat
-    save Betas Betas; clear Betas
-    save Res Res; clear Res
-    save Yr Yr ; clear Yr R2
+    save('Yhat.mat','Yhat');   clear Yhat
+    save('Betas.mat','Betas'); clear Betas
+    save('Res.mat','Res');     clear Res
+    save('Yr.mat','Yr') ;      clear Yr R2
     
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end
