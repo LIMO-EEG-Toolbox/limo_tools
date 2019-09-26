@@ -232,8 +232,8 @@ switch method
         C0             = eye(size(X,2)) - C*pinv(C);     % only the constant
         X0             = WX*C0;                          % Reduced model design matrix
         R0             = eye(size(Y,1)) - (X0*pinv(X0)); % Projection onto error
-        M              = R0 - R;                         % Projection matrix onto Xc
-        H              = (Betas'*X'*M*X*Betas);          % SS Effects
+        M              = R0 - R;                         % Projection matrix onto WXc
+        H              = (Betas'*X'*M*X*Betas);          % SS Effects (X'*M*X is weighted)
         Rsquare        = diag(H)./diag(T);               % Variance explained
         F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
         p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
@@ -580,6 +580,7 @@ switch method
             % model stats
             % -------------------------------------------------------------
             WX                     = X.*W(:,frame);
+            WX                     = [X(:,1:end-1).*repmat(LIMO.design.weights(:,frame),1,size(X,2)-1) X(:,end)];
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
