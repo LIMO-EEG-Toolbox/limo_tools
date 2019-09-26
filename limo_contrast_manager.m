@@ -356,6 +356,7 @@ if ~isempty(handles.C)
                         limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
                     end
                     clear Yr ; cd ..
+                    disp('boostrapped contrasts done ...')
                 end
                 
                 if LIMO.design.tfce == 1
@@ -390,6 +391,7 @@ if ~isempty(handles.C)
                         end
                         filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
                     end
+                    disp('tfce - boostrapped contrasts done ...')
                 end
                 
             elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
@@ -401,7 +403,6 @@ if ~isempty(handles.C)
             end
             
             clear Yr Betas
-            disp('boostrapped contrasts done ...')
             
             
             % -------------------------------------------
