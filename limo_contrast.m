@@ -153,7 +153,11 @@ switch type
                     c  = zeros(length(C));
                     C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
                     if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                        WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,:))',1,size(X,2)-1) X(:,end)];
+                        if isfield(LIMO.design,'weights')
+                            WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,:))',1,size(X,2)-1) X(:,end)];
+                        else
+                            WX = X;
+                        end
                         R  = eye(size(Y,3)) - (WX*pinv(WX));
                         X0 = X*C0;
                         R0 = eye(size(Y,3)) - (X0*pinv(X0));
