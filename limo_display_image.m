@@ -1,4 +1,4 @@
-function LIMO_display_image(LIMO,toplot,mask,mytitle,dynamic)
+function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 
 % This function displays images with a intensity plotted as function of
 % time or frequency (x) and electrodes (y) - for ERSP it precomputes what
@@ -13,8 +13,15 @@ function LIMO_display_image(LIMO,toplot,mask,mytitle,dynamic)
 %   mytitle   = title to show
 %   dynamic   = set to 0 for no interaction (default is 1)
 %
-% the function originates from previous version of LIMO_display_results
-% Cyril Pernet v2 January 2016
+% The colour scales are from https://github.com/CPernet/brain_colours
+% using linear luminance across the range with cool for negative and 
+% hot for positive maps and the divergent BWR scale for negative and postive
+% maps. Note that masked values are always gray.
+%
+% Reference: Pernet & Madan (2019). Data visualization for inference in
+% tomographic brain imaging. 
+% https://onlinelibrary.wiley.com/doi/full/10.1111/ejn.14430
+%
 % ----------------------------------
 %  Copyright (C) LIMO Team 2016
 
@@ -127,10 +134,11 @@ else
     end
 end
 title(mytitle2,'FontSize',12)
+cc = color_images(scale);
+set_imgaxes(LIMO,size(scale,1));
 
 % topoplot at max time
 % ---------------------
-cc = color_images_(scale,LIMO);
 if size(toplot,1) ~= 1
     if isempty(findstr(LIMO.design.name, ['one ' LIMO.Type(1:end-1)])) && ~isempty(LIMO.data.chanlocs)
         
@@ -341,47 +349,29 @@ end
 
 %% color map
 % -------------------------------------------------------------------------
-% just use ready made map from https://github.com/CPernet/brain_colours
-% Reference: Pernet & Madan. Data visualization for inference in
-% tomographic brain imaging. In prep.
+function cc = color_images(scale)
 
-function cc = color_images_(scale,LIMO)
+color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
 
 if min(scale(:)) >= 0
-    cc=cubehelixmap('increase',64);
-elseif min(scale(:)) <= 0
-    cc=cubehelixmap('decrease',64);   
+    cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
+    cc = cc(floor(length(cc)/2):end,:);
+elseif max(scale(:)) <= 0
+    cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
 else
-    cc = zeros(64,3);
-    tmp = scale.*(scale>0);
-    cc(33:64,:)=cubehelixmap('increase',32);
-    tmp = scale.*(scale<0);  
-    cc(1:32,:)=cubehelixmap('decrease',32);
+    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
+    cc = flipud(cc(1:ceil(length(cc)/2),:));
 end
-
-% color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
-% cc = load([color_path 'diverging_bgy.mat']); cc = cc.diverging_bgy;
-% % cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-% if min(scale(:)) >= 0
-%     cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
-%     cc = cc(floor(length(cc)/2):end,:);
-%     %cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
-% elseif max(scale(:)) <= 0
-%     cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-% else
-%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-%     cc = flipud(cc(1:ceil(length(cc)/2),:));
-%     % cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-% end
-
-% else
-%     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-% end
 
 if sum(isnan(scale(:))) ~= 0
     cc(1,:)=[.9 .9 .9]; % set NaNs to gray
 end
 colormap(cc);
+end
+
+%% set axes and labels 
+% -------------------------------------------------------------------------
+function set_imgaxes(LIMO,scaledim)
 
 set(gca,'XMinorTick','on','LineWidth',2)
 try
@@ -397,17 +387,17 @@ elseif strcmp(LIMO.Analysis,'Frequency')
 end
 
 if strcmp(LIMO.Type,'Components')
-    if size(scale,1) == 1
+    if scaledim == 1
         label_electrodes = ' ';
         ylabel('optimized component','FontSize',10);
     else
         ylabel('Components','FontSize',10);
-        for i=1:size(scale,1)
+        for i=1:scaledim
             label_electrodes{i} = i;
         end
     end
 else
-    if size(scale,1) == 1
+    if scaledim == 1
         label_electrodes = ' ';
         ylabel('optimized electrode','FontSize',10);
     else
