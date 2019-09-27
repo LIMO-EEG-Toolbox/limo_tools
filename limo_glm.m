@@ -579,8 +579,7 @@ switch method
         for frame = 1:size(Y,2)
             % model stats
             % -------------------------------------------------------------
-            WX                     = X.*W(:,frame);
-            WX                     = [X(:,1:end-1).*repmat(LIMO.design.weights(:,frame),1,size(X,2)-1) X(:,end)];
+            WX                     = [X(:,1:end-1).*repmat(W(:,frame),1,size(X,2)-1) X(:,end)];
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
