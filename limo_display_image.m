@@ -15,7 +15,7 @@ function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 %
 % The colour scales are from https://github.com/CPernet/brain_colours
 % using linear luminance across the range with cool for negative and 
-% hot for positive maps and the divergent BWR scale for negative and postive
+% hot for positive maps and the divergent BWR scale for negative and positive
 % maps. Note that masked values are always gray.
 %
 % Reference: Pernet & Madan (2019). Data visualization for inference in
@@ -23,7 +23,7 @@ function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 % https://onlinelibrary.wiley.com/doi/full/10.1111/ejn.14430
 %
 % ----------------------------------
-%  Copyright (C) LIMO Team 2016
+%  Copyright (C) LIMO Team 2019
 
 if nargin == 4
     dynamic = 1;
@@ -37,10 +37,34 @@ if length(e)>1           % if we have multiple times the exact same max values
     e = e(1); f = f(1);  % then take the 1st (usually an artefact but allows to see it)
 end
 
+% for each cluster, get start/end/max value
+% if unthresholded, uncorrected, tfce or max = mask is made up of ones
+n_cluster     = max(mask(:));
+cluster_start = NaN(1,n_cluster); % start of each cluster
+cluster_end   = NaN(1,n_cluster); % end of each cluster
+cluster_maxv  = NaN(1,n_cluster); % max value for each cluster
+cluster_maxe  = NaN(1,n_cluster); % channel location of the max value of each cluster
+cluster_maxf  = NaN(1,n_cluster); % frame location of the max value of each cluster
+
+for c=1:n_cluster
+    tmp                     = toplot.*(mask==c);
+    sigframes               = sum(tmp,1);
+    sigframes(sigframes==0) = NaN;
+    [~,cluster_start(c)]    = min(sigframes);
+    cluster_end(c)          = max(find(~isnan(sigframes)));
+    cluster_maxv(c)         = max(tmp(:));
+    [cluster_maxe(c),cluster_maxf(c)] = find(tmp==cluster_maxv(c));
+    if length(cluster_maxe(c))>1           % if we have multiple times the exact same max values
+        cluster_maxe(c)     = cluster_maxe(1); 
+        cluster_maxe(c)     = cluster_maxe(1);  
+    end
+end
+
+
 %% what do we plot? 
 
-scale = toplot.*mask;  % the data masked by the mask (tpically of significance)
-scale(scale==0)=NaN;   
+scale           = toplot.*(mask>0);  % the data masked (tpically of significance)
+scale(scale==0) =NaN;   
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             ERP            %
@@ -204,10 +228,30 @@ try
     else
         caxis([-maxval maxval])
     end
-    % caxis([min(min(scale)), max(max(scale))]);
 catch caxiserror
 end
 title(mytitle,'Fontsize',12)
+
+% return cluster info
+if contains(mytitle,'cluster')
+    for c=1:n_cluster
+        if strcmp(LIMO.Analysis,'Time')
+        fprintf('cluster %g starts at %gms ends at %gms, max %g @ %gms channel %s \n', c, ...
+            timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+        elseif strcmp(LIMO.Analysis,'Frequency')
+        fprintf('cluster %g starts at %gHz ends at %gHz, max %g @ %gHz channel %s \n', c, ...
+            freqvect(cluster_start(c)),timefreqvect(cluster_end(c)), cluster_maxv(c), freq(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+        end
+    end
+else % no clusters
+    if strcmp(LIMO.Analysis,'Time')
+        fprintf('1st significant frame at %gms, last signifiant frame at %gms, max %g @ %gms channel %s \n', ...
+            timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+    elseif strcmp(LIMO.Analysis,'Frequency')
+        fprintf('1st significant frame at %gHz, last signifiant frame at %gHz, max %g @ %gHz channel %s \n', ...
+            freqvect(cluster_start(c)),timefreqvect(cluster_end(c)), cluster_maxv(c), freq(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+    end
+end
 
 % ------------------------
 % update with mouse clicks
