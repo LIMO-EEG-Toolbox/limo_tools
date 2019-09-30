@@ -4,34 +4,39 @@ function diff = limo_plot_difference(varargin)
 % interval - WARNING this is computed electrode/time frame wise, ie this is 
 % not simultaneous CI (alpha_level level is not controlled over all differences)
 %
-% FORMAT
-% diff = limo_plot_difference(data1,data2,type)
-% diff = limo_plot_difference(data1,data2,type,alpha_level)
-% diff = limo_plot_difference(data1,data2,type,alpha_level,flag)
+% FORMATS
+% diff = limo_plot_difference
+% diff = limo_plot_difference(data1,data2,'type','paired/independent')
+% diff = limo_plot_difference(data1,data2,'type','paired/independent','percent', 20, 'alpha', 0.05, 'fig', 'on')
 %
-% INPUT
-% data1/2 matrices of data up to 4D, if 4D because coming from robust
-% averaging, i.e. the last dimension is the estimator with CI, only the
-% estimator is used ie level 2 if dim 4
-% type [1/2] 1 for paired data and 2 for independent data
-% alpha_level is the alpha_level level
-% flag [0/1] indicate to produce a figure or not
+% INPUTS
+% data1/2 matrices of data up to 4D, if 4D because coming from robust averaging, 
+%         i.e. the last dimension is the estimator with CI, only the estimator is 
+%         used ie level 2 if dim 4
+% type    'paired' or 'independent'
+% percent the amount of trimming 0% is a mean, 20% is the default trimmed mean, 
+%         50% is the median (in case 50 is used, the Harrell-Davis estimator
+%         of the median is used)
+% alpha   is the 1-alpha level of the CI
+% fig     'on' (default) or 'off' indicates to produce a figure or not
 %
 % OUPUT
-% diff is a 3D matrix of difference with CI
+% diff    a 3D matrix of difference with CI
 %
-% Cyril Pernet 01/11/2011
-% ------------------------------
+% Cyril Pernet - all options in Septembre 2019
+% ---------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 %% check inputs
 
-percent = 20/100; % defines the amount of trimming done
-nboot = 1000;
-alpha_level = 5/100;
-figure_flag = 1;
+percent     = 20/100; % defines the amount of trimming done
+nboot       = 1000;   % bootstrap for CI
+alpha_level = 5/100;  % 1-alpha CI
+figure_flag = 1;      % make a figure
+
 if nargin < 3 
-    % data1
+    % select 1st dataset 
+    % ------------------
     [file,locpath,filter]=uigetfile('.mat','Select 1st dataset');
     if filter == 0
         return
@@ -39,20 +44,23 @@ if nargin < 3
     cd(locpath); 
     D = load(file); D = D.Data;
     if isstruct(D)
-        name = fieldnames(D);
-        tmp = sprintf('D.%s',cell2mat(name(1)));
+        name  = fieldnames(D);
+        tmp   = sprintf('D.%s',cell2mat(name(1)));
         data1 = eval(tmp);
     else
         data1 = D;    
     end
     data1 = squeeze(data1);
+    
     if numel(size(data1)) ~=3
         error('this function only works with 3D matrices');
     else
         fprintf('%s loaded \n',file);
         disp('dimension'); size(data1)
     end
-    % data2
+    
+    % select 2nd dataset 
+    % ------------------
     [file,locpath]=uigetfile('.mat','Select 1st dataset');
     cd(locpath); 
     D = load(file); D = D.Data;
@@ -63,6 +71,7 @@ if nargin < 3
     else
         data2 = D;
     end
+    
     data2 = squeeze(data2);
     if numel(size(data2)) ~=3
         error('this function only works with 3D matrices');
@@ -70,14 +79,23 @@ if nargin < 3
         fprintf('%s loaded \n',file);
         disp('dimension'); size(data2)
     end
-    % type
-    answer = questdlg('are the data','analysis option','paired','independent','paired');
-    if strcmp(answer,'paired')
-        type = 1;
-    else
-        type = 2;
+    
+    % type 
+    % ----
+    type = questdlg('are the data','analysis option','paired','independent','paired');
+    if isempty(type)
+        warning('selection aborded'); return
     end
+    
+    % percent 
+    % ----
+    percent = questdlg('which summary','analysis option','mean','20% trimmed mean','median','20% trimmed mean');
+    if isempty(percent)
+        warning('selection aborded'); return
+    end
+    
     % alpha_level
+    % -----------
     v = inputdlg('set alpha_level level (%) for confidence intervals');
     if isempty(v)
         return
@@ -87,17 +105,19 @@ if nargin < 3
             alpha_level = alpha_level / 100;
         end
     end    
-elseif nargin>= 3 && nargin <=5
+    
+elseif nargin>= 4 && nargin <=6
     data1       = varargin{1};
     data2       = varargin{2};
     type        = varargin{3};
-    if nargin >= 4
-        alpha_level = varargin{4}; 
+    percent     = varargin{4};
+    if nargin >= 5
+        alpha_level = varargin{5}; 
         if alpha_level > 1
             alpha_level = alpha_level / 100;
         end
     end
-    if nargin == 5
+    if nargin == 6
         figure_flag = varargin{5};
     end
 elseif nargin > 5
@@ -109,8 +129,8 @@ if alpha_level == 0
     alpha_level = 5/100;
 end
 
-% check possible dimensions issues
-if type == 1
+%% check possible dimensions issues
+if strcmpi(type,'paired')
     if numel(size(data1)) ~= numel(size(data2))
         error('for paired data, each matrix must be of the same size')
     elseif numel(size(data1)) == 3
@@ -132,10 +152,8 @@ diff = NaN(size(data1,1),size(data1,2),3);
 
 %% compute the mean difference and CI
 
-switch type
+if strcmpi(type,'Paired')
     
-    case {1} % paired data
-        
         if numel(size(data1)) == 4
             data1 = squeeze(data1(:,:,:,2));
             data2 = squeeze(data2(:,:,:,2));
@@ -146,17 +164,28 @@ switch type
         
         for channel=1:size(data1,1)
             fprintf('bootstraping data for CI estimation electrode %g \n',channel)
-            [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'trimmed mean',1-alpha_level);
-            [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'trimmed mean',1-alpha_level);
+            if strcmpi(percent,'mean') || percent == 0
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'Mean',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'Mean',1-alpha_level);
+                [diff(channel,:,2),CID] = limo_central_estimator(squeeze(D(channel,:,:)),'Mean',1-alpha_level);
+                diff(channel,:,1) = CID(1,:); diff(channel,:,3) = CID(2,:);
+            elseif strcmpi(percent,'20% trimmed mean') || percent == 20
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                [diff(channel,:,2),CID] = limo_central_estimator(squeeze(D(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                diff(channel,:,1) = CID(1,:); diff(channel,:,3) = CID(2,:);
+            elseif strcmpi(percent,'median') || percent == 50
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'HD',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'HD',1-alpha_level);
+                [diff(channel,:,2),CID] = limo_central_estimator(squeeze(D(channel,:,:)),'HD',1-alpha_level);
+                diff(channel,:,1) = CID(1,:); diff(channel,:,3) = CID(2,:);
+            end
             
-            [diff(channel,:,2),CID] = limo_central_estimator(squeeze(D(channel,:,:)),'trimmed mean',1-alpha_level);
-            diff(channel,:,1) = CID(1,:);
-            diff(channel,:,3) = CID(2,:);
         end
         
         % --------------------------------------------------------
         
-    case {2} % independent data
+elseif strcmpi(type,'Independent')
         
         if numel(size(data1)) == 4
             data1 = squeeze(data1(:,:,:,2));
@@ -168,13 +197,23 @@ switch type
         for channel=1:size(data1,1)
             fprintf('bootstraping data for CI estimation electrode %g \n',channel)
             
-            [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'trimmed mean',1-alpha_level);
-            [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'trimmed mean',1-alpha_level);
-            diff(channel,:,2) = est1(channel,:)-est2(channel,:);
-
-            sorted_data = sort(sort(bb1)-sort(bb2),2);
+            if strcmpi(percent,'mean') || percent == 0
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'Mean',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'Mean',1-alpha_level);
+                diff(channel,:,2) = est1(channel,:)-est2(channel,:);
+            elseif strcmpi(percent,'20% trimmed mean') || percent == 20
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                diff(channel,:,2) = est1(channel,:)-est2(channel,:);
+            elseif strcmpi(percent,'median') || percent == 50
+                [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'HD',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'HD',1-alpha_level);
+                diff(channel,:,2) = est1(channel,:)-est2(channel,:);
+            end
+            
+            sorted_data   = sort(sort(bb1)-sort(bb2),2);
             upper_centile = floor((1-alpha_level)*size(sorted_data,2)); % upper bound
-            nCIs = size(sorted_data,2) - upper_centile;
+            nCIs          = size(sorted_data,2) - upper_centile;
             for frame = 1:size(sorted_data,1)
                 tmp = sorted_data(frame,:);
                 ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
@@ -187,7 +226,7 @@ switch type
 end
 
 % save
-name = cell2mat(inputdlg('save as [?]','name option'));
+name    = cell2mat(inputdlg('save as [?]','name option'));
 newname = sprintf('%s',name);
 newpath = uigetdir('destination folder?');
 cd(newpath); save (newname,'diff');
@@ -195,7 +234,7 @@ cd(newpath); save (newname,'diff');
 
 % plot
 % -----
-if figure_flag == 1
+if strcmp(figure_flag,'on') || figure_flag == 1
     % electrode info
     if size(diff,1) > 1
         channel = inputdlg('which electrode to plot','Plotting option');
@@ -214,30 +253,40 @@ if figure_flag == 1
     else
         channel = 1;
     end
-    % timing info
-    [file,locpath,ind]=uigetfile('.mat','Select any LIMO with right timing info');
+    
+    % time/freq info
+    [file,locpath,ind]=uigetfile('.mat','Select any LIMO with right info');
     if ind ==1
-        cd(locpath); load LIMO;
-        timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
+        load(fullfile(locpath,file));
+        if strcmpi(LIMO.Analysis,'Time')
+            vect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
+        elseif strcmpi(LIMO.Analysis,'Frequency')
+            vect = LIMO.data.freqlist;
+            if size(vect,2) == 1; vect = vect'; end
+            if size(vect,2) ~= size(toplot,2)
+                vect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+            end
+        end
     end
     
-    if  single(ind == 0) || length(timevect) ~= length(squeeze(est1(channel,:)))
-        if length(timevect) ~= squeeze(est1(channel,:))
-            disp('error in computing time frames')
+    if  single(ind == 0) || length(vect) ~= length(squeeze(est1(channel,:)))
+        if length(vect) ~= squeeze(est1(channel,:))
+                fprintf('error in computing %s frames \n',LIMO.Analysis)
         end
-        v = inputdlg('enter time interval by hand e.g. [0:0.5:200]');
+        dlg = sprintf('enter %s interval by hand e.g. [0:0.5:40]',LIMO.Analysis);
+        v = inputdlg(dlg);
         if isempty(v)
             return
         else
             try
-                timevect = eval(cell2mat(v));
-                if length(timevect) ~= size(diff,2)
-                    disp('time interval invalid format');
-                    timevect = 1:size(diff,2);
+                vect = eval(cell2mat(v));
+                if length(vect) ~= size(diff,2)
+                    fprintf('%s interval invalid format \n',LIMO.Analysis)
+                    vect = 1:size(diff,2);
                 end
             catch ME
-                disp('time interval invalid format');
-                timevect = 1:size(diff,2);
+                fprintf('%s interval invalid format \n',LIMO.Analysis)
+                vect = 1:size(diff,2);
             end
         end
     end
@@ -245,22 +294,34 @@ if figure_flag == 1
     
     % figure
     figure;set(gcf,'Color','w'); subplot(3,2,[1 2 3 4]); hold on
-    plot(timevect,squeeze(est1(channel,:)),'LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)],[squeeze(CI1(channel,1,:))' fliplr(squeeze(CI1(channel,2,:))')], [0 0 1]);
+    plot(vect,squeeze(est1(channel,:)),'LineWidth',3);
+    fillhandle = patch([vect fliplr(vect)],[squeeze(CI1(channel,1,:))' fliplr(squeeze(CI1(channel,2,:))')], [0 0 1]);
     set(fillhandle,'EdgeColor',[0 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    plot(timevect,squeeze(est2(channel,:)),'r','LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)],[squeeze(CI2(channel,1,:))' fliplr(squeeze(CI2(channel,2,:))')], [1 0 0]);
+    plot(vect,squeeze(est2(channel,:)),'r','LineWidth',3);
+    fillhandle = patch([vect fliplr(vect)],[squeeze(CI2(channel,1,:))' fliplr(squeeze(CI2(channel,2,:))')], [1 0 0]);
     set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
     grid on; axis tight; ylabel('Amplitude','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
-    title(['Trimmed Means and ' num2str(100-alpha_level*100) '%CI'],'FontSize',16); drawnow;
+    if strcmpi(percent,'mean') || percent == 0
+        title(['Means and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    elseif strcmpi(percent,'20% trimmed mean') || percent == 20
+        title(['Trimmed Means and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    elseif strcmpi(percent,'median') || percent == 50
+        title(['Medians and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    end
 
     subplot(3,2,[5 6]); hold on
-    plot(timevect,squeeze(diff(channel,:,2)),'LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)], [squeeze(diff(channel,:,1)),fliplr(squeeze(diff(channel,:,3)))], [1 0 0]);
+    plot(vect,squeeze(diff(channel,:,2)),'LineWidth',3);
+    fillhandle = patch([vect fliplr(vect)], [squeeze(diff(channel,:,1)),fliplr(squeeze(diff(channel,:,3)))], [1 0 0]);
     set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
     grid on; axis tight; xlabel('Time ','FontSize',12)
     ylabel('Amplitude Difference','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
-    title(['Trimmed Mean difference and ' num2str(100-alpha_level*100) '%CI'],'FontSize',16); drawnow;
+    if strcmpi(percent,'mean') || percent == 0
+        title(['Mean difference and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    elseif strcmpi(percent,'20% trimmed mean') || percent == 20
+        title(['Trimmed Mean difference and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    elseif strcmpi(percent,'median') || percent == 50
+        title(['Median difference and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',16); drawnow;
+    end
 
 end
 
