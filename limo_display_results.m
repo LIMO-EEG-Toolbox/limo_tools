@@ -1427,12 +1427,12 @@ elseif LIMO.Level == 2
                 elseif sum(mask(:)) == 0
                     warndlg('no values under threshold','no significant effect');
                 else
-                    EEG.data = toplot;
-                    EEG.setname = mytitle;
-                    EEG.pnts = size(EEG.data,2);
-                    EEG.trials = 1;
+                    EEG.data     = toplot;
+                    EEG.setname  = mytitle;
+                    EEG.pnts     = size(EEG.data,2);
+                    EEG.trials   = 1;
                     EEG.chanlocs = LIMO.data.chanlocs;
-                    EEG.nbchan = size(EEG.data,1);
+                    EEG.nbchan   = size(EEG.data,1);
                     
                     if size(toplot,2) == 1
                         opt = {'maplimits','maxmin','verbose','off'};
@@ -1441,20 +1441,19 @@ elseif LIMO.Level == 2
                                 opt = {'maplimits','absmax','electrodes','off','verbose','off'};
                             end
                         end
-                        figure;set(gcf,'Color','w','InvertHardCopy','off');
+                        figure; set(gcf,'Color','w','InvertHardCopy','off');
                         topoplot(toplot(:,1),EEG.chanlocs,opt{:});
                         title('Topoplot','FontSize',12)
                     else
-                        
                         if strcmp(LIMO.Analysis,'Time')
-                            EEG.xmin = LIMO.data.start/1000; % in sec
-                            EEG.xmax = LIMO.data.end/1000;   % in sec
-                            EEG.times =  (LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000); % in sec;
+                            EEG.xmin  = LIMO.data.start/1000; % in sec
+                            EEG.xmax  = LIMO.data.end/1000;   % in sec
+                            EEG.times = (LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000); % in sec;
                             pop_topoplot(EEG);
                         elseif strcmp(LIMO.Analysis,'Frequency')
-                            EEG.xmin = LIMO.data.freqlist(1);
-                            EEG.xmax = LIMO.data.freqlist(end);
-                            freqlist = inputdlg('specify frequency range e.g. [5:2:40]','Choose Frequencies to plot');
+                            EEG.xmin  = LIMO.data.freqlist(1);
+                            EEG.xmax  = LIMO.data.freqlist(end);
+                            freqlist  = inputdlg('specify frequency range e.g. [5:2:40]','Choose Frequencies to plot');
                             if isempty(freqlist)
                                 return
                             else
@@ -1469,7 +1468,8 @@ elseif LIMO.Level == 2
                                 end
                             end
                             
-                            N=length(EEG.freq); figure;
+                            N=length(EEG.freq); 
+                            figure;
                             for f=1:N
                                 if N<=6
                                     subplot(1,N,f)
