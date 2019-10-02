@@ -1,8 +1,8 @@
-function diff = limo_plot_difference(varargin)
+function Data = limo_plot_difference(varargin)
 
-% allows to plot the difference between two data set with alpha_level% confidence
-% interval - WARNING this is computed electrode/time frame wise, ie this is 
-% not simultaneous CI (alpha_level level is not controlled over all differences)
+% allows to plot the difference between two data set with alpha % Hightest
+% Density Intervals (ie Bayesian bootstrap CI) 
+% WARNING this is computed electrode/time frame wise, ie this is  not simultaneous CI
 %
 % FORMATS
 % diff = limo_plot_difference
@@ -17,11 +17,13 @@ function diff = limo_plot_difference(varargin)
 % percent the amount of trimming 0% is a mean, 20% is the default trimmed mean, 
 %         50% is the median (in case 50 is used, the Harrell-Davis estimator
 %         of the median is used)
-% alpha   is the 1-alpha level of the CI
+% alpha   is the 1-alpha level of the HDI
 % fig     'on' (default) or 'off' indicates to produce a figure or not
 %
 % OUPUT
-% diff    a 3D matrix of difference with CI
+% Data    a structure with
+%         .diff the 3D matrix of difference with HDI
+%         .limo the LIMO structure for channel/time-freq info (optional) 
 %
 % Cyril Pernet - all options in Septembre 2019
 % ---------------------------------------------
@@ -225,14 +227,7 @@ elseif strcmpi(type,'Independent')
         end
 end
 
-% save
-name    = cell2mat(inputdlg('save as [?]','name option'));
-newname = sprintf('%s',name);
-newpath = uigetdir('destination folder?');
-cd(newpath); save (newname,'diff');
-
-
-% plot
+%% Plot
 % -----
 if strcmp(figure_flag,'on') || figure_flag == 1
     % electrode info
@@ -255,8 +250,8 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     end
     
     % time/freq info
-    [file,locpath,ind]=uigetfile('.mat','Select any LIMO with right info');
-    if ind ==1
+    [file,locpath,ind]=uigetfile({'LIMO.mat'},'Select any LIMO with right info');
+    if strcmp(file,'LIMO.mat')
         load(fullfile(locpath,file));
         if strcmpi(LIMO.Analysis,'Time')
             vect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
@@ -267,6 +262,8 @@ if strcmp(figure_flag,'on') || figure_flag == 1
                 vect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
             end
         end
+    else
+        warning('selection aborded'); return
     end
     
     if  single(ind == 0) || length(vect) ~= length(squeeze(est1(channel,:)))
@@ -325,3 +322,13 @@ if strcmp(figure_flag,'on') || figure_flag == 1
 
 end
 
+%% save
+name    = cell2mat(inputdlg('save as [?]','name option'));
+newname = sprintf('%s',name);
+newpath = uigetdir('destination folder?');
+
+Data.diff = diff;
+if exist('LIMO','var')
+    Data.limo = LIMO;
+end
+save (fullfile(newpath,newname),'Data');
