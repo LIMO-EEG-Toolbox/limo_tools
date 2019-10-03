@@ -1192,6 +1192,7 @@ switch type
             
             % save stuff
             % ---------
+            save('LIMO.mat','LIMO')
             for i=1:nb_effects
                 name = sprintf('Rep_ANOVA_Factor_%g',i);
                 % save each factor effect as F/p values
