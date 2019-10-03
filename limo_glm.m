@@ -155,7 +155,7 @@ if strcmp(method,'OLS')
     
 elseif strcmp(method,'WLS')
     [Betas,W] = limo_WLS(X,Y);
-    WX        = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+    WX        = X.*repmat(W,1,size(X,2));
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -420,7 +420,7 @@ switch method
                 
                 % part of X unchanged
                 Main_effects = X(:,dummy_columns);
-                Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
+                Cov_and_Mean = [X(:,covariate_columns) ones(size(X,1),1)];
                 
                 % check interaction level sizes in X
                 index = 1;
@@ -579,7 +579,7 @@ switch method
         for frame = 1:size(Y,2)
             % model stats
             % -------------------------------------------------------------
-            WX                     = [X(:,1:end-1).*repmat(W(:,frame),1,size(X,2)-1) X(:,end)];
+            WX                     = X.*repmat(W(:,frame),1,size(X,2));
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
