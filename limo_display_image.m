@@ -404,7 +404,7 @@ elseif max(scale(:)) <= 0
     cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
 else
     cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-    cc = flipud(cc(1:ceil(length(cc)/2),:));
+    % cc = flipud(cc(1:ceil(length(cc)/2),:));
 end
 
 if sum(isnan(scale(:))) ~= 0
