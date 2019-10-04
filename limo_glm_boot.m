@@ -211,7 +211,7 @@ switch method
                 
             elseif strcmp(method,'WLS')
                 [Betas,W] = limo_WLS(X,Y);
-                WX        = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
+                WX        = X.*repmat(W,1,size(X,2));
                 
             elseif strcmp(method,'WLS-TF')
                 % unpack the data
