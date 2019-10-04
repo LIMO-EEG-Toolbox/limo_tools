@@ -233,6 +233,7 @@ end
 title(mytitle,'Fontsize',12)
 
 % return cluster info
+warning off
 if contains(mytitle,'cluster')
     for c=1:n_cluster
         if strcmp(LIMO.Analysis,'Time')
@@ -252,6 +253,7 @@ else % no clusters
             freqvect(cluster_start(c)),timefreqvect(cluster_end(c)), cluster_maxv(c), freq(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
     end
 end
+warning on
 
 % ------------------------
 % update with mouse clicks
