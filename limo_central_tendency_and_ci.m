@@ -219,19 +219,19 @@ elseif nargin == 1
             end
         elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
             parameters = 1; % cell2mat(inputdlg('which contrasts to test e.g 1','parameters option'));
-%             if isempty(parameters)
-%                 return
-%             else
-%                 test = strfind(Names,parameters);
-%                 if isempty(cell2mat(test))
-%                     errordlg2('contrast not listed')
-%                     return
-%                 else
-%                     index = cellfun('isempty',test) == 0;
-%                     Paths = Paths(index);
-%                     Names = Names(index);
-%                 end
-%             end
+            %             if isempty(parameters)
+            %                 return
+            %             else
+            %                 test = strfind(Names,parameters);
+            %                 if isempty(cell2mat(test))
+            %                     errordlg2('contrast not listed')
+            %                     return
+            %                 else
+            %                     index = cellfun('isempty',test) == 0;
+            %                     Paths = Paths(index);
+            %                     Names = Names(index);
+            %                 end
+            %             end
         else
             errordlg('file selection failed, only Betas.mat files are supported'); return
         end
@@ -278,65 +278,69 @@ elseif nargin == 1
         disp('gathering data ...'); index = 1;
         for i=1:size(Paths,2) % for each subject
             fprintf('processing subject %g\n',i);
-            cd(Paths{i}); load LIMO ; load Betas;
+            % load file and store contend
+            load([Paths{i} filesep Names{i}]);
+            load([Paths{i} filesep 'LIMO.mat']); 
+            
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
+                begins_at  = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
                 ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));
                 ends_at(2) = size(Yr,3) - (last_frame(i,1) - min(last_frame(:,1)));
             else
                 begins_at = max(first_frame) - first_frame(i) + 1;
-                ends_at = size(Betas,2) - (last_frame(i) - min(last_frame));
+                if strcmpi(option,'Betas') && exist('Betas','var')
+                    ends_at   = size(Betas,2) - (last_frame(i) - min(last_frame));
+                elseif strcmpi(option,'Con') && exist('con','var')
+                    ends_at   = size(con,2) - (last_frame(i) - min(last_frame));
+                else
+                   warning on; warning('%s not a Betas/con file, skipped',Names{i});
+                end
             end
             
             if strcmp(Analysis_type,'Full scalp analysis')
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    if strcmp(option,'Con')
-                        load([Paths{i} filesep Names{i}])
-                        data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
-                    else
+                    if strcmpi(option,'Con') && exist('con','var')
+                        data(:,:,:,i)   = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
+                    elseif strcmpi(option,'Betas') && exist('Betas','var')
                         data(:,:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,:,parameters)));
                     end
                 else
-                    if strcmp(option,'Con')
-                        load([Paths{i} filesep Names{i}])
-                        data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,1)));
-                    else
-                        data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters)));
+                    if strcmpi(option,'Con') &&  exist('con','var')
+                        data(:,:,:,i)   = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,1)));
+                    elseif strcmpi(option,'Betas') && exist('Betas','var')
+                        data(:,:,:,i)   = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters)));
                     end
                 end
+                
             elseif strcmp(Analysis_type,'1 electrode only')
                 if size(selected_electrodes,2) == 1
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        if strcmp(option,'Con')
-                            load([Paths{i} filesep Names{i}])
+                        if strcmp(option,'Con') && exist('con','var')
                             data(1,:,:,i)                      = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
-                        else
+                        elseif strcmpi(option,'Betas') && exist('Betas','var')
                             data(1,:,:,1:length(parameters),i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,:,parameters)));
                         end
                     else
-                        if strcmp(option,'Con')
-                            load([Paths{i} filesep Names{i}])
+                        if strcmp(option,'Con') && exist('con','var')
                             data(1,:,:,i)                    = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,1)));
-                        else
+                        elseif strcmpi(option,'Betas') && exist('Betas','var')
                             data(1,:,1:length(parameters),i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters)));
                         end
                     end
-                else
+                else % optimized electrode
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        if strcmp(option,'Con')
-                            load([Paths{i} filesep Names{i}])
+                        if strcmp(option,'Con') && exist('con','var')
                             out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
                             data(1,:,:,:,i) = out(i,:,:,:);
-                        else
+                        elseif strcmpi(option,'Betas') && exist('Betas','var')
                             out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,:,parameters))); % out is for all expected chanlocs, i.e. across subjects
                             data(1,:,:,:,i) = out(i,:,:,:); % matches the expected chanloc of the subject
                         end
                     else
-                        if strcmp(option,'Con')
-                            load([Paths{i} filesep Names{i}])
+                        if strcmp(option,'Con') && exist('con','var')
                             out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,1)));
                             data(1,:,:,i) = out(i,:,:);
-                        else
+                        elseif strcmpi(option,'Betas') && exist('Betas','var')
                             out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters))); % out is for all expected chanlocs, i.e. across subjects
                             data(1,:,:,i) = out(i,:,:); % matches the expected chanloc of the subject
                         end
@@ -590,7 +594,7 @@ if ~isempty(data)
     disp('processing data across subjects ..')
     % --------------------------------------------------------------
     if nargout == 1 && exist('limo','var')
-        results.limo = limo; 
+        results.limo = limo;
     end
     
     if strcmp(Estimator2,'Mean') || strcmp(Estimator2,'All')
