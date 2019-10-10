@@ -1,13 +1,13 @@
 function result=limo_central_tendency_and_ci(varargin)
 
-% The function computes robust estimates of central tendency (trimmed mean,
-% Harell-Davis 0.5 decile, median) with 95% confidence intervals.
-% If you input EEG data, all trials/sujects will be taken into account.
-% If you input LIMO files, estimates of the raw data for the categorical
+% The function computes estimates of central tendency (mean, trimmed mean,
+% Harell-Davis 0.5 decile, median) with 95% Baysesian Highest Density Intervals.
+% - If you input EEG data, all trials/sujects will be taken into account.
+% - If you input LIMO files, estimates of the raw data for the categorical
 % variables will be performed (continuous variables are not supported).
 % Non overlap of 95% CI shows univariate and non-corrected significant
 % differences. This can also be assessed directly using limo_plot_difference
-% If you input Betas files, estimates and 95% CI are computed for the
+% - If you input Betas files, estimates and 95% HDI are computed for the
 % categorical and continuous variables of your choice.
 %
 % FORMAT
@@ -22,16 +22,16 @@ function result=limo_central_tendency_and_ci(varargin)
 % limo_central_tendency_and_ci(data, 'Analysis_type',selected_electrodes)
 %                data is a [electrode * frame * trials/subjects] matrix
 %                Analysis_type should be 'Mean', 'Trimmed mean', 'HD' or 'Median'
-%                selected_electrodes can be [] for all brain or 1 or many channels
+%                selected_electrodes can be [] for all brain or 1 or many channels (1 per trial/subject)
 %
 % limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_electrodes)
 %                Files are the full names (with paths) of LIMO.mat files
 %                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]
-%                expected_chan_loc is the electrode structure from EEGLAB but for the group of suvjects
+%                expected_chan_loc is the electrode structure from EEGLAB but for the group of subjects
 %                Estimator should be 'Mean', 'Weighted mean', 'Trimmed mean', 'HD' or 'Median'
 %                Estimator 1 is applied to trials within-subjects
 %                Estimator 2 is applied across subjects
-%                selected_electrodes can be [] for all brain or 1 or many (=nb files) channels
+%                selected_electrodes can be [] for all brain or 1 or many channels (=nb files) 
 %
 % OUTPUTS result = limo_central_tendency_and_ci()
 %         result is a structure with the fields 'subject' and 'central'
@@ -50,8 +50,8 @@ function result=limo_central_tendency_and_ci(varargin)
 % June/July 2013 - Fixed some bugs CP / thx to Benedikt Ehinger
 % Novembre 2013 - fixed further issues related to parameter selection CP / thx to Matt Craddock
 % version 2 September 2015 - included within subject weighted mean + update for time frequency
-% version 3 February 2016 - updated calling limo_central_estimator for Bayesian CI
-% ------------------------------
+% version 3 February 2016 - CP/GAR updated for Bayesian HDI
+% -------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 
