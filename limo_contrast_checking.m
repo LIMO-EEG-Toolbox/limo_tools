@@ -78,14 +78,14 @@ if nargin == 1 || nargin == 3
 elseif nargin == 2
     
     X = varargin{2};
-    W = 1./sum(X(:,1:end-1)); % weight of each condition 
     for s=1:size(varargin{1},1)
         C = varargin{1}(s,:);
-        
+        N = sum(X(:,C~=0)); % N per condition 
+
         if sum(C) == length(find(C)) 
             go = 1; % if contrast with ones only to add parameters
-        elseif ~all(int16(single(C(C~=0) - W(C~=0)))) 
-            go =1; % also a sum but equal 0 weighted by number of observations
+        elseif ~all(int16(C(C~=0) - N/sum(N))) 
+            go =1; % also a sum but equal 0 weighted by total number of observations
         else
 %             check = int16(C*single((pinv(X'*X))*(X'*X)));
 %             check = (check == C);
