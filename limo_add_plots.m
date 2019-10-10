@@ -194,7 +194,7 @@ while out == 0
             end
         end
         
-        if strcmp(electrode,'') 
+        if strcmp(electrode,'') || isempty(electrode)
             tmp = Data(:,:,2); 
             if sum(isnan(tmp(:))) == numel(tmp)
                 error('the data file appears empty (only NaNs)')
