@@ -8,7 +8,7 @@ function model = limo_glm_boot(varargin)
 %
 % FORMAT:
 % model = limo_glm_boot(Y,LIMO,boot_table)
-% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,n_freqs,n_times,boot_table)
+% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,boot_table)
 %
 % INPUTS
 %         Y = 2D matrix of EEG data with format trials x frames
@@ -19,12 +19,15 @@ function model = limo_glm_boot(varargin)
 %         nb_continuous = number of covariates
 %         method = 'OLS', 'WLS', 'IRLS' (bisquare)
 %         analysis type =  'Time', 'Frequency' or 'Time-Frequency'
-%         n_freqs is the nb of frequency bins
-%         n_times is the nb of time bins
 %         boot_table is an optional argument - this is the resampling table
 %                    if one calls limo_glm_boot to loop throughout channels,
 %                    this might a good idea to provide such table so that
 %                    the same resampling applies to each channel
+%
+% NOTE
+% Unlike limo_glm this function doesn't handle Time-Frequency data
+% meaning that a frequency loop should be created outside the function
+% to iterate - allowing the save directly 5D H0 data
 %
 % See also
 % LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
@@ -34,7 +37,6 @@ function model = limo_glm_boot(varargin)
 %  Copyright (C) LIMO Team 2019
 
 %% varagin
-nboot = 800; %
 
 if nargin == 2 || nargin == 3
     y               = varargin{1};
@@ -44,17 +46,9 @@ if nargin == 2 || nargin == 3
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
     Analysis        = varargin{2}.Analysis;
-    if strcmp(Analysis,'Time-Frequency')
-        if strcmp(method,'WLS')
-            method = 'WLS-TF'; % run weights per freq band
-        end
-        n_freqs = varargin{2}.data.size4D(2);
-        n_times = varargin{2}.data.size4D(3);
-    else
-        n_freqs = []; n_times =[];
-    end
     
     if nargin == 2
+        nboot      = 800; 
         boot_table = randi(size(y,1),size(y,1),nboot);
     elseif nargin == 3
         boot_table = varargin{3};
@@ -69,21 +63,22 @@ elseif nargin == 9 || nargin == 10
     nb_continuous   = varargin{5};
     method          = varargin{6};
     Analysis        = varargin{7};
-    n_freqs         = varargin{8};
-    n_times         = varargin{9};
+    
     if nargin == 9
-        boot_table = randi(size(y,1),size(y,1),nboot);
+        nboot       = 800; 
+        boot_table  = randi(size(y,1),size(y,1),nboot);
     elseif nargin == 10
-        boot_table = varargin{10};
+        boot_table  = varargin{10};
         nboot       = size(boot_table,2);
     end
+    
 else
     error('varargin error in limo_glm_boot')
 end
 
-if isempty(nb_conditions);   nb_conditions = 0; end
+if isempty(nb_conditions);   nb_conditions = 0;   end
 if isempty(nb_interactions); nb_interactions = 0; end
-if isempty(nb_continuous);   nb_continuous = 0; end
+if isempty(nb_continuous);   nb_continuous = 0;   end
 
 clear varargin
 nb_factors = numel(nb_conditions);
@@ -196,11 +191,7 @@ switch method
             
             % compute Beta parameters
             if strcmp(method,'OLS')
-                if strcmp(Analysis,'Time-Frequency')
-                    W = ones(n_freqs,size(X,1));
-                else
-                    W = ones(size(Y,1),1);
-                end
+                W  = ones(size(Y,1),1);
                 WX = X;
                 
                 if nb_continuous ~=0 && nb_factors == 0
@@ -212,35 +203,7 @@ switch method
             elseif strcmp(method,'WLS')
                 [Betas,W] = limo_WLS(X,Y);
                 WX        = X.*repmat(W,1,size(X,2));
-                
-            elseif strcmp(method,'WLS-TF')
-                % unpack the data
-                [n_freq_times, N] = size(Y');
-                if n_freq_times ~= n_freqs*n_times
-                    error('dimensions disagreement to reshape freq*time')
-                else
-                    reshaped = nan(n_freqs, n_times, N);
-                end
-                
-                for tr = 1:N
-                    eft_3d = nan(n_freqs,n_times);
-                    for tm = 1:n_times
-                        this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
-                        eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
-                    end
-                    reshaped(:,:,tr) = eft_3d;
-                end
-                
-                % get estimates per freq band
-                index1 = 1;
-                Betas  = NaN(size(X,2),n_freqs*n_times);
-                W      = NaN(n_freqs,size(X,1));
-                for f=1:n_freqs
-                    [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
-                    index1=index1+1;
-                end
-                WX = X .* repmat(W,1,size(X,2));
-            end
+             end
             
             % Betas bootstap
             BETASB{B} = Betas';
@@ -275,8 +238,11 @@ switch method
             H              = (Betas'*X'*M*X*Betas);          % SS Effects
             Rsquare        = diag(H)./diag(T);               % Variance explained
             F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
-            p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
-            
+            if strcmp(method,'OLS')
+                p_Rsquare  = 1 - fcdf(F_Rsquare, df, dfe);
+            else
+                p_Rsquare  = NaN(size(F_Rsquare));                
+            end
             
             % ----------------------------
             %% update the model structure
@@ -308,7 +274,11 @@ switch method
                     H                                = (Betas'*X'*M*X*Betas);
                     df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                     F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
-                    pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
+                    if strcmp(method,'OLS')
+                        pval_conditions              = 1 - fcdf(F_conditions(:), df_conditions, dfe);
+                    else
+                        pval_conditions              = NaN(size(F_conditions ));
+                    end
                 end
                 
                 F_CONDVALUES{B}  = F_conditions;
@@ -322,35 +292,37 @@ switch method
                 % compute F and p values of each factor
                 % --------------------------------------
                 
-                df_conditions            = zeros(1,length(nb_conditions));
-                F_conditions             = zeros(length(nb_conditions),size(Y,2));
-                pval_conditions          = zeros(length(nb_conditions),size(Y,2));
+                df_conditions                = NaN(1,length(nb_conditions));
+                F_conditions                 = NaN(length(nb_conditions),size(Y,2));
+                pval_conditions              = NaN(length(nb_conditions),size(Y,2));
                 
                 % define the effect of interest (eoi)
-                eoi                      = zeros(1,size(X,2));
-                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
-                eoni                     = 1:size(X,2);
-                eoni                     = find(eoni - eoi);
+                eoi                          = zeros(1,size(X,2));
+                eoi(1:nb_conditions(1))      = 1:nb_conditions(1);
+                eoni                         = 1:size(X,2);
+                eoni                         = find(eoni - eoi);
                 
                 for f = 1:length(nb_conditions)
-                    C                    = eye(size(X,2));
-                    C(:,eoni)            = 0; % set all but factor of interest to 0
-                    C0                   = eye(size(X,2)) - C*pinv(C);
-                    X0                   = WX*C0; % the reduced model include all but the factor f
-                    R0                   = eye(size(Y,1)) - (X0*pinv(X0));
-                    M                    = R0 - R; % hat matrix for factor f
-                    H                    = (Betas'*X'*M*X*Betas);
-                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                    F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
-                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
-                    
+                    C                        = eye(size(X,2));
+                    C(:,eoni)                = 0; % set all but factor of interest to 0
+                    C0                       = eye(size(X,2)) - C*pinv(C);
+                    X0                       = WX*C0; % the reduced model include all but the factor f
+                    R0                       = eye(size(Y,1)) - (X0*pinv(X0));
+                    M                        = R0 - R; % hat matrix for factor f
+                    H                        = (Betas'*X'*M*X*Betas);
+                    df_conditions(f)         = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)        = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
+                    if strcmp(method,'OLS')
+                        pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    end
+                   
                     % update factors
                     if f<length(nb_conditions)
-                        update           = find(eoi,1,'last'); % max(find(eoi));
-                        eoi              = zeros(1,size(X,2));
+                        update              = find(eoi,1,'last'); % max(find(eoi));
+                        eoi                 = zeros(1,size(X,2));
                         eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                        eoni             = 1:size(X,2);
-                        eoni             = find(eoni - eoi);
+                        eoni                = 1:size(X,2);
+                        eoni                = find(eoni - eoi);
                     end
                 end
                 
@@ -385,33 +357,35 @@ switch method
                 
                 % run same model as above with re-defined model x and
                 % using the weights from the full model
-                wx                       = x.*repmat(W,1,size(x,2));
-                betas                    = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
-                R                        = eye(size(Y,1)) - wx*pinv(wx);
-                eoi                      = zeros(1,size(x,2));
-                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
-                eoni                     = 1:size(x,2);
-                eoni                     = find(eoni - eoi);
+                wx                           = x.*repmat(W,1,size(x,2));
+                betas                        = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
+                R                            = eye(size(Y,1)) - wx*pinv(wx);
+                eoi                          = zeros(1,size(x,2));
+                eoi(1:nb_conditions(1))      = 1:nb_conditions(1);
+                eoni                         = 1:size(x,2);
+                eoni                         = find(eoni - eoi);
                 
                 for f = 1:length(nb_conditions)
-                    C                    = eye(size(x,2));
-                    C(:,eoni)            = 0;
-                    C0                   = eye(size(x,2)) - C*pinv(C);
-                    X0                   = wx*C0;
-                    R0                   = eye(size(Y,1)) - (X0*pinv(X0));
-                    M                    = R0 - R;
-                    H(f,:)               = diag((betas'*x'*M*x*betas));
-                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                    F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
-                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    C                        = eye(size(x,2));
+                    C(:,eoni)                = 0;
+                    C0                       = eye(size(x,2)) - C*pinv(C);
+                    X0                       = wx*C0;
+                    R0                       = eye(size(Y,1)) - (X0*pinv(X0));
+                    M                        = R0 - R;
+                    H(f,:)                   = diag((betas'*x'*M*x*betas));
+                    df_conditions(f)         = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)        = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
+                    if strcmp(method,'OLS')
+                        pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    end
                     
                     % update factors
                     if f<length(nb_conditions)
-                        update           = find(eoi,1,'last'); % max(find(eoi));
-                        eoi              = zeros(1,size(x,2));
+                        update              = find(eoi,1,'last'); % max(find(eoi));
+                        eoi                 = zeros(1,size(x,2));
                         eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-                        eoni             = 1:size(x,2);
-                        eoni             = find(eoni - eoi);
+                        eoni                = 1:size(x,2);
+                        eoni                = find(eoni - eoi);
                     end
                 end
                 
@@ -431,18 +405,18 @@ switch method
                 else % run through each interaction
                     
                     % part of X unchanged
-                    Main_effects = X(:,dummy_columns);
-                    Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
+                    Main_effects      = X(:,dummy_columns);
+                    Cov_and_Mean      = [X(:,covariate_columns) ones(size(Y,1),1)];
                     
-                    index = 1;
-                    Ifactors = NaN(1,length(nb_interactions));
-                    interaction = cell(1,length(nb_interactions));
+                    index             = 1;
+                    Ifactors          = NaN(1,length(nb_interactions));
+                    interaction       = cell(1,length(nb_interactions));
                     for n=2:nb_factors
-                        combinations = nchoosek(1:nb_factors,n); % note it matches X below because computed the same way in limo_design_matrix
+                        combinations  = nchoosek(1:nb_factors,n); % note it matches X below because computed the same way in limo_design_matrix
                         for c = 1:size(combinations,1)
-                            Ifactors(index) = length(combinations(c,:));
+                            Ifactors(index)    = length(combinations(c,:));
                             interaction{index} = combinations(c,:);
-                            index = index + 1;
+                            index              = index + 1;
                         end
                     end
                     
@@ -459,27 +433,29 @@ switch method
                             Ihighbound = size(Main_effects,2)+Isize;
                             x          = [Main_effects X(:,Ilowbound:Ihighbound) I Cov_and_Mean];
                         end
-                        eoibound = size(x,2) - size(I,2) - size(Cov_and_Mean,2);
+                        eoibound       = size(x,2) - size(I,2) - size(Cov_and_Mean,2);
                         
                         % run same model as above
-                        wx                     = x.*repmat(W,1,size(x,2));
-                        betas                  = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
-                        R                      = eye(size(Y,1)) - (wx*pinv(wx));
-                        eoi                    = zeros(1,size(x,2));
+                        wx                         = x.*repmat(W,1,size(x,2));
+                        betas                      = pinv(wx)*(Y.*repmat(W,1,size(Y,2)));
+                        R                          = eye(size(Y,1)) - (wx*pinv(wx));
+                        eoi                        = zeros(1,size(x,2));
                         eoi(eoibound+1:(eoibound+nb_interactions(f))) = eoibound+1:(eoibound+nb_interactions(f));
-                        eoni                   = 1:size(x,2);
-                        eoni                   = find(eoni - eoi);
-                        C                      = eye(size(x,2));
-                        C(:,eoni)              = 0;
-                        C0                     = eye(size(x,2)) - C*pinv(C);
-                        X0                     = wx*C0;
-                        R0                     = eye(size(Y,1)) - (X0*pinv(X0));
-                        M                      = R0 - R;
-                        HI(f,:)                = diag((betas'*x'*M*x*betas))';
-                        df_interactions(f)     = prod(df_conditions(interaction{f}));
-                        F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
-                        pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
-                        Istart                 = Istart+nb_interactions(f);
+                        eoni                       = 1:size(x,2);
+                        eoni                       = find(eoni - eoi);
+                        C                          = eye(size(x,2));
+                        C(:,eoni)                  = 0;
+                        C0                         = eye(size(x,2)) - C*pinv(C);
+                        X0                         = wx*C0;
+                        R0                         = eye(size(Y,1)) - (X0*pinv(X0));
+                        M                          = R0 - R;
+                        HI(f,:)                    = diag((betas'*x'*M*x*betas))';
+                        df_interactions(f)         = prod(df_conditions(interaction{f}));
+                        F_interactions(f,:)        = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
+                        if strcmp(method,'OLS')
+                            pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
+                        end
+                        Istart                     = Istart+nb_interactions(f);
                     end
                 end
                 
@@ -501,23 +477,25 @@ switch method
                 else  % ANCOVA
                     
                     % pre-allocate space
-                    df_continuous   = zeros(nb_continuous,size(Y,2));
-                    F_continuous    = zeros(nb_continuous,size(Y,2));
-                    pval_continuous = zeros(nb_continuous,size(Y,2));
+                    df_continuous   = NaN(nb_continuous,size(Y,2));
+                    F_continuous    = NaN(nb_continuous,size(Y,2));
+                    pval_continuous = NaN(nb_continuous,size(Y,2));
                     
                     % compute
                     N_conditions = sum(nb_conditions) + sum(nb_interactions);
                     for n = 1:nb_continuous
-                        C                                = zeros(size(X,2));
-                        C(N_conditions+n,N_conditions+n) = 1; % pick up one regressor at a time
-                        C0                               = eye(size(X,2)) - C*pinv(C);
-                        X0                               = WX*C0; % all but rehressor of interest
-                        R0                               = eye(size(Y,1)) - (X0*pinv(X0));
-                        M                                = R0 - R; % hat matrix for regressor of interest
-                        H                                = Betas'*X'*M*X*Betas;
-                        df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
-                        F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
-                        pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
+                        C                                    = zeros(size(X,2));
+                        C(N_conditions+n,N_conditions+n)     = 1; % pick up one regressor at a time
+                        C0                                   = eye(size(X,2)) - C*pinv(C);
+                        X0                                   = WX*C0; % all but rehressor of interest
+                        R0                                   = eye(size(Y,1)) - (X0*pinv(X0));
+                        M                                    = R0 - R; % hat matrix for regressor of interest
+                        H                                    = Betas'*X'*M*X*Betas;
+                        df_continuous(n)                     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
+                        F_continuous(n,:)                    = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
+                        if strcmp(method,'OLS')
+                            pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
+                        end
                     end
                     
                     F_CONTVALUES{B}  = F_continuous';
@@ -541,7 +519,7 @@ switch method
                 X = design;                        % stays the same
             end
             
-            tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis, n_freqs, n_times);
+            tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis);
             BETASB{B}  = tmp.betas;
             MODELR2{B} = tmp.R2_univariate;
             MODELF{B}  = tmp.F;
