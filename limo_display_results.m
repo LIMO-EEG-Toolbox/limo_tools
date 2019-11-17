@@ -35,8 +35,8 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % Cyril Pernet, Guillaume Rousselet, Carl Gaspar,  
 % Nicolas Chauveau, Andrew Stewart, Ramon Martinez-Cancino
 %
-% see also limo_stat_values limo_display_image topoplot
-% -----------------------------------------------------
+% see also limo_stat_values limo_display_image topoplot limo_course_plot
+% ----------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 try
@@ -710,14 +710,18 @@ if LIMO.Level == 1
             try regressor = sort(eval(cell2mat(regressor)));
                 if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
             catch ME
-                return
+                error('can''t select this regressor: %s',ME.message); 
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
-            if max(regressor) == size(LIMO.design.X,2); tmp = regressor(1:end-1); else tmp = regressor; end
+            if max(regressor) == size(LIMO.design.X,2)
+                tmp = regressor(1:end-1); 
+            else tmp = regressor; 
+            end
+            
             cat = sum(tmp<=categorical); cont = sum(tmp>categorical);
             if cat >=1 && cont >=1
-                errordlg('you can''t plot categorical and continuous regressors together'); return
+                errordlg2('you can''t plot categorical and continuous regressors together'); return
             end
             
             % which ERP to make
@@ -811,8 +815,6 @@ if LIMO.Level == 1
             
             % down to business
             % ----------------------
-            
-            
             data_cached = 0;
             if isfield(LIMO,'cache')
                 if strcmp(LIMO.Analysis,'Time-Frequency') && isfield(LIMO.cache,'ERPplot')
