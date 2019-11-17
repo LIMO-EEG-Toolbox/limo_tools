@@ -12,19 +12,20 @@ function result=limo_central_tendency_and_ci(varargin)
 %
 % FORMAT
 % limo_central_tendency_and_ci(varargin)
-% result=limo_central_tendency_and_ci(varargin)
+% result = limo_central_tendency_and_ci(varargin)
 %
 % INPUTS
 % limo_central_tendency_and_ci(expected_chan_loc)
 %                expected_chan_loc is the name of the electrode structure from EEGLAB
 %                this option calls the GUI
 %
-% limo_central_tendency_and_ci(data, 'Analysis_type',selected_electrodes)
+% limo_central_tendency_and_ci(data, 'Analysis_type',selected_electrodes,savename)
 %                data is a [electrode * frame * trials/subjects] matrix
 %                Analysis_type should be 'Mean', 'Trimmed mean', 'HD' or 'Median'
 %                selected_electrodes can be [] for all brain or 1 or many channels (1 per trial/subject)
+%                savename (optional) name for saving files
 %
-% limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_electrodes)
+% limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_electrodes,savename)
 %                Files are the full names (with paths) of LIMO.mat files
 %                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]
 %                expected_chan_loc is the electrode structure from EEGLAB but for the group of subjects
@@ -32,6 +33,7 @@ function result=limo_central_tendency_and_ci(varargin)
 %                Estimator 1 is applied to trials within-subjects
 %                Estimator 2 is applied across subjects
 %                selected_electrodes can be [] for all brain or 1 or many channels (=nb files) 
+%                savename (optional) name for saving files
 %
 % OUTPUTS result = limo_central_tendency_and_ci()
 %         result is a structure with the fields 'subject' and 'central'
@@ -60,7 +62,7 @@ function result=limo_central_tendency_and_ci(varargin)
 current_dir = pwd; warning off
 answer = []; result = []; data =[];
 
-if nargin == 3
+if nargin == 3 || nargin == 4
     % ------------------------
     
     data = varargin{1};
@@ -84,8 +86,11 @@ if nargin == 3
         data = data(selected_electrodes,:,:);
     end
     
+    if nargin == 4
+        savename = varargin{4};
+    end
     
-elseif nargin == 6
+elseif nargin == 6 || nargin == 7
     % ---------------------------
     
     Files = varargin{1};
@@ -171,6 +176,10 @@ elseif nargin == 6
         result.subjects = data;
     end
     
+    if nargin == 7
+        savename = varargin{4};
+    end
+
 elseif nargin == 1
     % ---------------------------
     
@@ -179,6 +188,9 @@ elseif nargin == 1
     
     % check if Betas or ERPs
     option = questdlg('type of analysis','what data to analyse?','ERPs','Betas','Con','ERPs');
+    if isempty(option)
+        return
+    end
     
     % -----------------------------
     % ANALYSIS ON BETAS PARAMETERS
@@ -556,6 +568,7 @@ end % closes varargin
 
 
 %% Analysis part
+% --------------
 cd(current_dir)
 
 if ~isempty(data)
@@ -578,11 +591,20 @@ if ~isempty(data)
     
     % save as
     if nargout ==0
-        name = cell2mat(inputdlg('save as [?]','name option'));
-        if ~isempty(name)
-            newname = sprintf('%s_single_subjects_%s',name,Estimator1);
-            Data.data = data; Data.limo = limo;
-            save (newname,'Data'); clear Data
+        if exist('savename','var')
+            name = savename ;
+        else
+            name = cell2mat(inputdlg('save as [?]','name option'));
+        end
+        
+        if size(data,3) ~=1
+            if ~isempty(name)
+                newname = sprintf('%s_single_subjects_%s',name,Estimator1);
+                Data.data = data; Data.limo = limo;
+                save (newname,'Data'); clear Data
+            else
+                disp('no name selected - aborded'); return
+            end
         end
     else
         result.subjects = data;
@@ -616,13 +638,15 @@ if ~isempty(data)
         close(h);
         
         if nargout ==0
-            if nargin == 3
+            if nargin == 3 || nargin == 4
                 newname = sprintf('%s_Mean',name);
             else
                 newname = sprintf('%s_Mean_of_%s',name,Estimator1);
             end
             Data.mean = M;
-            Data.limo = limo;
+            if exist('limo','var')
+                Data.limo = limo;
+            end
             save (newname,'Data');
         else
             result.mean = M;
@@ -649,13 +673,16 @@ if ~isempty(data)
         close(h);
         
         if nargout ==0
-            if nargin == 3
+            if nargin == 3 || nargin == 4
                 newname = sprintf('%s_Trimmed_mean',name);
             else
                 newname = sprintf('%s_Trimmed_mean_of_%s',name,Estimator1);
             end
             Data.trimmed_mean = TM;
-            Data.limo = limo;
+            
+            if exist('limo','var')
+                Data.limo = limo;
+            end
             save (newname,'Data');
         else
             result.trimmed_mean= TM;
@@ -682,14 +709,16 @@ if ~isempty(data)
         close(h);
         
         if nargout ==0
-            if nargin == 3
+            if nargin == 3 || nargin == 4
                 newname = sprintf('%s_Mid_decile_Harrell_David',name);
             else
                 newname = sprintf('%s_Mid_decile_Harrell_David_of_%s',name,Estimator1);
             end
             Data.Harrell_Davis = HD;
-            Data.limo = limo;
-            save ([newname],'Data');
+            if exist('limo','var')
+                Data.limo = limo;
+            end
+            save (newname,'Data');
         else
             result.Harrell_Davis = HD;
         end
@@ -715,14 +744,16 @@ if ~isempty(data)
         close(h);
         
         if nargout ==0
-            if nargin == 3
+            if nargin == 3 || nargin == 4
                 newname = sprintf('%s_Median',name);
             else
                 newname = sprintf('%s_Median_of_%s',name,Estimator1);
             end
             Data.median = Med;
-            Data.limo = limo;
-            save ([newname],'Data');
+            if exist('limo','var')
+                Data.limo = limo;
+            end
+            save (newname,'Data');
         else
             result.Median = Med;
         end
