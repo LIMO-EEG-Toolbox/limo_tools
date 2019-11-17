@@ -8,15 +8,15 @@ function tfce_score = limo_tfce(varargin)
 %       tfce_score = limo_tfce(type,data,channeighbstructmat,updatebar,E,H,dh)
 %
 %       type = 1 for 1D data (one channel ERP or Power),
-%              2 for 2D data (ERP, Power, a single freq*time map),
+%              2 for 2D data (ERP, Power, or a single freq*time map),
 %              3 for 3D data (ERSP)
 %       data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
-%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, siwtch to bwlabel = freq*time map
+%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, switch to bwlabel = freq*time map
 %       updatebar is a flag (default = 1) to produce a waitbar
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
 %
 %
-% OUPUT tfce_score is a map of scores
+% OUPUT tfce_score is a map of scores (ie transformed t/F values)
 %
 % References
 %
@@ -29,9 +29,7 @@ function tfce_score = limo_tfce(varargin)
 % Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP.
 % figshare. http://dx.doi.org/10.6084/m9.figshare.1008325
 %
-% Cyril Pernet v4 28-07-2015
-% fixed indices / got the loop faster /
-% V5 20-08-2015
+% Cyril Pernet V5 20-08-2015
 % use limo_findcluster which is faster (clustering speed x60)
 % changed the integration from a loop to hist - thx to Bruno Giordano
 % ------------------------------
@@ -69,7 +67,6 @@ channeighbstructmat = varargin{3};
 clear varargin
 
 %% start tcfe
-
 
 switch type
     
