@@ -75,7 +75,6 @@ while out == 0
                     if ~isempty(underscores)
                         file(underscores) = ' ';
                     end
-                    
                     ext = strfind(file, '.');
                     file(max(ext):end) = [];
                     name{turn} = file;
@@ -92,10 +91,12 @@ while out == 0
     if isfield(data,'limo')
         limo = data.limo;
     else
-        [file,locpath]=uigetfile({'LIMO.mat'},'Select any LIMO with right info');
-        if strcmp(file,'LIMO.mat')
-            load(fullfile(locpath,file));
-            limo = LIMO; clear LIMO;
+        [limofile,locpath]=uigetfile({'LIMO.mat'},'Select any LIMO with right info');
+        if strcmp(limofile,'LIMO.mat')
+            LIMO = load(fullfile(locpath,limofile));
+            limo = LIMO.LIMO; clear LIMO;
+            data.limo = limo;
+            save(fullfile(path,file),'data')
         else
             warning('selection aborded'); return
         end
@@ -157,7 +158,7 @@ while out == 0
         if strcmpi(limo.Analysis,'Time')
             vect = limo.data.start:(1000/limo.data.sampling_rate):limo.data.end;  % in msec
         elseif strcmpi(limo/Analysis,'Frequency')
-            vect = LIMO.data.freqlist;
+            vect = limo.data.freqlist;
             if size(vect,2) == 1; vect = vect'; end
             if size(vect,2) ~= size(toplot,2)
                 vect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
