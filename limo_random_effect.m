@@ -42,9 +42,10 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 % define handles used for the save callback
-handles.b = 1000;
+handles.b    = 1000;
 handles.tfce = 0;
 handles.ica  = 0;
+handles.dir  = [];
 try S=evalin('base','STUDY');
     handles.chan_file = S.design.limo.chanloc; clear S
     fprintf('using study channel location file \n%s\n',handles.chan_file);
@@ -77,10 +78,17 @@ function Central_tendency_and_CI_Callback(hObject, eventdata, handles)
 if handles.ica == 1
     disp('IC not supported yet')
 elseif test_chan_loc(handles)
+    if isempty(handles.dir)
+        savedir = uigetdir('pwd','where to save data?');
+        if savedir == 0
+            return
+        else
+            cd(savedir)
+        end
+    end
     limo_central_tendency_and_ci(handles.chan_file);
     guidata(hObject, handles);
 end
-
 
 % --- Executes on button press in data_plot.
 function data_plot_Callback(hObject, eventdata, handles)
@@ -120,7 +128,7 @@ end
 %         Parameters parameter
 %------------------------------
 
-% get the number of bootstraaps
+% get the number of bootstraps
 % ---------------------------------------------------------------
 function bootstrap_Callback(hObject, eventdata, handles)
 
@@ -179,23 +187,31 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function One_Sample_t_test_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+go = update_dir(handles,'one_sample_ttest');
+if go == 0
+    return
+else
+    if handles.ica == 1
+        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    elseif test_chan_loc(handles)
+        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    end
 end
-
 
 % Two_Samples_t_test
 % ---------------------------------------------------------------
 function Two_Samples_t_test_Callback(hObject, eventdata, handles)
 
+go = update_dir(handles,'two_samples_ttest');
+if go == 0
+    return
+else
 if handles.ica == 1
     limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 
 % Paired_t_test
@@ -203,24 +219,32 @@ end
 % --- Executes on button press in Paired_t_test.
 function Paired_t_test_Callback(hObject, eventdata, handles)
 
+go = update_dir(handles,'paired_ttest');
+if go == 0
+    return
+else
 if handles.ica == 1
     limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 % Regression
 % ---------------------------------------------------------------
 % --- Executes on button press in Regression.
 function Regression_Callback(hObject, eventdata, handles)
 
+go = update_dir(handles,'regression');
+if go == 0
+    return
+else
 if handles.ica == 1
     limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 % ANOVA/ANCOVA
 % ---------------------------------------------------------------
@@ -228,12 +252,16 @@ end
 % --- Executes on button press in ANOVA.
 function ANOVA_Callback(hObject, eventdata, handles)
 
+go = update_dir(handles,'AN(C)OVA');
+if go == 0
+    return
+else
 if handles.ica == 1
     limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
     limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 %------------------------
 %         OTHERS
@@ -319,6 +347,20 @@ function go = test_chan_loc(handles)
 if isempty(handles.chan_file)
     go = 0;
     warndlg('chanloc not specified, please load one','missing file')
+else
+    go = 1;
+end
+
+function go = update_dir(handles,test)
+
+go = 0;
+if isempty(handles.dir)
+    if ~exist(test,'dir')
+        disp('directory not specified, creating one')
+        mkdir(test); cd(test); handles.dir = pwd; go = 1;
+    else
+        warndlg2(sprintf('directory not specified, %s already exists \n please create and select a directory',test),'directory issue')
+    end
 else
     go = 1;
 end
