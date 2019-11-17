@@ -402,8 +402,7 @@ switch varargin{1}
         end
         
         disp('design matrix done ...')
-        
-        
+
         % fix a bug which occurs if you run several subjects in a row with
         % the GUI and use contrasts - a new subject will have a contrast field
         % must be a way to solve this properly ??
