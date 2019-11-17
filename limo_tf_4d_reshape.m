@@ -24,18 +24,15 @@ function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 % Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
 % add the fored_dim argument -- making the function more generic
 
-current = pwd;
 if ~exist('LIMO','var')
-    try
-        load LIMO
-    catch NO_FILE
-        try
-            cd ..; load LIMO
-        catch NO_FILE
-            if nargin == 1
-                error('no LIMO variable/file found - use forced dim as 2nd argument')
-            end
-        end
+    if exist(fullfile(pwd,'LIMO.mat'),'file')
+        LIMO = load('LIMO.mat');
+        LIMO = LIMO.LIMO;
+    elseif exist(fullfile(fileparts(pwd),'LIMO.mat'),file)
+        LIMO = load(fullfile(fileparts(pwd),'LIMO.mat'));
+        LIMO = LIMO.LIMO;
+    else
+        error('no LIMO variable/file found - use forced dim as 2nd argument')
     end
 end
 
@@ -49,49 +46,54 @@ if nargin == 2
         error('forced dim dimension issue')
     end
 end
-cd(current)
 
 % Check the size of input
 reshape_size = size(reshape_in);
 
 %%  If we have 4D input, reshape it to be 3D
+% -------------------------------------------
 if numel(reshape_size) == 4
     
     [n_elec, n_freqs, n_times, N] = size(reshape_in);
-    n_freq_times = LIMO.data.size3D(2);
+    n_freq_times                  = LIMO.data.size3D(2);
     if n_freq_times ~= n_freqs*n_times
         error('dimensions disagreement to reshape freq*time')
     else
         reshaped=nan(n_elec,n_freq_times,N);
     end
     
-    %% For each trial, build a concatenated 2D matrix of (elec x (freqs timepoint)), and then populate the 3D Y with this
+    % For each trial, build a concatenated 2D matrix of (elec x (freqs timepoint)), 
+    % and then populate the 3D Y with this
     for tr = 1:N
+        start      = 1;
+        stop       = start + n_freqs -1;
+        tf_long_2d = NaN(n_elec,n_freq_times);
         for tm = 1:n_times
-            if tm==1
-                tf_long_2d = squeeze(reshape_in(:,:,tm,tr));
-            else
-                tf_long_2d = [tf_long_2d squeeze(reshape_in(:,:,tm,tr))];
-            end
+            tf_long_2d(:,start:stop) = squeeze(reshape_in(:,:,tm,tr));
+            start  = start + n_freqs;
+            stop   = start + n_freqs -1;
         end
         reshaped(:,:,tr) = tf_long_2d;
     end
     
 elseif numel(reshape_size) == 3 || 2
-    %% Else, if we have 3D input, reshape it to be 4D
+    %% else, if we have 3D input, reshape it to be 4D
+    % ------------------------------------------------
     
     [n_elec, n_freq_times, N] = size(reshape_in);
-    n_freqs = LIMO.data.size4D(2);
-    n_times = LIMO.data.size4D(3);
+    n_freqs                   = LIMO.data.size4D(2);
+    n_times                   = LIMO.data.size4D(3);
     if n_freq_times ~= n_freqs*n_times
         error('dimensions disagreement to reshape freq*time')
     else
         reshaped = nan(n_elec,n_freqs, n_times, N);
     end
     
-    % For each trial, take the stack of (elec x (freqs timepoint)) and split it into frames of (elec x freqs x times), then populate the 4D Y with this
+    % For each trial, take the stack of (elec x (freqs timepoint)) 
+    % and split it into frames of (elec x freqs x times), then populate the 4D Y with this
     
     for tr = 1:N
+        eft_3d = NaN(n_elec,n_freqs,n_times);
         for tm = 1:n_times
             this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf 
                 eft_3d(:,:,tm) =reshape_in(:,this_freq_start_index:this_freq_start_index+n_freqs-1,tr);
