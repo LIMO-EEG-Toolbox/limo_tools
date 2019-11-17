@@ -84,7 +84,7 @@ if FilterIndex ~= 0
     if handles.LIMO.LIMO.Level == 1
         if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') ...
                 && strncmp(FileName,'con',3) == 0 && strncmp(FileName,'ess',3) ==0
-            if strcmp(questdlg('Level 1: compute all bootstraps?','bootstrap turned on','Yes','No','No'),'Yes');
+            if strcmp(questdlg('Level 1: compute all bootstraps?','bootstrap turned on','Yes','No','No'),'Yes')
                 LIMO = handles.LIMO.LIMO;
                 LIMO.design.bootstrap = 1;
                 if handles.tfce == 1
@@ -102,7 +102,7 @@ if FilterIndex ~= 0
         if handles.tfce == 1 && ~exist(sprintf('TFCE%stfce_%s', filesep, FileName), 'file') ...
                 && exist(sprintf('H0%sH0_%s', filesep, FileName), 'file') && strncmp(FileName,'con',3) == 0 ...
                 && strncmp(FileName,'ess',3) ==0
-            if strcmp(questdlg('Level 1: compute all tfce?','tfce turned on','Yes','No','No'),'Yes');
+            if strcmp(questdlg('Level 1: compute all tfce?','tfce turned on','Yes','No','No'),'Yes')
                 LIMO = handles.LIMO.LIMO;
                 LIMO.design.tfce = 1;
                 save LIMO LIMO
@@ -117,11 +117,11 @@ if FilterIndex ~= 0
     
     % contrasts stuff
     if handles.bootstrap == 1 && ~exist(sprintf('H0%sH0_%s', filesep, FileName), 'file')
+        Yr       = load('Yr.mat'); Yr = Yr.Yr; 
+        H0_Betas = load(['H0' filesep 'H0_Betas.mat']); H0_Betas = H0_Betas.H0_Betas;
         if strncmp(FileName,'con',3)
-            load Yr; cd H0; H0_Betas.mat;
             limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 0,3); clear Yr H0_Betas
         elseif strncmp(FileName,'ess',3)
-            load Yr; cd H0; H0_Betas.mat;
             limo_contrast(Yr, H0_Betas, handles.LIMO.LIMO, 1,3); clear Yr H0_Betas
         end
     end
@@ -346,48 +346,47 @@ end
 guidata(hObject, handles);
 
 
-% ERP plots
+% course plots
 % ---------------------------------------------------------------
 function ERP_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select LIMO file');
-if FilterIndex == 1
-    cd(PathName);
-    try
-        handles.LIMO = load('LIMO.mat');
-        if strncmp(handles.LIMO.LIMO.design.name,'one sample',9)
-            files = dir('*.mat');
-            for i=1:length(files)
-                if strncmp(files(i).name,'one_sample',10)
-                    FileName = files(i).name;
-                end
-            end
-        elseif strncmp(handles.LIMO.LIMO.design.name,'two samples',9)
-            files = dir('*.mat');
-            for i=1:length(files)
-                if strncmp(files(i).name,'two_samples',11)
-                    FileName = files(i).name;
-                end
-            end
-        elseif strncmp(handles.LIMO.LIMO.design.name,'paired t-test',12)
-            files = dir('*.mat');
-            for i=1:length(files)
-                if strncmp(files(i).name,'paired_sample',13)
-                    FileName = files(i).name;
-                end
-            end
-        elseif strncmp(handles.LIMO.LIMO.design.name,'Repeated measures ANOVA',22)
-            if handles.LIMO.LIMO.design.nb_conditions == 1 &&  length(handles.LIMO.LIMO.design.repeated_measure) == 1
-                FileName = 'Rep_ANOVA_Factor_1.mat';
-            else
-                [FileName,PathName,FilterIndex]=uigetfile('*.mat','Which Effect to plot?');
+supported_tests = {'one_sample','two samples','paired','Rep_ANOVA'};
+[FileName,PathName,FilterIndex]=uigetfile('*.mat','Select LIMO file or summary stat file');
+if FilterIndex == 1  
+    if strcmp(FileName,'LIMO.mat') && exist(fullfile(PathName,FileName),'file')
+        cd(PathName); handles.LIMO = load('LIMO.mat'); files = dir('*.mat'); FileName = [];
+        for i=1:length(files)
+            if contains(files(i).name,supported_tests)
+                FileName = files(i).name;
             end
         end
         
-    catch
-        LIMO = []; handles.LIMO = LIMO;
+        if isempty(FileName)
+            errordlg2('Associated LIMO file not found/supported'); return
+        else
+            limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
+        end
+        
+    elseif contains(FileName,supported_tests)
+        if exist(fullfile(PathName,'LIMO.mat'),'file')
+             handles.LIMO = load(fullfile(PathName,'LIMO.mat'));
+             limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
+        else
+             errordlg2('No associated LIMO file was found'); return
+        end
+        
+    else
+        test = load(fullfile(PathName,FileName));
+        if isfield(test,'data')
+            try
+                limo_add_plots(fullfile(PathName,FileName))
+            catch no_plot
+                error('the file fits with variable ''data'' yet there was an error while plotting it: \n%s',no_plot.message)
+            end
+        else
+            errordlg2('this file doesn''t seem supported'); return
+        end
     end
-    limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);
 
@@ -429,7 +428,7 @@ end
 function MCC_Choice_Callback(hObject, eventdata, handles)
 
 handles.MCC = get(hObject,'Value');  % 1 = None, 2 = Cluster, 3 = TFCE, 4 = T max
-test = isempty(handles.MCC);
+test        = isempty(handles.MCC);
 if test == 1
     handles.MCC = 1;
 end
