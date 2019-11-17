@@ -325,18 +325,18 @@ end
 
 % run pipelines and report
 try
-    N = size(model.set_files,1);
-    LIMO_files.mat = LIMO_files.mat';
+    N               = size(model.set_files,1);
+    LIMO_files.mat  = LIMO_files.mat';
     LIMO_files.Beta = LIMO_files.Beta';
-    remove_limo = zeros(1,N);
+    remove_limo     = zeros(1,N);
 catch
-    N = size(batch_contrast.LIMO_files,1);
+    N               = size(batch_contrast.LIMO_files,1);
 end
 procstatus = zeros(1,N);
 
 if isfield(LIMO_files,'con')
     LIMO_files.con = LIMO_files.con';
-    remove_con = zeros(1,N);
+    remove_con     = zeros(1,N);
 end
 
 
@@ -350,7 +350,7 @@ save([current filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 
 % allocate names
 for subject = 1:N
-    limopt{subject}= opt;
+    limopt{subject} = opt;
     limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
     
@@ -372,7 +372,7 @@ parfor subject = 1:N
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
-        report{subject} = ['subject ' num2str(subject) ' failed'];
+        report{subject} = sprintf('subject %g failed: %s',subject,ME.message');
         if strcmp(option,'model specification') 
             remove_limo(subject) = 1;
         elseif strcmp(option,'both')
