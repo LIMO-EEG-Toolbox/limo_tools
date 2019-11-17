@@ -112,7 +112,7 @@ end
 if isempty(nb_conditions);   nb_conditions = 0; end
 if isempty(nb_interactions); nb_interactions = 0; end
 if isempty(nb_continuous);   nb_continuous = 0; end
-    
+
 nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
     nb_factors = 0;
@@ -122,7 +122,7 @@ end
 %% Data check
 % -----------
 if ~isreal(Y)
-    Y = abs(Y);
+    Y = abs(Y).^2;
 end
 
 if size(Y,1)~=size(X,1)
@@ -163,32 +163,33 @@ elseif strcmp(method,'WLS-TF')
     if n_freq_times ~= n_freqs*n_times
         error('dimensions disagreement to reshape freq*time')
     else
-        reshaped = nan(n_freqs, n_times, N);
-    end
-    
-    for tr = 1:N
-        eft_3d = NaN(n_freqs,n_times);
-        for tm = 1:n_times
-            this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
-            eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+        reshaped = nan(n_freqs, N, n_times);
+        for tr = 1:N
+            eft_3d = NaN(n_freqs,n_times);
+            for tm = 1:n_times
+                this_freq_start_index = tm*n_freqs - n_freqs + 1;  % Set index in the long 2D tf
+                eft_3d(:,tm) =Y(tr,this_freq_start_index:(this_freq_start_index+n_freqs-1))';
+            end
+            reshaped(:,tr,:) = eft_3d;
         end
-        reshaped(:,:,tr) = eft_3d; clear eft_3d
+        Y = reshaped;
+        clear reshaped;
     end
     
     % get estimates per frequency band
     index1 = 1;
-    Betas  = NaN(size(X,2),n_freqs*n_times);
-    W      = NaN(n_freqs,size(X,1));
+    Betas  = NaN(size(X,2),n_freqs,n_times);
+    W      = NaN(size(X,1),n_freqs);
+    WX     = cell(1,n_freqs);
     for f=1:n_freqs
-        [Betas(:,index1:6:(n_freqs*n_times)),W(f,:)] = limo_WLS(X,squeeze(reshaped(f,:,:))');
+        [Betas(:,f,:),W(:,f)] = limo_WLS(X,squeeze(Y(f,:,:)));
+        WX{f} = X .* repmat(W(:,f),1,size(X,2)); % per freq = switch method
         index1=index1+1;
     end
-    clear reshaped
-    WX = X .* repmat(W,1,size(X,2));
     
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
-    % WX = X.*W; per frame! switch method
+    % WX = X.*W; per frame =  switch method
 end
 
 %% ------------------------------------
@@ -528,6 +529,288 @@ switch method
             end
         end
         
+        % ---------------------------------------------------------------------
+    case 'WLS-TF'
+        % ---------------------------------------------------------------------
+        
+        model.W             = W;
+        model.betas         = Betas;
+        model.betas_se      = Betas;
+        model.dfe           = NaN(n_freqs,2);
+        model.conditions.df = squeeze(NaN(nb_factors,n_freqs,2));
+        
+        % iterate per freqency band
+        % ---------------------------
+        for freq=n_freqs:-1:1
+            
+            T   = (squeeze(Y(freq,:,:))-repmat(mean(squeeze(Y(freq,:,:))),size(Y,2),1))'*(squeeze(Y(freq,:,:))-repmat(mean(squeeze(Y(freq,:,:))),size(Y,2),1));  % SS Total (the data)
+            R   = eye(size(Y,2)) - WX{freq}*pinv(WX{freq});
+            E   = squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:));
+            
+            % degrees of freedom
+            % -------------------
+            df  = rank(WX{freq})-1;
+            EV  = abs(eig(corr(R*squeeze(Y(freq,:,:)))));
+            x   = single(EV>=1) + (EV - floor(EV));
+            dfe = size(Y,2) - sum(x) + rank(WX{freq}) + 1;
+            
+            % model R^2
+            % -----------
+            C              = eye(size(X,2));
+            C(:,size(X,2)) = 0;
+            C0             = eye(size(X,2)) - C*pinv(C);
+            X0             = WX{freq}*C0;
+            R0             = eye(size(Y,2)) - (X0*pinv(X0));
+            M              = R0 - R;
+            H              = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
+            Rsquare        = diag(H)./diag(T);
+            F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
+            
+            % update the model structure
+            % ----------------------------
+            
+            for b=1:size(Y,3)
+                model.betas_se(:,f,b) = sqrt(diag((E(b,b)/dfe)*pinv(WX{freq}'*WX{freq})));
+            end
+            model.R2_univariate(f,:)  = Rsquare;
+            model.F(f,:)              = F_Rsquare;
+            model.df(f,:)             = [df dfe];
+            
+            %% Compute effects
+            % ------------------
+            % ---------------------------------
+            if nb_factors == 1   %  1-way ANOVA
+                % ---------------------------------
+                
+                % compute F for categorical variables
+                % -----------------------------------
+                if nb_conditions ~= 0 && nb_continuous == 0
+                    df_conditions                    = df;
+                    F_conditions                     = F_Rsquare;
+                    
+                elseif nb_conditions ~= 0 && nb_continuous ~= 0
+                    C                                = eye(size(X,2));
+                    C(:,(nb_conditions+1):size(X,2)) = 0;
+                    C0                               = eye(size(X,2)) - C*pinv(C);
+                    X0                               = WX{freq}*C0; % here the reduced model includes the covariates
+                    R0                               = eye(size(Y,2)) - (X0*pinv(X0));
+                    M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
+                    H                                = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
+                    df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
+                    F_conditions                     = (diag(H)/df_conditions) ./ (diag(E)/dfe);
+                end
+                
+                model.conditions.F(freq,:)              = F_conditions';
+                model.conditions.df(freq,:)             = [df_conditions ; dfe]';
+                
+                % ------------------------------------------------
+            elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
+                % ------------------------------------------------
+                
+                % --------------------------------------
+                % compute F and p values of each factor
+                % --------------------------------------
+                
+                df_conditions            = zeros(1,length(nb_conditions));
+                F_conditions             = zeros(length(nb_conditions),size(Y,3));
+                pval_conditions          = zeros(length(nb_conditions),size(Y,3));
+                
+                % define the effect of interest (eoi)
+                eoi                      = zeros(1,size(X,2));
+                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
+                eoni                     = 1:size(X,2);
+                eoni                     = find(eoni - eoi);
+                
+                for f = 1:length(nb_conditions)
+                    C                    = eye(size(X,2));
+                    C(:,eoni)            = 0; % set all but factor of interest to 0
+                    C0                   = eye(size(X,2)) - C*pinv(C);
+                    X0                   = WX*C0; % the reduced model include all but the factor f
+                    R0                   = eye(size(Y,2)) - (X0*pinv(X0));
+                    M                    = R0 - R; % hat matrix for factor f
+                    H                    = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
+                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    
+                    % update factors
+                    if f<length(nb_conditions)
+                        update           = find(eoi,1,'last'); % max(find(eoi));
+                        eoi              = zeros(1,size(X,2));
+                        eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
+                        eoni             = 1:size(X,2);
+                        eoni             = find(eoni - eoi);
+                    end
+                end
+                
+                model.conditions.F(:,freq,:)      = F_conditions';
+                model.conditions.df(:,freq,:)     = [df_conditions ; repmat(dfe,1,numel(df_conditions))];
+                
+                % ------------------------------------------------
+            elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
+                % ------------------------------------------------
+                
+                % ---------------------------------------------------
+                % start by ANOVA without interaction for main effects
+                % ---------------------------------------------------
+                
+                H                 = NaN(length(nb_conditions),size(Y,3));
+                df_conditions     = NaN(1,length(nb_conditions));
+                F_conditions      = NaN(length(nb_conditions),size(Y,3));
+                pval_conditions   = NaN(length(nb_conditions),size(Y,3));
+                HI                = NaN(length(nb_interactions),size(Y,3));
+                df_interactions   = NaN(1,length(nb_interactions));
+                F_interactions    = NaN(length(nb_interactions),size(Y,3));
+                pval_interactions = NaN(length(nb_interactions),size(Y,3));
+                
+                % covariates
+                covariate_columns = (sum(nb_conditions)+sum(nb_interactions)+1):(size(X,2)-1);
+                
+                % main effects
+                dummy_columns = 1:sum(nb_conditions);
+                
+                % re-define X for main effects
+                x = [X(:,dummy_columns) X(:,covariate_columns) ones(size(X,1),1)];
+                
+                % run same model as above with re-defined model x and
+                % using the weights from the full model
+                wx                       = x.*repmat(W(:,freq),1,size(x,2));
+                betas                    = pinv(wx)*(Y.*repmat(W(:,freq),1,size(Y,2)));
+                R                        = eye(size(Y,2)) - wx*pinv(wx);
+                eoi                      = zeros(1,size(x,2));
+                eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
+                eoni                     = 1:size(x,2);
+                eoni                     = find(eoni - eoi);
+                
+                for f = 1:length(nb_conditions)
+                    C                    = eye(size(x,2));
+                    C(:,eoni)            = 0;
+                    C0                   = eye(size(x,2)) - C*pinv(C);
+                    X0                   = wx*C0;
+                    R0                   = eye(size(Y,2)) - (X0*pinv(X0));
+                    M                    = R0 - R;
+                    H(f,:)               = diag((betas'*x'*M*x*betas));
+                    df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
+                    F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
+                    
+                    % update factors
+                    if f<length(nb_conditions)
+                        update           = find(eoi,1,'last'); % max(find(eoi));
+                        eoi              = zeros(1,size(x,2));
+                        eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
+                        eoni             = 1:size(x,2);
+                        eoni             = find(eoni - eoi);
+                    end
+                end
+                
+                model.conditions.F(:,freq,:)      = F_conditions';
+                model.conditions.df(:,freq,:)     = [df_conditions ; repmat(dfe,1,numel(df_conditions))];
+                
+                % ---------------------------
+                % now deal with interactions
+                % ---------------------------
+                
+                if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
+                    HI                 = diag(T)' - H(1,:) - H(2,:) - diag(E)';
+                    df_interactions    = prod(df_conditions);
+                    F_interactions     = (HI./df_interactions) ./ (diag(E)/dfe)';
+                    
+                else % run through each interaction
+                    
+                    % part of X unchanged
+                    Main_effects = X(:,dummy_columns);
+                    Cov_and_Mean = [X(:,covariate_columns) ones(size(X,1),1)];
+                    
+                    % check interaction level sizes in X
+                    index = 1;
+                    Ifactors = NaN(1,length(nb_interactions));
+                    interaction = cell(1,length(nb_interactions));
+                    for n=2:nb_factors
+                        combinations = nchoosek(1:nb_factors,n); % note it matches X below because computed the same way in limo_design_matrix
+                        for c = 1:size(combinations,1)
+                            Ifactors(index) = length(combinations(c,:));
+                            interaction{index} = combinations(c,:);
+                            index = index + 1;
+                        end
+                    end
+                    
+                    % loop through interactions
+                    % substituting and/or incrementing parts of X
+                    Istart     = size(Main_effects,2)+1; % where we start interaction in X
+                    Ilowbound  = size(Main_effects,2)+1;
+                    for f=1:length(nb_interactions)
+                        I              = X(:,Istart:(Istart+nb_interactions(f)-1));
+                        if length(interaction{f}) == 2 % 1st oder interaction is main + I
+                            x          = [Main_effects I Cov_and_Mean];
+                        else % higher oder inteaction includes lower levels
+                            Isize      = sum(nb_interactions(1:find(Ifactors == Ifactors(f),1) - 1));
+                            Ihighbound = size(Main_effects,2)+Isize;
+                            x          = [Main_effects X(:,Ilowbound:Ihighbound) I Cov_and_Mean];
+                        end
+                        eoibound = size(x,2) - size(I,2) - size(Cov_and_Mean,2);
+                        
+                        % run same model as above
+                        wx                     = x.*repmat(W(:,freq),1,size(x,2));
+                        betas                  = pinv(wx)*(Y.*repmat(W(:,freq),1,size(Y,2)));
+                        R                      = eye(size(Y,2)) - (wx*pinv(wx));
+                        eoi                    = zeros(1,size(x,2));
+                        eoi(eoibound+1:(eoibound+nb_interactions(f))) = eoibound+1:(eoibound+nb_interactions(f));
+                        eoni                   = 1:size(x,2);
+                        eoni                   = find(eoni - eoi);
+                        C                      = eye(size(x,2));
+                        C(:,eoni)              = 0;
+                        C0                     = eye(size(x,2)) - C*pinv(C);
+                        X0                     = wx*C0;
+                        R0                     = eye(size(Y,2)) - (X0*pinv(X0));
+                        M                      = R0 - R;
+                        HI(f,:)                = diag((betas'*x'*M*x*betas))';
+                        df_interactions(f)     = prod(df_conditions(interaction{f}));
+                        F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
+                        pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
+                        Istart                 = Istart+nb_interactions(f);
+                    end
+                end
+                
+                model.interactions.F(:,freq,:)  = F_interactions;
+                model.interactions.df(:,freq,:) = [df_interactions ; repmat(dfe,1,numel(df_interactions))]';
+            end
+            
+            % -----------------------------------
+            %% compute F for continuous variables
+            % -----------------------------------
+            
+            if nb_continuous ~=0
+                
+                if nb_factors == 0 && nb_continuous == 1 % simple regression
+                    model.continuous.F(:,freq)  = F_Rsquare;
+                    model.continuous.df(:,freq) = [1 (size(Y,2)-rank(X))];
+                    
+                else % ANCOVA type of designs
+                    
+                    % pre-allocate space
+                    df_continuous   = zeros(nb_continuous,size(Y,3));
+                    F_continuous    = zeros(nb_continuous,size(Y,3));
+                    
+                    % compute
+                    N_conditions = sum(nb_conditions) + sum(nb_interactions);
+                    for n = 1:nb_continuous
+                        C                                = zeros(size(X,2));
+                        C(N_conditions+n,N_conditions+n) = 1; % pick up one regressor at a time
+                        C0                               = eye(size(X,2)) - C*pinv(C);
+                        X0                               = WX{freq}*C0; % all but regressor of interest
+                        R0                               = eye(size(Y,2)) - (X0*pinv(X0));
+                        M                                = R0 - R; % hat matrix for regressor of interest
+                        H                                = squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:));
+                        df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
+                        F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
+                    end
+                    
+                    model.continuous.F(:,freq,:)                   = F_continuous';
+                    model.continuous.df(:,freq,:)                  = [1 dfe];
+                end
+            end
+        end
         
         % ---------------------------------------------------------------------
     case 'IRLS'
@@ -777,7 +1060,7 @@ switch method
                     end
                 end
             end
-                    
+            
             % -----------------------------------
             %% compute F for continuous variables
             % -----------------------------------
