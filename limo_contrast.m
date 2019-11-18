@@ -90,105 +90,178 @@ switch type
         % Contrast for 1st level analyses and 2nd level regression/ANOVA/ANCOVA
         % -----------------------------------------------------------------
         
-        % string time-frequency
-        if strcmp(LIMO.Analysis ,'Time-Frequency')
+        % get residuals
+        Res   = load([LIMO.dir filesep 'Res.mat']);   
+        Res   = Res.(cell2mat(fieldnames(Res)));
+        
+        % string time-frequency for OLS and IRLS
+        if strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'OLS') || ...
+                strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'IRLS')
             Y     = limo_tf_4d_reshape(Y);
             Betas = limo_tf_4d_reshape(Betas);
             Res   = limo_tf_4d_reshape(Res);
         end
         
-        % get residuals
-        Res = load([LIMO.dir filesep 'Res.mat']); Res = Res.Res;
-        
         if strcmp(Method,'Mass-univariate')
             
-            % create con or ess file
-            if Test == 0
-                con      = NaN(size(Y,1),size(Y,2),5); % dim 3 = C*Beta/se/df/t/p
-                filename = sprintf('con_%g.mat',size(LIMO.contrast,2));
-            else
-                ess      = NaN(size(Y,1),size(Y,2),size(C,1)+4); % dim 3 = C*Beta/se/df/F/p
-                filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
-            end
-            
-            % update con/ess file
-            array = find(~isnan(Y(:,1,1))); % skip empty electrodes
-            for e = 1:length(array)
-                electrode = array(e); warning off;
-                if strcmp(LIMO.Type,'Channels')
-                    fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
+            if strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'WLS')
+                
+                % create con or ess file
+                if Test == 0
+                    con      = NaN(size(Y,1),size(Y,2),size(Y,3),5); % dim 3 = C*Beta/se/df/t/p
+                    filename = sprintf('con_%g.mat',size(LIMO.contrast,2));
                 else
-                    fprintf('applying contrast on component %g/%g \n',e,size(array,1));
+                    ess      = NaN(size(Y,1),size(Y,2),size(Y,3),size(C,1)+4); % dim 3 = C*Beta/se/df/F/p
+                    filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
                 end
                 
-                % contrasts
-                % -----------
-                if Test == 0 % T contrast
-                    
-                    % Update con file [mean value, se, df, t, p]
-                    var                            = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
-                    con(electrode,:,1)             = C*squeeze(Betas(electrode,:,:))';
-                    con(electrode,:,2)             = sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % var is weighted already no need to use WX
-                    con(electrode,:,3)             = dfe;
-                    con(electrode,:,4)             = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                    if strcmpi(LIMO.design.method,'OLS')
-                        con(electrode,:,5)         = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
-                    elseif strcmpi(LIMO.design.method,'IRLS')
-                        for frame = 1:size(Betas,2)
-                            con(electrode,frame,5) = (1-tcdf(squeeze(abs(con(electrode,frame,4))), dfe)).*2;
-                        end
-                    end
-                else % F contrast
-                    % Update ess file [mean values, se, df, F, p]
-                    E = diag(squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
-                    ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ;
-                    ess(electrode,:,end-3)       = E/dfe;
-                    if rank(diag(C)) == 1
-                        df = 1;
+                array = find(~isnan(Y(:,1,1))); % skip empty electrodes
+                for e = 1:length(array)
+                    electrode = array(e); warning off;
+                    if strcmp(LIMO.Type,'Channels')
+                        fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                     else
-                        df = rank(diag(C)) - 1; 
+                        fprintf('applying contrast on component %g/%g \n',e,size(array,1));
                     end
-                    ess(electrode,:,end-2)       = df;
                     
-                    c  = zeros(length(C));
-                    C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
-                    if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                        if isfield(LIMO.design,'weights')
-                            WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,:))',1,size(X,2)-1) X(:,end)];
-                        else
-                            WX = X;
-                        end
-                        R  = eye(size(Y,3)) - (WX*pinv(WX));
-                        X0 = X*C0;
-                        R0 = eye(size(Y,3)) - (X0*pinv(X0));
-                        M  = R0 - R;
-                        H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
-                        ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
-                        if strcmpi(LIMO.design.method,'OLS')
-                            ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
-                        end
-                    else
-                        for frame = 1:size(Betas,2)
-                            WX = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(electrode,frame,:)),1,size(X,2)-1) X(:,end)];
+                    % contrasts
+                    % -----------
+                    for freq = 1:size(Y,3)
+                        if Test == 0 % T contrast
+                            
+                            % Update con file [mean value, se, df, t, p]
+                            var                            = (squeeze(Res(electrode,freq,:,:))*squeeze(Res(electrode,freq,:,:))') / dfe;
+                            con(electrode,freq,:,1)        = C*squeeze(Betas(electrode,:,:))';
+                            con(electrode,freq,:,3)        = dfe;
+                            WX                             = X.*repmat(LIMO.design.weights(electrode,freq,:),1,size(X,2));
+                            con(electrode,freq,:,2)        = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already
+                            con(electrode,freq,:,4)        = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                        else % F contrast
+                            % Update ess file [mean values, se, df, F, p]
+                            E = diag(squeeze(Res(electrode,freq,:,:))*squeeze(Res(electrode,freq,:,:))');
+                            ess(electrode,freq,:,1:size(C,1)) = (C*squeeze(Betas(electrode,freq,:,:))')' ;
+                            ess(electrode,freq,:,end-3)       = E/dfe;
+                            if rank(diag(C)) == 1
+                                df = 1;
+                            else
+                                df = rank(diag(C)) - 1;
+                            end
+                            ess(electrode,freq,:,end-2)       = df;
+                            
+                            c  = zeros(length(C));
+                            C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
+                            WX = X.*repmat(LIMO.design.weights(electrode,freq,:),1,size(X,2));
                             R  = eye(size(Y,3)) - (WX*pinv(WX));
                             X0 = X*C0;
                             R0 = eye(size(Y,3)) - (X0*pinv(X0));
                             M  = R0 - R;
-                            H  = (squeeze(Betas(electrode,frame,:))'*X'*M*X*squeeze(Betas(electrode,frame,:)));
-                            ess(electrode,frame,end-1) = (H/df)./(E(frame)/dfe);  % F value
-                            ess(electrode,frame,end)   = 1 - fcdf(ess(electrode,frame,end-1), df, dfe); % p value
+                            H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
+                            ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
+                            if strcmpi(LIMO.design.method,'OLS')
+                                ess(electrode,freq,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
+                            end
                         end
                     end
                 end
-            end
-            
-            % reshape Time-Frequency files
-            if strcmp(LIMO.Analysis ,'Time-Frequency')
+                
+            else % all other data/methods
+                
+                % create con or ess file
                 if Test == 0
-                    con = limo_tf_4d_reshape(con);
+                    con      = NaN(size(Y,1),size(Y,2),5); % dim 3 = C*Beta/se/df/t/p
+                    filename = sprintf('con_%g.mat',size(LIMO.contrast,2));
                 else
-                    ess = limo_tf_4d_reshape(ess);
+                    ess      = NaN(size(Y,1),size(Y,2),size(C,1)+4); % dim 3 = C*Beta/se/df/F/p
+                    filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
                 end
+                
+                % update con/ess file
+                array = find(~isnan(Y(:,1,1))); % skip empty electrodes
+                for e = 1:length(array)
+                    electrode = array(e); warning off;
+                    if strcmp(LIMO.Type,'Channels')
+                        fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
+                    else
+                        fprintf('applying contrast on component %g/%g \n',e,size(array,1));
+                    end
+                    
+                    % contrasts
+                    % -----------
+                    if Test == 0 % T contrast
+                        
+                        % Update con file [mean value, se, df, t, p]
+                        var                            = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))') / dfe;
+                        con(electrode,:,1)             = C*squeeze(Betas(electrode,:,:))';
+                        con(electrode,:,3)             = dfe;
+                        if strcmpi(LIMO.design.method,'OLS')
+                            con(electrode,:,2)         = sqrt(diag(var)'.*(C*pinv(X'*X)*C')); 
+                            con(electrode,:,4)         = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
+                            con(electrode,:,5)         = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
+                        elseif strcmpi(LIMO.design.method,'WLS')
+                            WX                         = X.*repmat(LIMO.design.weights(electrode,:),1,size(X,2));
+                            con(electrode,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already 
+                            con(electrode,:,4)         = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                        elseif strcmpi(LIMO.design.method,'IRLS')
+                            for frame = 1:size(Betas,2)
+                                WX                     = X.*repmat(LIMO.design.weights(electrode,frame,:),1,size(X,2));
+                                con(electrode,:,2)     = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                                con(electrode,:,4)     = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                                con(electrode,frame,5) = (1-tcdf(squeeze(abs(con(electrode,frame,4))), dfe)).*2;
+                            end
+                        end
+                    else % F contrast
+                        % Update ess file [mean values, se, df, F, p]
+                        E = diag(squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
+                        ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ;
+                        ess(electrode,:,end-3)       = E/dfe;
+                        if rank(diag(C)) == 1
+                            df = 1;
+                        else
+                            df = rank(diag(C)) - 1;
+                        end
+                        ess(electrode,:,end-2)       = df;
+                        
+                        c  = zeros(length(C));
+                        C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
+                        if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
+                            if isfield(LIMO.design,'weights')
+                                WX = X.*repmat(LIMO.design.weights(electrode,:),1,size(X,2));
+                            else
+                                WX = X;
+                            end
+                            R  = eye(size(Y,3)) - (WX*pinv(WX));
+                            X0 = X*C0;
+                            R0 = eye(size(Y,3)) - (X0*pinv(X0));
+                            M  = R0 - R;
+                            H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
+                            ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
+                            if strcmpi(LIMO.design.method,'OLS')
+                                ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
+                            end
+                        else
+                            for frame = 1:size(Betas,2)
+                                WX = X.*repmat(LIMO.design.weights(electrode,frame,:),1,size(X,2));
+                                R  = eye(size(Y,3)) - (WX*pinv(WX));
+                                X0 = X*C0;
+                                R0 = eye(size(Y,3)) - (X0*pinv(X0));
+                                M  = R0 - R;
+                                H  = (squeeze(Betas(electrode,frame,:))'*X'*M*X*squeeze(Betas(electrode,frame,:)));
+                                ess(electrode,frame,end-1) = (H/df)./(E(frame)/dfe);  % F value
+                                ess(electrode,frame,end)   = 1 - fcdf(ess(electrode,frame,end-1), df, dfe); % p value
+                            end
+                        end
+                    end
+                end
+                
+                % reshape Time-Frequency files
+                if strcmp(LIMO.Analysis ,'Time-Frequency')
+                    if Test == 0
+                        con = limo_tf_4d_reshape(con);
+                    else
+                        ess = limo_tf_4d_reshape(ess);
+                    end
+                end
+                
             end
             
             % save files
@@ -198,12 +271,12 @@ switch type
                 result = ess;
             else
                 if Test == 0
-                    save (filename,'con'); clear con
+                    save(fullfile(LIMO.dir,filename),'con'); clear con
                 else
-                    save (filename,'ess'); clear ess
+                    save (fullfile(LIMO.dir,filename),'ess'); clear ess
                 end
             end
-                     
+            
         elseif strcmp(Method,'Multivariate')
             % ------------------------------
             
