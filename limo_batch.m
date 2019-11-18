@@ -285,11 +285,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
         
         % run GLM
-        if strcmp(model.defaults.analysis,'Time') || strcmp(model.defaults.analysis,'Frequency');
-            command = 'cd(fileparts(files_in)), limo_eeg(4)';
-        else strcmp(model.defaults.analysis,'Time-Frequency');
-            command = 'cd(fileparts(files_in)), limo_eeg_tf(4)';
-        end
+        command = 'cd(fileparts(files_in)), limo_eeg(4)';
         pipeline(subject).glm.command = command;
         pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
         pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
@@ -369,6 +365,7 @@ parfor subject = 1:N
         % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
         % limo_batch_design_matrix(pipeline(subject).design.files_in)
         % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
+        % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
     catch ME
