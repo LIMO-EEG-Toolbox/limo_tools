@@ -415,6 +415,10 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     cell2csv(['Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
 end
 
+if ~exist('remove_con','var')
+    remove_con = 0;
+end
+
 if strcmp(option,'contrast only') || strcmp(option,'both')
     for c=1:size(batch_contrast.mat,1)
         index = 1; clear name
@@ -422,8 +426,8 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
                 for l=1:size(LIMO.contrast,2)
-                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:))
-                        con_num = l; break
+                    if isequal(LIMO.contrast{l}.C(1:length(batch_contrast.mat(c,:))),batch_contrast.mat(c,:))
+                        con_num = l; 
                     end
                 end
                 name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];

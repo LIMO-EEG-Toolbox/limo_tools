@@ -1323,10 +1323,10 @@ switch varargin{1}
         previous_con = 0;
         if ~exist('C','var')
             [contrast_file,contrast_dir] = uigetfile({'*.mat';'*.txt'},'select your contrast file');
-            cd (contrast_dir); load(contrast_file);  % problm here it has to be named C
-            if strcmp(FileName(end-3:end),'.txt')
+            cd (contrast_dir); % load(contrast_file);  
+            if strcmp(contrast_file(end-3:end),'.txt')
                 C = importdata(contrast_file);
-            elseif strcmp(FileName(end-3:end),'.mat')
+            elseif strcmp(contrast_file(end-3:end),'.mat')
                 contrast_file = load(contrast_file);
                 C = getfield(contrast_file,cell2mat(fieldnames(contrast_file)));
             end
