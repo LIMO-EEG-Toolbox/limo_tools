@@ -223,7 +223,7 @@ switch method
             %           Li and Ji 2005
             EV  = abs(eig(corr(R*Y)));
             x   = single(EV>=1) + (EV - floor(EV));
-            dfe = size(Y,1) - sum(x) + rank(WX) + 1;
+            dfe = size(Y,1) - sum(x) + rank(WX) + 1; % remove the number of PC removed!
         end
         
         % model R^2
@@ -238,7 +238,7 @@ switch method
         Rsquare        = diag(H)./diag(T);               % Variance explained
         F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
         p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
-        
+
         % update the model structure
         % ----------------------------
         
@@ -246,7 +246,8 @@ switch method
         model.betas             = Betas;
         model.betas_se          = Betas;
         for b=1:size(Y,2)
-            model.betas_se(:,b) = sqrt(diag((E(b,b)/dfe)*pinv(WX'*WX)));
+            model.betas_se(:,b) = sqrt(diag(E(b,b)/dfe))./ sqrt(sum((WX-mean(WX))^2));
+                                  % sqrt(diag((E(b,b)/dfe)*pinv(WX'*WX)));
         end
         model.R2_univariate     = Rsquare;
         model.F                 = F_Rsquare;
@@ -570,7 +571,8 @@ switch method
             % ----------------------------
             
             for b=1:size(Y,3)
-                model.betas_se(:,f,b) = sqrt(diag((E(b,b)/dfe)*pinv(WX{freq}'*WX{freq})));
+                model.betas_se(:,f,b) = sqrt(diag(E(,b,b)/dfe))./ sqrt(sum((WX{freq}-mean(WX{freq}))^2));
+                                        % sqrt(diag((E(b,b)/dfe)*pinv(WX{freq}'*WX{freq})));
             end
             model.R2_univariate(f,:)  = Rsquare;
             model.F(f,:)              = F_Rsquare;
@@ -892,7 +894,7 @@ switch method
             Rsquare(frame)    = H./T(frame,frame);
             F_Rsquare(frame)  = (H/df(frame))/(E/dfe(frame));
             p_Rsquare(frame)  = 1 - fcdf(F_Rsquare(frame), df(frame), dfe(frame));
-            betas_se(:,frame) = sqrt(diag((E/dfe(frame))*pinv(WX'*WX)));
+            betas_se(:,frame) = sqrt(diag((E/dfe(frame))))./ sqrt(sum((WX-mean(WX))^2));
             dof(:,frame)      = [df(frame) dfe(frame)];
             
             %% Compute effects
