@@ -176,16 +176,16 @@ end
 
 % compute model R^2
 % -----------------
-C = eye(size(X,2));
+C              = eye(size(X,2));
 C(:,size(X,2)) = 0;
-C0 = eye(size(X,2)) - C*pinv(C);
-X0 = X*C0;  % Reduced model
-R0 = eye(size(Y,1)) - (X0*pinv(X0));
-M  = R0 - R;  % Projection matrix onto Xc
-H  = (Betas'*X'*M*X*Betas);  % SS Effect
-Rsquare   = diag(H)./diag(T); % Variances explained
-F_Rsquare = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
-p_Rsquare = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
+C0             = eye(size(X,2)) - C*pinv(C);
+X0             = X*C0;  % Reduced model
+R0             = eye(size(Y,1)) - (X0*pinv(X0));
+M              = R0 - R;  % Projection matrix onto Xc
+H              = (Betas'*X'*M*X*Betas);  % SS Effect
+Rsquare        = diag(H)./diag(T); % Variances explained
+F_Rsquare      = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
+p_Rsquare      = 1 - fcdf(F_Rsquare, (rank(X)-1), (size(Y,1)-rank(X)));
 
 %% Compute effects
 % ------------------
@@ -210,7 +210,7 @@ if nb_factors == 1   %  1-way ANOVA
         R0 = eye(size(Y,1)) - (X0*pinv(X0));
         M  = R0 - R;
         H  = (Betas'*X'*M*X*Betas);
-        df_conditions = rank(C)-1;
+        df_conditions   = rank(C)-1;
         F_conditions    = (diag(H)/(rank(C)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
         pval_conditions = 1 - fcdf(F_conditions(:), df_conditions, (size(Y,1)-rank(X)));
     end
@@ -227,14 +227,14 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without intera
     % compute F and p values of each factor
     % --------------------------------------
 
-    df_conditions = zeros(1,length(nb_conditions));
-    F_conditions = zeros(length(nb_conditions),size(Y,2));
+    df_conditions   = zeros(1,length(nb_conditions));
+    F_conditions    = zeros(length(nb_conditions),size(Y,2));
     pval_conditions = zeros(length(nb_conditions),size(Y,2));
 
-    eoi = zeros(1,size(X,2));
+    eoi                     = zeros(1,size(X,2));
     eoi(1:nb_conditions(1)) = 1:nb_conditions(1);
-    eoni = [1:size(X,2)];
-    eoni = find(eoni - eoi);
+    eoni                    = 1:size(X,2);
+    eoni                    = find(eoni - eoi);
     
     for f = 1:length(nb_conditions)
         C = eye(size(X,2));
@@ -244,7 +244,7 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without intera
         R0   = eye(size(Y,1)) - (X0*pinv(X0));
         M    = R0 - R;
         H    = (Betas'*X'*M*X*Betas);
-        df_conditions(f) = rank(C)-1;
+        df_conditions(f)     = rank(C)-1;
         F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/(size(Y,1)-rank(X)));
         pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), (size(Y,1)-rank(X)));
         
@@ -253,7 +253,7 @@ elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without intera
             update = max(find(eoi));
             eoi = zeros(1,size(X,2));
             eoi((update+1):(update+nb_conditions(f+1))) = update + (1:nb_conditions(f+1));
-            eoni = [1:size(X,2)];
+            eoni = 1:size(X,2);
             eoni = find(eoni - eoi);
         end
     end
@@ -270,8 +270,8 @@ elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interact
     % start by ANOVA without interaction for main effects
     % ---------------------------------------------------
 
-    df_conditions = zeros(1,length(nb_conditions));
-    F_conditions = zeros(length(nb_conditions),size(Y,2));
+    df_conditions   = zeros(1,length(nb_conditions));
+    F_conditions    = zeros(length(nb_conditions),size(Y,2));
     pval_conditions = zeros(length(nb_conditions),size(Y,2));
     
     % covariates
@@ -304,7 +304,7 @@ elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interact
         R0   = eye(size(Y,1)) - (X0*pinv(X0));
         M    = R0 - R;
         H(f,:) = diag((betas'*x'*M*x*betas));
-        df_conditions(f) = rank(C)-1;
+        df_conditions(f)     = rank(C)-1;
         F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./(size(Y,1)-rank(X)))';
         pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), (size(Y,1)-rank(X)));
         
@@ -326,15 +326,15 @@ elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interact
     % ---------------------------
     
     if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-        HI = diag(T)' - H(1,:) - H(2,:) - diag(E)';
-        df_interactions = prod(df_conditions);
-        F_interactions  = (HI./df_interactions) ./ (diag(E)/(size(Y,1)-rank(X)))';
+        HI                 = diag(T)' - H(1,:) - H(2,:) - diag(E)';
+        df_interactions    = prod(df_conditions);
+        F_interactions     = (HI./df_interactions) ./ (diag(E)/(size(Y,1)-rank(X)))';
         pval_interactions  = 1 - fcdf(F_interactions, df_interactions, (size(Y,1)-rank(X)));
     
     else % run through each interaction 
         
         % part of X unchanged
-        Main_effects = [X(:,dummy_columns)];
+        Main_effects = X(:,dummy_columns);
         Cov_and_Mean = [X(:,covariate_columns) ones(size(Y,1),1)];
         
         % get interactions 
@@ -403,9 +403,9 @@ elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interact
         pval_interactions = zeros(length(nb_interactions),size(Y,2));
 
         for f = 1:length(nb_interactions)
-            dfs = df_conditions(interaction{f});
-            df_interactions(f) = prod(dfs);
-            F_interactions(f,:) = (HI(f,:)./df_interactions(f)) ./ (diag(E)/(size(Y,1)-rank(X)))';
+            dfs                    = df_conditions(interaction{f});
+            df_interactions(f)     = prod(dfs);
+            F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/(size(Y,1)-rank(X)))';
             pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), (size(Y,1)-rank(X)));
         end
     end
@@ -429,7 +429,7 @@ if nb_continuous ~=0
     else % ANCOVA type of deisgns
         
         % pre-allocate space
-        F_continuous = zeros(nb_continuous,size(Y,2));
+        F_continuous    = zeros(nb_continuous,size(Y,2));
         pval_continuous = zeros(nb_continuous,size(Y,2));
         
         % compute
@@ -442,7 +442,7 @@ if nb_continuous ~=0
             R0   = eye(size(Y,1)) - (X0*pinv(X0));
             M    = R0 - R;
             H    = Betas'*X'*M*X*Betas;
-            F_continuous(n,:) = (diag(H)./(rank(C))) ./ (diag(E)/(size(Y,1)-rank(X)));
+            F_continuous(n,:)    = (diag(H)./(rank(C))) ./ (diag(E)/(size(Y,1)-rank(X)));
             pval_continuous(n,:) = 1 - fcdf(F_continuous(n,:), 1, (size(Y,1)-rank(X)));
         end
         model.continuous.F  = F_continuous';
