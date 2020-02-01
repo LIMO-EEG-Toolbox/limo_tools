@@ -1,11 +1,12 @@
-function [dist,out,w1,w2] = limo_pcout(x,varargin)
+function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 
 % LIMO_pcout Limo Principal Components Projection
 % This method uses simple properties of Principal Components to identify
 % outliers in the Multivariate space. This function use Filzmoser, Moronna
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
-% FORMAT [dist out] = limo_pcout(x,'figure',option)
+% FORMAT dist = limo_pcout(x)
+%        [dist,out,rd,w1,w2] = limo_pcout(x,'figure',option)
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
@@ -14,7 +15,9 @@ function [dist,out,w1,w2] = limo_pcout(x,varargin)
 %
 % OUTPUTS:
 %   dist          = weights (distance) for each trial. Outliers have a near to zero weight.
-%   out           = The out is a binary vector where False values are outliers
+%   out           = the out is a binary vector where False values are outliers
+%   rf            = the reduction factor (i.e. how many components were removed
+%                   to compute w1/w2 and get dist/out
 %   w1            = the kurtosis weighted robust Euclidian distance (location)
 %   w2            = the robust Euclidian distance (scatter)
 %
@@ -54,7 +57,7 @@ end
 %% 1st Phase: Detect location outliers
 
 % robustly rescale each component
-madx    = mad(x,1) .* 1.4826; % median erp normally scaled
+madx    = mad(x,1) .* 1.4826; % median values normally scaled
 x2      = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1); % robust standardization
 x3      = x2 - repmat(mean(x2),n,1); % standardization
  
@@ -63,6 +66,7 @@ a       = svd(x3).^2./(n-1);
 paux    = (1:p)' .* ((cumsum(a)./sum(a) > 0.99));
 paux2   = paux(paux > 0);
 p1      = paux2(1);
+rf      = p-p1;
 [~,~,V] = svd(x3);
 
 % Project x in the principal components

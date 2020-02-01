@@ -1,4 +1,5 @@
-function [b,W] = limo_WLS(X,Y)
+function [b,W,rf] = limo_WLS(X,Y)
+
 % LIMO_WLS Limo Weighted Least Squares (WLS)
 % WLS is used to find the maximum likelihood estimates of a generalized
 % linear model, and in robust regression to find an M-estimator, as a way 
@@ -7,15 +8,16 @@ function [b,W] = limo_WLS(X,Y)
 %
 % Weights are obtained using a Principal Components Projection
 %
-% FORMAT: [b w] = limo_WLS(X,Y)
+% FORMAT: [b,W,rf] = limo_WLS(X,Y)
 %
 % INPUTS:
 %   X             = the design matrix 
 %   Y             = 2D matrix of EEG data (dim trials x frames)
 %
 % OUTPUTS:
-%   b             = betas (dim parameters * time frames)
-%   w             = weights (dim trials)
+%   b             = betas (dim parameters * time frames) the parameters of the GLM
+%   W             = weights (dim trials) to apply for each trial
+%   rf            = the number of dimensions (compoments) removed to get W
 %
 % References:
 %   P. Filzmoser, R. Maronna, M. Werner (2007). Outlier identification in 
@@ -68,7 +70,7 @@ re(find(re < 1e-5)) = 1e-5;
 r                   = resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
-[W,~]               = limo_pcout(r);
+[W,~,rf]            = limo_pcout(r);
 WY                  = Y .* repmat(W,1,size(Y,2));
 WX                  = X .* repmat(W,1,size(X,2));
 b                   = pinv(WX)*WY;
