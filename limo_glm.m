@@ -154,8 +154,8 @@ if strcmp(method,'OLS')
     end
     
 elseif strcmp(method,'WLS')
-    [Betas,W] = limo_WLS(X,Y);
-    WX        = X.*repmat(W,1,size(X,2));
+    [Betas,W,rf] = limo_WLS(X,Y);
+    WX           = X.*repmat(W,1,size(X,2));
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -181,8 +181,9 @@ elseif strcmp(method,'WLS-TF')
     Betas  = NaN(size(X,2),n_freqs,n_times);
     W      = NaN(size(X,1),n_freqs);
     WX     = cell(1,n_freqs);
+    rf     = NaN(1,n_freqs);
     for f=1:n_freqs
-        [Betas(:,f,:),W(:,f)] = limo_WLS(X,squeeze(Y(f,:,:)));
+        [Betas(:,f,:),W(:,f),rf(f)] = limo_WLS(X,squeeze(Y(f,:,:)));
         WX{f} = X .* repmat(W(:,f),1,size(X,2)); % per freq = switch method
         index1=index1+1;
     end
@@ -204,7 +205,6 @@ switch method
         % total sum of squares, projection matrix for errors, residuals
         % --------------------------------------------------------------
         T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
-        % HM  = WX*pinv(WX);                                                     % Hat matrix, projection onto X
         R   = eye(size(Y,1)) - WX*pinv(WX);                                      % Projection onto E
         E   = Y'*R*Y;                                                            % SS Error
         
@@ -214,16 +214,9 @@ switch method
         if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
         else
-            %             Satterthwaite approximation: dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-            %             Multivariate df: dfe = size(Y,1)-size(Y,2)+rank(WX);
-            %             Cheverud 2001: EV  = eig(corr((R*Y)));
-            %                            M   = length(EV);
-            %                            V   = sum((EV-1).^2) / (M-1);
-            %                            dfe = (1 + (M-1)*(1-V/M)) - df;
-            %           Li and Ji 2005
-            EV  = abs(eig(corr(R*Y)));
-            x   = single(EV>=1) + (EV - floor(EV));
-            dfe = size(Y,1) - sum(x) + rank(WX) + 1; % remove the number of PC removed!
+            % Satterthwaite approximation: trace((eye(size(HM))-HM)'*(eye(size(HM))-HM))
+            HM  = WX*pinv(WX); % Hat matrix, projection onto X
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);  % minus the number of dimensions removed to get W
         end
         
         % model R^2
@@ -245,18 +238,14 @@ switch method
         model.W                 = W;
         model.betas             = Betas;
         model.betas_se          = Betas;
-        for b=1:size(Y,2)
-            model.betas_se(:,b) = sqrt(diag(E(b,b)/dfe))./ sqrt(sum((WX-mean(WX))^2));
-                                  % sqrt(diag((E(b,b)/dfe)*pinv(WX'*WX)));
+        for t=1:size(Y,2)
+            model.betas_se(:,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX'*WX)));
+                                  % same as sqrt(E(t,t)/dfe)./ sqrt(sum(sum((WX-mean(WX)).^2)));
         end
         model.R2_univariate     = Rsquare;
         model.F                 = F_Rsquare;
         model.df                = [df dfe];
-        if strcmp(method,'WLS')
-            model.p             = NaN(size(p_Rsquare)); % p values aren't valid in this scheme
-        else
-            model.p             = p_Rsquare;
-        end
+        model.p                 = p_Rsquare;
         
         %% Compute effects
         % ------------------
@@ -287,11 +276,7 @@ switch method
             
             model.conditions.F                   = F_conditions;
             model.conditions.df                  = [df_conditions ; dfe];
-            if strcmp(method,'WLS')
-                model.conditions.p               = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p               = pval_conditions;
-            end
+            model.conditions.p               = pval_conditions;
             
             
             % ------------------------------------------------
@@ -336,11 +321,7 @@ switch method
             
             model.conditions.F      = F_conditions;
             model.conditions.df     = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            if strcmp(method,'WLS')
-                model.conditions.p  = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p  = pval_conditions;
-            end
+            model.conditions.p  = pval_conditions;
             
             % ------------------------------------------------
         elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
@@ -402,11 +383,7 @@ switch method
             
             model.conditions.F       = F_conditions;
             model.conditions.df      = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            if strcmp(method,'WLS')
-                model.conditions.p   = NaN(size(pval_conditions)); % p values aren't valid in this scheme
-            else
-                model.conditions.p   = pval_conditions;
-            end
+            model.conditions.p   = pval_conditions;
             
             % ---------------------------
             % now deal with interactions
@@ -476,11 +453,7 @@ switch method
             
             model.interactions.F       = F_interactions;
             model.interactions.df      = [df_interactions ; repmat(dfe,1,numel(df_interactions))]';
-            if strcmp(method,'WLS')
-                model.interactions.p   = NaN(size(pval_interactions)); % p values aren't valid in this scheme
-            else
-                model.interactions.p   = pval_interactions;
-            end
+            model.interactions.p   = pval_interactions;
         end
         
         % -----------------------------------
@@ -492,11 +465,7 @@ switch method
             if nb_factors == 0 && nb_continuous == 1 % simple regression
                 model.continuous.F  = F_Rsquare;
                 model.continuous.df = [1 (size(Y,1)-rank(X))];
-                if strcmp(method,'WLS')
-                    model.continuous.p         = NaN(size(p_Rsquare)); % p values aren't valid in this scheme
-                else
-                    model.continuous.p       = p_Rsquare;
-                end
+                model.continuous.p       = p_Rsquare;
                 
             else % ANCOVA type of designs
                 
@@ -522,11 +491,7 @@ switch method
                 
                 model.continuous.F                   = F_continuous';
                 model.continuous.df                  = [1 dfe];
-                if strcmp(method,'WLS')
-                    model.continuous.p               = NaN(size(pval_continuous')); % p values aren't valid in this scheme
-                else
-                    model.continuous.p               = pval_continuous';
-                end
+                model.continuous.p               = pval_continuous';
             end
         end
         
@@ -570,9 +535,8 @@ switch method
             % update the model structure
             % ----------------------------
             
-            for b=1:size(Y,3)
-                model.betas_se(:,f,b) = sqrt(diag(E(,b,b)/dfe))./ sqrt(sum((WX{freq}-mean(WX{freq}))^2));
-                                        % sqrt(diag((E(b,b)/dfe)*pinv(WX{freq}'*WX{freq})));
+            for t=1:size(Y,3)
+                model.betas_se(:,f,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX{freq}'*WX{freq})));
             end
             model.R2_univariate(f,:)  = Rsquare;
             model.F(f,:)              = F_Rsquare;
@@ -853,7 +817,7 @@ switch method
             end
         end
         
-        if nb_continuous >1
+        if nb_continuous ~=0
             F_continuous    = NaN(nb_continuous,size(Y,2));
             pval_continuous = NaN(nb_continuous,size(Y,2));
             df_continuous   = NaN(nb_continuous,size(Y,2));
@@ -894,7 +858,7 @@ switch method
             Rsquare(frame)    = H./T(frame,frame);
             F_Rsquare(frame)  = (H/df(frame))/(E/dfe(frame));
             p_Rsquare(frame)  = 1 - fcdf(F_Rsquare(frame), df(frame), dfe(frame));
-            betas_se(:,frame) = sqrt(diag((E/dfe(frame))))./ sqrt(sum((WX-mean(WX))^2));
+            betas_se(:,frame) = sqrt(diag((E/dfe(frame))*pinv(WX'*WX)));
             dof(:,frame)      = [df(frame) dfe(frame)];
             
             %% Compute effects
@@ -1067,7 +1031,7 @@ switch method
             %% compute F for continuous variables
             % -----------------------------------
             
-            if nb_continuous > 1
+            if nb_continuous ~=0
                 
                 N_conditions = sum(nb_conditions) + sum(nb_interactions);
                 for n = 1:nb_continuous
