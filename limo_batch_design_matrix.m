@@ -178,7 +178,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                 end
             else
                 try
-                    signal = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec));
+                    signal = load('-mat',EEGLIMO.etc.datafiles.datspec);
                     if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.datspec):-1:1
@@ -253,7 +253,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 end
             else
                 try
-                    signal = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef));
+                    signal = load('-mat',EEGLIMO.etc.datafiles.dattimef);
                     if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.dattimef):-1:1
