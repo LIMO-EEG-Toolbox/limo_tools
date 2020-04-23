@@ -89,7 +89,7 @@ if strcmp(LIMO.Analysis,'Time')
             else
                 try
                     signal = load('-mat',EEGLIMO.etc.datafiles.daterp);
-                    if isstruct(signal); signal = limo_struct2mat(signal{d}); end
+                    if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.daterp):-1:1
                         signal{d} = load('-mat',EEGLIMO.etc.datafiles.daterp(d));
