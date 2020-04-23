@@ -255,7 +255,7 @@ else % no clusters
             timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
     elseif strcmp(LIMO.Analysis,'Frequency')
         fprintf('1st significant frame at %gHz, last signifiant frame at %gHz, max %g @ %gHz channel %s \n', ...
-            freqvect(cluster_start(c)),timefreqvect(cluster_end(c)), cluster_maxv(c), freq(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+            freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
     end
 end
 warning on
