@@ -214,24 +214,29 @@ switch method
         if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
         else
-            % Satterthwaite approximation: trace((eye(size(HM))-HM)'*(eye(size(HM))-HM))
+            % Satterthwaite approximation minus the number of dimensions removed by pcout to get W
             HM  = WX*pinv(WX); % Hat matrix, projection onto X
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);  % minus the number of dimensions removed to get W
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);   
         end
         
         % model R^2
         % -----------
-        C              = eye(size(X,2));
-        C(:,size(X,2)) = 0;                              % all columns but the constant
-        C0             = eye(size(X,2)) - C*pinv(C);     % only the constant
-        X0             = WX*C0;                          % Reduced model design matrix
-        R0             = eye(size(Y,1)) - (X0*pinv(X0)); % Projection onto error
-        M              = R0 - R;                         % Projection matrix onto WXc
-        H              = (Betas'*X'*M*X*Betas);          % SS Effects (X'*M*X is weighted)
-        Rsquare        = diag(H)./diag(T);               % Variance explained
-        F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
-        p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
-
+        if nb_conditions == 0 && nb_continuous == 0         % just the mean
+            Yhat           = X*Betas;
+            H              = (Yhat-repmat(mean(Yhat),size(Y,1),1))'*(Y-repmat(mean(Yhat),size(Y,1),1));
+        else
+            C              = eye(size(X,2));
+            C(:,size(X,2)) = 0;                              % all columns but the constant
+            C0             = eye(size(X,2)) - C*pinv(C);     % only the constant
+            X0             = WX*C0;                          % Reduced model design matrix
+            R0             = eye(size(Y,1)) - (X0*pinv(X0)); % Projection onto error
+            M              = R0 - R;                         % Projection matrix onto WXc
+            H              = (Betas'*X'*M*X*Betas);          % SS Effects (X'*M*X is weighted)
+        end
+        Rsquare            = diag(H)./diag(T);               % Variance explained
+        F_Rsquare          = (diag(H)./df) ./ (diag(E)/dfe);
+        p_Rsquare          = 1 - fcdf(F_Rsquare, df, dfe);
+        
         % update the model structure
         % ----------------------------
         

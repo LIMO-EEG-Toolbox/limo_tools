@@ -42,7 +42,7 @@ function limo_batch_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % define handles used for the save callback
-handles.FileName = [];
+handles.FileName            = [];
 handles.CatName             = [];
 handles.fullfactorial       = 0;
 handles.ContName            = [];
@@ -54,7 +54,7 @@ handles.highf               = [];
 handles.Analysis            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
 handles.quit                = 0;
@@ -276,10 +276,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
+contents{1} = 'WLS'; contents{2} = 'OLS'; contents{3} = 'IRLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -446,7 +446,6 @@ defaults.bootstrap         = handles.bootstrap;
 defaults.tfce              = handles.tfce;  
 defaults.type              = handles.type; 
 
-
 % -----------------------------------------
 % load the expected channel locations
 % -----------------------------------------
@@ -475,13 +474,11 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
 end
 handles.defaults = defaults;
 
-if isempty(handles.CatName) && isempty(handles.ContName);
-    errordlg('no regressors were loaded','error')
-    return
-else
-    uiresume
-    guidata(hObject, handles);
+if isempty(handles.CatName) && isempty(handles.ContName)
+    warndlg2('no regressors loaded, only the mean will be created','no regressors')
 end
+uiresume
+guidata(hObject, handles);
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------

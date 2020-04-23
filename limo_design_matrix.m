@@ -1,27 +1,27 @@
 function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix(varargin)
 
-% LIMO_DESIGN_MATRIX - called once by LIMO_EEG.m to create the design matrix X 
+% LIMO_DESIGN_MATRIX - called once by LIMO_EEG.m to create the design matrix X
 % that is stored in the LIMO.mat file and called for all analyses.
 %
 % FORMAT
 % [X,nb_conditions,nb_interactions,nb_continuous] = limo_design_matrix(Y,LIMO,flag)
 % [X,nb_conditions,nb_interactions,nb_continuous] = limo_design_matrix(Y,Cat,Cont,directory,zscoring,full_factorial,flag)
 %
-% INPUTS: 
+% INPUTS:
 %   Y                  = EEG data with format electrodes x frames x trials/subjects
 %   LIMO               = structure that contains the above information (created by limo_egg and limo_import_tlimo_import_f)
 %   or input info that are in LIMO.mat
 %   Cat                = vector describing the different conditions (if no conditions Cat = 0)
 %   Cont               = matrix describing the different covariates (if no covariates Cont = 0)
 %   directory          = path of folder where the outputs will be saved (see below)
-%   zscoring           = [0/1] - if 1 (default) continuous regressors are zscored, 
+%   zscoring           = [0/1] - if 1 (default) continuous regressors are zscored,
 %                          which means that the betas coefficients will have units
 %                          micro-volts per std of the predictor variable.
 %   full_factorial     = [0/1] - if 1 create interaction terms between the
 %                        factors described in Cat
 %   flag               = figure on/off [1/0]
 %
-% OUTPUTS: 
+% OUTPUTS:
 %   X             = 2 dimensional matrix that describes the experiments' events
 %   nb_conditions = vector that returns the number of conditions per factor e.g. [2 2 2]
 %   nb_interactions = vector that returns the number of conditions perinteraction e.g. [4 4 4 8]
@@ -37,7 +37,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %
 % See also LIMO_IMPORT)T, LIMO_IMPORT_F, LIMO_EEG, LIMO_GLM
 %
-% Cyril Pernet / Guillaume Rousselet v4 27/04/2009 
+% Cyril Pernet / Guillaume Rousselet v4 27/04/2009
 % Cyril Pernet v5 29/12/2010 % removed nb_items, updated for several factors
 % Cyril Pernet v6 01/11/2011 % updated for interactions
 % ------------------------------
@@ -49,7 +49,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 type_of_analysis = 'Mass-univariate'; % default to create R2 file, updated using the LIMO structure only
 
 if nargin==3
-    Y                 = varargin{1}; 
+    Y                 = varargin{1};
     Cat               = varargin{2}.data.Cat;
     Cont              = varargin{2}.data.Cont;
     directory         = varargin{2}.dir;
@@ -65,7 +65,7 @@ if nargin==3
         expected_chanlocs = [];
     end
 elseif nargin==7 || nargin==9 % allows running without specifying chanlocs and neighbourging matrix
-    Y                 = varargin{1}; 
+    Y                 = varargin{1};
     Cat               = varargin{2};
     Cont              = varargin{3};
     directory         = varargin{4};
@@ -93,10 +93,6 @@ if Cat == 0
     Cat = [];
 end
 
-if isempty(Cat) && isempty(Cont) 
-    errordlg('no regressors selected','file selection error'); return
-end
-
 % check Cat
 if size(Cat,2) == size(Y,3)
     Cat = Cat';
@@ -118,7 +114,7 @@ elseif isempty(Cont) && ~isempty(Cat)
     if size(Y,3) ~= size(Cat,1)
         error('The number of trials and the number of events are different size')
     end
-else % cat and cont ~= 0
+elseif ~isempty(Cat) && ~isempty(Cont)
     if size(Y,3) ~= size(Cont,1)
         error('The number of trials and the covariate(s) length are of different')
     elseif size(Y,3) ~= size(Cat,1)
@@ -127,15 +123,15 @@ else % cat and cont ~= 0
         error('The number of events and the covariate(s) length are different')
     end
 end
- 
+
 % additional checking for regressions
 if isempty(Cat) == 0
-
-    if size(Cont,2)+1 >= size(Y,3) 
+    
+    if size(Cont,2)+1 >= size(Y,3)
         error('there are too many regressors for the number of trials, reduce the model size')
         % one cannot compute any statistics if size(Y,3) > size(Cont,2)+1
     end
-
+    
     if size(Cont,2) >1
         if det(Cont'*Cont) == 0
             errordlg('the regression matrix is singular, 1 or more predictors are function to each other, please consider another model', ...
@@ -143,7 +139,7 @@ if isempty(Cat) == 0
         elseif cond(Cont'*Cont,1) == Inf
             errordlg('the regression matrix is close to singular, please consider another model','Matrix definition error'); return
         end
-
+        
     end
 end
 
@@ -156,7 +152,7 @@ cd(directory);
 
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
-    check = find(sum(isnan(Cat),2)==size(Cat,2));
+    check        = find(sum(isnan(Cat),2)==size(Cat,2));
     Cat(check,:) = [];
     if ~isempty(Cont)
         Cont(check,:) = [];
@@ -165,7 +161,7 @@ if ~isempty(Cat)
 end
 
 if ~isempty(Cont)
-    check = find(sum(isnan(Cont),2)==size(Cont,2));
+    check         = find(sum(isnan(Cont),2)==size(Cont,2));
     Cont(check,:) = [];
     if ~isempty(Cat)
         Cat(check,:) = [];
@@ -175,7 +171,7 @@ end
 
 %% Make the design matrix and create files
 
-if isempty(Cont) 
+if isempty(Cont)
     add_cont = 0; % no continuous regressors
 else
     add_cont = 1; % add continuous regressors
@@ -194,29 +190,29 @@ disp('making up the design matrix and data files ...')
 
 % deal with covariates
 if add_cont == 1
-
+    
     [l,w]=size(Cont);
     nb_continuous = w;
-
+    
     if l~=size(Y,3)
         errordlg('the covariate(s) must be the same length as your dependant variable(s)')
         disp('please retry changing the 3rd argument');
     end
-
+    
     % to make continuous regressors comparable data are zscored
     if zscoring == 1
         for i=1:w
             Cont(:,i) = (Cont(:,i)-mean(Cont(:,i)))./std(Cont(:,i));
         end
     end
-
+    
     if isempty(Cat)
         X = zeros(l,w+1);
         X(:,1:w) = Cont;
         X(:,w+1) = 1;
-        Yr = Y; 
+        Yr = Y;
     end
-        
+    
 end % closes if Cont~=0
 
 
@@ -224,13 +220,13 @@ end % closes if Cont~=0
 % if Cont is used; it is reorganized accordingly
 % Y is also reorganized accordingly (i.e. grouped per condition)
 
-if ~isempty(Cat)  
+if ~isempty(Cat)
     
     if size(Cat,1)~=size(Y,3)
         errordlg('the categorical regressor must be the same length as your dependant variables')
-        disp('please retry changing the 2nd argument');error('error line 175 in limo_design_matrix');
+        disp('please retry changing the 2nd argument');error('error line 225 in limo_design_matrix');
     end
-
+    
     % sort Cat column wise - apply to Cont and Y
     [Cat,index] = sortrows(Cat,[1:size(Cat,2)]);
     
@@ -246,7 +242,7 @@ if ~isempty(Cat)
             Yr(electrode,time,:) = Y(electrode,time,index);
         end
     end
-    clear Y 
+    clear Y
     
     % find out the number of trial per condition per factor
     % create as many columns as conditions
@@ -267,7 +263,7 @@ if ~isempty(Cat)
         index_nb_conditions = index_nb_conditions+1;
         condition_count = 0;
     end
-
+    
     % create the design matrix for the main conditions
     x = zeros(size(Yr,3),length(indices_conditions));
     for f=1:length(indices_conditions)
@@ -283,7 +279,7 @@ if ~isempty(Cat)
             [x, nb_interactions] = limo_make_interactions(x, nb_conditions);
         end
     end
-       
+    
     % add the continuous regressors and the constant
     if add_cont == 1
         X = [x Cont ones(size(Yr,3),1)];
@@ -313,15 +309,10 @@ if ~isempty(Cat)
                     for c=1:size(higher_interaction,2)
                         indices = find(higher_interaction(:,c));
                         if length(indices) > sample_to_n
-                            new_sample{s} = randsample(indices,sample_to_n); 
-                            % rather than randsample we could keep highest power trials
-                            % tmp = Yr(:,:,indices);
-                            % tmp = sum(abs(tmp).^2,2)./size(Yr,2); % = power
-                            % [tmp,order]= sort(tmp,3,'descend');
-                            % new_sample{s} = squeeze(indices(order(1:sample_to_n)));
+                            new_sample{s} = randsample(indices,sample_to_n);
                             s = s+1;
                         else
-                            new_sample{s} = indices; 
+                            new_sample{s} = indices;
                             s = s+1;
                         end
                     end
@@ -338,9 +329,14 @@ if ~isempty(Cat)
             end
         end
     end
-else
-    clear Y
 end % closes if Cat ~=0
+
+% if Cat and Cont are empty (ie just comnpute the mean)
+if ~exist('Yr','var') 
+    Yr = Y;
+    X = ones(size(Yr,3),1);
+end
+clear Y
 
 % --------------------------------------------------------
 % create files to be used by LIMO in all cases - dim = expected chanlocs
@@ -353,14 +349,14 @@ end
 try
     % no matter the analysis we have Beta, Yhat, Res - create them all here
     % also R2 for univariate analyses - also test if memory hold for tmp
-    % files to be created in limo_eeg 
+    % files to be created in limo_eeg
     Yhat  = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
     Res   = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
     Betas = NaN(size(Yr,1),size(Yr,2),size(X,2));
     
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = NaN(size(Yr,1),size(Yr,2),3); 
+        R2 = NaN(size(Yr,1),size(Yr,2),3);
         save('R2.mat','R2');
     end
     

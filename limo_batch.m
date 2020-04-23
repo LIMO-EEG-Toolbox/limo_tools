@@ -95,6 +95,7 @@ if nargin <= 1
     if strcmp(option,'model specification') || strcmp(option,'both')
         [model.set_files,model.cat_files,model.cont_files,model.defaults]=limo_batch_gui;
         if isempty(model.set_files)
+            procstatus = 'import aborded';
             return
         end
     end

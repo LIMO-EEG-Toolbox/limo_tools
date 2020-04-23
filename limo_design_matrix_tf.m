@@ -40,8 +40,6 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %
 % See also LIMO_IMPORT, LIMO_EEG, LIMO_GLM
 %
-%
-%
 % Andrew Stewart v1 Nov 13 % Adapted from Cyril's limo_design_matrix
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
@@ -52,29 +50,29 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 type_of_analysis = 'Mass-univariate'; % default to create R2 file, updated using the LIMO structure only
 
 if nargin==3
-    Y = varargin{1};
-    Cat = varargin{2}.data.Cat;
-    Cont = varargin{2}.data.Cont;
-    directory = varargin{2}.dir;
-    zscoring = varargin{2}.design.zscore;
-    full_factorial = varargin{2}.design.fullfactorial;
-    chanlocs = varargin{2}.data.chanlocs;
+    Y                = varargin{1};
+    Cat              = varargin{2}.data.Cat;
+    Cont             = varargin{2}.data.Cont;
+    directory        = varargin{2}.dir;
+    zscoring         = varargin{2}.design.zscore;
+    full_factorial   = varargin{2}.design.fullfactorial;
+    chanlocs         = varargin{2}.data.chanlocs;
     type_of_analysis = varargin{2}.design.type_of_analysis;
-    size4D = varargin{2}.data.size4D;
-    flag = varargin{3};
+    size4D           = varargin{2}.data.size4D;
+    flag             = varargin{3};
     try
         expected_chanlocs = varargin{2}.data.expected_chanlocs;
     catch ME
         expected_chanlocs = [];
     end
 elseif nargin==7 || nargin==9 % allows running without specifying chanlocs and neighbourging matrix
-    Y = varargin{1};
-    Cat = varargin{2};
-    Cont = varargin{3};
-    directory = varargin{4};
-    zscoring = varargin{5};
+    Y              = varargin{1};
+    Cat            = varargin{2};
+    Cont           = varargin{3};
+    directory      = varargin{4};
+    zscoring       = varargin{5};
     full_factorial = varargin{6};
-    flag = varargin{7};
+    flag           = varargin{7};
     try
         chanlocs = varargin{8};
         expected_chanlocs = varargin{9};
@@ -98,10 +96,6 @@ if Cat == 0
     Cat = [];
 end
 
-if isempty(Cat) && isempty(Cont)
-    errordlg('no regressors selected','file selection error'); return
-end
-
 % check Cat
 if size(Cat,2) == size(Y,3)
     Cat = Cat';
@@ -123,7 +117,7 @@ elseif isempty(Cont) && ~isempty(Cat)
     if size(Y,3) ~= size(Cat,1)
         error('The number of trials and the number of events are different size')
     end
-else % cat and cont ~= 0
+elseif ~isempty(Cat) && ~isempty(Cont)
     if size(Y,3) ~= size(Cont,1)
         error('The number of trials and the covariate(s) length are of different')
     elseif size(Y,3) ~= size(Cat,1)
@@ -161,7 +155,7 @@ cd(directory);
 
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
-    check = find(sum(isnan(Cat),2));
+    check        = find(sum(isnan(Cat),2));
     Cat(check,:) = [];
     if ~isempty(Cont)
         Cont(check,:) = [];
@@ -170,7 +164,7 @@ if ~isempty(Cat)
 end
 
 if ~isempty(Cont)
-    check = find(sum(isnan(Cont),2));
+    check         = find(sum(isnan(Cont),2));
     Cont(check,:) = [];
     if ~isempty(Cat)
         Cat(check,:) = [];
@@ -233,13 +227,13 @@ if ~isempty(Cat)
     
     if size(Cat,1)~=size(Y,3)
         errordlg('the categorical regressor must be the same length as your dependant variables')
-        disp('please retry changing the 2nd argument');error('error line 175 in limo_design_matrix');
+        disp('please retry changing the 2nd argument');error('error line 228 in limo_design_matrix');
     end
 
     % sort Cat column wise - apply to Cont and Y
     [Cat,index] = sortrows(Cat,[1:size(Cat,2)]);
     
-    if add_cont == 1;
+    if add_cont == 1
         for i=1:size(Cont,2)
             Cont(:,i) = Cont(index,i);
         end
@@ -282,72 +276,15 @@ if ~isempty(Cat)
     
     % add interactions if requested
     if full_factorial == 1
-        [x nb_interactions] = limo_make_interactions(x, nb_conditions);
+        if nb_factors == 1
+            disp('full factorial impossible, only 1 factor specificied')
+        else
+            [x, nb_interactions] = limo_make_interactions(x, nb_conditions);
+        end
     end
-    
-        
-% % get each part of x for the right factors
-% nb_factors = size(nb_conditions,2);
-% F{1} = x(:,1:nb_conditions(1)); index = nb_conditions(1)+1;
-% for f = 2:nb_factors
-% F{f} = x(:,index:(index+nb_conditions(f)-1));
-% index = index+nb_conditions(f);
-% end
-%
-% % look for which factors to combine
-% index = 1; for n=2:nb_factors
-% interaction{index} = nchoosek([1:nb_factors],n);
-% index = index + 1; end; index = 1;
-%
-% % combine those factors
-% for i =1:size(interaction,2)
-% for j=1:size(interaction{i},1)
-% combination = interaction{i}(j,:);
-% if size(combination,2) == 2 % 2 factors
-% I = [];
-% a = F{combination(1)};
-% b = F{combination(2)};
-% for m=1:size(a,2)
-% tmp = repmat(a(:,m),1,size(b,2)).*b;
-% I = [I tmp];
-% end
-% I = I(:,find(sum(I))); % removes the silly zero columns
-%
-% else % > 2 factors
-% l = 1;
-% while l < size(combination,2)
-% if l == 1
-% I = [];
-% a = F{combination(l)};
-% b = F{combination(l+1)};
-% for m=1:size(a,2)
-% tmp = repmat(a(:,m),1,size(b,2)).*b;
-% I = [I tmp];
-% end
-% I = I(:,find(sum(I)));
-% C{l} = I; l = l+1;
-% else
-% I = [];
-% a = C{l-1};
-% b = F{combination(l+1)};
-% for m=1:size(a,2)
-% tmp = repmat(a(:,m),1,size(b,2)).*b;
-% I = [I tmp];
-% end
-% I = I(:,find(sum(I)));
-% C{l} = I; l = l+1;
-% end
-% end
-% I = C{end};
-% end
-% nb_interactions(index) = size(I,2);
-% x = [x I]; index = index +1;
-% end
-% end
-% end
-    
+            
     % add the continuous regressors and the constant
-    if add_cont == 1;
+    if add_cont == 1
         X = [x Cont ones(size(Yr,3),1)];
     else
         X = [x ones(size(Yr,3),1)];
@@ -375,11 +312,6 @@ if ~isempty(Cat)
                         indices = find(higher_interaction(:,c));
                         if length(indices) > sample_to_n
                             new_sample{s} = randsample(indices,sample_to_n);
-                            % rather than randsample we could keep highest power trials
-                            % tmp = Yr(:,:,indices);
-                            % tmp = sum(abs(tmp).^2,2)./size(Yr,2); % = power
-                            % [tmp,order]= sort(tmp,3,'descend');
-                            % new_sample{s} = squeeze(indices(order(1:sample_to_n)));
                             s = s+1;
                         else
                             new_sample{s} = indices;
@@ -399,9 +331,14 @@ if ~isempty(Cat)
             end
         end
     end
-else
-    clear Y
 end % closes if Cat ~=0
+
+% if Cat and Cont are empty (ie just comnpute the mean)
+if ~exist('Yr','var') 
+    Yr = Y;
+    X = ones(size(Yr,3),1);
+end
+clear Y
 
 % --------------------------------------------------------
 % create files to be used by LIMO in all cases - dim = expected chanlocs
@@ -460,7 +397,7 @@ end
 if flag == 1
     figure('Name','LIMO design','Color','w','NumberTitle','off')
     Xdisplay = X;
-    if add_cont == 1;
+    if add_cont == 1
         cat_column = sum(nb_conditions)+sum(nb_interactions);
         REGdisplay = Cont + abs(min(Cont(:)));
         Xdisplay(:,cat_column+1:size(X,2)-1) = REGdisplay ./ max(REGdisplay(:));

@@ -56,7 +56,7 @@ if strcmp(LIMO.design.status,'to do')
     try
         limo_pcout(squeeze(Yr(array(1),:,:))');
     catch pcout_error
-        if strcmp(pcout_error,'Principal Component Projection cannot be computed, more observations than variables are needed')
+        if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
             LIMO.design.method = 'OLS'; disp('Cannot use WLS, not enough observations - switching to OLS')
         end
     end
@@ -110,7 +110,7 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
-        elseif update == 1 &&  strcmpi(LIMO.design.method,'IRLS')
+        elseif update == 1 && strcmpi(LIMO.design.method,'IRLS')
             LIMO.model.model_df(electrode,:) = model.df;
             if LIMO.design.nb_conditions ~=0
                 LIMO.model.conditions_df(electrode,:,:)  = model.conditions.df;

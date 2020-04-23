@@ -31,12 +31,16 @@ function limo_eeg(varargin)
 % make sure paths are ok
 root = fileparts(which('limo_eeg'));
 pathCell = regexp(path, pathsep, 'split');
-onPath = any(strcmp([root filesep 'help'], pathCell));
+onPath = all([sum(strcmp([root filesep 'help'],pathCell))~=0,...
+    sum(strcmp([root filesep 'limo_cluster_functions'],pathCell))~=0,...
+    sum(strcmp([root filesep 'external' filesep 'psom'],pathCell))~=0,...
+    sum(strcmp([root filesep 'deprecated'], pathCell))~=0]);
 if onPath == 0
     addpath([root filesep 'limo_cluster_functions'])
     addpath([root filesep 'external'])
     addpath([root filesep 'external' filesep 'psom'])
     addpath([root filesep 'help'])
+    addpath([root filesep 'deprecated'])
 end
 
 
@@ -87,9 +91,9 @@ switch varargin{1}
         % use (if multivariate stats have to be computed) and iii) the working
         % directory where all informations will be saved
         
-        clc;
+        clc; 
         if varargin{2} == 1
-            out = limo_import_t;  % Data from electrodes over time in each trial
+           out = limo_import_t;  % Data from electrodes over time in each trial
         elseif varargin{2} == 2
             out = limo_import_f;  % Data from electrodes spectral power in each trial
         elseif varargin{2} == 3
@@ -395,10 +399,12 @@ switch varargin{1}
             
         elseif prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous > 0
             if length(LIMO.design.nb_conditions) == 1
-                LIMO.design.name      = sprintf('AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
+                LIMO.design.name  = sprintf('AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
             else
-                LIMO.design.name      = sprintf('AnCOVA with %g factors and %g continuous variable(s)',length(LIMO.design.nb_conditions),LIMO.design.nb_continuous);
+                LIMO.design.name  = sprintf('AnCOVA with %g factors and %g continuous variable(s)',length(LIMO.design.nb_conditions),LIMO.design.nb_continuous);
             end
+        else
+            LIMO.design.name = 'Mean';
         end
         
         disp('design matrix done ...')
@@ -417,13 +423,7 @@ switch varargin{1}
         
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
-            if strcmp(LIMO.Analysis,'Time-Frequency')  
-                limo_eeg_tf(4);
-            else
-                limo_eeg(4);
-            end
-            clear LIMO
-            limo_gui
+            limo_eeg(4); clear LIMO; limo_gui
         else
             return
         end

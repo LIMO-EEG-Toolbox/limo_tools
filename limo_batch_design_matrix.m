@@ -29,9 +29,9 @@ if strcmp(LIMO.Analysis,'Time')
         % 1st load ICA data
         if isfield(EEGLIMO.etc.datafiles,'icaerp')
             if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
-                Y = load(EEGLIMO.etc.datafiles.icaerp);
-                if isstruct(Y)
-                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                signal = load(EEGLIMO.etc.datafiles.icaerp);
+                if isstruct(signal)
+                    signal = getfield(signal,cell2mat(fieldnames(signal)));
                 end
             else
                 try
@@ -82,16 +82,21 @@ if strcmp(LIMO.Analysis,'Time')
     else % channels
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
-                Y = load(EEGLIMO.etc.datafiles.daterp);
-                if isstruct(Y)
-                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                signal = load(EEGLIMO.etc.datafiles.daterp);
+                if isstruct(signal)
+                    signal = getfield(signal,cell2mat(fieldnames(signal)));
                 end
             else
-                for d=length(EEGLIMO.etc.datafiles.daterp):-1:1
-                    Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.daterp(d)));
-                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                try
+                    signal = load('-mat',EEGLIMO.etc.datafiles.daterp);
+                    if isstruct(signal); signal = limo_struct2mat(signal{d}); end
+                catch
+                    for d=length(EEGLIMO.etc.datafiles.daterp):-1:1
+                        signal{d} = load('-mat',EEGLIMO.etc.datafiles.daterp(d));
+                        if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                    end
+                    signal = limo_concatcells(signal);
                 end
-                Y = limo_concatcells(Y);
             end
         else
             disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using hack')
@@ -99,15 +104,15 @@ if strcmp(LIMO.Analysis,'Time')
             erp = dir('*.daterp');
             if ~isempty(erp)
                 for d=length(erp):-1:1
-                    Y{d} = load('-mat',erp(d).name);
+                    signal{d} = load('-mat',erp(d).name);
                     if isstruct(Y{d})
-                        Y{d}  = limo_struct2mat(Y{d}); 
+                        signal{d}  = limo_struct2mat(signal{d}); 
                     end
                 end
-                Y = limo_concatcells(Y);
+                signal = limo_concatcells(signal);
             end
         end
-        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
+        Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
         clear EEGLIMO
     end
     
@@ -116,9 +121,9 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     if strcmp(LIMO.Type,'Components')
         if isfield(EEGLIMO.etc.datafiles,'icaspec')
             if ~iscell(EEGLIMO.etc.datafiles.icaspec) && strcmp(EEGLIMO.etc.datafiles.icaspec(end-3:end),'.mat')
-                Y = load(EEGLIMO.etc.datafiles.icaspec);
-                if isstruct(Y)
-                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                signal = load(EEGLIMO.etc.datafiles.icaspec);
+                if isstruct(signal)
+                    signal = getfield(signal,cell2mat(fieldnames(signal)));
                 end
             else
                 try
@@ -167,16 +172,21 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     else % channels
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datspec')
             if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
-                Y = load(EEGLIMO.etc.datafiles.datspec);
-                if isstruct(Y)
-                    Y = getfield(Y,cell2mat(fieldnames(Y)));
+                signal = load(EEGLIMO.etc.datafiles.datspec);
+                if isstruct(signal)
+                    signal = getfield(signal,cell2mat(fieldnames(signal)));
                 end
             else
-                for d=length(EEGLIMO.etc.datafiles.datspec):-1:1
-                    Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec(d)));
-                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                try
+                    signal = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec));
+                    if isstruct(signal); signal = limo_struct2mat(signal); end
+                catch
+                    for d=length(EEGLIMO.etc.datafiles.datspec):-1:1
+                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec(d)));
+                        if isstruct(signal{d}); signal = limo_struct2mat(signal{d}); end
+                    end
+                    signal = limo_concatcells(signal); clear EEGLIMO
                 end
-                Y = limo_concatcells(Y); clear EEGLIMO
             end
         else
             disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
@@ -184,13 +194,13 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             spec = dir('*.datspec');
             if ~isempty(spec)
                 for d=length(spec):-1:1
-                    Y{d} = load('-mat',spec(d).name);
-                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                    signal{d} = load('-mat',spec(d).name);
+                    if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
                 end
-                Y = limo_concatcells(Y);
+                signal = limo_concatcells(signal);
             end
         end
-        Y = Y(:,LIMO.data.trim1:LIMO.data.trim2,:);
+        Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
@@ -235,13 +245,30 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         end
     else % channels
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
-            Y = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
+            signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
+            if ~iscell(EEGLIMO.etc.datafiles.dattimef) && strcmp(EEGLIMO.etc.datafiles.dattimef(end-3:end),'.mat')
+                signal = load(EEGLIMO.etc.datafiles.dattimef);
+                if isstruct(signal)
+                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                end
+            else
+                try
+                    signal = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef));
+                    if isstruct(signal); signal = limo_struct2mat(signal); end
+                catch
+                    for d=length(EEGLIMO.etc.datafiles.dattimef):-1:1
+                        signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
+                        if isstruct(signal{d}); signal = limo_struct2mat(signal{d}); end
+                    end
+                    signal = limo_concatcells(signal); clear EEGLIMO
+                end
+            end
         elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datersp')
             [~,~,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
             if strcmp(ext,'.dattimef') % somehow wrong name
-                Y = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
+                signal = limo_struct2mat(EEGLIMO.etc.datafiles.dattimef);
             else
-                Y = abs(load(EEGLIMO.etc.datafiles.datersp)).^2;
+                signal = load(EEGLIMO.etc.datafiles.datersp);
             end
         else
             disp('no data found: using a hack searching for dattimef data')
@@ -249,13 +276,13 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             ersp = dir('*.dattimef');
             if ~isempty(ersp)
                 for d=length(ersp):-1:1
-                    Y{d} = load('-mat',ersp(d).name);
-                    if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
+                    signal{d} = load('-mat',ersp(d).name);
+                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
                 end
-                Y = abs(limo_concatcells(Y)).^2;
+                signal = limo_concatcells(signal);
             end
         end
-        Y = Y(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:);
+        Y = abs(signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:)).^2;
     end
     clear EEGLIMO
     LIMO.data.size4D= size(Y);
@@ -282,7 +309,33 @@ if LIMO.design.fullfactorial == 1 && LIMO.design.nb_interactions == 0
 end
 
 % update LIMO.mat
-LIMO.design.name  = 'batch processing';
+if prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous == 0
+    if length(LIMO.design.nb_conditions) == 1
+        if LIMO.design.nb_conditions == 2
+            LIMO.design.name  = sprintf('Categorical: T-test i.e. %g conditions',LIMO.design.nb_conditions);
+        else
+            LIMO.design.name  = sprintf('Categorical: 1 way ANOVA with %g conditions',LIMO.design.nb_conditions);
+        end
+    else
+        LIMO.design.name  = sprintf('Categorical: N way ANOVA with %g factors',length(LIMO.design.nb_conditions));
+    end
+    
+elseif prod(LIMO.design.nb_conditions) == 0 && LIMO.design.nb_continuous > 0
+    if LIMO.design.nb_continuous == 1
+        LIMO.design.name  = sprintf('Continuous: Simple Regression');
+    else
+        LIMO.design.name  = sprintf('Continuous: Multiple Regression with %g continuous variables',LIMO.design.nb_continuous);
+    end
+    
+elseif prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous > 0
+    if length(LIMO.design.nb_conditions) == 1
+        LIMO.design.name  = sprintf('AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
+    else
+        LIMO.design.name  = sprintf('AnCOVA with %g factors and %g continuous variable(s)',length(LIMO.design.nb_conditions),LIMO.design.nb_continuous);
+    end
+else
+    LIMO.design.name = 'Mean';
+end
 LIMO.design.status = 'to do';
 save LIMO LIMO; clear Y
 
