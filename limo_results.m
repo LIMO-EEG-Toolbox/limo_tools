@@ -33,14 +33,12 @@ end
 % End initialization code
 % -----------------------
 
-
 % --------------------------------------------------
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_results_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 guidata(hObject, handles);
-
 
 % define handles used for the save callback
 handles.p = 0.05;
@@ -55,8 +53,6 @@ handles.filter = {'*.mat'};
 
 guidata(hObject, handles);
 %uiwait(handles.figure1);
-
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_results_OutputFcn(hObject, eventdata, handles)
@@ -91,11 +87,7 @@ if FilterIndex ~= 0
                     LIMO.design.tfce = 1;
                 end
                 save LIMO LIMO
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4);
-                else
-                    limo_eeg(4);
-                end
+                limo_eeg(4);
             end
         end
         
@@ -106,11 +98,7 @@ if FilterIndex ~= 0
                 LIMO = handles.LIMO.LIMO;
                 LIMO.design.tfce = 1;
                 save LIMO LIMO
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4);
-                else
-                    limo_eeg(4);
-                end
+                limo_eeg(4);
             end
         end
     end
@@ -196,11 +184,7 @@ if FilterIndex ~= 0
                 limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
                     LIMO,LIMO.design.bootstrap, LIMO.design.tfce)
             else
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4);
-                else
-                    limo_eeg(4);
-                end
+                limo_eeg(4);
             end
             LIMO = handles.LIMO.LIMO; LIMO.design.bootstrap = 1; save LIMO LIMO
             handles.LIMO.LIMO.design.bootstrap = 1;
@@ -286,7 +270,9 @@ if FilterIndex ~= 0
                 
                 cd('H0'); fprintf('Creating H0 Covariate TFCE scores \n');
                 name = sprintf('H0_Covariate_effect_%s.mat',FileName(18:end-4));
-                load(name); PCT_test = ver('distcomp');
+                H0_Covariate_effect = load(name); 
+                H0_Covariate_effect = H0_Covariate_effect.(cell2mat(fieldnames(H0_Covariate_effect))); 
+                PCT_test = ver('distcomp');
                 if size(H0_Covariate_effect,1) == 1
                     if ~isempty(PCT_test)
                         tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),handles.LIMO.LIMO.design.bootstrap);
@@ -316,11 +302,7 @@ if FilterIndex ~= 0
                 limo_random_robust(6,[],LIMO.data.Cat, LIMO.design.repeated_measure, ...
                     LIMO,LIMO.design.bootstrap, LIMO.design.tfce)
             else
-                if strcmp(handles.LIMO.LIMO.Analysis,'Time-Frequency')
-                    limo_eeg_tf(4);
-                else
-                    limo_eeg(4);
-                end
+                limo_eeg(4);
             end
         end
         LIMO = handles.LIMO.LIMO; LIMO.design.tfce = 1; save LIMO LIMO
@@ -333,7 +315,6 @@ if FilterIndex ~= 0
 end
 guidata(hObject, handles);
 
-
 % Topoplot
 % ---------------------------------------------------------------
 function Topoplot_Callback(hObject, eventdata, handles)
@@ -344,7 +325,6 @@ if FilterIndex == 1
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
 end
 guidata(hObject, handles);
-
 
 % course plots
 % ---------------------------------------------------------------
@@ -390,7 +370,6 @@ if FilterIndex == 1
 end
 guidata(hObject, handles);
 
-
 % Review Design
 % --------------
 function review_design_Callback(hObject, eventdata, handles)
@@ -434,7 +413,6 @@ if test == 1
 end
 guidata(hObject, handles);
 
-
 % --- Executes during object creation, after setting all properties.
 function add_bootstrap_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to add_bootstrap (see GCBO)
@@ -454,8 +432,6 @@ end
 
 guidata(hObject, handles);
 
-
-
 % --- Executes on button press in add_tfce.
 function add_tfce_Callback(hObject, eventdata, handles)
 M = get(hObject,'Value');
@@ -468,11 +444,9 @@ elseif M == 0
 end
 guidata(hObject, handles);
 
-
 %-------------------------
 %         NEW ANALYSES
 %------------------------
-
 
 % --- New contrast.
 % ---------------------------------------------------------------
@@ -496,7 +470,6 @@ limo_contrast_manager
 %     limo_contrast_manager(handles.LIMO.LIMO);
 % end
 
-
 % Semi-Partial coef
 % ---------------------------------------------------------------
 function Partial_coef_Callback(hObject, eventdata, handles)
@@ -507,7 +480,6 @@ if FileName ~=0
 end
 guidata(hObject, handles);
 
-
 % Model Selection (multivariate).
 % ---------------------------------------------------------------
 function Model_Selection_Callback(hObject, eventdata, handles)
@@ -516,12 +488,9 @@ cd(PathName); handles.LIMO = load('LIMO.mat');
 limo_model_selection(handles.LIMO.LIMO,1);
 guidata(hObject, handles);
 
-
 %------------------------
 %         OTHERS
 %------------------------
-
-
 
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
@@ -531,7 +500,6 @@ origin = which('limo_eeg'); origin = origin(1:end-10);
 origin = sprintf('%shelp',origin); cd(origin)
 web(['file://' which('limo_results.html')]);
 cd (handles.dir)
-
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------

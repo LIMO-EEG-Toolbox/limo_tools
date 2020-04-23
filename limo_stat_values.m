@@ -49,8 +49,11 @@ end
 % load data and set outputs to empty
 % ----------------------------------
 matfile = load(FileName); 
-M = []; mask =[]; mytitle=[];
-c = clock; disp(' ');
+M       = []; 
+mask    = []; 
+mytitle = [];
+c       = clock; 
+disp(' ');
 
 % disp some references for this
 % -----------------------------

@@ -233,7 +233,7 @@ try
         caxis([-maxval maxval])
     end
 catch caxiserror
-    fprinft('axis issue: %s\n',caxiserror.message)
+    fprintf('axis issue: %s\n',caxiserror.message)
 end
 title(mytitle,'Fontsize',12)
 

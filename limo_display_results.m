@@ -152,8 +152,15 @@ if LIMO.Level == 1
                         LIMO.cache.fig.pval       = M;
                         LIMO.cache.fig.mask       = mask;
                         LIMO.cache.fig.title      = mytitle;
-                        save LIMO LIMO
-                        return
+                        % do an exception for designs with just the constant 
+                        if strcmp(FileName,'R2.mat') && size(LIMO.design.X,2)==1
+                            mask = ones(size(mask)); LIMO.cache.fig.mask = mask;
+                            mytitle = 'R^2 Coef unthresholded'; LIMO.cache.fig.title = mytitle;
+                            save LIMO LIMO
+                        else
+                            save LIMO LIMO
+                            return
+                        end
                     else
                         assignin('base','p_values',M)
                         assignin('base','mask',mask)
@@ -507,6 +514,9 @@ if LIMO.Level == 1
                     EEG.xmin = LIMO.data.start / 1000;% in msec
                     EEG.xmax = LIMO.data.end / 1000;  % in msec
                     EEG.times = LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000; % in sec;
+                    if length(EEG.times) > 2
+                       EEG.times = [EEG.times(1) EEG.times(end)];
+                    end
                 else strcmp(LIMO.Analysis,'Frequency')
                     EEG.xmin = LIMO.data.freqlist(1);
                     EEG.xmax = LIMO.data.freqlist(end);
@@ -527,10 +537,15 @@ if LIMO.Level == 1
                 end
                 
                 if strcmp(FileName,'R2.mat')
-                    EEG.data = squeeze(R2(:,:,2));
-                    EEG.pnts = size(EEG.data,2);
-                    EEG.nbchan = size(EEG.data,1);
-                    EEG.setname = 'R2 - F values';
+                    if strcmp(FileName,'R2.mat') && size(LIMO.design.X,2)==1
+                        EEG.data    = squeeze(R2(:,:,1));
+                        EEG.setname = 'R2 values for the mean';
+                    else
+                        EEG.data    = squeeze(R2(:,:,2));
+                        EEG.setname = 'R2 - F values';
+                    end
+                    EEG.pnts    = size(EEG.data,2);
+                    EEG.nbchan  = size(EEG.data,1);
                     if strcmp(LIMO.Analysis,'Time')
                         pop_topoplot(EEG);
                     else
@@ -716,7 +731,8 @@ if LIMO.Level == 1
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
             if max(regressor) == size(LIMO.design.X,2)
                 tmp = regressor(1:end-1); 
-            else tmp = regressor; 
+            else
+                tmp = regressor;
             end
             
             cat = sum(tmp<=categorical); cont = sum(tmp>categorical);
