@@ -176,19 +176,18 @@ if nargin == 4
         STUDY.filepath =pwd;
     end
     cd(STUDY.filepath); % go to study
-    if isempty(findstr(STUDY.filepath,'derivatives'))
-        if ~exist([STUDY.filepath filesep 'derivatives'],'dir')
-            mkdir([STUDY.filepath filesep 'derivatives']);
-        end
-        cd('derivatives'); % if study is not in 'derivatives' go to it
-    end
     current = pwd; 
-    if exist('limo_batch_report','dir')               ~= 7, mkdir('limo_batch_report'); end
-    if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7, mkdir(['LIMO_' STUDY.filename(1:end-6)]); end
+    if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
+        mkdir(['LIMO_' STUDY.filename(1:end-6)]); 
+    end
+    if exist(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report'],'dir') ~= 7
+        mkdir(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report']);
+    end
     study_root = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     LIMO_files.LIMO = study_root;
 else
     current = pwd;
+    LIMO_files.LIMO = current;
     mkdir('limo_batch_report')
 end
 
@@ -239,13 +238,15 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         
         if nargin == 4
-            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub'))
-                root = [study_root filesep 'sub-' STUDY.datasetinfo(subject).subject];
+            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub')) % not bids
+                root = [STUDY.datasetinfo(subject).filepath filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
-                root = [study_root filesep STUDY.datasetinfo(subject).subject];
+                root = STUDY.datasetinfo(subject).filepath;
             end
             
-            if exist(root,'dir') ~= 7; mkdir(root); end
+            if exist(root,'dir') ~= 7
+                mkdir(root);
+            end
             design_name = STUDY.design(STUDY.currentdesign).name; 
             design_name(isspace(design_name)) = [];
             if findstr(design_name,'STUDY.')
@@ -343,12 +344,12 @@ end
 if ~exist('glm_name','var') && strcmp(option,'contrast only') 
     [~,glm_name]=fileparts(fileparts(pipeline(1).n_contrast.files_in));
 end
-save([current filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
+save([LIMO_files.LIMO filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
 
 % allocate names
 for subject = 1:N
     limopt{subject} = opt;
-    limopt{subject}.path_logs = [current filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
+    limopt{subject}.path_logs = [LIMO_files.LIMO filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
     
 parfor subject = 1:N
@@ -387,15 +388,14 @@ end
 % these lists can then be used in second level analyses
 
 if exist('STUDY','var')
-    cd(LIMO_files.LIMO)
-    cell2csv(['EEGLAB_set_' glm_name '.txt'],model.set_files)
+    cell2csv([LIMO_files.LIMO filesep 'EEGLAB_set_' glm_name '.txt'],model.set_files)
 else
-    cd(current)
+    cd(LIMO_files.LIMO)
 end
 
 if strcmp(option,'model specification') || strcmp(option,'both')
-    cell2csv(['LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
-    cell2csv(['Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
+    cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
+    cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
@@ -419,15 +419,14 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         name = name';
         
         if sum(remove_con) ~= 0
-            cell2csv(['con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
+            cell2csv([LIMO_files.LIMO filesep 'con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         else
-            cell2csv(['con' num2str(con_num) '_files_'  glm_name '.txt'], name);
+            cell2csv([LIMO_files.LIMO filesep 'con' num2str(con_num) '_files_'  glm_name '.txt'], name);
         end
     end
 end
 % save the report from psom
-cd([current filesep 'limo_batch_report'])
-cell2csv(['batch_report_' glm_name '.txt'], report')
+cell2csv([LIMO_files.LIMO filesep 'batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
