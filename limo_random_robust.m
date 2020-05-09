@@ -1018,6 +1018,10 @@ switch type
         gp_vector         = varargin{3}; % length of data, indices groups
         factor_levels     = varargin{4}; % vector eg [2 3]
         LIMO              = varargin{5};
+        if isstring(LIMO)
+            load(LIMO);
+        end
+        
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             tmp = NaN(size(data,1), size(data,2),size(data,3),size(data,4),size(data,5));
             for measure = 1:size(data,5)
@@ -1045,7 +1049,7 @@ switch type
         LIMO.design.fullfactorial    = 0;
         LIMO.design.zscore           = 0;
         LIMO.design.repeated_measure = factor_levels;
-        save('LIMO.mat',LIMO)
+        save('LIMO.mat','LIMO')
         
         % specific stuff for repeated measures
         % from the input we know which case to handle
@@ -1159,7 +1163,7 @@ switch type
                     end
                 end
             end
-            save('LIMO.mat',LIMO);
+            save('LIMO.mat','LIMO');
             
             % do the analysis
             % ---------------
