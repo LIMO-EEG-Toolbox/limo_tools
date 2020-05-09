@@ -1647,7 +1647,7 @@ elseif type == 5
                 if isempty(file) || index == 0
                     return
                 else
-                    cd(dir); load(file);
+                    load(fullfile(dir,file));
                     % check the vector has the same length as the number of files
                     if length(electrode_vector) ~= N
                         errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
@@ -1827,8 +1827,8 @@ elseif type == 5
         % compute
         % --------
         cd(limo.dir); 
-        LIMO = limo; save('LIMO.mat',LIMO)
-        Yr = tmp_data; save('Yr.mat',Yr);
+        LIMO = limo; save('LIMO.mat','LIMO')
+        Yr = tmp_data; save('Yr.mat','Yr');
         clear limo Betas Yr channeighbstructmat data expected_chanlocs Names Paths limo subj_chanlocs
         tmpname = limo_random_robust(type+1,tmp_data,gp,factor_nb,LIMO,g.nboot,g.tfce);
         if nargout ~= 0, filepath = tmpname; end
