@@ -201,8 +201,8 @@ switch method
                 end
                 
             elseif strcmp(method,'WLS')
-                [Betas,W] = limo_WLS(X,Y);
-                WX        = X.*repmat(W,1,size(X,2));
+                [Betas,W,rf] = limo_WLS(X,Y);
+                 WX          = X.*repmat(W,1,size(X,2));
              end
             
             % Betas bootstap
@@ -222,9 +222,8 @@ switch method
             if strcmp(method,'OLS')
                 dfe = size(Y,1)-rank(WX);
             else
-                EV  = abs(eig(corr(R*Y)));
-                x   = single(EV>=1) + (EV - floor(EV));
-                dfe = size(Y,1) - sum(x) + rank(WX) + 1;
+                HM  = WX*pinv(WX); % Hat matrix, projection onto X
+                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);
             end
             
             % model R^2
@@ -238,11 +237,7 @@ switch method
             H              = (Betas'*X'*M*X*Betas);          % SS Effects
             Rsquare        = diag(H)./diag(T);               % Variance explained
             F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
-            if strcmp(method,'OLS')
-                p_Rsquare  = 1 - fcdf(F_Rsquare, df, dfe);
-            else
-                p_Rsquare  = NaN(size(F_Rsquare));                
-            end
+            p_Rsquare  = 1 - fcdf(F_Rsquare, df, dfe);
             
             % ----------------------------
             %% update the model structure
@@ -274,11 +269,7 @@ switch method
                     H                                = (Betas'*X'*M*X*Betas);
                     df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                     F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
-                    if strcmp(method,'OLS')
-                        pval_conditions              = 1 - fcdf(F_conditions(:), df_conditions, dfe);
-                    else
-                        pval_conditions              = NaN(size(F_conditions ));
-                    end
+                    pval_conditions              = 1 - fcdf(F_conditions(:), df_conditions, dfe);
                 end
                 
                 F_CONDVALUES{B}  = F_conditions;
@@ -312,9 +303,7 @@ switch method
                     H                        = (Betas'*X'*M*X*Betas);
                     df_conditions(f)         = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                     F_conditions(f,:)        = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
-                    if strcmp(method,'OLS')
-                        pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
-                    end
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                    
                     % update factors
                     if f<length(nb_conditions)
@@ -375,9 +364,7 @@ switch method
                     H(f,:)                   = diag((betas'*x'*M*x*betas));
                     df_conditions(f)         = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
                     F_conditions(f,:)        = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
-                    if strcmp(method,'OLS')
-                        pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
-                    end
+                    pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                     
                     % update factors
                     if f<length(nb_conditions)
@@ -452,9 +439,7 @@ switch method
                         HI(f,:)                    = diag((betas'*x'*M*x*betas))';
                         df_interactions(f)         = prod(df_conditions(interaction{f}));
                         F_interactions(f,:)        = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
-                        if strcmp(method,'OLS')
-                            pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
-                        end
+                        pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
                         Istart                     = Istart+nb_interactions(f);
                     end
                 end
@@ -493,9 +478,7 @@ switch method
                         H                                    = Betas'*X'*M*X*Betas;
                         df_continuous(n)                     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
                         F_continuous(n,:)                    = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
-                        if strcmp(method,'OLS')
-                            pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
-                        end
+                        pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                     end
                     
                     F_CONTVALUES{B}  = F_continuous';

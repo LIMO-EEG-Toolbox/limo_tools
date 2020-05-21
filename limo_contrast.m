@@ -103,9 +103,7 @@ switch type
         end
         
         if strcmp(Method,'Mass-univariate')
-            
             if strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'WLS')
-                
                 % create con or ess file
                 if Test == 0
                     con      = NaN(size(Y,1),size(Y,2),size(Y,3),5); % dim 3 = C*Beta/se/df/t/p
@@ -157,9 +155,7 @@ switch type
                             M  = R0 - R;
                             H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
                             ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
-                            if strcmpi(LIMO.design.method,'OLS')
-                                ess(electrode,freq,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
-                            end
+                            ess(electrode,freq,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
                         end
                     end
                 end
@@ -198,9 +194,10 @@ switch type
                             con(electrode,:,4)         = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
                             con(electrode,:,5)         = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
                         elseif strcmpi(LIMO.design.method,'WLS')
-                            WX                         = X.*repmat(LIMO.design.weights(electrode,:),1,size(X,2));
+                            WX                         = X.*repmat(LIMO.design.weights(electrode,:)',1,size(X,2));
                             con(electrode,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already 
                             con(electrode,:,4)         = (C*squeeze(Betas(electrode,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                            con(electrode,:,5)         = (1-tcdf(squeeze(abs(con(electrode,:,4))), dfe)).*2; % times 2 because it's directional
                         elseif strcmpi(LIMO.design.method,'IRLS')
                             for frame = 1:size(Betas,2)
                                 WX                     = X.*repmat(LIMO.design.weights(electrode,frame,:),1,size(X,2));
@@ -235,9 +232,7 @@ switch type
                             M  = R0 - R;
                             H  = (squeeze(Betas(electrode,:,:))*X'*M*X*squeeze(Betas(electrode,:,:))');
                             ess(electrode,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
-                            if strcmpi(LIMO.design.method,'OLS')
-                                ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
-                            end
+                            ess(electrode,:,end)   = 1 - fcdf(ess(electrode,:,end-1), df, dfe); % p value
                         else
                             for frame = 1:size(Betas,2)
                                 WX = X.*repmat(LIMO.design.weights(electrode,frame,:),1,size(X,2));
@@ -488,9 +483,9 @@ switch type
             end
             
             if Test == 0
-                save (filename, 'H0_con'); clear H0_con
+                save (filename, 'H0_con'); clear H0_con; 
             else
-                save (filename, 'H0_ess'); clear H0_ess
+                save (filename, 'H0_ess'); clear H0_ess; 
             end
         end
         

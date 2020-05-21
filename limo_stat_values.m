@@ -40,7 +40,7 @@ if isfield(LIMO,'Type')
     end
 end
 
-% check that a neighbouring matrix is there is clustering
+% check that a neighbouring matrix is there for clustering
 % -------------------------------------------------------
 if MCC == 2
     limo_check_neighbourghs(LIMO)
@@ -133,54 +133,9 @@ end
 % no correction for multiple testing
 % -----------------------------------
 if ~isempty(M) && MCC == 1
-    
-    if strcmp(LIMO.design.method,'WLS')
-        if  all(isnan(Pval(:))) && exist(['H0' filesep MCC_data],'file')
-            H0_data   = load(['H0' filesep MCC_data]);
-            H0_data   = H0_data.(cell2mat(fieldnames(H0_data)));
-            % get T/F values
-            if strcmp(FileName,'R2.mat') 
-                H0_values = squeeze(H0_data(:,:,2,:)); clear H0_data;
-                [mask,M]  = limo_boot_threshold(M,H0_values,p);
-                R2 = matfile.R2; R2(:,:,3) = M; save(FileName,'R2','-v7.3');
-            else
-                H0_values = squeeze(H0_data(:,:,end-1,:)); clear H0_data;
-                [mask,M]  = limo_boot_threshold(M,H0_values,p);
-                if strncmp(FileName,'Condition_effect',16)
-                    Condition_effect = matfile.Condition_effect;
-                    Condition_effect(:,:,2) = M; save(FileName,'Condition_effect','-v7.3');
-                elseif strncmp(FileName,'Covariate_effect',16)
-                    Covariate_effect = matfile.Covariate_effect;
-                    Covariate_effect(:,:,2) = M; save(FileName,'Covariate_effect','-v7.3');
-                elseif strncmp(FileName,'Interaction_effect',18)
-                    Interaction_effect = matfile.Interaction_effect;
-                    Interaction_effect(:,:,2) = M; save(FileName,'Interaction_effect','-v7.3');
-                elseif strncmp(FileName,'semi_partial_coef',17)
-                    semi_partial_coef = matfile.semi_partial_coef;
-                    semi_partial_coef(:,:,2) = M; save(FileName,'semi_partial_coef','-v7.3');
-                elseif strncmp(FileName,'con_',4)
-                    con= matfile.con;
-                    con(:,:,5) = M; save(FileName,'con','-v7.3');
-                elseif strncmp(FileName,'ess_',4)
-                    ess = matfile.ess;
-                    ess(:,:,end) = M; save(FileName,'ess','-v7.3');
-                end
-            end
-            mytitle   = sprintf('%s:\n uncorrected threshold using bootstrap',titlename);
-        elseif all(isnan(Pval(:))) && ~exist(['H0' filesep MCC_data '.mat'],'file')
-            M         = Pval;
-            mask      = ones(size(M,1),size(M,2));
-            mytitle   = sprintf('unthresholded %s:\n no p-values available without bootstrap',titlename);
-        else % because it has been computed as above and stored on disk
-            M         = Pval;
-            mask      = Pval <= p;
-            mytitle   = sprintf('%s:\n uncorrected threshold using bootstrap',titlename);
-        end
-    else % OLS/IRLS
-        M       = Pval;
-        mask    = Pval <= p;
-        mytitle = sprintf('%s:\n uncorrected threshold',titlename);
-    end
+    M       = Pval;
+    mask    = Pval <= p;
+    mytitle = sprintf('%s:\n uncorrected threshold',titlename);
     
     % cluster correction for multiple testing
     % ---------------------------------------
@@ -195,82 +150,6 @@ elseif ~isempty(M) && MCC == 2
             else
                 bootM = squeeze(H0_data(:,:,1,:));
                 bootP = squeeze(H0_data(:,:,2,:));
-            end
-            
-            if all(isnan(bootP(:)))
-                disp('WLS 1st pass - getting p values for null data')
-                Pboot = cell(1,size(bootP,3));
-                parfor boot = 1:size(bootP,3)
-                    index = 1:size(bootP,3); index(boot) = [];
-                    [~,Pboot{boot}]  = limo_boot_threshold(bootM(:,:,boot),bootM(:,:,index),p);
-                end
-                bootP = reshape(cell2mat(Pboot),size(bootM)); clear Pboot;
-               
-                % save it so we can reuse this anytime
-                if strcmp(FileName,'R2.mat')
-                    H0_R2 = H0_data; clear H0_data;
-                    H0_R2(:,:,3,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_R2','-v7.3');
-                elseif strncmp(FileName,'Condition_effect',16)
-                    H0_Condition_effect = H0_data; clear H0_data;
-                    H0_Condition_effect(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_Condition_effect','-v7.3');
-                elseif strncmp(FileName,'Covariate_effect',16)
-                    H0_Covariate_effect = H0_data; clear H0_data;
-                    H0_Covariate_effect(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_Covariate_effect','-v7.3');
-                elseif strncmp(FileName,'Interaction_effect',18)
-                    H0_Interaction_effect = H0_data; clear H0_data;
-                    H0_Interaction_effect(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_Interaction_effect','-v7.3');
-                elseif strncmp(FileName,'semi_partial_coef',17)
-                    H0_semi_partial_coef = H0_data; clear H0_data;
-                    H0_semi_partial_coef(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_semi_partial_coef','-v7.3');
-                elseif strncmp(FileName,'con_',4)
-                    H0_con = H0_data; clear H0_data;
-                    H0_con(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_con','-v7.3');
-                elseif strncmp(FileName,'ess_',4)
-                    H0_ess = H0_data; clear H0_data;
-                    H0_ess(:,:,2,:) = bootP; 
-                    save(['H0' filesep MCC_data],'H0_ess','-v7.3');
-                end
-                disp('null p-values saved')
-            end
-            
-            % likely we don't have observed p-val
-            if all(isnan(Pval(:)))
-                [~,Pval] = limo_boot_threshold(M,bootM,p);
-                if strcmp(FileName,'R2.mat')
-                    R2 =  matfile.R2;
-                    R2(:,:,3) = Pval; save(FileName,'R2','-v7.3');
-                    clear R2
-                elseif strncmp(FileName,'Condition_effect',16)
-                    Condition_effect=matfile.Condition_effect;
-                    Condition_effect(:,:,2) = Pval; save(FileName,'Condition_effect','-v7.3');
-                    clear Condition_effect
-                elseif strncmp(FileName,'Covariate_effect',16)
-                    Covariate_effect = matfile.Covariate_effect;
-                    Covariate_effect(:,:,2) = Pval; save(FileName,'Covariate_effect','-v7.3');
-                    clear Covariate_effect
-                elseif strncmp(FileName,'Interaction_effect',18)
-                    Interaction_effect = matfile.Interaction_effect;
-                    Interaction_effect(:,:,2) = Pval; save(FileName,'Interaction_effect','-v7.3');
-                    clear Interaction_effect
-                elseif strncmp(FileName,'semi_partial_coef',17)
-                    semi_partial_coef = matfile.semi_partial_coef;
-                    semi_partial_coef(:,:,3) = Pval; save(FileName,'semi_partial_coef','-v7.3');
-                    clear semi_partial_coef
-                elseif strncmp(FileName,'con_',4)
-                    con = matfile.con;
-                    con(:,:,5) = M; save(FileName,'con','-v7.3');
-                    clear con
-                elseif strncmp(FileName,'ess_',4)
-                    ess = matfile.ess;
-                    ess(:,:,end-1) = Pval; save(FileName,'ess','-v7.3');
-                    clear ess
-                end
             end
             
             % finally get cluster mask and corrected p-values
