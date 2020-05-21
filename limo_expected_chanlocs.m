@@ -24,7 +24,7 @@ function [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs(varar
 % Guillaume Rousselet v1 11 June 2010
 % Cyril Pernet v2 16 July 2010, we don't have to know which subject has the
 % largest channel description
-% Cyril PErnet, 18 July 2012, get output channeighbstructmat so we can update
+% Cyril Pernet, 18 July 2012, get output channeighbstructmat so we can update
 % subjects for tfce
 % Marianne Latinus, May 2014 - create a cap with a minimum number
 % of subjects per electrodes ; loop through all subjects
@@ -95,10 +95,15 @@ if strcmpi(quest,'One')
         end
     end
     
-    EEGLIMO                 = pop_loadset('filename', fullfile(PathName, FileName));
+    if ~exist(fullfile(PathName, FileName),'file') % tmp from STUDY
+        tmp                 = dir([PathName filesep '*set']);
+        EEGLIMO             = pop_loadset('filename', fullfile(PathName, tmp(1).name));
+    else
+        EEGLIMO             = pop_loadset('filename', fullfile(PathName, FileName));
+    end
     expected_chanlocs       = EEGLIMO.chanlocs;
     [~,channeighbstructmat] = limo_get_channeighbstructmat(EEGLIMO,neighbourdist);
-    fprintf('Data set %s loaded \n',FileName);
+    fprintf('Data set loaded \n');
     
     if sum(channeighbstructmat(:)) == 0
         error('the neighbouring matrix is empty, it''s likely a distance issue - see limo_ft_neighbourselection.m');

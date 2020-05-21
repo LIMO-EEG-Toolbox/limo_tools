@@ -21,7 +21,13 @@ if ~isfield(LIMO.data,'neighbouring_matrix')
             channeighbstructmat = channeighbstructmat.channeighbstructmat;
         end
     else
-        channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+        if ~exist(fullfile(LIMO.data.data_dir,LIMO.data.data),'file')
+            % typically tmp file from STUDY
+            tmp = dir([LIMO.data.data_dir filesep '*.set']);
+            channeighbstructmat = limo_expected_chanlocs(tmp(1).name, LIMO.data.data_dir);
+        else
+            channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+        end
     end
     LIMO.data.neighbouring_matrix = channeighbstructmat;
     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
