@@ -2024,7 +2024,7 @@ elseif LIMO.Level == 2
             % -----------------------------------------------------------------------------
             
             
-            if strncmp(FileName,'Rep_ANOVA_Factor',16)
+            if strncmp(FileName,'Rep_ANOVA_Main',14)
                 % -----------------------------------
                 
                 % which ERP to make
@@ -2059,7 +2059,8 @@ elseif LIMO.Level == 2
                 
                 figure;set(gcf,'Color','w')
                 % the data to plot are the difference in Yr given LIMO.design.C (see limo_rep_anova)
-                effect_nb = eval(FileName(18:end-4));
+                index = strfind(FileName,'Main_effect')+12;
+                effect_nb = eval(FileName(index));
                 C = LIMO.design.C{effect_nb};
                 load Yr; Data = squeeze(Yr(electrode,:,:,:));
                 
@@ -2268,7 +2269,7 @@ elseif LIMO.Level == 2
                 
                 
                 % -------------------------
-            elseif strncmp(FileName,'Rep_ANOVA_Interaction',21); % Gp * Repeated measures - plot differences btween condition per gp
+            elseif strncmp(FileName,'Rep_ANOVA_Interaction',21) % Gp * Repeated measures - plot differences btween condition per gp
                 % ------------------------
                 
                 
