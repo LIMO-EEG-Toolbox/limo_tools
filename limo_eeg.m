@@ -382,26 +382,26 @@ switch varargin{1}
         if prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous == 0
             if length(LIMO.design.nb_conditions) == 1
                 if LIMO.design.nb_conditions == 2
-                    LIMO.design.name  = sprintf('Categorical: T-test i.e. %g conditions',LIMO.design.nb_conditions);
+                    LIMO.design.name  = sprintf('GLM Categorical: T-test i.e. %g conditions',LIMO.design.nb_conditions);
                 else
-                    LIMO.design.name  = sprintf('Categorical: 1 way ANOVA with %g conditions',LIMO.design.nb_conditions);
+                    LIMO.design.name  = sprintf('GLM Categorical: 1 way ANOVA with %g conditions',LIMO.design.nb_conditions);
                 end
             else
-                LIMO.design.name  = sprintf('Categorical: N way ANOVA with %g factors',length(LIMO.design.nb_conditions));
+                LIMO.design.name  = sprintf('GLM Categorical: N way ANOVA with %g factors',length(LIMO.design.nb_conditions));
             end
             
         elseif prod(LIMO.design.nb_conditions) == 0 && LIMO.design.nb_continuous > 0
             if LIMO.design.nb_continuous == 1
-                LIMO.design.name  = sprintf('Continuous: Simple Regression');
+                LIMO.design.name  = sprintf('GLM Continuous: Simple Regression');
             else
-                LIMO.design.name  = sprintf('Continuous: Multiple Regression with %g continuous variables',LIMO.design.nb_continuous);
+                LIMO.design.name  = sprintf('GLM Continuous: Multiple Regression with %g continuous variables',LIMO.design.nb_continuous);
             end
             
         elseif prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous > 0
             if length(LIMO.design.nb_conditions) == 1
-                LIMO.design.name  = sprintf('AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
+                LIMO.design.name  = sprintf('GLM AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
             else
-                LIMO.design.name  = sprintf('AnCOVA with %g factors and %g continuous variable(s)',length(LIMO.design.nb_conditions),LIMO.design.nb_continuous);
+                LIMO.design.name  = sprintf('GLM AnCOVA with %g factors and %g continuous variable(s)',length(LIMO.design.nb_conditions),LIMO.design.nb_continuous);
             end
         else
             LIMO.design.name = 'Mean';
