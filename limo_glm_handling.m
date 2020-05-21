@@ -262,15 +262,23 @@ if LIMO.design.bootstrap ~=0
     if exist('H0','dir')
         ow = questdlg('overwrite H0?','limo check','yes','no','yes');
         if strcmp(ow,'no') || isempty(ow)
-            warndlg2('Analysis stopped - not overwriting H0')
-            return
+            if LIMO.design.tfce == 1 && ~exist('TFCE','dir')
+                skip_H0boot = 'yes';
+            else
+                warndlg2('Analysis stopped - not overwriting H0')
+                return
+            end
         end
     else
+        skip_H0boot = 'no';
+    end
+    
+    if strcmp(skip_H0boot,'no')
         try
             mkdir H0;
             fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping GLM, ... \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
             
-            Yr = load('Yr'); 
+            Yr = load('Yr');
             Yr = Yr.Yr; % reload in any cases - ensuring right dimensions
             if size(Yr,1) == 1
                 array = 1;
@@ -394,7 +402,7 @@ if LIMO.design.bootstrap ~=0
                         end
                     end
                 else % erp or spec
-                    for B = 1:nboot 
+                    for B = 1:nboot
                         H0_Betas(electrode,:,:,B) = model.betas{B};
                         H0_R2(electrode,:,1,B)    = model.R2_univariate{B};
                         H0_R2(electrode,:,2,B)    = model.F{B};
@@ -439,10 +447,10 @@ if LIMO.design.bootstrap ~=0
                 end
             end
             close(h); warning on;
-            clear Yr 
+            clear Yr
             
             % save data on the disk and clear out
-            save([LIMO.dir filesep 'H0' filesep 'H0_R2.mat'],'H0_R2','-v7.3');           
+            save([LIMO.dir filesep 'H0' filesep 'H0_R2.mat'],'H0_R2','-v7.3');
             save([LIMO.dir filesep 'H0' filesep 'boot_table.mat'],'boot_table');
             save([LIMO.dir filesep 'H0' filesep 'H0_Betas.mat'],'H0_Betas','-v7.3');
             clear H0_R2 boot_table H0_Betas
@@ -489,7 +497,7 @@ if LIMO.design.bootstrap ~=0
                 clear tmp_H0_Covariates
             end
             
-            clear electrode model H0_R2; 
+            clear electrode model H0_R2;
             cd(LIMO.dir); disp(' ');
             
         catch boot_error
@@ -514,11 +522,30 @@ if LIMO.design.tfce == 1
     % (since TFCE integrates over clusters)
     if ~isfield(LIMO.data,'neighbouring_matrix')
        warning('no neighbouring matrix found, this is required for TFCE')
-       [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs;
-       if isempty(LIMO.data.neighbouring_matrix)
-           return
+       answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
+       if strcmp(answer,'Load')
+           [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+           if whatsup == 0
+               disp('selection aborded');
+               return
+           else
+               tmp   = load(fullfile(newpath,file));
+               fn    = fieldnames(tmp);
+               index = find(ismember(fn,'channeighbstructmat'));
+               if isempty(index)
+                   error('no neighbouring matrix ''channeighbstructmat'' found')
+               else
+                   LIMO.data.neighbouring_matrix = getfield(tmp,fn{index});
+                   save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+               end
+           end
        else
-           save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+           [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+           if isempty(LIMO.data.neighbouring_matrix)
+               error('no neighbouring matrix returned, try creating with limo tools')
+           else
+               save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+           end
        end
     end
        
@@ -526,116 +553,13 @@ if LIMO.design.tfce == 1
     mkdir TFCE; neighbouring_matrix = LIMO.data.neighbouring_matrix;
     
     % R2
-    R2 = load('R2'); 
-    R2 = R2.(cell2mat(fieldnames(R2)));
-    fprintf('Creating R2 TFCE scores \n');
-    if size(R2,1) == 1
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            tfce_score(1,:,:) = limo_tfce(2, squeeze(R2(:,:,:,2)),[]); % no neighbouring, time-freq cluster
-        else
-            tfce_score(1,:)   = limo_tfce(1, squeeze(R2(:,:,2)),neighbouring_matrix);
-        end
-    else
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            tfce_score        = limo_tfce(3, squeeze(R2(:,:,:,2)),neighbouring_matrix);
-        else
-            tfce_score        = limo_tfce(2, squeeze(R2(:,:,2)),neighbouring_matrix);
-        end
-    end
-    save(fullfile(LIMO.dir,['TFCE' filesep 'tfce_R2']),'tfce_score','-v7.3');
-    clear R2;
-    
-    if exist(['H0' filesep 'H0_R2.mat'],'file')
-        fprintf('Thresholding H0_R2 using TFCE \n');
-        H0_R2 = load(['H0' filesep 'H0_R2.mat']);
-        H0_R2 = H0_R2.(cell2mat(fieldnames(H0_R2)));
-        if size(H0_R2,1) == 1
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                tfce_H0_score = NaN(1,size(H0_R2,2),size(H0_R2,3),LIMO.design.bootstrap);
-                parfor b=1:nboot
-                    tfce_H0_score(1,:,:,b) = limo_tfce(2,squeeze(H0_R2(:,:,:,2,b)),[],0);
-                end
-            else
-                tfce_H0_score = NaN(1,size(H0_R2,2),LIMO.design.bootstrap);
-                parfor b=1:nboot
-                    tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_R2(:,:,2,b)),neighbouring_matrix,0);
-                end
-            end
-        else
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                tfce_H0_score = NaN(size(H0_R2,1),size(H0_R2,2),size(H0_R2,3),LIMO.design.bootstrap);
-                parfor b=1:nboot
-                    tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_R2(:,:,:,2,b)),neighbouring_matrix,0);
-                end
-            else
-                tfce_H0_score = NaN(size(H0_R2,1),size(H0_R2,2),LIMO.design.bootstrap);
-                parfor b=1:nboot
-                    tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_R2(:,:,2,b)),neighbouring_matrix,0);
-                end
-            end
-        end
-        save(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_R2']),'tfce_H0_score','-v7.3'); 
-        clear H0_R2 tfce_H0_score; 
-    end
+    limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no')
     
     % conditions
     if prod(LIMO.design.nb_conditions) ~=0
         for i=1:length(LIMO.design.nb_conditions)
-            name = sprintf('Condition_effect_%g.mat',i); 
-            fprintf('Creating %s TFCE score \n',name)
-            Condition_effect = load(name);
-            Condition_effect = Condition_effect.(cell2mat(fieldnames(Condition_effect)));
-            if size(Condition_effect,1) == 1
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score(1,:,:) = limo_tfce(2, squeeze(Condition_effect(:,:,:,1)),[]);                    
-                else
-                    tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),neighbouring_matrix);
-                end
-            else
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score      = limo_tfce(3, squeeze(Condition_effect(:,:,:,1)),neighbouring_matrix);
-                else
-                    tfce_score      = limo_tfce(2, squeeze(Condition_effect(:,:,1)),neighbouring_matrix);
-                end
-            end
-            save(fullfile(LIMO.dir,['TFCE' filesep 'tfce_' name]),'tfce_score','-v7.3');
-            clear Condition_effect tfce_score; 
-        end
-        
-        for i=1:length(LIMO.design.nb_conditions)
-            name = sprintf('H0_Condition_effect_%g.mat',i);
-            if exist(['H0' filesep name],'file')
-                fprintf('Creating %s TFCE score \n',name);
-                H0_Condition_effect = load(['H0' filesep name]);
-                H0_Condition_effect = H0_Condition_effect.(cell2mat(fieldnames(H0_Condition_effect)));
-                if size(H0_Condition_effect,1) == 1
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(1,size(H0_Condition_effect,2),size(H0_Condition_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,:,1,b)),[],0);
-                        end
-                    else
-                        tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                else
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),size(H0_Condition_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_Condition_effect(:,:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                end
-                save(fullfile(LIMO.dir,['H0' filesep 'tfce_' name]),'tfce_H0_score','-v7.3');
-                clear H0_Condition_effect tfce_H0_score;
-            end
+            name = sprintf('Condition_effect_%g.mat',i);
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
         end
     end
     
@@ -643,60 +567,7 @@ if LIMO.design.tfce == 1
     if LIMO.design.fullfactorial == 1
         for i=1:length(LIMO.design.fullfactorial)
             name = sprintf('Interaction_effect_%g.mat',i);
-            fprintf('Creating %s TFCE score \n',name)
-            Interaction_effect = load(name);
-            Interaction_effect = Interaction_effect.(cell2mat(fieldnames(Interaction_effect)));
-            if size(Interaction_effect,1) == 1
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score(1,:,:) = limo_tfce(2,squeeze(Interaction_effect(:,:,:,1)),[]);
-                else
-                    tfce_score(1,:) = limo_tfce(1,squeeze(Interaction_effect(:,:,1)),neighbouring_matrix);
-                end
-            else
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score = limo_tfce(3,squeeze(Interaction_effect(:,:,:,1)),neighbouring_matrix);
-                else
-                    tfce_score = limo_tfce(2,squeeze(Interaction_effect(:,:,1)),neighbouring_matrix);
-                end
-            end
-            save(fullfile(LIMO.dir,['TFCE' filesep 'tfce_' name]),'tfce_score','-v7.3');
-            clear Interaction_effect tfce_score; 
-        end
-        
-        for i=1:length(LIMO.design.fullfactorial)
-            name = sprintf('H0_Interaction_effect_%g.mat',i);
-            if exist(['H0' filesep name],'file')
-                fprintf('Creating %s TFCE score \n',name);
-                H0_Interaction_effect = load(['H0' filesep name]);
-                H0_Interaction_effect = H0_Interaction_effect.(cell2mat(fieldnames(H0_Interaction_effect)));
-                if size(H0_Interaction_effect,1) == 1
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(1,size(H0_Interaction_effect,2),size(H0_Interaction_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,:,b) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,:,1,b)),[],0);
-                        end
-                    else
-                        tfce_H0_score = NaN(1,size(H0_Interaction_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                else
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(size(H0_Interaction_effect,1),size(H0_Interaction_effect,2),size(H0_Interaction_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,:,b) = limo_tfce(3,squeeze(H0_Interaction_effect(:,:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score = NaN(size(H0_Interaction_effect,1),size(H0_Interaction_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                end
-                save(fullfile(LIMO.dir,['H0' filesep 'tfce_' name]),'tfce_H0_score','-v7.3');
-                clear H0_Interaction_effect tfce_H0_score;
-            end
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
         end
     end
     
@@ -704,61 +575,7 @@ if LIMO.design.tfce == 1
     if LIMO.design.nb_continuous ~=0
         for i=1:LIMO.design.nb_continuous
             name = sprintf('Covariate_effect_%g.mat',i); 
-            fprintf('Creating %s TFCE score \n',name)
-            Covariate_effect = load(name);
-            Covariate_effect = Covariate_effect.(cell2mat(fieldnames(Covariate_effect)));
-            if size(Covariate_effect,1) == 1
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score(1,:,:) = limo_tfce(2,squeeze(Covariate_effect(:,:,:,1)),[]);
-                else
-                    tfce_score(1,:) = limo_tfce(1,squeeze(Covariate_effect(:,:,1)),neighbouring_matrix);
-                end
-            else
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_score = limo_tfce(3,squeeze(Covariate_effect(:,:,:,1)),neighbouring_matrix);
-                else
-                    tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),neighbouring_matrix);
-                end
-            end
-            save(fullfile(LIMO.dir,['TFCE' filesep 'tfce_' name]),'tfce_score','-v7.3');
-            clear Covariate_effect tfce_score; 
-        end
-        
-        fprintf('Creating H0 Covariate(s) TFCE scores \n');
-        for i=1:LIMO.design.nb_continuous
-            name = sprintf('H0_Covariate_effect_%g.mat',i); 
-            if exist(['H0' filesep name],'file')
-                fprintf('Creating %s TFCE score \n',name);
-                H0_Covariate_effect = load(['H0' filesep name]);
-                H0_Covariate_effect = H0_Covariate_effect.(cell2mat(fieldnames(H0_Covariate_effect)));
-                if size(H0_Covariate_effect,1) == 1
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                else
-                    if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),neighbouring_matrix,0);
-                        end
-                    end
-                end
-                save(fullfile(LIMO.dir,['H0' filesep 'tfce_' name]),'tfce_H0_score','-v7.3');
-                clear H0_Covariate_effect tfce_H0_score
-            end
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
         end
     end
 end
