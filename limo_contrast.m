@@ -709,8 +709,8 @@ switch type
                 H0_ess(electrode,:,3) = dfe;
                 % F and p values
                 result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
-                H0_ess(electrode,:,1,4) = result.repeated_measure.F;
-                H0_ess(electrode,:,1,5) = result.repeated_measure.p;
+                H0_ess(electrode,:,1,4)  = result.repeated_measure.F;
+                H0_ess(electrode,:,1,5)  = result.repeated_measure.p;
                 H0_ess2(electrode,:,2,4) = result.interaction.F;
                 H0_ess2(electrode,:,2,5) = result.interaction.p;
             end

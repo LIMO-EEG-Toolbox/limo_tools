@@ -61,13 +61,13 @@ function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
 global handles
 
 % define handles used for the save callback
-handles.dir = pwd;
-handles.go  = 0;
-handles.C   = [];
-handles.F   = 0;
-handles.X   = [];
+handles.dir      = pwd;
+handles.go       = 0;
+handles.C        = [];
+handles.F        = 0;
+handles.X        = [];
 handles.limofile = [];
-handles.output = hObject;
+handles.output   = hObject;
 guidata(hObject,handles);
 set(hObject,'Tag','figure_limo_contrast_manager');
 % uiwait(handles.figure1);
@@ -100,8 +100,7 @@ else
     if LIMO.Level == 2 && ~isempty(strfind(LIMO.design.name,'t-test'))
         warndlg('no contrast can be performed for a t-test','modal'); 
         Xdisplay = []; 
-    elseif LIMO.Level == 2 && strcmp(LIMO.design.name(1:11),'Mixed ANOVA') || ...
-            LIMO.Level == 2 && strcmp(LIMO.design.name(1:8),'Repeated') % always F
+    elseif LIMO.Level == 2 && contains(LIMO.design.name,'ANOVA')  % always F
         if LIMO.design.nb_conditions == 1 % only one gp
             Xdisplay = LIMO.design.X;
         else
@@ -149,15 +148,15 @@ if LIMO.Level == 2 && strncmp(LIMO.design.name,'Repeated',8) % always T2 in fact
     % adjust X for a single group
     if LIMO.design.nb_conditions > 1
         index = find(LIMO.data.Cat==1);
-        handles.C = limo_contrast_checking(LIMO.dir, LIMO.design.X(index,[1 2]), handles.C);
+        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X(index,[1 2]), handles.C);
         handles.go = limo_contrast_checking(handles.C,LIMO.design.X(index,[1 2]));
     else
-        handles.C = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
+        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
         handles.go = limo_contrast_checking(handles.C,LIMO.design.X);
     end
 else % other things than repeated measure
     if handles.F == 0
-        handles.C = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
+        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
         if size(handles.C,1) > 1
             handles.F = 1;
         end
@@ -169,7 +168,8 @@ else % other things than repeated measure
         for i=1:size(C1,1)
             C1(i,i) = L(i);
         end
-        handles.C = C1; handles.C = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
+        handles.C  = C1; 
+        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
         handles.go = limo_contrast_checking(handles.C,LIMO.design.X);
     end
 end
@@ -359,41 +359,6 @@ if ~isempty(handles.C)
                     disp('boostrapped contrasts done ...')
                 end
                 
-                if LIMO.design.tfce == 1
-                    if handles.F == 0
-                        filename = sprintf('con_%g.mat',index); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_score = limo_tfce(3,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_score = limo_tfce(2,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
-                        end
-                        cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear con tfce_score
-                        cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_H0_score = limo_tfce(3,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_H0_score = limo_tfce(2,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                        end
-                        filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_con tfce_score
-                    else
-                        filename = sprintf('ess_%g.mat',index); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_score = limo_tfce(3,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_score = limo_tfce(2,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
-                        end
-                        cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
-                        cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_H0_score = limo_tfce(3,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
-                        end
-                        filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
-                    end
-                    disp('tfce - boostrapped contrasts done ...')
-                end
-                
             elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
                 
                 LIMO.contrast = handles.F;
@@ -445,12 +410,6 @@ if ~isempty(handles.C)
                     end
                 end
                 filename = sprintf('ess_%g.mat',index); load(filename);
-                
-                tfce_score = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
-                cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
-                cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
             end
             
             clear Yr LIMO

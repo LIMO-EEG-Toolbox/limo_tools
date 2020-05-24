@@ -1473,8 +1473,7 @@ switch type
         if tfce ~= 0 % check if tfce is on and if more than one electrode
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
             for i=1:nb_effects
-                fprintf('analyzing %s \n',Rep_filenames{i});
-                limo_tfce_handling(Rep_filenames{i});
+                limo_tfce_handling(fullfile(LIMO.dir,Rep_filenames{i}));
             end
             LIMO.design.tfce = 1;
             save(fullfile(LIMO.dir,'LIMO.mat'));
