@@ -63,7 +63,8 @@ end
 %% what do we plot? 
 
 scale           = toplot.*(mask>0);  % the data masked (tpically of significance)
-scale(scale==0) =NaN;   
+scale(scale==0) = NaN;   
+cc              = color_images(scale); % get a color map commensurate to that
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             ERP            %
@@ -164,7 +165,6 @@ else
     end
 end
 title(mytitle2,'FontSize',12)
-cc = color_images(scale);
 set_imgaxes(LIMO,size(scale,1));
 
 % topoplot at max time
@@ -172,15 +172,14 @@ set_imgaxes(LIMO,size(scale,1));
 if size(toplot,1) ~= 1
     
     ax(2) = subplot(3,3,6);
-    chans = LIMO.data.chanlocs;
-    opt = {'maplimits','maxmin','verbose','off','colormap', cc};
+    opt   = {'maplimits','maxmin','verbose','off','colormap', cc};
     
     if isfield(LIMO,'Type')
         if strcmp(LIMO.Type,'Components')
             opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', cc};
-            topoplot(toplot(:,f),chans,opt{:});
+            topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         else
-            topoplot(toplot(:,f),chans,opt{:});
+            topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         end
         
         if size(toplot,2) == 1
@@ -195,8 +194,8 @@ if size(toplot,1) ~= 1
             end
         end
         
-    elseif ~isempty(chans)
-        topoplot(toplot(:,f),chans,opt{:});
+    elseif ~isempty(LIMO.data.chanlocs)
+        topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         if size(toplot,2) == 1
             title('Topoplot','FontSize',12)
         else
@@ -208,8 +207,8 @@ if size(toplot,1) ~= 1
                 set(gca,'XTickLabel', LIMO.data.freqlist);
             end
         end
+        colormap(gca, cc(2:end,:));
     end
-    colormap(gca, cc(2:end,:));
 end
 
 % images toplot
@@ -299,13 +298,10 @@ if dynamic == 1
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
-                            topoplot(toplot(:,1),chans,opt{:});
+                            topoplot(toplot(:,1),LIMO.data.chanlocs,opt{:});
+                            title('topoplot','FontSize',12)
                         else
-                            topoplot(toplot(:,frame),chans,opt{:});
-                        end
-                        if size(toplot,2) == 1
-                            title('Topoplot','FontSize',12)
-                        else
+                            topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
                             title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
                         end
                         colormap(gca, cc(2:end,:));
@@ -345,11 +341,12 @@ if dynamic == 1
                     
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
-                        topoplot(toplot(:,frame),LIMO.data.chanlocs);
                         if size(toplot,2) == 1
-                            title('Topoplot','FontSize',12)
+                            topoplot(toplot(:,1),LIMO.data.chanlocs,opt{:});
+                            title('topoplot','FontSize',12)
                         else
-                            title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
+                            topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
+                            title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
                         end
                         colormap(gca, cc(2:end,:));
                     end
@@ -384,7 +381,6 @@ if dynamic == 1
                         title(mytitle2,'FontSize',12);
                     end
                 end
-                
             end
             
             try
