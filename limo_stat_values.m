@@ -154,7 +154,7 @@ elseif ~isempty(M) && MCC == 2
             
             % finally get cluster mask and corrected p-values
             [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            Nclust = unique(mask); Nclust = length(Nclust)-1; mask = mask>0;
+            Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
             mytitle = sprintf('%s\n cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
@@ -192,10 +192,10 @@ elseif ~isempty(M) && MCC == 4 % Stat max
     % correction using TFCE
     % --------------------------
 elseif ~isempty(M) && MCC == 3 % Stat max
-    if exist(['TFCE' filesep 'tfce_R2.mat'],'file')
+    if exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]),'file')
         try
-            score    = load(['TFCE' filesep 'tfce_' FileName]);
-            H0_score = load(['H0' filesep 'tfce_' MCC_data]);
+            score    = load(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]));
+            H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
             [mask,M] = limo_max_correction(score.tfce_score,H0_score.tfce_H0_score,p);
             mytitle  = sprintf('%s:\n correction using TFCE',titlename);
         catch ME
@@ -203,6 +203,7 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             return
         end
     else
+        
         errordlg('no tfce tfce file was found','missing data')
     end
 end
