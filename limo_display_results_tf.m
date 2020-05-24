@@ -44,7 +44,7 @@ scale              = handles.data3d.*handles.mask;
 scale(scale==0)    = NaN;
 handles.scale      = scale;
 handles.title      = varargin{4};
-handles.freqs_here = linspace(handles.LIMO.data.lowf,handles.LIMO.data.hightf,size(handles.data3d,2));
+handles.freqs_here = linspace(handles.LIMO.data.lowf,handles.LIMO.data.highf,size(handles.data3d,2));
 handles.times_here = linspace(handles.LIMO.data.start,handles.LIMO.data.end,size(handles.data3d,3));
 handles.plot_sel   = 1;
 clear varargin scale
