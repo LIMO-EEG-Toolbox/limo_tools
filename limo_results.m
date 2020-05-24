@@ -104,7 +104,7 @@ if FilterIndex == 1
     check_boot_and_tfce(handles)
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
-    limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO.LIMO);
+    limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
 
