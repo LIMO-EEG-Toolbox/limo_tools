@@ -36,11 +36,11 @@ function [M, mask, mytitle] = limo_stat_values_tf(varargin)
 %  Copyright (C) LIMO Team 2019
 
 
-Type      = varargin{1}; % type of plot
-FileName  = varargin{2}; % Name of the file selected
-p         = varargin{3}; % p value
-MCC       = varargin{4}; % multiple comparison option
-LIMO      = varargin{5}; % LIMO.mat
+% Type      = varargin{1}; % type of plot
+FileName  = varargin{1}; % Name of the file selected
+p         = varargin{2}; % p value
+MCC       = varargin{3}; % multiple comparison option
+LIMO      = varargin{4}; % LIMO.mat
 
 load (FileName);
 M = []; mask =[]; mytitle=[];
