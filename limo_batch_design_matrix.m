@@ -212,9 +212,8 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         else
             signal = abs(eeg_getdatact(EEGLIMO,'component',1:length(EEGLIMO.icawinv)).^2);
         end
-        
-        Y = signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
-        
+        Y = abs(signal(:,LIMO.data.trim_lowf:LIMO.data.trim_highf,LIMO.data.trim1:LIMO.data.trim2,:)).^2; clear signal
+
         if isfield(LIMO.data,'cluster')
             try
                 STUDY = evalin('base','STUDY');
@@ -282,7 +281,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 signal = limo_concatcells(signal);
             end
         end
-        Y = abs(signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:)).^2;
+        Y = abs(signal(:,LIMO.data.trim_lowf:LIMO.data.trim_highf,LIMO.data.trim1:LIMO.data.trim2,:)).^2; clear signal
     end
     clear EEGLIMO
     LIMO.data.size4D= size(Y);

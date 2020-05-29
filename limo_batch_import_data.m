@@ -160,24 +160,24 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
     % start
     if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
         LIMO.data.lowf = freqvect(1);
-        LIMO.data.trim_low_f = 1;
+        LIMO.data.trim_lowf = 1;
     else
         [~,position] = min(abs(freqvect-defaults.lowf));
         LIMO.data.lowf = freqvect(position);
-        LIMO.data.trim_low_f = position; 
+        LIMO.data.trim_lowf = position; 
     end
     
     % end
     if isempty(defaults.highf) || defaults.highf > freqvect(end)
         LIMO.data.highf = freqvect(end);
-        LIMO.data.trim_high_f = length(freqvect);
+        LIMO.data.trim_highf = length(freqvect);
     else
         [~,position] = min(abs(freqvect-defaults.highf));
         LIMO.data.highf = freqvect(position);
-        LIMO.data.trim_high_f = position; 
+        LIMO.data.trim_highf = position; 
     end
     
-    LIMO.data.tf_freqs = freqvect(LIMO.data.trim_low_f:LIMO.data.trim_high_f);
+    LIMO.data.tf_freqs = freqvect(LIMO.data.trim_lowf:LIMO.data.trim_highf);
 end
 
 % deal with categorical and continuous regressors
