@@ -62,9 +62,9 @@ end
 
 %% what do we plot? 
 
-scale           = toplot.*(mask>0);  % the data masked (tpically of significance)
+scale           = toplot.*single(mask>0);  % the data masked (tpically of significance)
 scale(scale==0) = NaN;   
-cc              = color_images(scale); % get a color map commensurate to that
+cc              = limo_color_images(scale); % get a color map commensurate to that
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             ERP            %
@@ -107,8 +107,9 @@ elseif strcmp(LIMO.Analysis,'Frequency')
 end
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
-% ----------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure; set(gcf,'Color','w','InvertHardCopy','off');
 
 % course plot at best electrode
@@ -118,54 +119,47 @@ if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
 end
 
 if size(toplot,1) == 1
-    plot(timevect,toplot); grid on; ylabel('stat value'); axis tight
+    if strcmp(LIMO.Analysis,'Time')
+        plot(timevect,toplot); 
+    elseif strcmp(LIMO.Analysis,'Frequency')
+        plot(freqvect,toplot); 
+    end
+    grid on; ylabel('stat value'); axis tight
+    
     if isfield(LIMO,'Type')
         if strcmp(LIMO.Type,'Components')
             mytitle2 = 'Average component';
         elseif strcmp(LIMO.Type,'Channels')
-            mytitle2 = 'Average electrode';
+            mytitle2 = 'Average channel';
         end
     else
-        mytitle2 = 'Average electrode';
+        mytitle2 = 'Average channel';
     end
 else
-    if strcmp(LIMO.Analysis,'Time')
-        if isfield(LIMO,'Type')
-            if strcmp(LIMO.Type,'Components')
-                mytitle2 = sprintf('time course @ \n component %g', e);
-            elseif strcmp(LIMO.Type,'Channels')
-                label = LIMO.data.chanlocs(e).labels;
-                mytitle2 = sprintf('time course @ \n electrode %s (%g)', label,e);
-            end
-        else
-            try
-                label = LIMO.data.chanlocs(e).labels;
-                mytitle2 = sprintf('time course @ \n electrode %s (%g)', label.labels,e);
-            catch
-                mytitle2 = sprintf('time course @ y=%g', e);
-            end
+    if isfield(LIMO,'Type')
+        if strcmp(LIMO.Type,'Components')
+            mytitle2 = sprintf('stat values @ \n component %g', e);
+        elseif strcmp(LIMO.Type,'Channels')
+            label = LIMO.data.chanlocs(e).labels;
+            mytitle2 = sprintf('stat values @ \n channel %s (%g)', label,e);
         end
-        plot(timevect,toplot(e,:),'LineWidth',3); grid on; axis tight
-        
-    elseif strcmp(LIMO.Analysis,'Frequency')
-        if isfield(LIMO,'Type')
-            if strcmp(LIMO.Type,'Components')
-                mytitle2 = sprintf('power spectrum @ \n component %g', e);
-            elseif strcmp(LIMO.Type,'Channels')
-                mytitle2 = sprintf('power spectrum @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
-            end
-        else
-            try
-                mytitle2 = sprintf('power spectrum @ \n electrode %s (%g)', LIMO.data.chanlocs(e).labels,e);
-            catch
-                mytitle2 = sprintf('power spectrum @ y=%g', e);
-            end
+    else
+        try
+            label = LIMO.data.chanlocs(e).labels;
+            mytitle2 = sprintf('stat values @ \n channel %s (%g)', label.labels,e);
+        catch
+            mytitle2 = sprintf('stat values @ y=%g', e);
         end
-        plot(freqvect,toplot(e,:),'LineWidth',3); grid on; axis tight
     end
+    
+    if strcmp(LIMO.Analysis,'Time')
+        plot(timevect,toplot(e,:),'LineWidth',3); 
+    elseif strcmp(LIMO.Analysis,'Frequency')
+        plot(freqvect,toplot(e,:),'LineWidth',3);
+    end
+    grid on; axis tight
 end
 title(mytitle2,'FontSize',12)
-set_imgaxes(LIMO,size(scale,1));
 
 % topoplot at max time
 % ---------------------
@@ -221,22 +215,12 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     imagesc(freqvect,1:size(toplot,1),scale);
     colormap(gca, cc);
 end
-
-try
-    maxval = max(abs(max(scale(:))),abs(min(scale(:))));
-    if max(scale(:)) < 0
-        caxis([-maxval 0])
-    elseif min(scale(:)) > 0 
-        caxis([0 maxval])
-    else
-        caxis([-maxval maxval])
-    end
-catch caxiserror
-    fprintf('axis issue: %s\n',caxiserror.message)
-end
+set_imgaxes(LIMO,scale);
 title(mytitle,'Fontsize',12)
 
-% return cluster info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% return cluster info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 warning off
 if contains(mytitle,'cluster')
     for c=1:n_cluster
@@ -259,9 +243,9 @@ else % no clusters
 end
 warning on
 
-% ------------------------
-% update with mouse clicks
-% ------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% update with mouse clicks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if dynamic == 1
     if size(toplot,1) > 1
         update = 0;
@@ -285,7 +269,7 @@ if dynamic == 1
                 if frame<=0; frame = 1; end
                 if frame>=size(toplot,2); frame=size(toplot,2); end
                 
-                % course plot at best electrode and 
+                % course plot at best electrode and
                 y = round(y);
                 if size(toplot,1)> 1 && y>size(toplot,1)
                     y = size(toplot,1);
@@ -293,8 +277,7 @@ if dynamic == 1
                     y = 1;
                 end
                 
-                if strcmp(LIMO.Analysis,'Time') 
-                    
+                if strcmp(LIMO.Analysis,'Time')
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
@@ -306,39 +289,8 @@ if dynamic == 1
                         end
                         colormap(gca, cc(2:end,:));
                     end
-                    
-                    subplot(3,3,9,'replace');
-                    if size(toplot,2) == 1
-                        bar(toplot(y,1)); grid on; axis([0 2 0 max(toplot(:))+0.2]); ylabel('stat value')
-                        if isfield(LIMO,'Type')
-                            if strcmp(LIMO.Type,'Components')
-                                mytitle2 = sprintf('component %g', y);
-                            elseif strcmp(LIMO.Type,'Channels')
-                                mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            end
-                        else
-                            mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                        end
-                    else
-                        plot(timevect,toplot(y,:),'LineWidth',3); grid on; axis tight
-                        if isfield(LIMO,'Type')
-                            if strcmp(LIMO.Type,'Components')
-                                mytitle2 = sprintf('time course @ \n component %g', y);
-                            elseif strcmp(LIMO.Type,'Channels')
-                                mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            end
-                        else
-                            try
-                                mytitle2 = sprintf('time course @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            catch
-                                mytitle2 = sprintf('time course @ \n y=%g)', y);
-                            end
-                        end
-                    end
-                    title(mytitle2,'FontSize',12);
                     
                 elseif strcmp(LIMO.Analysis,'Frequency')
-                    
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
@@ -346,42 +298,47 @@ if dynamic == 1
                             title('topoplot','FontSize',12)
                         else
                             topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
-                            title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                            title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
                         end
                         colormap(gca, cc(2:end,:));
-                    end
-                    
-                    subplot(3,3,9,'replace');
-                    if size(toplot,2) == 1
-                        bar(toplot(e,1)); grid on; axis([0 2 0 max(toplot(:))+0.2]);
-                        if isfield(LIMO,'Type')
-                            if strcmp(LIMO.Type,'Components')
-                                mytitle2 = sprintf('component %g', y);
-                            elseif strcmp(LIMO.Type,'Channels')
-                                mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            end
-                        else
-                            mytitle2 = sprintf('Electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                        end
-                    else
-                        plot(freqvect,toplot(y,:),'LineWidth',3); grid on; axis tight
-                        if isfield(LIMO,'Type')
-                            if strcmp(LIMO.Type,'Components')
-                                mytitle2 = sprintf('power spectra @ \n component %g', y);
-                            elseif strcmp(LIMO.Type,'Channels')
-                                mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            end
-                        else
-                            try
-                                mytitle2 = sprintf('power spectra @ \n electrode %s (%g)', LIMO.data.chanlocs(y).labels,y);
-                            catch
-                                mytitle2 = sprintf('power spectra @ \n y=%g)', y);
-                            end
-                        end
-                        title(mytitle2,'FontSize',12);
                     end
                 end
             end
+            
+            subplot(3,3,9,'replace');
+            if size(toplot,2) == 1
+                bar(toplot(y,1)); grid on; axis([0 2 0 max(toplot(:))+0.2]); ylabel('stat value')
+                if isfield(LIMO,'Type')
+                    if strcmp(LIMO.Type,'Components')
+                        mytitle2 = sprintf('component %g', y);
+                    elseif strcmp(LIMO.Type,'Channels')
+                        mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                    end
+                else
+                    mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                end
+            else
+                if strcmp(LIMO.Analysis,'Time')
+                    plot(timevect,toplot(y,:),'LineWidth',3);
+                elseif strcmp(LIMO.Analysis,'Frequency')
+                    plot(freqvect,toplot(y,:),'LineWidth',3);
+                end
+                grid on; axis tight
+                if isfield(LIMO,'Type')
+                    if strcmp(LIMO.Type,'Components')
+                        mytitle2 = sprintf('stat values @ \n component %g', y);
+                    elseif strcmp(LIMO.Type,'Channels')
+                        mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                    end
+                else
+                    try
+                        mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                    catch
+                        mytitle2 = sprintf('stat values @ \n y=%g)', y);
+                    end
+                end
+            end
+            title(mytitle2,'FontSize',12);
             
             try
                 p_values = evalin('base','p_values');
@@ -396,80 +353,63 @@ if dynamic == 1
 end
 end
 
-%% color map
-% -------------------------------------------------------------------------
-function cc = color_images(scale)
-
-color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
-
-if min(scale(:)) >= 0
-    cc = load([color_path 'NIH_fire.mat']); cc = cc.lutmap2;
-    cc = cc(floor(length(cc)/2):end,:);
-elseif max(scale(:)) <= 0
-    cc = load([color_path 'NIH_cool.mat']); cc = cc.lutmap2;
-else
-    cc = load([color_path 'diverging_bwr.mat']); cc = cc.dmap;
-    % cc = flipud(cc(1:ceil(length(cc)/2),:));
-end
-
-if sum(isnan(scale(:))) ~= 0
-    cc(1,:)=[.9 .9 .9]; % set NaNs to gray
-end
-colormap(cc);
-end
-
 %% set axes and labels 
 % -------------------------------------------------------------------------
-function set_imgaxes(LIMO,scaledim)
+function set_imgaxes(LIMO,scale)
 
-set(gca,'XMinorTick','on','LineWidth',2)
-if isfield(LIMO.data, 'expected_chanlocs')
-    set(gca,'YTick',1:length(LIMO.data.expected_chanlocs));
-else
-    set(gca,'YTick',1:length(LIMO.data.chanlocs));
-end
+img_prop = get(gca);
+set(gca,'LineWidth',2)
 
+% ----- X --------
 if strcmp(LIMO.Analysis,'Time')
     xlabel('Time in ms','FontSize',10)
 elseif strcmp(LIMO.Analysis,'Frequency')
     xlabel('Frequency in Hz','FontSize',10)
 end
-
+Xlabels = LIMO.data.start:LIMO.data.end;
+newticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
+Xlabels = Xlabels(newticks);
+set(gca,'XTick',newticks);
+set(gca,'XTickLabel', split(string(Xlabels)))
+ 
+% ----- Y --------
 if strcmp(LIMO.Type,'Components')
-    if scaledim == 1
-        label_electrodes = ' ';
-        ylabel('optimized component','FontSize',10);
+    if size(scale,1) == 1
+        ylabel('Optimized component','FontSize',10);
     else
         ylabel('Components','FontSize',10);
-        label_electrodes = cell(1,scaledim);
-        for i=1:scaledim
-            label_electrodes{i} = i;
-        end
     end
 else
-    if scaledim == 1
-        label_electrodes = ' ';
-        ylabel('optimized channel','FontSize',10);
+    if size(scale,1) == 1
+        ylabel('Optimized channel','FontSize',10);
     else
         ylabel('Channels','FontSize',10);
-        label_electrodes = cell(1,length(LIMO.data.chanlocs));
-        for i = 1:length(LIMO.data.chanlocs)
-            if LIMO.Level == 2
-                if isfield(LIMO.data,'expected_chanlocs')
-                    label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-                else
-                    label_electrodes{i} = ['channel ' num2str(i)];
-                end
-            else
-                try
-                    label_electrodes{i} = LIMO.data.chanlocs(i).labels;
-                catch
-                    label_electrodes{i} = i;
-                end
-            end
-        end
     end
 end
-set(gca,'YTickLabel', label_electrodes);
+
+if isfield(LIMO.data, 'chanlocs')
+    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.chanlocs, 'UniformOutput', false);
+else
+    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
+end
+newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+Ylabels = Ylabels(newticks);
+set(gca,'YTick',newticks);
+set(gca,'YTickLabel', Ylabels);
+
+% ----- Colormap --------
+try
+    maxval = max(abs(max(scale(:))),abs(min(scale(:))));
+    if max(scale(:)) < 0
+        caxis([-maxval 0])
+    elseif min(scale(:)) > 0 
+        caxis([0 maxval])
+    else
+        caxis([-maxval maxval])
+    end
+catch caxiserror
+    fprintf('axis issue: %s\n',caxiserror.message)
+end
+
 end
 
