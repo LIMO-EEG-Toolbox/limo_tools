@@ -23,7 +23,7 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 %
 % Cyril Pernet, Andrew Stewart, Marianne Latinus, Guilaume Rousselet
 % ------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 
 FileName  = varargin{1}; % Name of the file selected
@@ -48,7 +48,7 @@ end
 
 % load data and set outputs to empty
 % ----------------------------------
-matfile = load(FileName); 
+matfile = load(fullfile(LIMO.dir,FileName)); 
 M       = []; 
 mask    = []; 
 mytitle = [];
@@ -86,48 +86,92 @@ fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6
 % -------------------------------
 %% GLM (from 1st or 2nd level)
 % -------------------------------
-
-if strcmp(FileName,'R2.mat')
-    M         = squeeze(matfile.R2(:,:,2)); % F values
-    Pval      = squeeze(matfile.R2(:,:,3)); % P values
-    MCC_data  = 'H0_R2.mat';
-    titlename = 'R^2 Coef';
-elseif strncmp(FileName,'Condition_effect',16)
-    effect_nb = eval(FileName(18:end-4));
-    M         = squeeze(matfile.Condition_effect(:,:,1));
-    Pval      = squeeze(matfile.Condition_effect(:,:,2));
-    MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
-    titlename = sprintf('Condition effect %g  F values',effect_nb);
-elseif strncmp(FileName,'Covariate_effect',16)
-    effect_nb = eval(FileName(18:end-4));
-    M         = squeeze(matfile.Covariate_effect(:,:,1));
-    Pval      = squeeze(matfile.Covariate_effect(:,:,2));
-    MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
-    titlename = sprintf('Covariate effect %g  F values',effect_nb);
-elseif strncmp(FileName,'Interaction_effect',18)
-    effect_nb = eval(FileName(20:end-4));
-    M         = squeeze(matfile.Interaction_effect(:,:,1));
-    Pval      = squeeze(matfile.Interaction_effect(:,:,2));
-    MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
-    titlename = sprintf('Interaction effect %g  F values',effect_nb);
-elseif strncmp(FileName,'semi_partial_coef',17)
-    effect_nb = eval(FileName(19:end-4));
-    M         = squeeze(matfile.semi_partial_coef(:,:,2));
-    Pval      = squeeze(matfile.semi_partial_coef(:,:,3));
-    MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
-    titlename = sprintf('Semi Partial Coef %g',effect_nb);
-elseif strncmp(FileName,'con_',4)
-    effect_nb = eval(FileName(5:end-4));
-    M         = squeeze(matfile.con(:,:,4));
-    Pval      = squeeze(matfile.con(:,:,5));
-    MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
-    titlename = sprintf('Contrast %g T values',effect_nb);
-elseif strncmp(FileName,'ess_',4)
-    effect_nb = eval(FileName(5:end-4));
-    M         = squeeze(matfile.ess(:,:,end-1));
-    Pval      = squeeze(matfile.ess(:,:,end));
-    MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
-    titlename = sprintf('Contrast %g F values',effect_nb);
+if strcmpi(LIMO.Analysis,'Time-Frequency')
+    if strcmp(FileName,'R2.mat')
+        M         = squeeze(matfile.R2(:,:,:,2)); % F values
+        Pval      = squeeze(matfile.R2(:,:,:,3)); % P values
+        MCC_data  = 'H0_R2.mat';
+        titlename = 'R^2 Coef';
+    elseif strncmp(FileName,'Condition_effect',16)
+        effect_nb = eval(FileName(18:end-4));
+        M         = squeeze(matfile.Condition_effect(:,:,:,1));
+        Pval      = squeeze(matfile.Condition_effect(:,:,:,2));
+        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
+        titlename = sprintf('Condition effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'Covariate_effect',16)
+        effect_nb = eval(FileName(18:end-4));
+        M         = squeeze(matfile.Covariate_effect(:,:,:,1));
+        Pval      = squeeze(matfile.Covariate_effect(:,:,:,2));
+        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
+        titlename = sprintf('Covariate effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'Interaction_effect',18)
+        effect_nb = eval(FileName(20:end-4));
+        M         = squeeze(matfile.Interaction_effect(:,:,:,1));
+        Pval      = squeeze(matfile.Interaction_effect(:,:,:,2));
+        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
+        titlename = sprintf('Interaction effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'semi_partial_coef',17)
+        effect_nb = eval(FileName(19:end-4));
+        M         = squeeze(matfile.semi_partial_coef(:,:,:,2));
+        Pval      = squeeze(matfile.semi_partial_coef(:,:,:,3));
+        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
+        titlename = sprintf('Semi Partial Coef %g',effect_nb);
+    elseif strncmp(FileName,'con_',4)
+        effect_nb = eval(FileName(5:end-4));
+        M         = squeeze(matfile.con(:,:,:,4));
+        Pval      = squeeze(matfile.con(:,:,:,5));
+        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
+        titlename = sprintf('Contrast %g T values',effect_nb);
+    elseif strncmp(FileName,'ess_',4)
+        effect_nb = eval(FileName(5:end-4));
+        M         = squeeze(matfile.ess(:,:,:,end-1));
+        Pval      = squeeze(matfile.ess(:,:,:,end));
+        MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
+        titlename = sprintf('Contrast %g F values',effect_nb);
+    end
+else
+    if strcmp(FileName,'R2.mat')
+        M         = squeeze(matfile.R2(:,:,2)); % F values
+        Pval      = squeeze(matfile.R2(:,:,3)); % P values
+        MCC_data  = 'H0_R2.mat';
+        titlename = 'R^2 Coef';
+    elseif strncmp(FileName,'Condition_effect',16)
+        effect_nb = eval(FileName(18:end-4));
+        M         = squeeze(matfile.Condition_effect(:,:,1));
+        Pval      = squeeze(matfile.Condition_effect(:,:,2));
+        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
+        titlename = sprintf('Condition effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'Covariate_effect',16)
+        effect_nb = eval(FileName(18:end-4));
+        M         = squeeze(matfile.Covariate_effect(:,:,1));
+        Pval      = squeeze(matfile.Covariate_effect(:,:,2));
+        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
+        titlename = sprintf('Covariate effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'Interaction_effect',18)
+        effect_nb = eval(FileName(20:end-4));
+        M         = squeeze(matfile.Interaction_effect(:,:,1));
+        Pval      = squeeze(matfile.Interaction_effect(:,:,2));
+        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
+        titlename = sprintf('Interaction effect %g  F values',effect_nb);
+    elseif strncmp(FileName,'semi_partial_coef',17)
+        effect_nb = eval(FileName(19:end-4));
+        M         = squeeze(matfile.semi_partial_coef(:,:,2));
+        Pval      = squeeze(matfile.semi_partial_coef(:,:,3));
+        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
+        titlename = sprintf('Semi Partial Coef %g',effect_nb);
+    elseif strncmp(FileName,'con_',4)
+        effect_nb = eval(FileName(5:end-4));
+        M         = squeeze(matfile.con(:,:,4));
+        Pval      = squeeze(matfile.con(:,:,5));
+        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
+        titlename = sprintf('Contrast %g T values',effect_nb);
+    elseif strncmp(FileName,'ess_',4)
+        effect_nb = eval(FileName(5:end-4));
+        M         = squeeze(matfile.ess(:,:,end-1));
+        Pval      = squeeze(matfile.ess(:,:,end));
+        MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
+        titlename = sprintf('Contrast %g F values',effect_nb);
+    end
 end
 
 % no correction for multiple testing
@@ -135,7 +179,7 @@ end
 if ~isempty(M) && MCC == 1
     M       = Pval;
     mask    = Pval <= p;
-    mytitle = sprintf('%s:\n uncorrected threshold',titlename);
+    mytitle = sprintf('%s: uncorrected threshold',titlename);
     
     % cluster correction for multiple testing
     % ---------------------------------------
@@ -144,19 +188,29 @@ elseif ~isempty(M) && MCC == 2
         try
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
-            if strcmp(FileName,'R2.mat') 
-                bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
-                bootP = squeeze(H0_data(:,:,3,:)); % get all P values under H0
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                if strcmp(FileName,'R2.mat')
+                    bootM = squeeze(H0_data(:,:,:,2,:)); % get all F values under H0
+                    bootP = squeeze(H0_data(:,:,:,3,:)); % get all P values under H0
+                else
+                    bootM = squeeze(H0_data(:,:,:,1,:));
+                    bootP = squeeze(H0_data(:,:,:,2,:));
+                end
             else
-                bootM = squeeze(H0_data(:,:,1,:));
-                bootP = squeeze(H0_data(:,:,2,:));
+                if strcmp(FileName,'R2.mat')
+                    bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
+                    bootP = squeeze(H0_data(:,:,3,:)); % get all P values under H0
+                else
+                    bootM = squeeze(H0_data(:,:,1,:));
+                    bootP = squeeze(H0_data(:,:,2,:));
+                end
             end
             
             % finally get cluster mask and corrected p-values
             [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
             if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-            mytitle = sprintf('%s\n cluster correction (%g %s)', titlename, Nclust, Mclust);
+            mytitle = sprintf('%s cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
             return
@@ -173,14 +227,22 @@ elseif ~isempty(M) && MCC == 4 % Stat max
         try
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
-            if strcmp(FileName,'R2.mat') 
-                bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                if strcmp(FileName,'R2.mat')
+                    bootM = squeeze(H0_data(:,:,:,2,:)); % get all F values under H0
+                else
+                    bootM = squeeze(H0_data(:,:,:,1,:));
+                end
             else
-                bootM = squeeze(H0_data(:,:,1,:));
+                if strcmp(FileName,'R2.mat')
+                    bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
+                else
+                    bootM = squeeze(H0_data(:,:,1,:));
+                end
             end
             clear H0_data;
             [mask,M] = limo_max_correction(abs(M),abs(bootM),p);
-            mytitle  = sprintf('%s: \n correction by max',titlename);
+            mytitle  = sprintf('%s: correction by max',titlename);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
             return
@@ -197,13 +259,12 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             score    = load(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]));
             H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
             [mask,M] = limo_max_correction(score.tfce_score,H0_score.tfce_H0_score,p);
-            mytitle  = sprintf('%s:\n correction using TFCE',titlename);
+            mytitle  = sprintf('%s: correction using TFCE',titlename);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
             return
         end
     else
-        
         errordlg('no tfce tfce file was found','missing data')
     end
 end
@@ -252,7 +313,7 @@ if strncmp(FileName,'one_sample',10)
                 end
                 Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('One Sample t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
+                mytitle = sprintf('One Sample t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
                 return
@@ -276,7 +337,7 @@ if strncmp(FileName,'one_sample',10)
                 end
                 clear H0_one_sample
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                mytitle = sprintf('One Sample t-test: t values \n correction by T max');
+                mytitle = sprintf('One Sample t-values correction by T max');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
@@ -296,7 +357,7 @@ if strncmp(FileName,'one_sample',10)
                 tfce_data    = load(tfce_data);
                 H0_tfce_data = load(H0_tfce_data);
                 [mask,M]     = limo_max_correction(tfce_data.tfce_one_sample, H0_tfce_data.tfce_H0_one_sample,p);
-                mytitle      = sprintf('One Sample t-test: t values  \n correction using TFCE');
+                mytitle      = sprintf('One Sample t-values correction using TFCE');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
                 return
@@ -327,7 +388,7 @@ if strncmp(FileName,'two_samples',11)
         
         mask    = matfile.two_samples(:,:,5) <= p;
         M       = squeeze(matfile.two_samples(:,:,5));
-        mytitle = sprintf('Two samples t-test: t values \n uncorrected threshold');
+        mytitle = sprintf('Two samples t-values uncorrected threshold');
         
         % 2D cluster and 1D correction for multiple testing
         % ------------------------------------------
@@ -353,7 +414,7 @@ if strncmp(FileName,'two_samples',11)
                 end
                 Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('Two Samples t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
+                mytitle = sprintf('Two Samples t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
                 return
@@ -378,7 +439,7 @@ if strncmp(FileName,'two_samples',11)
                 end
                 clear H0_two_samples
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                mytitle = sprintf('Two Samples t-test: t values \n correction by T max');
+                mytitle = sprintf('Two Samples t-values correction by T max');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
@@ -398,7 +459,7 @@ if strncmp(FileName,'two_samples',11)
                 tfce_data    = load(tfce_data);
                 H0_tfce_data = load(H0_tfce_data);
                 [mask,M]     = limo_max_correction(tfce_data.tfce_two_samples, H0_tfce_data.tfce_H0_two_samples,p);
-                mytitle      = sprintf('Two Samples t-test: t values \n correction using TFCE');
+                mytitle      = sprintf('Two Samples t-values correction using TFCE');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
                 return
@@ -429,7 +490,7 @@ if strncmp(FileName,'paired_samples',14)
     if MCC == 1
         mask = matfile.paired_samples(:,:,5) <= p;
         M = squeeze(matfile.paired_samples(:,:,5));
-        mytitle = sprintf('Paired samples t-test: t values \n uncorrected threshold');
+        mytitle = sprintf('Paired samples t-values uncorrected threshold');
         
         % 2D cluster and 1D correction for multiple testing
         % ------------------------------------------
@@ -455,7 +516,7 @@ if strncmp(FileName,'paired_samples',14)
                 end
                 Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('Paired t-test: t-values \n cluster correction (%g %s)', Nclust, Mclust);
+                mytitle = sprintf('Paired t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
                 return
@@ -478,7 +539,7 @@ if strncmp(FileName,'paired_samples',14)
                     tmp(1,:,:) = bootT; bootT = tmp; clear tmp
                 end
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                mytitle = sprintf('Paired Samples t-test: t values \n correction by T max');
+                mytitle = sprintf('Paired Samples t-values correction by T max');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
@@ -498,7 +559,7 @@ if strncmp(FileName,'paired_samples',14)
                 tfce_data    = load(tfce_data);
                 H0_tfce_data = load(H0_tfce_data);
                 [mask,M]     = limo_max_correction(tfce_data.tfce_paired_samples, H0_tfce_data.tfce_H0_paired_samples,p);
-                mytitle      = sprintf('Paired Samples t-test: t values \n correction using TFCE');
+                mytitle      = sprintf('Paired Samples t-values correction using TFCE');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
                 return
@@ -536,11 +597,11 @@ if strncmp(FileName,'Rep_ANOVA',9)
         mask = PVAL <= p;
         M    = PVAL;
         if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-            mytitle = sprintf('Rep ANOVA Interaction: F-values \n uncorrected threshold');
+            mytitle = sprintf('Interaction F-values uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-            mytitle = sprintf('Rep ANOVA Gp effect: F-values \n uncorrected threshold');
+            mytitle = sprintf('Gp effect F-values uncorrected threshold');
         elseif strncmp(FileName,'Rep_ANOVA',9)
-            mytitle = sprintf('Rep ANOVA: F-values \n uncorrected threshold');
+            mytitle = sprintf('Main Effect F-values uncorrected threshold');
         end
         
         
@@ -596,11 +657,11 @@ if strncmp(FileName,'Rep_ANOVA',9)
                 Nclust   = unique(M(~isnan(M))); Nclust = length(Nclust) ;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    mytitle = sprintf('Rep ANOVA Interaction: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Interaction F-values cluster correction (%g %s)', Nclust, Mclust);
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    mytitle = sprintf('Rep ANOVA Gp effect: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Gp effect F-values cluster correction (%g %s)', Nclust, Mclust);
                 elseif strncmp(FileName,'Rep_ANOVA',9)
-                    mytitle = sprintf('Rep ANOVA: F-values \n cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Main effect F-values cluster correction (%g %s)', Nclust, Mclust);
                 end
                 
             catch ME
@@ -639,7 +700,7 @@ if strncmp(FileName,'Rep_ANOVA',9)
                     end
                     clear H0_Rep_ANOVA_Gp_effect
                 elseif strncmp(FileName,'Rep_ANOVA',9)
-                    H0_Rep_ANOVA = load(Mcc_data);
+                    H0_Rep_ANOVA = load(MCC_data);
                     H0_Rep_ANOVA = H0_Rep_ANOVA.H0_Rep_ANOVA;
                     bootT = H0_Rep_ANOVA(:,:,1,:); % get all F values under H0
                     if size(matfile.Rep_ANOVA,1) == 1
@@ -652,11 +713,11 @@ if strncmp(FileName,'Rep_ANOVA',9)
                 
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    mytitle = sprintf('Rep ANOVA Interaction: \n correction by T max');
+                    mytitle = sprintf('Interaction correction by T max');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    mytitle = sprintf('Rep ANOVA Gp effect: \n correction by T max');
+                    mytitle = sprintf('Gp effect correction by T max');
                 elseif strncmp(FileName,'Rep_ANOVA',9)
-                    mytitle = sprintf('Rep ANOVA: \n correction by T max');
+                    mytitle = sprintf('Main Effect correction by T max');
                 end
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
@@ -678,13 +739,13 @@ if strncmp(FileName,'Rep_ANOVA',9)
                 H0_tfce_data = load(H0_tfce_data);
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA_Interaction_with_gp, H0_tfce_data.tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
-                    mytitle = sprintf('Rep ANOVA Interaction: \n correction using TFCE');
+                    mytitle = sprintf('Interaction correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
                     [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA_Gp_effect, H0_tfce_data.tfce_H0_Rep_ANOVA_Gp_effect,p);
-                    mytitle = sprintf('Rep ANOVA Gp effect: \n correction using TFCE');
+                    mytitle = sprintf('Gp effect correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA',9)
                     [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA, H0_tfce_data.tfce_H0_Rep_ANOVA,p);
-                    mytitle = sprintf('Rep ANOVA: \n correction using TFCE');
+                    mytitle = sprintf('Main Effect correction using TFCE');
                 end
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
@@ -708,7 +769,7 @@ if strncmp(FileName,'LI_Map',6)
     % -----------------------------------
     if MCC == 1
         mask = matfile.LI_Map(:,:,5) <= p;
-        mytitle = sprintf('LI Map: one sample T values \n threshold based on theoretical p values');
+        mytitle = sprintf('LI Map T values');
         
         % 2D cluster correction for multiple testing
         % ---------------------------------------
@@ -726,7 +787,7 @@ if strncmp(FileName,'LI_Map',6)
                 [mask,M]  = limo_clustering(M.^2,squeeze(matfile.LI(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
                 Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('LI Map: T-values \n cluster correction (%g %s)', Nclust, Mclust);
+                mytitle = sprintf('LI Map T-values cluster correction (%g %s)', Nclust, Mclust);
                 
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
@@ -749,7 +810,7 @@ if strncmp(FileName,'LI_Map',6)
                 bootT  = squeeze(H0_LI_Map(:,:,2,:)); % take all T values under H0
                 clear H0_LI_Map
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                mytitle = sprintf('LI Map: One sample T values \n correction by T max');
+                mytitle = sprintf('LI Map T values correction by T max');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
@@ -769,7 +830,7 @@ if strncmp(FileName,'LI_Map',6)
                 tfce_data    = load(tfce_data);
                 H0_tfce_data = load(H0_tfce_data);
                 [mask,M]     = limo_max_correction(tfce_data.tfce_LI, H0_tfce_data.tfce_H0_LI,p);
-                mytitle      = sprintf('LI Map: One Sample t-test \n correction using TFCE');
+                mytitle      = sprintf('LI Map T-values correction using TFCE');
             catch ME
                 errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
                 return

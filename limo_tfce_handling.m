@@ -69,9 +69,73 @@ end
 nboot = LIMO.design.bootstrap;
 mkdir(fullfile(LIMO.dir,'tfce'))
 fprintf('Thresholding %s using TFCE \n',filename);
+
 % -------------------------------------------------------------------------
-if LIMO.Level == 1
+if contains(filename,'Covariate_effect_') % continuous regressors, any level
+    if LIMO.Level ==1 && ~isfield(LIMO.data,'neighbouring_matrix')
+        warning('no neighbouring matrix found, this is required for TFCE')
+        [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs;
+        if isempty(LIMO.data.neighbouring_matrix)
+            return
+        else
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+        end
+    end
+    
+    Covariate_effect = load(filename);
+    Covariate_effect = Covariate_effect.(cell2mat(fieldnames(Covariate_effect)));
+    if size(Covariate_effect,1) == 1
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            tfce_score(1,:,:) = limo_tfce(2,squeeze(Covariate_effect(:,:,:,1)),[]);
+        else
+            tfce_score(1,:) = limo_tfce(1,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+        end
+    else
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            tfce_score = limo_tfce(3,squeeze(Covariate_effect(:,:,:,1)),LIMO.data.neighbouring_matrix);
+        else
+            tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+        end
+    end
+    save(tfce_file,'tfce_score','-v7.3');
+    clear Covariate_effect tfce_score;
+    
+    H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+    if exist(H0filename,'file')
+        H0_Covariate_effect = load(H0filename);
+        H0_Covariate_effect = H0_Covariate_effect.(cell2mat(fieldnames(H0_Covariate_effect)));
+        if size(H0_Covariate_effect,1) == 1
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
+                parfor b=1:nboot
+                    tfce_H0_score(1,:,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                end
+            else
+                tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),LIMO.design.bootstrap);
+                parfor b=1:nboot
+                    tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                end
+            end
+        else
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
+                parfor b=1:nboot
+                    tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                end
+            else
+                tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
+                parfor b=1:nboot
+                    tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                end
+            end
+        end
+    end
+    save(H0_tfce_file,'tfce_H0_score','-v7.3');
+    
     % -------------------------------------------------------------------------
+elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
+    % -------------------------------------------------------------------------
+
     % check if there is a neighbouring matrix
     % (since TFCE integrates over clusters)
     if ~isfield(LIMO.data,'neighbouring_matrix')
@@ -246,59 +310,6 @@ if LIMO.Level == 1
         end
     end
     
-    % covariates / continuous regressors
-    if contains(filename,'Covariate_effect_')
-        Covariate_effect = load(filename);
-        Covariate_effect = Covariate_effect.(cell2mat(fieldnames(Covariate_effect)));
-        if size(Covariate_effect,1) == 1
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                tfce_score(1,:,:) = limo_tfce(2,squeeze(Covariate_effect(:,:,:,1)),[]);
-            else
-                tfce_score(1,:) = limo_tfce(1,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-            end
-        else
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                tfce_score = limo_tfce(3,squeeze(Covariate_effect(:,:,:,1)),LIMO.data.neighbouring_matrix);
-            else
-                tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-            end
-        end
-        save(tfce_file,'tfce_score','-v7.3');
-        clear Covariate_effect tfce_score;
-        
-        H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
-        if exist(H0filename,'file')
-            H0_Covariate_effect = load(H0filename);
-            H0_Covariate_effect = H0_Covariate_effect.(cell2mat(fieldnames(H0_Covariate_effect)));
-            if size(H0_Covariate_effect,1) == 1
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
-                    parfor b=1:nboot
-                        tfce_H0_score(1,:,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                else
-                    tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:nboot
-                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                end
-            else
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),size(H0_Covariate_effect,3),LIMO.design.bootstrap);
-                    parfor b=1:nboot
-                        tfce_H0_score(:,:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                else
-                    tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:nboot
-                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                end
-            end
-        end
-        save(H0_tfce_file,'tfce_H0_score','-v7.3');
-    end
-    
     if contains(filename,'con')
         con = load(filename);
         con = con.(cell2mat(fieldnames(con)));
@@ -349,10 +360,96 @@ if LIMO.Level == 1
 else % 2nd level
     % -------------------------------------------------------------------------
     
+    % t-tests
+    % ---------
+    if contains(LIMO.design.name,'One sample','IgnoreCase',true) || ...
+            contains(LIMO.design.name,'Two samples','IgnoreCase',true) || ...
+            contains(LIMO.design.name,'Paired','IgnoreCase',true) 
+
+        data = load(fullfile(filepath,filename));
+        data = data.(cell2mat(fieldnames(data)));
+        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+            if size(data,1) == 1
+                tfce_data = limo_tfce(2,squeeze(data(:,:,:,4)),[]); % cluster in freq-time
+            else
+                tfce_data = limo_tfce(3,squeeze(data(:,:,:,4)),LIMO.data.neighbouring_matrix);
+            end
+        else
+            if size(data,1) == 1
+                tfce_data = limo_tfce(1,squeeze(data(:,:,4)),[]); % cluster in time or freq
+            else
+                tfce_data = limo_tfce(2,squeeze(data(:,:,4)),LIMO.data.neighbouring_matrix);
+            end
+        end
+        
+        if contains(LIMO.design.name,'One sample','IgnoreCase',true)
+            tfce_one_sample = tfce_data;
+            save(tfce_file, 'tfce_one_sample', '-v7.3');
+            clear tfce_one_sample
+        elseif contains(LIMO.design.name,'Two samples','IgnoreCase',true)
+            tfce_two_samples = tfce_data;
+            save(tfce_file, 'tfce_two_samples', '-v7.3');
+            clear tfce_two_samples
+        elseif contains(LIMO.design.name,'Paired','IgnoreCase',true)
+            tfce_paired_samples = tfce_data;
+            save(tfce_file, 'tfce_paired_samples', '-v7.3');
+            clear tfce_paired_samples
+        end
+        clear data tfce_data ; disp('.. done');
+        
+        % do tfce for the data under H0
+        H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+        if exist(H0filename,'file')
+            H0_data = load(H0filename);
+            H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
+            if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                if size(H0_data,1) == 1
+                    parfor b=1:LIMO.design.bootstrap
+                        tfce_H0_data(:,:,b) = limo_tfce(2,squeeze(H0_data(1,:,:,1,b)),[],0);
+                    end
+                else
+                    parfor b=1:LIMO.design.bootstrap
+                        tfce_H0_data(:,:,:,b) = limo_tfce(3,squeeze(H0_data(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    end
+                end
+            else
+                if size(H0_data,1) == 1
+                    parfor b=1:LIMO.design.bootstrap
+                        tfce_H0_data(:,:,b) = limo_tfce(1,squeeze(H0_data(1,:,1,b)),[],0);
+                    end
+                else
+                    parfor b=1:LIMO.design.bootstrap
+                        tfce_H0_data(:,:,b) = limo_tfce(2,squeeze(H0_data(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    end
+                end
+            end
             
-     % Reapeated Measure ANOVA
+            if contains(LIMO.design.name,'One sample','IgnoreCase',true)
+                tfce_H0_one_sample = tfce_H0_data;
+                save(H0_tfce_file, 'tfce_H0_one_sample', '-v7.3');
+                clear tfce_H0_one_sample
+            elseif contains(LIMO.design.name,'Two samples','IgnoreCase',true)
+                tfce_H0_two_samples = tfce_H0_data;
+                save(H0_tfce_file, 'tfce_H0_two_samples', '-v7.3');
+                clear tfce_H0_two_samples
+            elseif contains(LIMO.design.name,'Paired','IgnoreCase',true)
+                tfce_H0_paired_samples = tfce_H0_data;
+                save(H0_tfce_file, 'tfce_H0_paired_samples', '-v7.3');
+                clear tfce_H0_paired_samples
+            end
+            clear tfce_H0_data; disp(' .. done')
+        end
+        
+    % AN(C)OVA
+    % ---------
+    elseif contains(LIMO.design.name,'ANOVA','IgnoreCase',true) || ...
+            contains(LIMO.design.name,'ANCOVA','IgnoreCase',true)
+   
+        disp('to do')
+        
+    % Reapeated Measure ANOVA
     % -----------------------
-    if strncmp(LIMO.design.name,'Repeated measures ANOVA',23)
+    elseif strncmp(LIMO.design.name,'Repeated measures ANOVA',23)
         
         if contains(filename,'Main_effect')
             % -----------------------------
@@ -360,9 +457,9 @@ else % 2nd level
             Rep_ANOVA = Rep_ANOVA.(cell2mat(fieldnames(Rep_ANOVA)));
             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                 if size(Rep_ANOVA,1) == 1
-                    tfce_Rep_ANOVA = limo_tfce(2,limo_tf_4d_reshape(squeeze(Rep_ANOVA(:,:,1))),[]);
+                    tfce_Rep_ANOVA = limo_tfce(2,squeeze(Rep_ANOVA(1,:,:,1)),[]); % use bwlabel to cluster freq*time map
                 else
-                    tfce_Rep_ANOVA = limo_tfce(3,limo_tf_4d_reshape(squeeze(Rep_ANOVA(:,:,1))),LIMO.data.neighbouring_matrix);
+                    tfce_Rep_ANOVA = limo_tfce(3,squeeze(Rep_ANOVA(:,:,:,1)),LIMO.data.neighbouring_matrix);
                 end
             else
                 if size(Rep_ANOVA,1) == 1
@@ -371,7 +468,7 @@ else % 2nd level
                     tfce_Rep_ANOVA = limo_tfce(2,squeeze(Rep_ANOVA(:,:,1)),LIMO.data.neighbouring_matrix);
                 end
             end
-            save(tfce_file, 'tfce_Rep_ANOVA');
+            save(tfce_file, 'tfce_Rep_ANOVA', '-v7.3');
             clear tfce_Rep_ANOVA
             
             H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
@@ -380,13 +477,16 @@ else % 2nd level
                 boot_H0_Rep_ANOVA = boot_H0_Rep_ANOVA.(cell2mat(fieldnames(boot_H0_Rep_ANOVA)));
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     if size(boot_H0_Rep_ANOVA,1) == 1
-                        tfce_H0_Rep_ANOVA = limo_tfce(2,limo_tf_5d_reshape(squeeze(boot_H0_Rep_ANOVA(:,:,1,:))),[]);
+                        tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(boot_H0_Rep_ANOVA(1,:,:,1,:)),[]);
                     else
-                        tfce_H0_Rep_ANOVA = limo_tfce(3,limo_tf_5d_reshape(squeeze(boot_H0_Rep_ANOVA(:,:,1,:))),LIMO.data.neighbouring_matrix);
+                        % tfce_H0_Rep_ANOVA = limo_tfce(3,squeeze(boot_H0_Rep_ANOVA(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
+                        parfor b=1:nboot
+                            tfce_H0_Rep_ANOVA(:,:,:,b) = limo_tfce(3,squeeze(boot_H0_Rep_ANOVA(:,:,:,1,b)),LIMO.data.neighbouring_matrix);
+                        end
                     end
                 else
                     if size(boot_H0_Rep_ANOVA,1) == 1
-                        tfce_H0_Rep_ANOVA = limo_tfce(1,squeeze(boot_H0_Rep_ANOVA(:,:,1,:)),[]);
+                        tfce_H0_Rep_ANOVA = limo_tfce(1,squeeze(boot_H0_Rep_ANOVA(1,:,1,:)),[]);
                     else
                         % tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(boot_H0_Rep_ANOVA(:,:,1,:)),LIMO.data.neighbouring_matrix);
                         tfce_H0_Rep_ANOVA = NaN(size(boot_H0_Rep_ANOVA,1),size(boot_H0_Rep_ANOVA,2),LIMO.design.bootstrap);
@@ -395,7 +495,7 @@ else % 2nd level
                         end
                     end
                 end
-                save(H0_tfce_file, 'tfce_H0_Rep_ANOVA');
+                save(H0_tfce_file, 'tfce_H0_Rep_ANOVA', '-v7.3');
                 clear tfce_H0_Rep_ANOVA
             end
         end
