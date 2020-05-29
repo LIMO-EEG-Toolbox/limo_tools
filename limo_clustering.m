@@ -60,7 +60,6 @@ max_th       = [];
 
 if MCC == 2 && size(bootM,1)>1
     minnbchan           = 2;
-    expected_chanlocs   = LIMO.data.chanlocs;
     channeighbstructmat = LIMO.data.neighbouring_matrix;
     boot_maxclustersum  = zeros(nboot,1);     % maximum cluster mass at each bootstrap
     
