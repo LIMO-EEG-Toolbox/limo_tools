@@ -63,7 +63,7 @@ if nargin <= 6
 end
 
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
-% see limo_stat_values
+                                     % see limo_stat_values - discontinuated empirical threshold (misleading)
 
 if LIMO.design.bootstrap == 0
     if MCC == 2
@@ -135,11 +135,7 @@ if LIMO.Level == 1
                 % ------------------
                 if data_cached == 0
                     
-                    if strcmp(LIMO.Analysis,'Time-Frequency')
-                        [M, mask, mytitle] = limo_stat_values_tf(FileName,p,MCC,LIMO,choice);
-                    else
-                        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice);
-                    end
+                    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice);
                     
                     if isempty(mask)
                         disp('no values computed'); return
@@ -256,7 +252,7 @@ if LIMO.Level == 1
                         limo_display_image(LIMO,toplot,mask,mytitle,flag)
                                                
                     else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
-                        limo_display_results_tf(LIMO,toplot,mask,mytitle,flag);
+                        limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     end
                 end
                 
