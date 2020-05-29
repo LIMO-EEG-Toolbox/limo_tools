@@ -1,371 +1,204 @@
-function filepath = limo_random_select(type,expected_chanlocs,varargin)
+function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 
 % This function is used to combine parameters computed at the 1st level
-% using limo_glm. Whereas in limo_glm observations are assumed independent
-% (i.e. N-way ANOVA/ANCOVA or Regression), limo_random_effect distinguishes
+% using LIMO_glm. Whereas in LIMO_glm observations are assumed independent
+% (i.e. N-way ANOVA/ANCOVA or Regression), LIMO_random_effect distinguishes
 % independents and non-independent (repeated) measures.
 %
-% In the case of repeated measures ANOVA sphericity is accounted for using
-% a multivariate approach (effectively computing a Hotelling T2 test).
-% Note that no statistical test is done in limo_random_select, only the grouping
-% and organization of the data (hence the name select) - once data are
-% selected and re-organized they are send to limo_random_robust which deals
-% with the data structures and call the stat functions
+% No statistical test is done in LIMO_random_select, only the grouping
+% and organization of the data - also creating the LIMO.mat structure.
+% Once data are re-created, call is made to LIMO_random_robust.
 %
-% FORMAT
-% limo_random_select(type,expected_chanlocs)
-% limo_random_select(type,expected_chanlocs,'nboot',1000,'tfce',1)
-% limo_random_select(type,expected_chanlocs,'nboot',nbootval,'tfce',tfceval,'analysis_type','singlechan','electrode',2,'parameters',{[1:3]});
+% FORMAT: LIMO_random_select(type,expected_chanlocs)
+%         LIMO_random_select(type,expected_chanlocs,'nboot',1000,'tfce',1)
 %
-% INPUT
-% type = 1 for a one sample t-test
-% type = 2 for a two-samples t-test
-% type = 3 for a paired t-test
-% type = 4 for a regression
-% type = 5 for an ANOVA
-% expected_chanlocs: the EEGlab structure defining all electrodes
-% (this file can be created with via limo_tools)
+% INPUTS: stattest defines the statitiscal analysis 1 for a one sample t-test
+%                                                   2 for a two-samples t-test
+%                                                   3 for a paired t-test
+%                                                   4 for a regression
+%                                                   5 for an ANOVA
+%         expected_chanlocs: the EEGlab structure defining all electrodes
+%                           (this file is created by STUDY or LIMO_tools)
 %
-% Optional inputs:
-%  'type'           - 'ica' or 'chan'
-%  'nboot'          - the number of bootstrap to do (default = 0)
-%  'tfce'           - 0/1 indicates to computes tfce or not (default = 0)
-%  'analysis_type'  - |'fullchan'|'singlechan'| Type of analysis to perform. (no default)
-%                     Select all channels ('fullchan') or single channel ('singlechan')
-%  'limofiles'      - Cell array with the full paths to the subject file or file
-%                     who contains the list of path to a group of sets. The
-%                     dimensions of the cell correspond with group, factor and
-%                     level respectively. (no default)
-%  'electrode'      - Index of the electrode to use if 'singlechan' is
-%                     selected in analysis_type.(no default)
-%  'parameters'     - Cell array of parameters to be tested.
-%                     ie. {[1 2]} or {[1 2],[1 2]} in case of 2 groups. (no default)
-%  'regfile'        - Full path to Regressor file in case type = 4 (no default)
-%  'folderprefix'   - Prefix for the results folder.
-%  'folderpath'     - Path to save the results. Default is current
-%                     directory
-% Note: If the values of the parameters without default values are not
-%       provided, a window will pop asking for the value.
+%         Optional inputs (appears in LIMO.mat):
+%                'LIMOfiles'  Cell array with the full paths to the subject file or file
+%                             who contains the list of path to a group of sets. The
+%                             dimensions of the cell correspond with group, factor and
+%                             level respectively. (no default)
+%                'regressor_file' a file or matrix of data to regress when stattest = 4
+%                'analysis_type' is 'Full scalp analysis' or '1 channel/component only' 
+%                'electrode' Index of the electrode(s) to use if '1 channel/component only'
+%                            is selected in analysis_type 
+%                'parameters' Cell array of parameters to be tested, relative to LIMOfiles.
+%                            ie. {[1 2]} or {[1 2],[1 2]} in case of 2 groups. 
+%                'type' is 'Channels' or 'Component'
+%                'nboot' is the number of bootstrap to do (default = 1000)
+%                'tfce' 0/1 indicates to computes tfce or not (default = 0)
 %
-% OUTPUT
-% filepath - Path to the contrast result file. Mainly for EEGALB functionality to
-%            allow loading test directly.
+% OUTPUT filepath is the Path to the LIMO structure. 
 %
 % Cyril Pernet - The University of Edinburgh
 % Ramon Martinez-Cancino - UC San Diego
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
-%% take the inputs and load some parameters
+%% check inputs 
 
 if nargin < 2
-    fprintf(2,'limo_random_select error: not enough arguments \n');
-    help limo_random_select;
-    return;
+    fprintf(2,'LIMO_random_select error: not enough arguments \n');
+    help LIMO_random_select
+    return
 end
 
-maxchan_indx = 300;
-if  ~isempty(expected_chanlocs)
-    chanfile     = load(expected_chanlocs);
-    maxchan_indx = length(chanfile.expected_chanlocs); % Getting number of electrodes
+if stattest<1 || stattest>5
+    error('stattest must be between 1 and 5, input argument error')
 end
 
-g = finputcheck(varargin, { 'nboot'          'integer'  []                             0          ;     % Bootstrap
-    'tfce'           'integer'  [0 1]                          0          ;     % tfce
-    'analysis_type'  'string'   {'fullchan','singlechan',''}   ''         ;     % Analysis Type (Full scalp or single electrode)
-    'limofiles'      'cell'     {}                             {}         ;     % Path to subject file or group file Cell array with dimensions {group,,level}
-    'electrode'      'integer'  1:maxchan_indx                 []         ;     % Electrode index
-    'regfile'        'string'   ''                             ''         ;     % Path to regressor files
-    'folderprefix'   'string'   ''                             ''         ;     % Prefix for folder to save
-    'folderpath'     'string'   ''                             ''         ;     % Path to folder to save
-    'type'           'string'   {'Channels','Components'}      'Channels' ;     % Type of measure ['ica', 'chan']
-    'parameters'     'cell'     {}                             {} ;})     ;     % Parameters to analyze (one cell p/group)
-if ischar(g) 
-    error(g); 
-end
-
-clear  chanfile maxchan_indx;
-
-% Check Analysis Type
-if isempty(g.analysis_type)
-    g.analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
-    if isempty(g.analysis_type), return; end
-else
-    analysis_type_argument = {'Full scalp analysis','1 channel/component only'};
-    tmpindx                = find(strcmp(g.analysis_type,{'fullchan','singlechan'}));
-    g.analysis_type        = analysis_type_argument(tmpindx); clear tmpindx;
-end
-
-% check chanlocs and g.nboot
-global limo
-if ~isempty(g.folderpath)
-    cd(g.folderpath);
-end
-limo.dir = pwd;
-
-if ~isempty (expected_chanlocs)
-    chan_name = expected_chanlocs;
-    load(chan_name);
-    limo.data.chanlocs = expected_chanlocs;
-    if strcmp(g.type,'Channels')
-        limo.data.neighbouring_matrix = channeighbstructmat;
+try
+    if ischar(expected_chanlocs)
+        LIMO.data = load(expected_chanlocs);
+        if isfield(LIMO.data,'expected_chanlocs')
+            LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+        end
+        if isfield(LIMO.data,'channeighbstructmat')
+            LIMO.data = renameStructField(LIMO.data, 'channeighbstructmat', 'neighbouring_matrix');
+        end
+    else
+        LIMO.data.chanlocs            = expected_chanlocs.expected_chanlocs;
+        LIMO.data.expected_chanlocs   = expected_chanlocs.expected_chanlocs;
+        LIMO.data.neighbouring_matrix = expected_chanlocs.channeighbstructmat;
     end
-else
-    limo.data.chanlocs = [];
-    limo.data.neighbouring_matrix = [];
+catch chanloc_err
+    error('expected_chanloc file data not recognized \n%s',chanloc_err.message)
 end
 
-limo.data.data        = [];
-limo.design.bootstrap = g.nboot;
-limo.design.tfce      = g.tfce;
-limo.Level            = 2;
-limo.Type             = g.type;
+% build LIMO.mat from inputs
+LIMO.dir              = pwd;
+LIMO.Level            = 2;
+LIMO.Type             = [];
+LIMO.data.data        = [];
+LIMO.design.bootstrap = 0;
+LIMO.design.tfce      = 0;
+LIMO.design.electrode = [];
+LIMO.design.component = [];
+regressor_file        = [];
+analysis_type         = [];
+parameters            = []; 
+
+for in = 1:2:(nargin-2)
+    if strcmpi(varargin{in},'LIMOfiles')
+        LIMO.data.data = varargin{in+1};
+    elseif strcmpi(varargin{in},'analysis_type')
+        if any(strcmpi(analysis_type,{'Full scalp analysis','1 channel/component only'}))
+            analysis_type = varargin{in+1};
+        else
+            error('analysis type argument urecognized')
+        end
+    elseif strcmpi(varargin{in},'regressor_file')
+        regressor_file = varargin{in+1};
+    elseif strcmpi(varargin{in},'electrode')
+        LIMO.design.electrode = varargin{in+1};
+    elseif strcmpi(varargin{in},'parameters')
+        parameters = varargin{in+1};
+    elseif strcmpi(varargin{in},'type')
+        LIMO.Type = varargin{in+1};
+    elseif strcmpi(varargin{in},'nboot')
+        LIMO.design.bootstrap = varargin{in+1};
+    elseif strcmpi(varargin{in},'tfce')
+        LIMO.design.tfce = varargin{in+1};
+    end
+end
+
+if isempty(analysis_type)
+    analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+    if isempty(analysis_type)
+        return
+    end
+end
 
 % ----------------------------------
 %%  One sample t-test and regression
 % ----------------------------------
-if type == 1 || type == 4
+if stattest == 1 || stattest == 4
     
     % get files
     % ---------
-    if isempty(g.limofiles)
-        [Names,Paths,limo.data.data] = limo_get_files;
+    if isempty(LIMO.data.data)
+        [Names,Paths,LIMO.data.data] = limo_get_files;
         % Case for path to the files
-    elseif size(g.limofiles{1},1) == 1
-        [Names,Paths,limo.data.data] = limo_get_files([],[],[],g.limofiles{1});
+    elseif size(LIMO.data.data{1},1) == 1
+        [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
         % Case when all paths are provided
-    elseif size(g.limofiles{1},1) > 1
-        [Names,Paths,limo.data.data] = breaklimofiles(g.limofiles{1});
+    elseif size(LIMO.data.data{1},1) > 1
+        [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data{1});
     end
-    
+    LIMO.data.data_dir = Paths;
+
     if isempty(Names)
         disp('no files selected')
         return
     end
-    limo.data.data_dir = Paths;
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if isempty(g.parameters)
+    if isempty(parameters)
         parameters = check_files(Names,1);
     else
-        parameters = check_files(Names,1,g.parameters{1});
+        parameters = check_files(Names,1,parameters{1});
     end
     
     if isempty(parameters)
-        errordlg('file selection failed, only Beta and Con files are supported','Selection error'); return
+        errordlg2('file selection failed, only Beta and Con files are supported','Selection error'); return
     end
     
-    % match frames
-    % ------------
-    [first_frame,last_frame,subj_chanlocs,~] = match_frames(Paths);
-    
-    
-    % match electrodes
-    % --------------
-    if strcmp(g.analysis_type,'1 channel/component only')
-        if isempty(g.electrode) && strcmp(limo.Type,'Channels')
-            electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        elseif isempty(g.electrode) && strcmp(limo.Type,'Components')
-            electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        else
-            electrode = {num2str(g.electrode)};
-        end
-        
-        if isempty(cell2mat(electrode))
-            [file,dir,index] = uigetfile('*.mat',['select a ' limo.Type ' file']);
-            if isempty(file) || index == 0
-                return
-            else
-                cd(dir); load(file);
-                % check the vector has the same length as the number of files
-                if length(electrode_vector) ~= length(Paths)
-                    errordlg(['the nb of ' limo.Type ' does not match the number of subjects'],'Error');
-                    return;
-                end
-                % add the name to LIMO
-                if type == 1
-                    limo.design.name = ['one sample t-test one ' limo.Type(1:end-1)];
-                else
-                    limo.design.name = ['regression analysis one ' limo.Type(1:end-1)];
-                end
-                % restric the channels
-                
-                if strcmp(limo.Type,'Channels')
-                    expected_chanlocs = expected_chanlocs(electrode_vector);
-                    limo.design.electrode = electrode_vector;
-                    limo.data.chanlocs = expected_chanlocs;
-                else
-                    limo.design.component = electrode_vector;
-                    limo.data.chanlocs = [];
-                end
-            end
-            
-        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == size(Names,2);
-            if type == 1
-                limo.design.name = ['one sample t-test one ' limo.Type(1:end-1)];
-            else
-                limo.design.name = ['regression analysis one ' limo.Type(1:end-1)];
-            end
-            % restric the channels
-            if strcmp(limo.Type,'Channels')
-                limo.design.electrode = eval(cell2mat(electrode));
-                expected_chanlocs = expected_chanlocs(limo.design.electrode);
-                limo.data.chanlocs = expected_chanlocs;
-            else
-                limo.design.component = eval(cell2mat(electrode));
-                limo.data.chanlocs = [];
-            end
-        else
-            errordlg(['the nb of ' limo.Type ' does not match the number of subjects'],[limo.Type(1:end-1) ' error']);
-            return
-        end
-        
-        % ---------------
-    else % Full scalp
-        % ---------------
-        
-        if type == 1
-            limo.design.name = ['one sample t-test all ' limo.Type];
-        else
-            limo.design.name = ['regression analysis all ' limo.Type];
-        end
-        limo.data.chanlocs = expected_chanlocs;
-        if strcmpi(g.type,'Components')
-            limo.design.component = [];
-        else
-            limo.design.electrode = [];
-        end
-    end
-    
+    % match frames, update LIMO
+    % --------------------------
+    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
+
+    % match electrodes, update LIMO
+    % -----------------------------
+    LIMO = match_electrodes(stattest,analysis_type,LIMO);
+
     % get data for all parameters
     % -----------------------------
-    disp('gathering data ...'); index = 1;
-    for i=1:size(Paths,2) % for each subject
-        load(limo.data.data{i});
-        try
-            tmp = eval(str2mat(Names{1}(1:end-4))); % load Betas values
-        catch
-            tmp = eval(str2mat(Names{1}(1:end-6)));
-            tmp = squeeze(tmp(:,:,1));
-        end
-        
-        % get indices to trim data
-        if strcmp(limo.Analysis,'Time-Frequency')
-            begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
-            ends_at(1) = size(tmp,2) - (last_frame(i,2) - min(last_frame(:,2)));
-            ends_at(2) = size(tmp,3) - (last_frame(i,1) - min(last_frame(:,1)));
-        else
-            begins_at = max(first_frame) - first_frame(i) + 1;
-            ends_at = size(tmp,2) - (last_frame(i) - min(last_frame));
-        end
-        
-        % data dim [electrode, freq/time, param, nb subjects]
-        if strcmp(g.analysis_type,'Full scalp analysis')
-            if strcmpi(g.type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                if strcmp(limo.Analysis,'Time-Frequency')
-                    data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                else
-                    data(:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                end
-            elseif strcmpi(g.type,'Components')
-                try
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
-                    else
-                        data(:,:,:,index) = tmp(:,begins_at:ends_at,:);
-                    end
-                catch dim_error
-                    if strcmp(dim_error,'Subscripted assignment dimension mismatch.')
-                        disp('you are trying to match matrices of ICs of different size')
-                        if isempty(expected_chanlocs)
-                            disp('either cluster data are run 1st level batch, or input cluster file')
-                        end
-                    end
-                end
-            end
-            index = index + 1; removed(i) = 0;
-        elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-            
-            % Use single electrode
-            if  length(limo.design.electrode) == 1
-                if strcmpi(g.type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-                    else
-                        data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-                    end
-                elseif strcmpi(g.type,'Components')
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(:,:,:,:,index) = tmp(limo.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
-                    else
-                        data(:,:,:,index) = tmp(limo.design.component,begins_at:ends_at,:);
-                    end
-                end
-                index = index + 1; removed(i) = 0;
-                
-                % Use multiple single electrodes
-            else
-                if strcmpi(g.type,'Channels')
-                    out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = out(i,:,:,:);
-                    else
-                        data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
-                    end
-                elseif strcmpi(g.type,'Components')
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = tmp(limo.design.component(i),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
-                    else
-                        data(1,:,:,index) = tmp(limo.design.component(i),begins_at:ends_at,:);
-                    end
-                end
-                index = index +1; removed(i) = 0;
-            end
-        else
-            fprintf('subject %g discarded, channel description and data size don''t match',i);
-            removed(i) = 1; disp(' ')
-        end
-        clear tmp
-    end
-    
+    [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
     
     % one-sample t-test
     % -----------------
-    if type == 1
-        limo.design.X = ones(size(data,4),1);
-        LIMO = limo;
+    if stattest == 1
+        LIMO.design.X = ones(size(data,4),1);
         
-        % clear some memory
-        clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
-        if parameters == 0; parameters = [1:size(data,3)]; end
-        
-        for i=length(parameters):-1:1
-            cd(LIMO.dir);
-            if length(parameters) > 1 && i == parameters(i)
-                foldername = sprintf('parameter_%g',parameters(i));
-                if ~isempty(g.folderprefix)
-                    g.folderprefix = [g.folderprefix foldername]; 
-                end
-                mkdir(foldername); cd(foldername);
+        clear Names Paths subj_chanlocs
+        if parameters == 0
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                parameters = 1:size(data,4);
+            else
+                parameters = 1:size(data,3);
             end
-            LIMO.dir = pwd;
+        end
+        
+        root = LIMO.dir;
+        for i=parameters
+            if length(parameters) ~= 1 % make subfolders
+                mkdir(fullfile(root,['parameter_' num2str(i)]));
+                LIMO.dir = fullfile(root,['parameter_' num2str(i)]);
+            end
             
-            if strcmp(g.analysis_type,'1 channel/component only') && size(data,1) == 1
+            if strcmp(analysis_type,'1 channel/component only') && size(data,1) == 1
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp = squeeze(data(:,:,:,i,:));
-                    tmp_data = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+                    tmp               = squeeze(data(:,:,:,i,:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
                     tmp_data(1,:,:,:) = tmp; clear tmp;
                 else
-                    tmp = squeeze(data(:,:,i,:));
-                    tmp_data = NaN(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-                    tmp_data(1,:,:) = tmp; clear tmp;
+                    tmp               = squeeze(data(:,:,i,:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2)); 
+                    tmp_data(1,:,:)   = tmp; clear tmp;
                 end
             else
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp_data = squeeze(data(:,:,:,i,:));
+                    tmp_data          = squeeze(data(:,:,:,i,:));
                 else
-                    tmp_data = squeeze(data(:,:,i,:));
+                    tmp_data          = squeeze(data(:,:,i,:));
                 end
             end
             
@@ -374,45 +207,46 @@ if type == 1 || type == 4
                 LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
             end
             
-            LIMO.design.method = 'Trimmed mean'; save LIMO LIMO
-            Yr = tmp_data; save Yr Yr, clear Yr % just to be consistent with name
-            tmpname = limo_random_robust(type,tmp_data,parameters(i),g.nboot,g.tfce);
-            if nargout ~= 0, filepath{i} = tmpname; end
-            
+            LIMO.design.method = 'Trimmed mean'; 
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+            Yr = tmp_data; clear tmp_data
+            save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3'); 
+            tmpname = limo_random_robust(stattest,fullfile(LIMO.dir,'Yr.mat'),i,LIMO);
+            if nargout ~= 0
+                LIMOPath{i} = tmpname; 
+            end
         end
+        cd(root)
         
         % ------------
         % regression
         % -------------
         
-    elseif type == 4
-        cd(limo.dir)
-        if isempty(g.regfile)
+    elseif stattest == 4
+        if isempty(regressor_file)
             [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
-        elseif ~isempty(g.regfile) && exist(g.regfile,'file')
-            [PathName,nametmp,exttmp] = fileparts(g.regfile);
-            FileName = [nametmp exttmp];
-            clear nametmp exttmp;
+        elseif ~ischar(regressor_file) && exist(regressor_file,'file')
+            [PathName,nametmp,exttmp] = fileparts(regressor_file);
+            FileName = [nametmp exttmp]; clear nametmp exttmp;
+        elseif ~isnumeric(regressor_file)
+            X = regressor_file;
         else
-            error('limo_random_select error: Provide a valid regressor file');
+            error('LIMO_random_select error: Provide a valid regressor file');
         end
+        
         if FilterIndex == 0
             return
         elseif strcmp(FileName(end-3:end),'.txt')
-            cd(PathName)
-            X = load(FileName);
+            X = load(fullfile(PathName,FileName));
         elseif strcmp(FileName(end-3:end),'.mat')
-            cd(PathName)
-            % load(FileName);
-            % X = eval(FileName(1:end-4));
-            X = load(FileName);
+            X = load(fullfile(PathName,FileName));
             X = getfield(X,cell2mat(fieldnames(X)));
         end
         disp('Regressor(s) loaded');
         
         % check size and orientation
         try
-            if strcmp(limo.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency')
                 N = size(data,5);
             else
                 N = size(data,4);
@@ -433,52 +267,47 @@ if type == 1 || type == 4
                     end
                     disp('covariate adjusted for delete subjects');
                 catch ME
-                    errordlg('the number of regression value differs from the number of subjects','Covariate error'); return
+                    errordlg2('the number of regression value differs from the number of subjects','Covariate error');
+                    fprintf('%s',ME.message); return
                 end
             end
             
-            if size(X,2)==1 && g.nboot < 599
-                if g.nboot ~= 0
-                    limo.design.bootstrap = 599;
+            if size(X,2)==1 && nboot < 599
+                if nboot ~= 0
+                    LIMO.design.bootstrap = 599;
                     disp('nb of bootstrap adjusted to 599 for a simple regression');
                 end
             end
             
         catch ME
-            errordlg('covariate error - make sure data are in lines or columns','Covariate error');
-            return
+            errordlg2('covariate error - make sure data are in lines or columns','Covariate error');
+            fprintf('%s',ME.message); return
         end
         
-        LIMO = limo;
-        clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
-        if parameters == 0; parameters = [1:size(data,3)]; end
+        clear Names Paths subj_chanlocs
+        if parameters == 0
+            parameters = 1:size(data,3);
+        end
         
-        for i=length(parameters):-1:1
-            cd(LIMO.dir);
-            if length(parameters) > 1
-                foldername = 'parameter_%g';
-                if ~isempty(g.folderprefix)
-                    foldername = [g.folderprefix foldername]; 
-                end
-                dir_name = sprintf(foldername,parameters(i));
-                mkdir(dir_name); cd(dir_name);
-            end
-            
-            if strcmp(g.analysis_type,'1 channel/component only')
+        root = LIMO.dir;
+        for i=parameters
+            mkdir(fullfile(root,['parameter_' num2str(i)]));
+            LIMO.dir = fullfile(root,['parameter_' num2str(i)]);
+            if strcmp(analysis_type,'1 channel/component only')
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp = squeeze(data(:,:,:,i,:));
-                    tmp_data = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
+                    tmp               = squeeze(data(:,:,:,i,:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 electrode
                     tmp_data(1,:,:,:) = tmp; clear tmp;
                 else
-                    tmp = squeeze(data(:,:,i,:));
-                    tmp_data = NaN(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 electrode
-                    tmp_data(1,:,:) = tmp; clear tmp;
+                    tmp               = squeeze(data(:,:,i,:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2)); 
+                    tmp_data(1,:,:)   = tmp; clear tmp;
                 end
             else
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp_data = squeeze(data(:,:,:,i,:));
+                    tmp_data          = squeeze(data(:,:,:,i,:));
                 else
-                    tmp_data = squeeze(data(:,:,i,:));
+                    tmp_data          = squeeze(data(:,:,i,:));
                 end
             end
             
@@ -488,34 +317,39 @@ if type == 1 || type == 4
             end
             
             % compute
-            save LIMO LIMO; clear LIMO ;
-            tmpname = limo_random_robust(type,tmp_data,X,i,g.nboot,g.tfce);
-            if nargout ~= 0, filepath{i} = tmpname; end
+            LIMO.design.method = 'Trimmed mean'; 
+            save(fullfile(LIMO.dir,'LIMO.mat'),LIMO);
+            Yr = tmp_data; clear tmp_data
+            save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3'); 
+            tmpname = LIMO_random_robust(stattest,Yr,X,i,LIMO);
+            if nargout ~= 0
+                LIMOPath{i} = tmpname; 
+            end
         end
     end
     
     % ------------------------------
     %%  Two samples t-test
     % -----------------------------
-elseif type == 2
+elseif stattest == 2
     
-    limo.design.X = [];
+    LIMO.design.X = [];
     
     N = 0;
     for gp = 2:-1:1
-        if isempty(g.limofiles)
-            [Names{gp},Paths{gp},limo.data.data{gp}] = limo_get_files([' gp' num2str(gp)]);
+        if isempty(LIMO.data.data)
+            [Names{gp},Paths{gp},LIMO.data.data{gp}] = limo_get_files([' gp' num2str(gp)]);
             % Case for path to the files
-        elseif size(g.limofiles{gp},1) == 1
-            [Names{gp},Paths{gp},limo.data.data{gp}] = limo_get_files([],[],[],g.limofiles{gp});
+        elseif size(LIMO.data.data{gp},1) == 1
+            [Names{gp},Paths{gp},LIMO.data.data{gp}] = limo_get_files([],[],[],g.LIMOfiles{gp});
             % Case when all paths are provided
-        elseif size(g.limofiles{gp},1) > 1
-            [Names{gp},Paths{gp},limo.data.data{gp}] = breaklimofiles(g.limofiles{gp});
+        elseif size(LIMO.data.data{gp},1) > 1
+            [Names{gp},Paths{gp},LIMO.data.data{gp}] = breaklimofiles(g.LIMOfiles{gp});
         end
         if isempty(Names{gp})
             return
         end
-        limo.data.data_dir{gp} = Paths{gp};
+        LIMO.data.data_dir{gp} = Paths{gp};
         N = N + size(Names{gp},2);
         if isempty(g.parameters)
             parameters(:,gp) = check_files(Names{gp},1);
@@ -533,174 +367,29 @@ elseif type == 2
     % -------------------------------------------------------
     for a=1:size(Paths,2)
         for b=1:size(Paths{a},2)
-            cd (cell2mat(Paths{a}(b))); load LIMO
-            if max(parameters(a)) > size(LIMO.design.X,2)
+            limo = load(fullfile(cell2mat(Paths{a}(b))),'LIMO.mat');
+            limo = getfield(limo,cell2mat(fieldnames(limo)));
+            if max(parameters(a)) > size(limo.design.X,2)
                 errordlg('invalid parameter(s)','Parameters error'); return
             end
         end
     end
-    cd(limo.dir);
     
-    % match frames
-    % ------------
-    [first_frame,last_frame,subj_chanlocs] = match_frames(Paths);
+    % match frames, update LIMO
+    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
     
-    
-    % match electrodes
-    % --------------
-    if strcmp(g.analysis_type,'1 channel/component only')
-        
-        if isempty(g.electrode) && strcmp(limo.Type,'Channels')
-            electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        elseif isempty(g.electrode) && strcmp(limo.Type,'Components')
-            electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        else
-            electrode = {num2str(g.electrode)};
-        end
-        
-        if isempty(cell2mat(electrode))
-            [file,dir,index] = uigetfile('*.mat','select your channel/component file');
-            if isempty(file) || index == 0
-                return
-            else
-                cd(dir); load(file);
-                % check the vector has the same length as the number of files
-                if length(electrode_vector) ~= N
-                    errordlg('the nb of 1 channels/components does not match the number of subjects','Error'); return;
-                end
-                % add the name to LIMO
-                if strcmp(g.type,'Components')
-                    limo.design.name = 'two samples t-test one component';
-                    limo.design.component = electrode_vector;
-                else
-                    limo.design.name = 'two samples t-test one electrode';
-                    % restric the channels
-                    limo.design.electrode = electrode_vector;
-                    expected_chanlocs = expected_chanlocs(electrode_vector);
-                end
-                limo.data.chanlocs = expected_chanlocs;
-            end
-        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N;
-            if strcmp(g.type,'Components')
-                limo.design.name = 'two samples t-test one component';
-                limo.design.component = eval(cell2mat(electrode));
-            else
-                limo.design.name = 'two samples t-test one electrode';
-                limo.design.electrode = eval(cell2mat(electrode));
-                expected_chanlocs = expected_chanlocs(limo.design.electrode);
-            end
-            limo.data.chanlocs = expected_chanlocs;
-        else
-            errordlg('the nb of channels/components does not match the number of subjects','Electrode error'); return;
-        end
-    else
-        if strcmp(g.type,'Components')
-            limo.design.name = 'two samples t-test all components';
-        else
-            limo.design.name = 'two samples t-test all electrodes';
-        end
-        limo.data.chanlocs = expected_chanlocs;
-        limo.design.electrode = [];
-    end
-    
+    % match electrodes, update LIMO
+    LIMO = match_electrodes(stattest,analysis_type,LIMO);
     
     % get data for all parameters dim [electrode, frame, param, nb, subjects]
     % -----------------------------------------------------------------
-    disp('gathering data ...');
-    subject_nb = 1;
-    for igp = 1:gp
-        index = 1;
-        for i=1:size(Paths{igp},2) % for each subject per group
-            load(cell2mat(limo.data.data{igp}(i)));
-            name = str2mat(cell2mat(Names{igp}(i)));
-            try
-                tmp = eval(name(1:end-4));
-            catch
-                tmp = eval(name(1:end-6));
-                tmp = squeeze(tmp(:,:,1));
-            end
-            
-            % get indices to trim data
-            if strcmp(limo.Analysis,'Time-Frequency')
-                begins_at = fliplr((max(first_frame) - first_frame(subject_nb,:) + 1)); % returns time/freq/or freq-time
-                ends_at(1) = size(tmp,2) - (last_frame(subject_nb,2) - min(last_frame(:,2)));
-                ends_at(2) = size(tmp,3) - (last_frame(subject_nb,1) - min(last_frame(:,1)));
-            else
-                begins_at = max(first_frame) - first_frame(subject_nb) + 1;
-                ends_at = size(tmp,2) - (last_frame(subject_nb) - min(last_frame));
-            end
-            
-            if strcmp(g.analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
-                if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        tmp_data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                    else
-                        tmp_data(:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                    end
-                elseif strcmpi(g.type,'Components')
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        tmp_data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
-                    else
-                        tmp_data(:,:,:,index) = tmp(:,begins_at:ends_at,:);
-                    end
-                    
-                end
-                index = index + 1;
-            elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
-                
-                % Use single electrode
-                if size(limo.design.electrode,2) == 1
-                    if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-                        else
-                            tmp_data(1,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
-                        end
-                    elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(1,:,:,:,index) = tmp(limo.design.electrode,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % all param for beta, if con, adjust dim
-                        else
-                            tmp_data(1,:,:,index) = tmp(limo.design.electrode,begins_at:ends_at,:); % all param for beta, if con, adjust dim
-                        end
-                    end
-                    index = index + 1;
-                    
-                    % Use multiple single electrodes
-                else
-                    if strcmpi(g.type,'Channels')
-                        out = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(1,:,:,:,index) = out(subject_nb,:,:,:); % matches the expected chanloc of the subject
-                        else
-                            tmp_data(1,:,:,index) = out(subject_nb,:,:);     % matches the expected chanloc of the subject
-                        end
-                    elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(1,:,:,:,index) = tmp(limo.design.electrode(subject_nb),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % matches the expected chanloc of the subject
-                        else
-                            tmp_data(1,:,:,index) = tmp(limo.design.electrode(subject_nb),begins_at:ends_at,:);     % matches the expected chanloc of the subject
-                        end
-                    end
-                    index = index +1;
-                end
-            else
-                fprintf('subject %g of group %g discarded, channel description and data size don''t match',i, igp); disp(' ')
-            end
-            
-            clear tmp
-            subject_nb = subject_nb + 1;
-        end
-        
-        data{igp} = tmp_data;
-        clear tmp tmp_data
-    end
-    
+    [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
     
     % compute
     % --------
-    LIMO = limo; cd(limo.dir);  
+    LIMO = LIMO; cd(LIMO.dir);  
     % free some memory
-    clear Betas Names Paths channeighbstructmat expected_chanlocs limo subj_chanlocs
+    clear Betas Names Paths channeighbstructmat expected_chanlocs LIMO subj_chanlocs
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
         if strcmp(g.analysis_type,'1 channel/component only')
@@ -747,7 +436,7 @@ elseif type == 2
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
     LIMO.design.method = 'Yuen t-test (Trimmed means)'; save LIMO LIMO
-    tmpname = limo_random_robust(type,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
+    tmpname = LIMO_random_robust(stattest,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
     if exist('data.mat','file')
         try delete data.mat; end
@@ -756,47 +445,47 @@ elseif type == 2
     % ------------------------------
     %%  Paired t-test
     % -----------------------------
-elseif type == 3
+elseif stattest == 3
     
-    limo.design.X = [];
-    if isempty(g.limofiles)
-        [Names,Paths,limo.data.data] = limo_get_files;
+    LIMO.design.X = [];
+    if isempty(LIMO.data.data)
+        [Names,Paths,LIMO.data.data] = limo_get_files;
         % Case for path to the files
-    elseif size(g.limofiles{1},1) == 1
-        [Names,Paths,limo.data.data] = limo_get_files([],[],[],g.limofiles{1});
+    elseif size(LIMO.data.data{1},1) == 1
+        [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
         % Case when all paths are provided
-    elseif size(g.limofiles{1},1) > 1
-        [Names,Paths,limo.data.data] = breaklimofiles(g.limofiles{1});
+    elseif size(LIMO.data.data{1},1) > 1
+        [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data{1});
     end
     if isempty(Names)
         return
     end
-    limo.data.data_dir = Paths;
+    LIMO.data.data_dir = Paths;
     N = size(Names,2);
     
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if isempty(g.parameters)
+    if isempty(parameters)
         parameters = check_files(Names,1);
     else
-        parameters = check_files(Names,1,g.parameters{1});
+        parameters = check_files(Names,1,parameters{1});
     end
     
     if size(parameters,2) == 1  % was not beta files, ie was con files
         n = Names; clear Names; Names{1} = n; clear n;
         p = Paths; clear Paths; Paths{1} = p; clear p;
-        d = limo.data.data; clear limo.data.data; limo.data.data{1} = d; clear d;
-        d = limo.data.data_dir; clear limo.data.data_dir; limo.data.data_dir{1} = d; clear d;
+        d = LIMO.data.data; clear LIMO.data.data; LIMO.data.data{1} = d; clear d;
+        d = LIMO.data.data_dir; clear LIMO.data.data_dir; LIMO.data.data_dir{1} = d; clear d;
         
-        if isempty(g.limofiles)
-            [Names{2},Paths{2},limo.data.data{2}] = limo_get_files([' gp2']);
+        if isempty(LIMO.data.data)
+            [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([' gp2']);
             % Case for path to the files
-        elseif size(g.limofiles{2},1) == 1
-            [Names{2},Paths{2},limo.data.data{2}] = limo_get_files([],[],[],g.limofiles{2});
+        elseif size(LIMO.data.data{2},1) == 1
+            [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
             % Case when all paths are provided
-        elseif size(g.limofiles{2},1) > 1
-            [Names{2},Paths{2},limo.data.data{2}] = breaklimofiles(g.limofiles{2});
+        elseif size(LIMO.data.data{2},1) > 1
+            [Names{2},Paths{2},LIMO.data.data{2}] = breaklimofiles(LIMO.data.data{2});
         end
         
         if isempty(Names{2})
@@ -805,7 +494,7 @@ elseif type == 3
             newparameters = check_files(Names{2},1);
             parameters = str2num([num2str(parameters) num2str(newparameters)]);
         end
-        limo.data.data_dir{2} = Paths{2};
+        LIMO.data.data_dir{2} = Paths{2};
         N = N + size(Names{2},2);
         if size(Names{1},2) ~= size(Names{2},2)
             errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
@@ -819,73 +508,15 @@ elseif type == 3
                 errordlg('invalid parameter(s)','Paired t-test error'); return
             end
         end
-        cd(limo.dir);
+        cd(LIMO.dir);
     end
     
     
-    % match frames
-    % ------------
-    [first_frame,last_frame,subj_chanlocs] = match_frames(Paths);
+    % match frames, update LIMO
+    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
     
-    
-    % match electrodes
-    % --------------
-    if strcmp(g.analysis_type,'1 channel/component only')
-        
-        if isempty(g.electrode) && strcmp(limo.Type,'Channels')
-            electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        elseif isempty(g.electrode) && strcmp(limo.Type,'Components')
-            electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-        else
-            electrode = {num2str(g.electrode)};
-        end
-        
-        if isempty(cell2mat(electrode))
-            [file,dir,index] = uigetfile('*.mat','select your electrode file');
-            if isempty(file)
-                return
-            else
-                cd(dir); load(file);
-                % check the vector has the same length as the number of files
-                if length(electrode_vector) ~= N
-                    errordlg('the nb of channels/components does not match the number of subjects','Error'); return;
-                end
-                % add the name to LIMO
-                if strcmp(g.type,'Components')
-                    limo.design.name = 'paired t-test one component';
-                    limo.design.component = electrode_vector;
-                else
-                    limo.design.name = 'paired t-test one electrode';
-                    % restric the channels
-                    limo.design.electrode = electrode_vector;
-                    expected_chanlocs = expected_chanlocs(electrode_vector);
-                end
-                limo.data.chanlocs = expected_chanlocs;
-            end
-        elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N
-            if strcmp(g.type,'Components')
-                limo.design.name = 'paired t-test one component';
-                limo.design.component = eval(cell2mat(electrode));
-            else
-                limo.design.name = 'paired t-test one electrode';
-                limo.design.electrode = eval(cell2mat(electrode));
-                expected_chanlocs = expected_chanlocs(limo.design.electrode);
-            end
-            limo.data.chanlocs = expected_chanlocs;
-        else
-            errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return
-        end
-    else
-        if strcmp(g.type,'Components')
-            limo.design.name = 'paired t-test all components';
-            limo.design.component = [];
-        else
-            limo.design.name = 'paired t-test all electrodes';
-            limo.design.electrode = [];
-        end
-        limo.data.chanlocs = expected_chanlocs;
-    end
-    
+    % match electrodes, update LIMO
+    LIMO = match_electrodes(stattest,analysis_type,LIMO);
     
     % get data
     % ----------
@@ -897,7 +528,7 @@ elseif type == 3
         for gp = 1:size(Paths,2)
             index = 1;
             for i=1:size(Paths{gp},2) % for each subject per group
-                load(cell2mat(limo.data.data{gp}(i)));
+                load(cell2mat(LIMO.data.data{gp}(i)));
                 name = str2mat(cell2mat(Names{gp}(i)));
                 if strcmp(name,'Betas.mat')
                     tmp = eval(name(1:end-4));
@@ -906,7 +537,7 @@ elseif type == 3
                 end
                 
                 % get indices to trim data
-                if strcmp(limo.Analysis,'Time-Frequency')
+                if strcmp(LIMO.Analysis,'Time-Frequency')
                     tmp = squeeze(tmp(:,:,:,1));
                     begins_at = fliplr((max(first_frame) - first_frame(subject_nb,:) + 1)); % returns time/freq/or freq-time
                     ends_at(1) = size(tmp,2) - (last_frame(subject_nb,2) - min(last_frame(:,2)));
@@ -919,13 +550,13 @@ elseif type == 3
                 
                 if strcmp(g.analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(:,:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         else
-                            tmp_data(:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                            tmp_data(:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
                     elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
                             tmp_data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                         else
                             tmp_data(:,:,:,index) = tmp(:,begins_at(1):ends_at(1),:);
@@ -934,30 +565,30 @@ elseif type == 3
                     index = index + 1;
                 elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            if size(limo.design.electrode,2) == 1;
-                                tmp_data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            if size(LIMO.design.electrode,2) == 1;
+                                tmp_data(1,:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                                 index = index + 1;
                             else
-                                out = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                                out = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                                 tmp_data(1,:,:,:,index) = out(subject_nb,:,:); % matches the expected chanloc of the subject
                                 index = index +1;
                             end
                         else
-                            if size(limo.design.electrode,2) == 1
-                                tmp_data(1,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            if size(LIMO.design.electrode,2) == 1
+                                tmp_data(1,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                                 index = index + 1;
                             else
-                                out = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                                out = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                                 tmp_data(1,:,:,index) = out(subject_nb,:,:); % matches the expected chanloc of the subject
                                 index = index +1;
                             end
                         end
                     elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            tmp_data(1,:,:,:,index) = tmp(limo.design.electrode,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(1,:,:,:,index) = tmp(LIMO.design.electrode,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                         else
-                            tmp_data(1,:,:,index) = tmp(limo.design.electrode,begins_at(1):ends_at(1),:);
+                            tmp_data(1,:,:,index) = tmp(LIMO.design.electrode,begins_at(1):ends_at(1),:);
                         end
                         index = index +1;
                     end
@@ -986,11 +617,11 @@ elseif type == 3
         
         index = 1;
         for i=1:size(Paths,2) % for each subject
-            load(limo.data.data{i});
+            load(LIMO.data.data{i});
             tmp = eval(str2mat(Names{1}(1:end-4)));
             
             % get indices to trim data
-            if strcmp(limo.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency')
                 begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
                 ends_at(1) = size(tmp,2) - (last_frame(i,2) - min(last_frame(:,2)));
                 ends_at(2) = size(tmp,3) - (last_frame(i,1) - min(last_frame(:,1)));
@@ -1001,7 +632,7 @@ elseif type == 3
             
             if strcmp(g.analysis_type,'Full scalp analysis')
                 if strcmpi(g.type,'Components')
-                    if strcmp(limo.Analysis,'Time-Frequency')
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
                         data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                         index = index + 1;
                     else
@@ -1009,35 +640,35 @@ elseif type == 3
                         index = index + 1;
                     end
                 elseif strcmpi(g.type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(:,:,:,:,index) = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         index = index + 1;
                     else
-                        data(:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                        data(:,:,:,index) = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         index = index + 1;
                     end
                 end
             elseif strcmp(g.analysis_type,'1 channel/component only')
                 if strcmpi(g.type,'Components')
-                    if strcmp(limo.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = tmp(limo.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(1,:,:,:,index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                         index = index + 1;
                     else
-                        data(1,:,:,index) = tmp(limo.design.component,begins_at(1):ends_at(1),:);
+                        data(1,:,:,index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),:);
                         index = index + 1;
                     end
                 elseif strcmpi(g.type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                    if size(limo.design.electrode,2) == 1
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                    if size(LIMO.design.electrode,2) == 1
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            data(1,:,:,:,index) = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                             index = index + 1;
                         else
-                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,:,index) = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                             index = index + 1;
                         end
                     else
-                        out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                        if strcmp(limo.Analysis,'Time-Frequency')
+                        out = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
                             data(1,:,:,:,index) = out(i,:,:,:); % matches the expected chanloc of the subject
                             index = index +1;
                         else
@@ -1056,7 +687,7 @@ elseif type == 3
     
     % compute
     % --------
-    if strcmp(limo.Analysis,'Time-Frequency')
+    if strcmp(LIMO.Analysis,'Time-Frequency')
         if strcmp(g.analysis_type,'1 channel/component only')
             if size(parameters,2) == 2 % beta files
                 tmp = squeeze(data(:,:,:,parameters(1),:));
@@ -1110,7 +741,7 @@ elseif type == 3
         end
     end
     
-    LIMO = limo; cd(limo.dir);
+    LIMO = LIMO; cd(LIMO.dir);
     LIMO.design.method = 'Yuen t-test (Trimmed means)';
     if strcmp(LIMO.Analysis,'Time-Frequency')
         LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
@@ -1120,13 +751,13 @@ elseif type == 3
     
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
-    tmpname = limo_random_robust(type,squeeze(tmp_data1),squeeze(tmp_data2),parameters,g.nboot,g.tfce);
+    tmpname = LIMO_random_robust(stattest,squeeze(tmp_data1),squeeze(tmp_data2),parameters,g.nboot,g.tfce);
     if nargout ~= 0, filepath = tmpname; end
        
     % -----------------------------------
     %%  Various sorts of ANOVAs/ANCOVAs
     % -----------------------------------
-elseif type == 5
+elseif stattest == 5
     
     % 1st know what design it is
     % --------------------------
@@ -1135,41 +766,41 @@ elseif type == 5
         'N-Ways','ANCOVA','Repeated Measures');
     
     % get some nice comment in LIMO.mat
-    if strcmp(g.analysis_type,'Full scalp analysis')
-        if strcmp(g.type,'Components')
+    if strcmp(analysis_type,'Full scalp analysis')
+        if strcmp(LIMO.Type,'Components')
             if strcmp(answer,'Repeated Measures')
-                limo.design.name = 'Repeated measures ANOVA all components';
+                LIMO.design.name = 'Repeated measures ANOVA all components';
             elseif strcmp(answer,'N-Ways')
-                limo.design.name = 'N-ways ANOVA all components';
+                LIMO.design.name = 'N-ways ANOVA all components';
             else
-                limo.design.name = 'ANCOVA all components';
+                LIMO.design.name = 'ANCOVA all components';
             end
         else
             if strcmp(answer,'Repeated Measures')
-                limo.design.name = 'Repeated measures ANOVA all electrodes';
+                LIMO.design.name = 'Repeated measures ANOVA all electrodes';
             elseif strcmp(answer,'N-Ways')
-                limo.design.name = 'N-ways ANOVA all electrodes';
+                LIMO.design.name = 'N-ways ANOVA all electrodes';
             else
-                limo.design.name = 'ANCOVA all electrodes';
+                LIMO.design.name = 'ANCOVA all electrodes';
             end
         end
         
-    elseif strcmp(g.analysis_type,'1 channel/component only')
-        if strcmp(g.type,'Components')
+    elseif strcmp(analysis_type,'1 channel/component only')
+        if strcmp(LIMO.Type,'Components')
             if strcmp(answer,'Repeated Measures')
-                limo.design.name = 'Repeated measures ANOVA one component';
+                LIMO.design.name = 'Repeated measures ANOVA one component';
             elseif strcmp(answer,'N-Ways')
-                limo.design.name = 'N-ways ANOVA one component';
+                LIMO.design.name = 'N-ways ANOVA one component';
             else
-                limo.design.name = 'ANCOVA one component';
+                LIMO.design.name = 'ANCOVA one component';
             end
         else
             if strcmp(answer,'Repeated Measures')
-                limo.design.name = 'Repeated measures ANOVA one electrode';
+                LIMO.design.name = 'Repeated measures ANOVA one electrode';
             elseif strcmp(answer,'N-Ways')
-                limo.design.name = 'N-ways ANOVA one electrode';
+                LIMO.design.name = 'N-ways ANOVA one electrode';
             else
-                limo.design.name = 'ANCOVA one electrode';
+                LIMO.design.name = 'ANCOVA one electrode';
             end
         end
     end
@@ -1184,7 +815,7 @@ elseif type == 5
         % -------------
         gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups')));
         if isempty(gp_nb)
-            return;
+            return
         elseif sum(gp_nb <= 1)
             errordlg('at least 2 groups are expected for an ANOVA')
             return
@@ -1196,14 +827,14 @@ elseif type == 5
         N = 0; cell_nb = 1;
         if strcmp(a,'beta') % beta files
             for i=1:prod(gp_nb)
-                if isempty(g.limofiles)
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
+                if isempty(LIMO.data.data)
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
                     % Case for path to the files
-                elseif size(g.limofiles{i},1) == 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
+                elseif size(LIMO.data.data{i},1) == 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],LIMO.data.data{i});
                     % Case when all paths are provided
-                elseif size(g.limofiles{i},1) > 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
+                elseif size(LIMO.data.data{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
                 end
                 if isempty(Names{cell_nb}); return; end
                 if isempty(g.parameters)
@@ -1218,21 +849,21 @@ elseif type == 5
                 N = N + size(Names{cell_nb},2);
                 cell_nb = cell_nb +1;
             end
-            limo.data.data_dir = Paths;
+            LIMO.data.data_dir = Paths;
         else  % multiple con files
             for i=1:prod(gp_nb)
-                if isempty(g.limofiles)
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' con file gp ',num2str(i)]);
+                if isempty(LIMO.data.data)
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' con file gp ',num2str(i)]);
                     % Case for path to the files
-                elseif size(g.limofiles{i},1) == 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
+                elseif size(g.LIMOfilesLIMO.data.data{i},1) == 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],LIMO.data.data{i});
                     % Case when all paths are provided
-                elseif size(g.limofiles{i},1) > 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
+                elseif size(LIMO.data.data{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
                 end
                 if isempty(Names{cell_nb}); return; end
                 parameters(i) = 1;
-                limo.data.data_dir{cell_nb} = Paths{cell_nb};
+                LIMO.data.data_dir{cell_nb} = Paths{cell_nb};
                 N = N + size(Names{cell_nb},2);
                 cell_nb=cell_nb+1;
             end
@@ -1241,73 +872,22 @@ elseif type == 5
         
         % organize the data in such a way that we can easily compute stuff
         % ---------------------------------------------------------------------
-        % match frames
-        [first_frame,last_frame,subj_chanlocs] = match_frames(Paths);
+        % match frames, update LIMO
+        [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
         
-        % match electrodes
-        if strcmp(g.analysis_type,'1 channel/component only')
-            
-            if isempty(g.electrode) && strcmp(limo.Type,'Channels')
-                electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            elseif isempty(g.electrode) && strcmp(limo.Type,'Components')
-                electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            else
-                electrode = {num2str(g.electrode)};
-            end
-            
-            if isempty(cell2mat(electrode))
-                if strcmp(g.type,'Components')
-                    [file,dir,index] = uigetfile('*.mat','select your component file');
-                else
-                    [file,dir,index] = uigetfile('*.mat','select your electrode file');
-                end
-                if isempty(file)
-                    return
-                else
-                    cd(dir); load(file);
-                    % check the vector has the same length as the number of files
-                    if length(electrode_vector) ~= N
-                        errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
-                    end
-                    if strcmp(g.type,'Components')
-                        limo.design.component = electrode_vector;
-                    else
-                        % restric the channels
-                        limo.design.electrode = electrode_vector;
-                        expected_chanlocs = expected_chanlocs(electrode_vector);
-                    end
-                    limo.data.chanlocs = expected_chanlocs;
-                end
-            elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N;
-                if strcmp(g.type,'Components')
-                    limo.design.component = eval(cell2mat(electrode));
-                else
-                    limo.design.electrode = eval(cell2mat(electrode));
-                    expected_chanlocs = expected_chanlocs(limo.design.electrode);
-                end
-                limo.data.chanlocs = expected_chanlocs;
-            else
-                error('the nb of electrodes does not match the number of subjects')
-            end
-        else
-            limo.data.chanlocs = expected_chanlocs;
-            if strcmp(g.type,'Components')
-                limo.design.component = [];
-            else
-                limo.design.electrode = [];
-            end
-        end
+        % match electrodes, update LIMO
+        LIMO = match_electrodes(stattest,analysis_type,LIMO);
         
         % get all the data [electrode, frame, param] per gp
         disp('gathering data ...'); subject_index = 1; matrix_index = 1;
         for h = 1:prod(gp_nb) % each group
             nb_subjects(h) = 0;
             for i=1:size(Paths{h},2) % for each subject of the gp h
-                load(cell2mat(limo.data.data{h}(i)));
+                load(cell2mat(LIMO.data.data{h}(i)));
                 try tmp = Betas; catch tmp = con; end
                 
                 % get indices to trim data
-                if strcmp(limo.Analysis,'Time-Frequency')
+                if strcmp(LIMO.Analysis,'Time-Frequency')
                     begins_at = fliplr((max(first_frame) - first_frame(subject_index,:) + 1)); % returns time/freq/or freq-time
                     ends_at(1) = size(tmp,2) - (last_frame(subject_index,2) - min(last_frame(:,2)));
                     ends_at(2) = size(tmp,3) - (last_frame(subject_index,1) - min(last_frame(:,1)));
@@ -1319,13 +899,13 @@ elseif type == 5
                 % data are of dim size(expected_chanlocs,2), latter start/earlier stop across subjects, parameters, nb of subjects
                 if strcmp(g.analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            data(:,:,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            data(:,:,:,:,matrix_index) = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         else
-                            data(:,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                            data(:,:,:,matrix_index) = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
                     elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
                             data(:,:,:,:,matrix_index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                         else
                             data(:,:,:,matrix_index) = tmp(:,begins_at:ends_at,:);
@@ -1336,36 +916,36 @@ elseif type == 5
                     % Use single and multiple single electrodes
                 elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            if size(limo.design.electrode,2) == 1;
-                                data(1,:,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            if size(LIMO.design.electrode,2) == 1;
+                                data(1,:,:,:,matrix_index) = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                             else
-                                out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, i.e. across subjects
+                                out = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, i.e. across subjects
                                 data(1,:,:,:,matrix_index) = out(i,:,:); % matches the expected chanloc of the subject
                             end
                             %matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                         else
-                            if size(limo.design.electrode,2) == 1;
-                                data(1,:,:,matrix_index) = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            if size(LIMO.design.electrode,2) == 1;
+                                data(1,:,:,matrix_index) = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                             else
-                                out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, i.e. across subjects
+                                out = LIMO_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, i.e. across subjects
                                 data(1,:,:,matrix_index) = out(i,:,:); % matches the expected chanloc of the subject
                             end
                             %matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                         end
                         matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                     elseif strcmpi(g.type,'Components')
-                        if strcmp(limo.Analysis,'Time-Frequency')
-                            if size(limo.design.component,2) == 1;
-                                data(1,:,:,:,matrix_index) = tmp(limo.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % all param for beta, if con, adjust dim
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            if size(LIMO.design.component,2) == 1
+                                data(1,:,:,:,matrix_index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % all param for beta, if con, adjust dim
                             else
-                                data(1,:,:,:,matrix_index) = tmp(limo.design.component(subject_index),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % matches the expected chanloc of the subject
+                                data(1,:,:,:,matrix_index) = tmp(LIMO.design.component(subject_index),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % matches the expected chanloc of the subject
                             end
                         else
-                            if size(limo.design.component,2) == 1;
-                                data(1,:,:,matrix_index) = tmp(limo.design.electrode,begins_at:ends_at,:); % all param for beta, if con, adjust dim
+                            if size(LIMO.design.component,2) == 1
+                                data(1,:,:,matrix_index) = tmp(LIMO.design.electrode,begins_at:ends_at,:); % all param for beta, if con, adjust dim
                             else
-                                data(1,:,:,matrix_index) = tmp(limo.design.electrode(subject_index),begins_at:ends_at,:);% matches the expected chanloc of the subject
+                                data(1,:,:,matrix_index) = tmp(LIMO.design.electrode(subject_index),begins_at:ends_at,:);% matches the expected chanloc of the subject
                             end
                         end
                         matrix_index = matrix_index+1; removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
@@ -1378,7 +958,7 @@ elseif type == 5
                 subject_index = subject_index+1;
             end
         end
-        cd(limo.dir);
+        cd(LIMO.dir);
         
         % now load covariates and check it matches data
         if strcmp(answer,'ANCOVA')
@@ -1431,12 +1011,12 @@ elseif type == 5
             Cont = [];
         end
         
-        % 4th send relevant info to limo_random_robust
+        % 4th send relevant info to LIMO_random_robust
         % ----------------------------------------------
         for h=1:prod(gp_nb)
             for i=1:size(Paths{h},2)
                 if removed{h}(i) == 1
-                    limo.data.data{h}(i) = []; limo.data.data_dir{h}(i) = []; % somehow to indicate this subject is removed
+                    LIMO.data.data{h}(i) = []; LIMO.data.data_dir{h}(i) = []; % somehow to indicate this subject is removed
                 end
             end
         end
@@ -1445,7 +1025,7 @@ elseif type == 5
         % for N ways ANOVA we pass the data and X, so we simply stack
         % the data on top of each other per gp - this allows using betas
         % and still compare possibly different parameters
-        if strcmp(limo.Analysis,'Time-Frequency')
+        if strcmp(LIMO.Analysis,'Time-Frequency')
             tmp_data = NaN(size(data,1),size(data,2),size(data,3),size(data,5));
             for i=1:prod(gp_nb)
                 if i==1
@@ -1474,7 +1054,7 @@ elseif type == 5
         clear index
         % which numbers to use
         for i=length(gp_nb):-1:1
-            index{i} = [1:gp_nb(i)];
+            index{i} = 1:gp_nb(i);
             m(i)     = size(index{i},2);
         end
         
@@ -1499,7 +1079,7 @@ elseif type == 5
             Cat = [Cat ; repmat(template(gp,:),nb_subjects(gp),1)];
         end
         
-        LIMO = limo; cd(limo.dir);
+        LIMO = LIMO; cd(LIMO.dir);
         LIMO.design.method = 'ANOVA';
         
         if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -1509,12 +1089,12 @@ elseif type == 5
         save LIMO LIMO
         
         % clear some memory
-        clear LIMO limo Names Paths data channeighbstructmat expected_chanlocs subj_chanlocs
+        clear LIMO LIMO Names Paths data channeighbstructmat expected_chanlocs subj_chanlocs
         
         % do the analysis
         Yr = tmp_data; clear tmp_data; save Yr Yr
         if isempty(Cont); Cont = 0; end
-        tmpname = limo_random_robust(type,Yr,Cat,Cont,g.nboot,g.tfce);
+        tmpname = LIMO_random_robust(stattest,Yr,Cat,Cont,g.nboot,g.tfce);
         if nargout ~= 0, filepath = tmpname; end
         
     else
@@ -1526,9 +1106,9 @@ elseif type == 5
         % -------------
         gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. 2','Groups')));
         if isempty(gp_nb)
-            return;
+            return
         elseif length(gp_nb) > 1
-            errordlg('only 1 independent factor (with n groups) is handled by LIMO')
+            errordlg2('only 1 independent factor (with n groups) is handled by LIMO')
             return
         elseif gp_nb == 0
             gp_nb = 1;
@@ -1537,20 +1117,25 @@ elseif type == 5
         % Ask for Repeated Measures
         % --------------------------
         factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
-        if contains(factor_nb,'[') && contains(factor_nb,']')
-            factor_nb = eval(factor_nb);
+        if isempty(factor_nb)
+            disp('selection aborded'); return
         else
-            try
-                factor_nb = eval(['[' factor_nb ']']);
-            catch ME
-                errordlg2(sprintf('log error: %s',ME.message),'could not evaluate factors')
-                return
+            if contains(factor_nb,'[') && contains(factor_nb,']')
+                factor_nb = eval(factor_nb);
+            else
+                try
+                    factor_nb = eval(['[' factor_nb ']']);
+                catch ME
+                    errordlg2(sprintf('log error: %s',ME.message),'could not evaluate factors')
+                    return
+                end
             end
         end
         
         % Cases of wrong input 
         if isempty(factor_nb) || length(factor_nb)==1 && factor_nb == 0
-            disp('no factor entered, Rep. ANOVA aborded'); return
+            disp('no factor entered, Rep. ANOVA aborded'); 
+            return
         end
                 
         % 2nd select data per gp / conditions
@@ -1560,19 +1145,21 @@ elseif type == 5
         % beta files
         if strcmp(a,'beta')
             for i=gp_nb:-1:1
-                if isempty(g.limofiles)
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
+                if isempty(LIMO.data.data)
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
                     % Case for path to the files
-                elseif size(g.limofiles{i},1) == 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = limo_get_files([],[],[],g.limofiles{i});
+                elseif size(LIMO.data.data{i},1) == 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],g.LIMOfiles{i});
                     % Case when all paths are provided
-                elseif size(g.limofiles{i},1) > 1
-                    [Names{cell_nb},Paths{cell_nb},limo.data.data{cell_nb}] = breaklimofiles(g.limofiles{i});
+                elseif size(LIMO.data.data{i},1) > 1
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(g.LIMOfiles{i});
                 end
                 
-                if isempty(Names{cell_nb}); return; end
+                if isempty(Names{cell_nb})
+                    return
+                end
 
-                if isempty(g.parameters)
+                if isempty(parameters)
                     parameters(:,i) = check_files(Names,1);
                 else
                     parameters(:,i) = check_files(Names,1,g.parameters{i});
@@ -1582,24 +1169,23 @@ elseif type == 5
                     error(['the number of parameter chosen (',num2str(length(parameters)), ...
                         ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
                 end
-                
                 N = N + size(Names{cell_nb},2);
                 cell_nb = cell_nb +1;
             end
-            limo.data.data_dir = Paths;
+            LIMO.data.data_dir = Paths;
             
         else  % multiple con files
             for i=gp_nb:-1:1
                 for j=length(factor_nb):-1:1
                     for k=factor_nb(j):-1:1
-                        if isempty(g.limofiles)
+                        if isempty(LIMO.data.data)
                             [names{k},paths{k},full_names{k}] = limo_get_files([' gp ',num2str(i),' factor ',num2str(j),' level ',num2str(k)]);
                             % Case for path to the files
-                        elseif size(g.limofiles{num2str(i),num2str(j),num2str(k)},1) == 1
-                            [names{k},paths{k},full_names{k}] = limo_get_files([],[],[],g.limofiles{num2str(i),num2str(j),num2str(k)});
+                        elseif size(LIMO.data.data{num2str(i),num2str(j),num2str(k)},1) == 1
+                            [names{k},paths{k},full_names{k}] = LIMOlimo_get_files([],[],[],g.LIMOfiles{num2str(i),num2str(j),num2str(k)});
                             % Case when all paths are provided
-                        elseif size(g.limofiles{num2str(i),num2str(j),num2str(k)},1) > 1
-                            [names{k},paths{k},full_names{k}] = breaklimofiles(g.limofiles{num2str(i),num2str(j),num2str(k)});
+                        elseif size(LIMO.data.data{num2str(i),num2str(j),num2str(k)},1) > 1
+                            [names{k},paths{k},full_names{k}] = breaklimofiles(g.LIMOfiles{num2str(i),num2str(j),num2str(k)});
                         end
                         if isempty(names{k}); return; end
                         N = N + size(names{cell_nb},2);
@@ -1608,146 +1194,118 @@ elseif type == 5
                 
                 Names{cell_nb} = names{1};
                 Paths{cell_nb} = paths{1};
-                limo.data.data{cell_nb} = full_names{1};
+                LIMO.data.data{cell_nb} = full_names{1};
                 for l=2:size(names,2)
                     Names{cell_nb} = [Names{cell_nb} names{l}];
                     Paths{cell_nb} = [Paths{cell_nb} paths{l}];
-                    limo.data.data{cell_nb} = [limo.data.data{cell_nb} full_names{l}];
+                    LIMO.data.data{cell_nb} = [LIMO.data.data{cell_nb} full_names{l}];
                 end
-                limo.data.data_dir{cell_nb} = Paths{cell_nb};
+                LIMO.data.data_dir{cell_nb} = Paths{cell_nb};
                 check_files(Names,size(Names,2));
                 cell_nb=cell_nb+1;
                 parameters(i) = 1;
             end
         end
         
-        
         % 3rd organize data
         % ---------------------------------------------------------------------
-        % match frames
-        [first_frame,last_frame,subj_chanlocs] = match_frames(Paths);
+        % match frames, update LIMO
+        [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
+
+        % match electrodes, update LIMO
+        LIMO = match_electrodes(stattest,analysis_type,LIMO);
         
-        % match electrodes
-        if strcmp(g.analysis_type,'1 channel/component only')
-            
-            if isempty(g.electrode) && strcmp(limo.Type,'Channels')
-                electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            elseif isempty(g.electrode) && strcmp(limo.Type,'Components')
-                electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            else
-                electrode = {num2str(g.electrode)};
-            end
-            
-            if isempty(cell2mat(electrode))
-                if strcmp(g.type,'Components')
-                    [file,dir,index] = uigetfile('*.mat','select your component file');
-                else
-                    [file,dir,index] = uigetfile('*.mat','select your electrode file');
-                end
-                if isempty(file) || index == 0
-                    return
-                else
-                    load(fullfile(dir,file));
-                    % check the vector has the same length as the number of files
-                    if length(electrode_vector) ~= N
-                        errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
-                    end
-                    % restric the channels
-                    if strcmp(g.type,'Components')
-                        limo.design.component = electrode_vector;
-                    else
-                        limo.design.electrode = electrode_vector;
-                        expected_chanlocs = expected_chanlocs(electrode_vector);
-                    end
-                    limo.data.chanlocs = expected_chanlocs;
-                end
-            elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == N
-                if strcmp(g.type,'Components')
-                    limo.design.component = eval(cell2mat(electrode));
-                else
-                    limo.design.electrode = eval(cell2mat(electrode));
-                    expected_chanlocs = expected_chanlocs(limo.design.electrode);
-                end
-                limo.data.chanlocs = expected_chanlocs;
-            else
-                error('the nb of electrodes does not match the number of subjects')
-            end
-        else
-            limo.data.chanlocs = expected_chanlocs;
-            if strcmp(g.type,'Components')
-                limo.design.component = [];
-            else
-                limo.design.electrode = [];
-            end
-        end
-        
-        % get data for all parameters dim [electrode, frame, param]
-        disp('gathering data ...');
+        % get data for all parameters
+        % -----------------------------
         subject_index = 1;
         matrix_index  = 1;
         for h = gp_nb:-1:1 % each group
             nb_subjects(h) = 0;
             for i=size(Paths{h},2):-1:1 % for each subject of the gp h % i=1:size(Paths{h*sum(factor_levels)},2)
-                tmp = load(cell2mat(limo.data.data{h}(i)));
+                tmp = load(cell2mat(LIMO.data.data{h}(i)));
                 if isfield(tmp,'Betas')
                     tmp = tmp.Betas;
                 elseif isfield(tmp,'con')
                     tmp = tmp.con;
                     tmp = squeeze(tmp(:,:,1));
                 end
-                begins_at = max(first_frame) - first_frame(subject_index) + 1;
-                ends_at   = size(tmp,2) - (last_frame(subject_index) - min(last_frame));
+                
+                % get indices to trim data
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    begins_at = fliplr((max(first_frame) - first_frame(subject_index,:) + 1)); % returns time/freq/or freq-time
+                    ends_at(1) = size(tmp,2) - (last_frame(subject_index,2) - min(last_frame(:,2)));
+                    ends_at(2) = size(tmp,3) - (last_frame(subject_index,1) - min(last_frame(:,1)));
+                else
+                    begins_at = max(first_frame) - first_frame(subject_index) + 1;
+                    ends_at = size(tmp,2) - (last_frame(subject_index) - min(last_frame));
+                end
                 
                 % data are of dim size(expected_chanlocs,2), latter start/earlier stop across subjects, parameters, nb of subjects
-                if strcmp(g.analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
+                if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     
-                    if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
-                        matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                    elseif  strcmpi(g.type,'Components')
+                    if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
+                        matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
+                    elseif  strcmpi(LIMO.Type,'Components')
                         matched_data = tmp(:,begins_at:ends_at,:);
                     end
                     
                     if matrix_index == 1
-                        data(:,:,:,matrix_index) = matched_data;
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            data(:,:,:,:,matrix_index) = matched_data;
+                        else
+                            data(:,:,:,matrix_index) = matched_data;
+                        end
                     else
-                        if size(matched_data) == size(squeeze(data(:,:,:,1)))
+                        if strcmp(LIMO.Analysis,'Time-Frequency') && ...
+                                all(size(matched_data) == size(squeeze(data(:,:,:,:,1))))
+                            data(:,:,:,:,matrix_index) = matched_data;
+                        elseif ~strcmp(LIMO.Analysis,'Time-Frequency') && ...
+                                all(size(matched_data) == size(squeeze(data(:,:,:,1))))
                             data(:,:,:,matrix_index) = matched_data;
                         else
                             error('The data from subject %g have a different size than previous subjects?',i)
                         end
                     end
-                    matrix_index = matrix_index+1; 
+                    matrix_index = matrix_index+1;
                     removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
                     
                     % Use single electrode
-                elseif strcmp(g.analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
-                    if strcmpi(g.type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
-                        if size(limo.design.electrode,2) == 1
-                             matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs(subject_index),begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                elseif strcmp(analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
+                    if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
+                        if size(LIMO.design.electrode,2) == 1
+                            matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
                         else
-                            out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                             matched_data = out(i,:,:); % matches the expected chanloc of the subject
+                            out = limo_match_elec(subj_chanlocs(subject_index).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                            matched_data = out(i,:,:); % matches the expected chanloc of the subject
                         end
-                    elseif strcmpi(g.type,'Components')
-                        if size(limo.design.component,2) == 1
-                             matched_data = tmp(limo.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
+                    elseif strcmpi(LIMO.Type,'Components')
+                        if size(LIMO.design.component,2) == 1
+                            matched_data = tmp(LIMO.design.component,begins_at:ends_at,:); % all param for beta, if con, adjust dim
                         else
-                             matched_data = tmp(limo.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
+                            matched_data = tmp(LIMO.design.component(subject_index),begins_at:ends_at,:); % matches the expected chanloc of the subject
                         end
                     end
                     
                     if matrix_index == 1
-                        data(:,:,:,matrix_index) = matched_data;
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            data(:,:,:,:,matrix_index) = matched_data;
+                        else
+                            data(:,:,:,matrix_index) = matched_data;
+                        end
                     else
-                        if size( matched_data) == size(squeeze(data(1,:,:,1)))
+                        if strcmp(LIMO.Analysis,'Time-Frequency') && ...
+                                all(size(squeeze(matched_data)) == size(squeeze(data(:,:,:,:,1))))
+                            data(1,:,:,:,matrix_index) = matched_data;
+                        elseif ~strcmp(LIMO.Analysis,'Time-Frequency') && ...
+                                all(size(squeeze(matched_data)) == size(squeeze(data(:,:,:,:,1))))
                             data(1,:,:,matrix_index) = matched_data;
                         else
                             error('The data from subject %g have a different size than previous subjects?',i)
                         end
                     end
-                    matrix_index = matrix_index+1; 
+                    matrix_index = matrix_index+1;
                     removed{h}(i) = 0; nb_subjects(h) = nb_subjects(h)+1;
-
+                    
                 else
                     fprintf('subject %g gp %g discarded, channel description and data size don''t match',i,h); disp(' ')
                     removed{h}(i) = 1;
@@ -1757,24 +1315,28 @@ elseif type == 5
             end
         end
         
-        % 4th send relevant info to limo_random_robust
+        % 4th send relevant info to LIMO_random_robust
         % ----------------------------------------------
         for h=1:gp_nb
             for i=1:size(Paths{h},2)
                 if removed{h}(i) == 1
-                    limo.data.data{h}(i) = []; limo.data.data_dir{h}(i) = []; % somehow to indicate this subject is removed
+                    LIMO.data.data{h}(i) = []; LIMO.data.data_dir{h}(i) = []; % somehow to indicate this subject is removed
                 end
             end
         end
         
-        % the expected dim in limo_rep_anova are [frames, subjects,
-        % conditions] so we send to limo_random_robust data with dim
+        % the expected dim in LIMO_rep_anova are [frames, subjects,
+        % conditions] so we send to LIMO_random_robust data with dim
         % [electrodes, frames, subjects, conditions] + one vector
         % describing the group belonging
         
         if strcmp(a,'con')
             nb_subjects = nb_subjects / prod(factor_nb);
-            tmp_data = NaN(size(data,1),size(data,2),sum(nb_subjects), prod(factor_nb));
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                tmp_data = NaN(size(data,1),size(data,2),size(data,3),sum(nb_subjects), prod(factor_nb));
+            else
+                tmp_data = NaN(size(data,1),size(data,2),sum(nb_subjects), prod(factor_nb));
+            end
             gp = NaN(sum(nb_subjects),1);
             
             for i=1:gp_nb
@@ -1786,13 +1348,20 @@ elseif type == 5
                 gp(from:to) = i;
                 
                 for j=1:prod(factor_nb)
-                    tmp_data(:,:,from:to,j) = squeeze(data(:,:,1,index1:index2));
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        tmp_data(:,:,:,from:to,j) = squeeze(data(:,:,:,1,index1:index2));
+                    else
+                        tmp_data(:,:,from:to,j) = squeeze(data(:,:,1,index1:index2));
+                    end
                     index1 = index1+nb_subjects(i); index2 = index2+nb_subjects(i);
                 end
             end
-            
         else
-            tmp_data = NaN(size(data,1),size(data,2),sum(nb_subjects), prod(factor_nb));
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                tmp_data = NaN(size(data,1),size(data,2),size(data,3),sum(nb_subjects), prod(factor_nb));
+            else
+                tmp_data = NaN(size(data,1),size(data,2),sum(nb_subjects), prod(factor_nb));
+            end
             gp = NaN(sum(nb_subjects),1);
             
             for i=1:gp_nb
@@ -1809,29 +1378,42 @@ elseif type == 5
                     if current_param(j)>size(data,3)
                         error('The parameter %g requested (gp %g) is not valid, beta max=%g ',current_param(j),i,size(data,3))
                     end
-                    tmp_data(:,:,from:to,j) = squeeze(data(:,:,current_param(j),from:to));
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        tmp_data(:,:,:,from:to,j) = squeeze(data(:,:,:,current_param(j),from:to));
+                    else
+                        tmp_data(:,:,from:to,j) = squeeze(data(:,:,current_param(j),from:to));
+                    end
                 end
             end
         end
         
         % finally, since all seems to match up, ask for factor names
         % ---------------------------------------------------------
-        limo.design.factor_names = cell(1,length(factor_nb));
+        LIMO.design.factor_names = cell(1,length(factor_nb));
         for i=1:length(factor_nb)
-            limo.design.factor_names{i} = cell2mat(inputdlg(['name factor ' num2str(i) ': ' num2str(factor_nb(i)) ' levels'],'Rep. Measures Names',1,{''},'on'));
-            if isempty(limo.design.factor_names{i})
-                limo.design.factor_names{i} = ['Factor_' num2str(i)];
+            LIMO.design.factor_names{i} = cell2mat(inputdlg(['name factor ' num2str(i) ': ' num2str(factor_nb(i)) ' levels'],'Rep. Measures Names',1,{''},'on'));
+            if isempty(LIMO.design.factor_names{i})
+                LIMO.design.factor_names{i} = ['Factor_' num2str(i)];
             end
         end
         
+        clear Betas channeighbstructmat data expected_chanlocs Names Paths subj_chanlocs
+        cd(LIMO.dir); 
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            LIMO.data.size4D = size(tmp_data);
+            LIMO.data.size3D = [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
+        end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+        Yr = tmp_data; save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
+        clear tmp_data
+        
         % compute
         % --------
-        cd(limo.dir); 
-        LIMO = limo; save('LIMO.mat','LIMO')
-        Yr = tmp_data; save('Yr.mat','Yr');
-        clear limo Betas Yr channeighbstructmat data expected_chanlocs Names Paths limo subj_chanlocs
-        tmpname = limo_random_robust(type+1,tmp_data,gp,factor_nb,LIMO,g.nboot,g.tfce);
-        if nargout ~= 0, filepath = tmpname; end
+        tmpname = limo_random_robust(stattest+1,Yr,gp,factor_nb,LIMO);
+        if nargout ~= 0
+            LIMOPath = tmpname; 
+            fprintf('data saved in %s\n',LIMOPath);
+        end
                 
     end
 end % closes type
@@ -1845,19 +1427,27 @@ end % closes the function
 %                                   ROUTINES
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
+%% multiple files cell entries
+function [Names,Paths,Files] = breaklimofiles(cellfiles)
+N     = size(cellfiles,1);
+Paths = cell(1,N);
+Names = cell(1,N);
+Files = cell(1,N);
+for ifiles = 1:N
+    [Paths{ifiles}, filename, ext] = fileparts(cellfiles{ifiles});
+    Names{ifiles}                  = [filename ext];
+    Files{ifiles}                  = fullfile(Paths{ifiles},[filename ext]);
+end
+end
 
-%% file checking subfunction
+%% file checking 
 function parameters = check_files(Names,gp,parameters)
-
 % after selecting file, check they are all the same type
-% parameters 
 
 if nargin < 3
     parameters = [];
 end
-
 if gp == 1
-    
     if iscell(Names{gp})
         Names = Names{gp};
     end
@@ -1933,27 +1523,22 @@ elseif gp > 1
     elseif (isempty(is_con)) == 0 && sum(cell2mat(test)) == size(Names,2)
         parameters = 1;
     end
-    
 end
 end
 
-
-%% frame matching subfunction
-function [first_frame,last_frame,subj_chanlocs,channeighbstructmat] = match_frames(Paths)
+%% frame matching 
+function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match_frames(Paths,LIMO)
 
 % once we have all the files, we need to collect information to match the 
 % frames across subjects 
-% INPUT: each subjects' Path
 % OUTPUT: first_frame and last _frame returns the beginning and end in terms of indices
 %                                     for time-frequency these are vectors with time then frequency
 %         subj_chanlocs the chanlocs per subjects
 %         channeighbstructmat the neighbourg matrices
-% the limo structure is also updated the reflect the smallest interval(s) across subjects, 
+% the LIMO structure is also updated the reflect the smallest interval(s) across subjects, 
 % which is used for the second leve analysis
 
-global limo
-channeighbstructmat = []; ME = [];
-
+channeighbstructmat = []; 
 disp('match frames between subjects ...')
 % check Paths format
 if iscell(Paths{1})
@@ -1970,14 +1555,16 @@ end
 % now loop loading the LIMO.mat for each subject to collect information
 % ---------------------------------------------------------------------       
 
-for i=size(Paths,2):-1:1 % by running backward we allocate memory on the 1st iteration
+ME = [];
+for i=size(Paths,2):-1:1 
      try
         if iscell(Paths{i})
             cd (cell2mat(Paths{i}));
         else
             cd (Paths{i}); 
         end
-        LIMO = load('LIMO.mat'); LIMO = LIMO.LIMO;
+        limo = load('LIMO.mat'); 
+        limo = limo.LIMO;
      catch
          if iscell(Paths{i}) 
              p=cell2mat(Paths{i}); 
@@ -1988,84 +1575,85 @@ for i=size(Paths,2):-1:1 % by running backward we allocate memory on the 1st ite
      end
      
     if i==size(Paths,2)
-        Analysis = LIMO.Analysis;
+        Analysis = limo.Analysis;
     else
-        if ~strcmp(LIMO.Analysis,Analysis)
+        if ~strcmp(limo.Analysis,Analysis)
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
         end
     end
     
-    sampling_rate(i)          = LIMO.data.sampling_rate;
+    sampling_rate(i) = limo.data.sampling_rate;
     if strcmpi(LIMO.Type,'Channels')
-        subj_chanlocs(i).chanlocs = LIMO.data.chanlocs;
-        if isfield(LIMO.data,'channeighbstructmat')
-            channeighbstructmat = LIMO.data.channeighbstructmat;
+        subj_chanlocs(i).chanlocs = limo.data.chanlocs;
+        if isfield(limo.data,'channeighbstructmat')
+            channeighbstructmat = limo.data.channeighbstructmat;
         end
     else
         subj_chanlocs(i).chanlocs = [];
     end
     
     if strcmp(Analysis,'Time-Frequency')
-        first_frame(i,1)            = LIMO.data.trim1;
-        last_frame(i,1)             = LIMO.data.trim2;
-        start(i,1)                  = LIMO.data.start;
-        stop(i,1)                   = LIMO.data.end;
+        first_frame(i,1)            = limo.data.trim1;
+        last_frame(i,1)             = limo.data.trim2;
+        start(i,1)                  = limo.data.start;
+        stop(i,1)                   = limo.data.end;
         
-        first_frame(i,2)            = LIMO.data.trim_low_f;
-        last_frame(i,2)             = LIMO.data.trim_high_f;
-        start(i,2)                  = LIMO.data.tf_freqs(1);
-        stop(i,2)                   = LIMO.data.tf_freqs(end);
+        first_frame(i,2)            = limo.data.trim_lowf;
+        last_frame(i,2)             = limo.data.trim_highf;
+        start(i,2)                  = limo.data.tf_freqs(1);
+        stop(i,2)                   = limo.data.tf_freqs(end);
         
-        tf_times{i}(1,:)            = LIMO.data.tf_times;
-        tf_freqs{i}(1,:)            = LIMO.data.tf_freqs;
+        tf_times{i}(1,:)            = limo.data.tf_times;
+        tf_freqs{i}(1,:)            = limo.data.tf_freqs;
     else
-        first_frame(i)              = LIMO.data.trim1;
-        last_frame(i)               = LIMO.data.trim2;
-        start(i)                    = LIMO.data.start;
-        stop(i)                     = LIMO.data.end;
+        first_frame(i)              = limo.data.trim1;
+        last_frame(i)               = limo.data.trim2;
+        start(i)                    = limo.data.start;
+        stop(i)                     = limo.data.end;
         
         if strcmp(Analysis,'Frequency')
-            freqlist{i}(1,:)        = LIMO.data.freqlist;
+            freqlist{i}(1,:)        = limo.data.freqlist;
         end
     end
 end
+clear limo
 
 % quick check things are ok
-if  strcmpi(LIMO.Type,'Channels') && ~isempty(ME) && isempty(limo.data.neighbouring_matrix)
+if  strcmpi(LIMO.Type,'Channels') && ~isempty(ME) && isempty(LIMO.data.neighbouring_matrix)
     error('some subject(s) have a different channel structure \nplease load an expected chanloc when choosing a test');
 end
 
-if (sum(sampling_rate == sampling_rate(1))) ~= length(sampling_rate)
+if length(unique(sampling_rate)) ~= 1
     error('data have different sampling rates')
 end
 
-% match and return into limo - the temp structure passed as global
-limo.Analysis = Analysis;
-limo.data.sampling_rate = sampling_rate(1);
+% match and return into LIMO 
+LIMO.Analysis           = Analysis;
+LIMO.data.sampling_rate = sampling_rate(1);
 
 % we need 1) to find the highest start in time and freq 2) the lowest end
 % in time and freq and 3) match that on freqlist or tf_times/tf_freqs
 
 [v,c] = max(first_frame);
 if strcmp(Analysis,'Time-Frequency')
-    limo.data.trim1 = v(1);
-    limo.data.start = start(c(1),1);
-    limo.data.trim_low_f = v(2);
-    limo.data.low_f = start(c(2),2);
+    LIMO.data.trim1 = v(1);
+    LIMO.data.start = start(c(1),1);
+    LIMO.data.trim_lowf = v(2);
+    LIMO.data.lowf = start(c(2),2);
     % loop to adjust each subject list
     for i=1:size(Paths,2)
-        [~,ind] = min(abs(tf_times{i}-limo.data.start));
+        [~,ind] = min(abs(tf_times{i}-LIMO.data.start));
         tf_times{i} = tf_times{i}(ind:end);
-        [~,ind] = min(abs(tf_freqs{i}-limo.data.low_f));
+        [~,ind] = min(abs(tf_freqs{i}-LIMO.data.lowf));
         tf_freqs{i} = tf_freqs{i}(ind:end);
     end
 else
-    limo.data.trim1 = v;
-    limo.data.start = start(c);
+    LIMO.data.trim1 = v;
+    LIMO.data.start = start(c);
     if strcmp(Analysis,'Frequency')
         % loop to adjust each subject list
         for i=1:size(Paths,2)
-            [~,ind] = min(abs(freqlist{i}-limo.data.start));
+            [~,ind] = min(abs(freqlist{i}-LIMO.data.start));
             freqlist{i} = freqlist{i}(ind:end);
         end
     end
@@ -2073,29 +1661,28 @@ end
 
 [v,c] = min(last_frame);
 if strcmp(Analysis,'Time-Frequency')
-    limo.data.trim2 = v(1);
-    limo.data.end = stop(c(1),1);
-    limo.data.trim_high_f = v(2);
-    limo.data.high_f = stop(c(2),2);
+    LIMO.data.trim2 = v(1);
+    LIMO.data.end = stop(c(1),1);
+    LIMO.data.trim_highf = v(2);
+    LIMO.data.highf = stop(c(2),2);
     % loop to adjust each subject list
     for i=1:size(Paths,2)
-        [~,ind] = min(abs(tf_times{i}-limo.data.end));
+        [~,ind] = min(abs(tf_times{i}-LIMO.data.end));
         tf_times{i} = tf_times{i}(1:ind);
-        [~,ind] = min(abs(tf_freqs{i}-limo.data.high_f));
+        [~,ind] = min(abs(tf_freqs{i}-LIMO.data.highf));
         tf_freqs{i} = tf_freqs{i}(1:ind);
     end
 else
-    limo.data.trim2 = v;
-    limo.data.end = stop(c);
+    LIMO.data.trim2 = v;
+    LIMO.data.end = stop(c);
     if strcmp(Analysis,'Frequency')
         % loop to adjust each subject list
         for i=1:size(Paths,2)
-            [~,ind] = min(abs(freqlist{i}-limo.data.end));
+            [~,ind] = min(abs(freqlist{i}-LIMO.data.end));
             freqlist{i} = freqlist{i}(1:ind);
         end
     end
 end
-
 
 % finally match everything
 if strcmp(Analysis,'Frequency')
@@ -2104,11 +1691,11 @@ if strcmp(Analysis,'Frequency')
         freqlist = cell2mat(freqlist');
     catch list_issue
         assignin('base','freqlist',freqlist)
-        error('the resolution of frequency lists doesn''t match between subjects')
+        error('the resolution of frequency lists doesn''t match between subjects \n%s',list_iisue.message)
     end
-    limo.data.freqlist = mean(freqlist,1);
-    limo.data.start    = limo.data.freqlist(1);
-    limo.data.end      = limo.data.freqlist(end);
+    LIMO.data.freqlist = mean(freqlist,1);
+    LIMO.data.start    = LIMO.data.freqlist(1);
+    LIMO.data.end      = LIMO.data.freqlist(end);
     
 elseif strcmp(Analysis,'Time-Frequency')
     % check all lists match
@@ -2116,25 +1703,316 @@ elseif strcmp(Analysis,'Time-Frequency')
         tf_times = cell2mat(tf_times');
         tf_freqs = cell2mat(tf_freqs');
     catch list_issue
-        error('the resolution of time/frequency lists doesn''t match between subjects')
+        error('the resolution of time/frequency lists doesn''t match between subjects \n%s',list_issue.message)
     end
-    limo.data.tf_times = mean(tf_times,1);
-    limo.data.tf_freqs = mean(tf_freqs,1);
-    limo.data.start    = limo.data.tf_times(1);
-    limo.data.low_f    = limo.data.tf_freqs(1);
-    limo.data.end      = limo.data.tf_times(end);
-    limo.data.high_f   = limo.data.tf_freqs(end);
+    LIMO.data.tf_times = mean(tf_times,1);
+    LIMO.data.tf_freqs = mean(tf_freqs,1);
+    LIMO.data.start    = LIMO.data.tf_times(1);
+    LIMO.data.lowf     = LIMO.data.tf_freqs(1);
+    LIMO.data.end      = LIMO.data.tf_times(end);
+    LIMO.data.highf    = LIMO.data.tf_freqs(end);
+end
+cd(LIMO.dir)
+end
+
+%% match electrodes and update LIMO
+function LIMO = match_electrodes(stattest,analysis_type,LIMO)
+
+% note electrode can be a singleton or a vector (electrode/component optimized analysis)
+if strcmpi(analysis_type,'1 channel/component only')
+    if isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Channels')
+        electrode = inputdlg('which electrode to analyse [?]','Electrode option'); 
+    elseif isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Components')
+        electrode = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
+    else
+        electrode = {num2str(LIMO.design.electrode)};
+    end
+    
+    if isempty(cell2mat(electrode))
+        [file,filepath,index] = uigetfile('*.mat',['select a ' LIMO.Type ' file']);
+        if isempty(file) || index == 0
+            return
+        else
+            % check the vector has the same length as the number of files
+            electrode_vector = load(fullfile(filepath,file));
+            tmpname          = fieldnames(electrode_vector);
+            electrode_vector = getfield(electrode_vector,tmpname{1});
+            clear tmpname
+            if length(electrode_vector) ~= length(Paths)
+                errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],'Error');
+                return;
+            end
+            % add the name to LIMO
+            if stattest == 1
+                LIMO.design.name = ['one sample t-test one ' LIMO.Type(1:end-1)];
+            elseif stattest == 2
+                LIMO.design.name = ['two samples t-test one ' LIMO.Type(1:end-1)];
+            elseif stattest == 3
+                LIMO.design.name = ['paired t-test one ' LIMO.Type(1:end-1)];
+            elseif stattest == 4
+                LIMO.design.name = ['regression analysis one ' LIMO.Type(1:end-1)];
+            elseif stattest == 5
+                LIMO.design.name = ['AN(C)OVA analysis one ' LIMO.Type(1:end-1)];
+            end
+            
+            % restric the channels
+            if strcmp(LIMO.Type,'Channels')
+                LIMO.data.chanlocs          = LIMO.data.expected_chanlocs;
+                LIMO.data.expected_chanlocs = LIMO.data.expected_chanlocs(electrode_vector);
+                LIMO.design.electrode       = electrode_vector;
+            else
+                LIMO.data.chanlocs    = [];
+                LIMO.design.component = electrode_vector;
+            end
+        end
+        
+    elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == size(Names,2)
+        if stattest == 1
+            LIMO.design.name = ['one sample t-test one ' LIMO.Type(1:end-1)];
+        elseif stattest == 2
+            LIMO.design.name = ['two samples t-test one ' LIMO.Type(1:end-1)];
+        elseif stattest == 3
+            LIMO.design.name = ['paired t-test one ' LIMO.Type(1:end-1)];
+        elseif stattest == 4
+            LIMO.design.name = ['regression analysis one ' LIMO.Type(1:end-1)];
+        elseif stattest == 5
+            LIMO.design.name = ['AN(C)OVA analysis one ' LIMO.Type(1:end-1)];
+        end
+        
+        if strcmp(LIMO.Type,'Channels')
+            LIMO.design.electrode       = eval(cell2mat(electrode));
+            LIMO.data.chanlocs          = LIMO.data.expected_chanlocs;
+            LIMO.data.expected_chanlocs = LIMO.data.expected_chanlocs(LIMO.design.electrode);
+        else
+            LIMO.design.component = eval(cell2mat(electrode));
+            LIMO.data.chanlocs    = [];
+        end
+    else
+        errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],[LIMO.Type(1:end-1) ' error']);
+        return
+    end
+    
+    % ---------------
+else % Full scalp
+    % ---------------
+    
+    if stattest == 1
+        LIMO.design.name = ['One sample t-test all ' LIMO.Type];
+    elseif stattest == 2
+        LIMO.design.name = ['Two samples t-test all ' LIMO.Type];
+    elseif stattest == 3
+        LIMO.design.name = ['Paired t-test all ' LIMO.Type];
+    elseif stattest == 4
+        LIMO.design.name = ['Regression analysis all ' LIMO.Type];
+    elseif stattest == 5
+        LIMO.design.name = ['AN(C)OVA analysis all ' LIMO.Type];
+    end
+    
+    LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+    if strcmpi(LIMO.Type,'Components')
+        LIMO.design.component = [];
+    else
+        LIMO.design.electrode = [];
+    end
 end
 end
 
-function [Names,Paths,Files] = breaklimofiles(cellfiles)
-N     = size(cellfiles,1);
-Paths = cell(1,N);
-Names = cell(1,N);
-Files = cell(1,N);
-for ifiles = 1:N
-    [Paths{ifiles}, filename, ext] = fileparts(cellfiles{ifiles});
-    Names{ifiles}                  = [filename ext];
-    Files{ifiles}                  = fullfile(Paths{ifiles},[filename ext]);
+%% assemble the data matrix 
+function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO)
+
+disp('gathering data ...');
+if stattest == 1 || stattest == 4
+    index = 1;
+    for i=size(LIMO.data.data,2):-1:1 % for each subject
+        tmp = load(LIMO.data.data{i});
+        
+        % get indices to trim data
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            if contains(LIMO.data.data{i},'Betas')
+                tmp = tmp.Betas;
+            else
+                tmp = tmp.con(:,:,:,1);
+            end
+            begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
+            ends_at(1) = size(tmp,2) - (last_frame(i,2) - min(last_frame(:,2)));
+            ends_at(2) = size(tmp,3) - (last_frame(i,1) - min(last_frame(:,1)));
+        else
+            if contains(LIMO.data.data{i},'Betas')
+                tmp = tmp.Betas;
+            else
+                tmp = tmp.con(:,:,1);
+            end
+            begins_at = max(first_frame) - first_frame(i) + 1;
+            ends_at = size(tmp,2) - (last_frame(i) - min(last_frame));
+        end
+        
+        % data dim [electrode, freq/time, param, nb subjects]
+        if strcmp(analysis_type,'Full scalp analysis')
+            if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
+                else
+                    data(:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
+                end
+            elseif strcmpi(LIMO.Type,'Components')
+                try
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                    else
+                        data(:,:,:,index) = tmp(:,begins_at:ends_at,:);
+                    end
+                catch dim_error
+                    if strcmp(dim_error,'Subscripted assignment dimension mismatch.')
+                        disp('you are trying to match matrices of ICs of different size')
+                        if isempty(expected_chanlocs)
+                            disp('either cluster data are run 1st level batch, or input cluster file')
+                        end
+                    end
+                end
+            end
+            index = index + 1; 
+            removed(i) = 0;
+        
+        elseif strcmp(analysis_type,'1 channel/component only') %&& size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+            
+            % Use single electrode
+            if  length(LIMO.design.electrode) == 1
+                if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                    else
+                        data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                    end
+                elseif strcmpi(LIMO.Type,'Components')
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(:,:,:,:,index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                    else
+                        data(:,:,:,index) = tmp(LIMO.design.component,begins_at:ends_at,:);
+                    end
+                end
+                index = index + 1; 
+                removed(i) = 0;
+                
+                % Use multiple single electrodes
+            else
+                if strcmpi(LIMO.Type,'Channels')
+                    out = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(1,:,:,:,index) = out(i,:,:,:);
+                    else
+                        data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                    end
+                elseif strcmpi(LIMO.Type,'Components')
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        data(1,:,:,:,index) = tmp(LIMO.design.component(i),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                    else
+                        data(1,:,:,index) = tmp(LIMO.design.component(i),begins_at:ends_at,:);
+                    end
+                end
+                index = index +1; 
+                removed(i) = 0;
+            end
+        else
+            fprintf('subject %g discarded, channel description and data size don''t match \n',i);
+            removed(i) = 1;
+        end
+        clear tmp
+    end
+    
+elseif stattest == 2
+    subject_nb = 1;
+    for igp = 1:size(LIMO.data.data,2)
+        index = 1;
+        for i=1:size(LIMO.data.data{igp},2) % for each subject per group
+            tmp = load(cell2mat(LIMO.data.data{igp}(i)));
+            
+            % get indices to trim data
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                if contains(cell2mat(LIMO.data.data{igp}(i)),'Betas')
+                    tmp = tmp.Betas;
+                else
+                    tmp = tmp.con(:,:,:,1);
+                end
+                begins_at = fliplr((max(first_frame) - first_frame(subject_nb,:) + 1)); % returns time/freq/or freq-time
+                ends_at(1) = size(tmp,2) - (last_frame(subject_nb,2) - min(last_frame(:,2)));
+                ends_at(2) = size(tmp,3) - (last_frame(subject_nb,1) - min(last_frame(:,1)));
+            else
+                if contains(cell2mat(LIMO.data.data{igp}(i)),'Betas')
+                    tmp = tmp.Betas;
+                else
+                    tmp = tmp.con(:,:,1);
+                end
+                begins_at = max(first_frame) - first_frame(subject_nb) + 1;
+                ends_at = size(tmp,2) - (last_frame(subject_nb) - min(last_frame));
+            end
+            
+            if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
+                if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        tmp_data(:,:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                    else
+                        tmp_data(:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                    end
+                elseif strcmpi(LIMO.Type,'Components')
+                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                        tmp_data(:,:,:,:,index) = tmp(:,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                    else
+                        tmp_data(:,:,:,index) = tmp(:,begins_at:ends_at,:);
+                    end
+                    
+                end
+                index = index + 1;
+            elseif strcmp(analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
+                
+                % Use single electrode
+                if size(LIMO.design.electrode,2) == 1
+                    if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(1,:,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        else
+                            tmp_data(1,:,:,index) = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        end
+                    elseif strcmpi(LIMO.Type,'Components')
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(1,:,:,:,index) = tmp(LIMO.design.electrode,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % all param for beta, if con, adjust dim
+                        else
+                            tmp_data(1,:,:,index) = tmp(LIMO.design.electrode,begins_at:ends_at,:); % all param for beta, if con, adjust dim
+                        end
+                    end
+                    index = index + 1;
+                    
+                    % Use multiple single electrodes
+                else
+                    if strcmpi(LIMO.Type,'Channels')
+                        out = LIMO_match_elec(subj_chanlocs(subject_nb).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(1,:,:,:,index) = out(subject_nb,:,:,:); % matches the expected chanloc of the subject
+                        else
+                            tmp_data(1,:,:,index) = out(subject_nb,:,:);     % matches the expected chanloc of the subject
+                        end
+                    elseif strcmpi(LIMO.Type,'Components')
+                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                            tmp_data(1,:,:,:,index) = tmp(LIMO.design.electrode(subject_nb),begins_at(1):ends_at(1),begins_at(2):ends_at(2),:); % matches the expected chanloc of the subject
+                        else
+                            tmp_data(1,:,:,index) = tmp(LIMO.design.electrode(subject_nb),begins_at:ends_at,:);     % matches the expected chanloc of the subject
+                        end
+                    end
+                    index = index +1;
+                end
+            else
+                fprintf('subject %g of group %g discarded, channel description and data size don''t match',i, igp); disp(' ')
+                removed(igp,i) = 1;
+            end
+            clear tmp
+            subject_nb = subject_nb + 1;
+        end
+        data{igp} = tmp_data;
+        clear tmp tmp_data
+    end
+
+elseif stattest == 3
+    disp('to do')
+elseif stattest == 5
+    disp('to do')
 end
 end

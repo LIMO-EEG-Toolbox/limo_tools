@@ -1,4 +1,4 @@
-function filepath = limo_random_robust(varargin)
+function LIMOPath = limo_random_robust(varargin)
 
 % This function makes the result files for the random effects of various tests
 % as well as organizes and makes files for boostrap. It is interfaced with
@@ -7,137 +7,114 @@ function filepath = limo_random_robust(varargin)
 % functions to perform the actual computation and add the trimmed mean or mean
 % of parameters for the correponding test (helps for vizualizing effects)
 %
-% FORMAT limo_random_robust(test,data,label,nboot,tfce)
-%        filepath = limo_random_robust(test,data,label,nboot,tfce);
+% FORMAT LIMOPath = limo_random_robust(test,data,label,LIMO)
 %
-% INPUTS --- note that a LIMO.mat is also expected in the current directory
-%            see limo_random_select
+% INPUTS
 %
-% limo_random_robust(1,y,parameter number,nboot,tfce)
+% limo_random_robust(1,y,parameter number,LIMO)
 %                    1 = a one-sample t-test
 %                    y = data (dim electrodes, time or freq, subjects)
 %                      = data (dim electrodes, freq, time, subjects)
+%                      = the name of the Yr file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(2,y1,y2,parameter number,nboot,tfce);
+% limo_random_robust(2,y1,y2,parameter number,LIMO)
 %                    2 = two samples t-test
 %                    y1 = data (dim electrodes, time or freq, subjects)
 %                       = data (dim electrodes, freq, time, subjects)
+%                       = the name of the Y1r file
 %                    y2 = data (dim electrodes, time or freq, subjects)
 %                       = data (dim electrodes, freq, time, subjects)
+%                       = the name of the Y2r file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(3,y1,y2,parameter number,nboot,tfce);
+% limo_random_robust(3,y1,y2,parameter number,LIMO)
 %                    3 = paired t-test
 %                    y1 = data (dim electrodes, time or freq, subjects)
 %                       = data (dim electrodes, freq, time, subjects)
+%                       = the name of the Y1r file
 %                    y2 = data (dim electrodes, time or freq, subjects)
 %                       = data (dim electrodes, freq, time, subjects)
+%                       = the name of the Y2r file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(4,y,X,parameter number,nboot,tfce);
+% limo_random_robust(4,y,X,parameter number,LIMO)
 %                    4 = regression analysis
 %                    y = data (dim electrodes, time or freq, subjects)
 %                      = data (dim electrodes, freq, time, subjects)
 %                    X = continuous regressor(s)
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %
-% limo_random_robust(5,y,cat,cont,LIMO,nboot,tfce)
+% limo_random_robust(5,y,cat,cont,LIMO,'go',option)
 %                    5 = N-way ANOVA/ANCOVA
 %                    y = data (dim electrodes, time or freq, subjects)
 %                      = data (dim electrodes, freq, time, subjects)
+%                      = the name of the Yr file
 %                    cat = categorical variable(s)
 %                    cont = continuous regressors (covariates)
 %                    LIMO the basic structure with data, design and channel info
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
+%                    'go' is optional and prompt or not the design
+%                         options are 'yes' (prompt, default),
+%                         or 'no' (no prompt, usuful for scripting)
 %
-% limo_random_robust(6,y,gp,factor_levels,LIMO,nboot,tfce,'go',option)
+% limo_random_robust(6,y,gp,factor_levels,LIMO,'go',option)
 %                    6 = Repeated measures ANOVA/ANCOVA using multivariate approach
 %                    y = data (dim electrodes, time or freq, subjects, measures)
 %                      = data (dim electrodes, freq, time, subjects, measures)
-%                      or full name of the data file
+%                      = the name of the Yr file
 %                    gp = a vector defining gps
 %                    factor_levels = a vector specifying the levels of each repeated measure factor
 %                    LIMO the basic structure with data, design and channel info
 %                         or the full name of the LIMO file
-%                    nboot = nb of resamples (0 for none)
-%                    tfce = 0/1 to compute tcfe (only if nboot ~=0).
 %                    'go' is optional and prompt or not the pseudo-design
-%                    with N condition, options are 'yes' (prompt, default), 
-%                    or 'no' (no prompt, usuful for scripting) 
+%                         options are 'yes' (prompt, default),
+%                         or 'no' (no prompt, usuful for scripting)
 %
-% OUPUT
+% OUTPUT
 % write on the disk matrices correponding to the test (Yr and LIMO.mat are generated in limo_random_select,
 % and for Regression, ANOVA, the LIMO.mat structure is updated)
 %
 % 1 one_sample_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_one_sample_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
+%   H0_one_sample_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
 % 2 two_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_two_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
+%   H0_two_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
 % 3 paired_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_paired_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], nboot)
+%   H0_paired_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
 % 4 R2 (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_R2 (electrodes, frames, [F p], nboot)
+%   H0_R2 (electrodes, frames, [F p], LIMO.design.bootstrap)
 %   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Covariate_effect_X (electrodes, frames, [F p], nboot)
+%   H0_Covariate_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
 %
 % 5 Condition_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Condition_effect_X (electrodes, frames, [F p], nboot)
+%   H0_Condition_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
 %   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Covariate_effect_X (electrodes, frames, [F p], nboot)
+%   H0_Covariate_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
 %
 % 6 Rep_ANOVA_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
 %   Rep_ANOVA_Gp_effect (electrodes, frames [time, freq or freq-time], [F p values])
 %   Rep_ANOVA_Interaction_gp_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_XXXXX same as above, including nboot on the last dimension
+%   H0_XXXXX same as above, including LIMO.design.bootstrap on the last dimension
 %
-% filepath - Path to the contrast result file. Mainly for EEGALB functionality to
-%            allow loading test directly.
+% LIMOPath = LIMO.dir or [] if failed
 %
 % See also LIMO_TRIMCI LIMO_YUEN_TTEST LIMO_YUEND_TTEST LIMO_ROBUST_1WAY_ANOVA
 % LIMO_GLM1 LIMO_EEG(4) LIMO_EEG_TF(4) LIMO_REP_ANOVA LIMO_CREATE_BOOT_TABLE
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
-
-% v1: Cyril Pernet and Guillaume Rousselet 24-08-2009
-% v2: Cyril Pernet 12-07-2010
-% v3: GAR 25-08-2010 - fixed bug in one-sample bootstrap + added new NaN check of boot indices
-% 29-08-2010: Cyril Pernet and Guillaume Rousselet ANOVAs sorted out (boot_index per cell)
-% 11/12-2012 Marianne Latinus added TFCE computation. Also added a check
-% that if a bootstrap file with same characteristics (nboot, and nelec) on
-% the same data exists the bootstrap step is skipped.
-% v4: 02/06/2013 cleaned up + changed ANOVA to create matrices amd run
-% limo_glm(4) - updated repeated measure - boot_tables are made via
-% function -- thx to Benedikt Ehinger for spotting a few bugs here and
-% there
-% Novembre 2013 - Matt Craddock fixes applied on rep ANOVA for single
-% electrode analyses
-% v5: May 2014 - added time-frequency analyses + added check for matrices with
-% NaNs everywhere (ie empty channel) + changed test of hypotheses to
-% trimmed means when possible
-
+%  Copyright (C) LIMO Team 2020
 
 %% inputs checks
-filepath = pwd;
-type = varargin{1};
-if type == 1
-    tfce = varargin{5};
+LIMOPath = [];
+if nargin == 0
+    help limo_random_robust
 else
-    tfce = varargin{6};
+    type  = varargin{1};
+    if type <1 || type > 6
+        error('type argument must be between 1 and 6')
+    end
 end
-alpha = .05; % used for a basic computation like in t-test but data aren't thresholded here
 
 %% start
 
@@ -147,20 +124,19 @@ switch type
     %--------------------------------------------------------------------------
     case {1}
         
-        if exist('LIMO.mat','file')
-            LIMO = load('LIMO.mat'); LIMO = LIMO.LIMO;
+        if ischar(varargin{2})
+            data      = load(varargin{2});
+            data      = getfield(data,cell2mat(fieldnames(data)));
         else
-            error('no LIMO.mat in current directory')
+            data  = varargin{2};
         end
+        parameter = varargin{3};
+        LIMO      = varargin{4};
+        cd(LIMO.dir);
         
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             data = limo_tf_4d_reshape(varargin{2});
-        else
-            data = varargin{2};
         end
-        parameter = varargin{3};
-        nboot     = varargin{4};
-        tfce      = varargin{5};
         clear varargin
         
         % ------------------------------------------------
@@ -202,7 +178,6 @@ switch type
                 [one_sample(electrode,:,1),one_sample(electrode,:,3),~,sd,n, ...
                     one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
                 one_sample(electrode,:,2) = sd./sqrt(n);
-                limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', [])
             else
                 error('unrecognized LIMO.design.method: %s',LIMO.design.method)
             end
@@ -213,11 +188,11 @@ switch type
             one_sample = limo_tf_4d_reshape(one_sample);
         end
         save (name,'one_sample', '-v7.3')
-        if nargout ~= 0, filepath = [fullfile(pwd,name),'.mat']; end
-
+        LIMOPath = LIMO.dir;
+        
         % ------------------------------------------------
         % Bootstrap
-        if nboot > 0
+        if LIMO.design.bootstrap > 0
             
             bootex = 1;
             boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
@@ -233,13 +208,13 @@ switch type
             if bootex == 1
                 mkdir H0
                 % create a boot one_sample file to store data under H0 and H1
-                H0_one_sample = NaN(size(data,1), size(data,2),2,nboot); % stores T and p values for each boot under H0
+                H0_one_sample = NaN(size(data,1), size(data,2),2,LIMO.design.bootstrap); % stores T and p values for each boot under H0
                 % create centered data to estimate H0
                 centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
                 % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
                 % get boot table
                 disp('making boot table ...')
-                boot_table = limo_create_boot_table(data,nboot);
+                boot_table = limo_create_boot_table(data,LIMO.design.bootstrap);
                 save(['H0', filesep, 'boot_table'], 'boot_table')
                 
                 % get results under H0
@@ -248,16 +223,16 @@ switch type
                     tmp = centered_data(electrode,:,:);
                     Y   = tmp(1,:,find(~isnan(tmp(1,1,:))));
                     if strcmpi(LIMO.design.method,'Trimmed Mean')
-                        parfor b=1:nboot
+                        parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~] = limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
                         end
                     elseif strcmpi(LIMO.design.method,'Mean')
-                        parfor b=1:nboot
+                        parfor b=1:LIMO.design.bootstrap
                             [~,~,~,~,~,t{b},p{b}] = limo_ttest(1,Y(1,:,boot_table{electrode}(:,b)),0,5/100);
                         end
                     end
                     
-                    for b=1:nboot
+                    for b=1:LIMO.design.bootstrap
                         H0_one_sample(electrode,:,1,b) = t{b};
                         H0_one_sample(electrode,:,2,b) = p{b};
                     end
@@ -269,94 +244,41 @@ switch type
                 end
                 save (['H0', filesep, boot_name],'H0_one_sample','-v7.3');
             end
-            
-            if tfce ~= 0
-                mkdir tfce; neighbouring_matrix = LIMO.data.neighbouring_matrix;
-                tfce_name = sprintf('tfce_one_sample_ttest_parameter_%g',parameter);
-                tfce_H0_name = sprintf('tfce_H0_one_sample_ttest_parameter_%g',parameter);
-                
-                % do tfce for the current data
-                fprintf('Thresholding One Sample T-test using TFCE ...');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(one_sample,1) == 1
-                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,:,4)),[]); % cluster in freq-time
-                    else
-                        tfce_one_sample = limo_tfce(3,squeeze(one_sample(:,:,:,4)),neighbouring_matrix);
-                    end
-                else
-                    if size(one_sample,1) == 1
-                        tfce_one_sample = limo_tfce(1,squeeze(one_sample(:,:,4)),[]); % cluster in time or freq
-                    else
-                        tfce_one_sample = limo_tfce(2,squeeze(one_sample(:,:,4)),neighbouring_matrix);
-                    end
-                end
-                save(['tfce', filesep, tfce_name], 'tfce_one_sample', '-v7.3');
-                clear clear one_sample tfce_one_sample; disp('.. done');
-                
-                % do tfce for the data under H0
-                fprintf('Thresholding H0 One Sample T-test using TFCE ...');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(H0_one_sample,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,:,b) = limo_tfce(3,squeeze(H0_one_sample(:,:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(3,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                else
-                    if size(H0_one_sample,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(1,squeeze(H0_one_sample(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(1,squeeze(H0_one_sample(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_one_sample(:,:,b) = limo_tfce(2,squeeze(H0_one_sample(:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_one_sample = limo_tfce(2,squeeze(H0_one_sample(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                end
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_one_sample', '-v7.3');
-                clear tfce_H0_one_sample; disp(' .. done')
-            end
-            clear H0_one_sample tfce_H0_one_sample
-        end % closes if nboot > 0
-        disp('one sample t-test done')
+        end
         
+        if LIMO.design.tfce ~= 0
+            limo_tfce_handling(fullfile(LIMO.dir,name));
+            LIMO.design.tfce = 1;
+            save(fullfile(LIMO.dir,'LIMO.mat'));
+        end
+        disp('one sample t-test done')
+            
         %--------------------------------------------------------------------------
         % Two Samples t-test // percentile bootstrap technique
         %--------------------------------------------------------------------------
     case {2}
         
-        load LIMO
+        if ischar(varargin{2})
+            data1  = load(varargin{2});
+            data1  = getfield(data1,cell2mat(fieldnames(data1)));
+        else
+            data1  = varargin{2};
+        end
+        if ischar(varargin{3})
+            data2  = load(varargin{3});
+            data2  = getfield(data2,cell2mat(fieldnames(data2)));
+        else
+            data2  = varargin{3};
+        end
+        parameter = varargin{4};
+        LIMO      = varargin{5};
+        cd(LIMO.dir);
+        
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             data1 = limo_tf_4d_reshape(varargin{2});
             data2 = limo_tf_4d_reshape(varargin{3});
-        else
-            data1 = varargin{2};
-            data2 = varargin{3};
         end
-        parameter = varargin{4};
-        nboot     = varargin{5};
-        tfce      = varargin{6};
         clear varargin
-        
         
         % ------------------------------------------------
         % check the data structure
@@ -404,15 +326,15 @@ switch type
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
             two_samples = limo_tf_4d_reshape(two_samples);
         end
-        save ([name],'two_samples', '-v7.3')
-        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
+        save (name,'two_samples', '-v7.3')
+        LIMOPath = LIMO.dir;
         
         % ------------------------------------------------
         % compute the null
-        if nboot > 0
+        if LIMO.design.bootstrap > 0
             
             bootex = 1;
-            boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);	
+            boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if strcmp(answer,'Yes')
@@ -425,7 +347,7 @@ switch type
             if bootex == 1
                 mkdir H0
                 % create a boot one_sample file to store data under H0
-                H0_two_samples = NaN(size(data1,1), size(data1,2), 2, nboot); % stores T and p values for each boot
+                H0_two_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
                 data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                 data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
@@ -433,8 +355,8 @@ switch type
                 % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 % get boot table
                 disp('making boot tables ...')
-                boot_table1 = limo_create_boot_table(data1,nboot);
-                boot_table2 = limo_create_boot_table(data2,nboot);
+                boot_table1 = limo_create_boot_table(data1,LIMO.design.bootstrap);
+                boot_table2 = limo_create_boot_table(data2,LIMO.design.bootstrap);
                 save(['H0', filesep, 'boot_table1'], 'boot_table1')
                 save(['H0', filesep, 'boot_table2'], 'boot_table2')
                 
@@ -445,18 +367,18 @@ switch type
                     tmp = data1_centered(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     if exist('parfor','file') ~=0
-                        parfor b=1:nboot
+                        parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)));
                         end
                         
-                        for b=1:nboot
+                        for b=1:LIMO.design.bootstrap
                             H0_two_samples(electrode,:,1,b) = t{b};
                             H0_two_samples(electrode,:,2,b) = p{b};
                         end
                         clear t p
                         
                     else
-                        for b=1:nboot
+                        for b=1:LIMO.design.bootstrap
                             [H0_two_samples(electrode,:,1,b),diff,se,CI,H0_two_samples(electrode,:,2,b),tcrit,df]=limo_yuen_ttest(Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)));
                             % [m,dfe,ci,sd,n,H0_two_samples(electrode,:,1,b),H0_two_samples(electrode,:,2,b)]=limo_ttest(2,Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)),0.05);
                         end
@@ -470,77 +392,14 @@ switch type
                 end
                 save (['H0', filesep, boot_name],'H0_two_samples','-v7.3');
             end
-            
-            % -------------------------------------------------------
-            % compute TFCE
-            
-            if tfce ~= 0  % check if tfce is on and if more than one electrode
-                mkdir tfce ; neighbouring_matrix = LIMO.data.neighbouring_matrix;
-                tfce_name = sprintf('tfce_two_samples_ttest_parameter_%g',parameter);
-                tfce_H0_name = sprintf('tfce_H0_two_samples_ttest_parameter_%g',parameter);
-                
-                % do tfce for the current data
-                fprintf('Thresholding Two Sample T-test using TFCE \n');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(two_samples,1) == 1
-                        tfce_two_samples = limo_tfce(2,squeeze(two_samples(:,:,:,4)),[]); % cluster in freq-time
-                    else
-                        tfce_two_samples = limo_tfce(3,squeeze(two_samples(:,:,:,4)),neighbouring_matrix);
-                    end
-                else
-                    if size(two_samples,1) == 1
-                        tfce_one_sample = limo_tfce(1,squeeze(two_samples(:,:,4)),[]); % cluster in time or freq
-                    else
-                        tfce_two_samples = limo_tfce(2,squeeze(two_samples(:,:,4)),neighbouring_matrix);
-                    end
-                end
-                save(['tfce', filesep, tfce_name], 'tfce_two_samples', '-v7.3');
-                clear two_samples tfce_two_samples;
-                
-                % do tfce for the data under H0
-                fprintf('Thresholding H0 Two Sample T-test using TFCE \n');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(H0_two_samples,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_two_samples(:,:,b) = limo_tfce(2,squeeze(H0_two_samples(1,:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_two_samples = limo_tfce(2,squeeze(H0_two_samples(1,:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_two_samples(:,:,:,b) = limo_tfce(3,squeeze(H0_two_samples(:,:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_two_samples = limo_tfce(3,squeeze(H0_two_samples(:,:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                else
-                    if size(H0_two_samples,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_two_samples(:,b) = limo_tfce(1,squeeze(H0_two_samples(:,:,1,b)),[]);
-                            end
-                        else
-                            tfce_H0_two_samples = limo_tfce(1,squeeze(H0_two_samples(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_two_samples(:,:,b) = limo_tfce(2,squeeze(H0_two_samples(:,:,1,b)),neighbouring_matrix);
-                            end
-                        else
-                            tfce_H0_two_samples = limo_tfce(2,squeeze(H0_two_samples(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                end
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_two_samples', '-v7.3');
-                clear H0_two_samples tfce_H0_two_samples;
-            end
-        end % closes if nboot > 0
-        disp('two samples Yuen t-test for trimmed means done')
+        end % closes if LIMO.design.bootstrap > 0
+
+        if LIMO.design.tfce ~= 0
+            limo_tfce_handling(fullfile(LIMO.dir,name));
+            LIMO.design.tfce = 1;
+            save(fullfile(LIMO.dir,'LIMO.mat'));
+        end
+        disp('two samples t-test done')
         
         
         %--------------------------------------------------------------------------
@@ -548,17 +407,26 @@ switch type
         %--------------------------------------------------------------------------
     case {3}
         
-        load LIMO
+        if ischar(varargin{2})
+            data1  = load(varargin{2});
+            data1  = getfield(data1,cell2mat(fieldnames(data1)));
+        else
+            data1  = varargin{2};
+        end
+        if ischar(varargin{3})
+            data2  = load(varargin{3});
+            data2  = getfield(data2,cell2mat(fieldnames(data2)));
+        else
+            data2  = varargin{3};
+        end
+        parameter = varargin{4};
+        LIMO      = varargin{5};
+        cd(LIMO.dir);
+        
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             data1 = limo_tf_4d_reshape(varargin{2});
             data2 = limo_tf_4d_reshape(varargin{3});
-        else
-            data1 = varargin{2};
-            data2 = varargin{3};
         end
-        parameter = varargin{4};
-        nboot     = varargin{5};
-        tfce      = varargin{6};
         clear varargin
         
         % ------------------------------------------------
@@ -603,11 +471,11 @@ switch type
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
             paired_samples = limo_tf_4d_reshape(paired_samples);
         end
-        save ([name],'paired_samples', '-v7.3')
-        if nargout ~= 0, filepath = [fullfile(pwd,[name]),'.mat']; end
+        save (name,'paired_samples', '-v7.3')
+        LIMOPath = LIMO.dir; 
         
         % ------------------------------------------------
-        if nboot > 0
+        if LIMO.design.bootstrap > 0
             
             bootex = 1;
             boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
@@ -623,7 +491,7 @@ switch type
             if bootex == 1
                 mkdir H0
                 % create a boot one_sample file to store data under H0
-                H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, nboot); % stores T and p values for each boot
+                H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
                 data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                 data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
@@ -631,7 +499,7 @@ switch type
                 % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 % get boot table
                 disp('making boot table ...')
-                boot_table = limo_create_boot_table(data1,nboot);
+                boot_table = limo_create_boot_table(data1,LIMO.design.bootstrap);
                 save(['H0', filesep, 'boot_table'], 'boot_table')
                 
                 % get results under H0
@@ -641,18 +509,18 @@ switch type
                     tmp = data1_centered(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     if exist('parfor','file') ~=0
-                        parfor b=1:nboot
+                        parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)));
                         end
                         
-                        for b=1:nboot
+                        for b=1:LIMO.design.bootstrap
                             H0_paired_samples(electrode,:,1,b) = t{b};
                             H0_paired_samples(electrode,:,2,b) = p{b};
                         end
                         clear t p
                         
                     else
-                        for b=1:nboot
+                        for b=1:LIMO.design.bootstrap
                             [H0_paired_samples(electrode,:,1,b),diff,se,CI,H0_paired_samples(electrode,:,2,b),tcrit,df]=limo_yuend_ttest(Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)));
                             % [m,dfe,ci,sd,n,H0_paired_samples(electrode,:,1,b),H0_paired_samples(electrode,:,2,b)]=limo_ttest(1,Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)),0.05);
                         end
@@ -665,74 +533,14 @@ switch type
                 end
                 save (['H0', filesep, boot_name],'H0_paired_samples','-v7.3');
             end
-            
-            if tfce ~= 0
-                mkdir tfce; neighbouring_matrix = LIMO.data.neighbouring_matrix;
-                tfce_name = sprintf('tfce_paired_samples_ttest_parameter_%s',num2str(parameter')');
-                tfce_H0_name = sprintf('tfce_H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
-                
-                % do tfce for the current data
-                fprintf('Thresholding Paired Sample T-test using TFCE \n');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(paired_samples,1) == 1
-                        tfce_paired_samples = limo_tfce(2,squeeze(paired_samples(:,:,:,4)),[]); % cluster in freq-time
-                    else
-                        tfce_paired_samples = limo_tfce(3,squeeze(paired_samples(:,:,:,4)),neighbouring_matrix);
-                    end
-                else
-                    if size(paired_samples,1) == 1
-                        tfce_paired_samples = limo_tfce(1,squeeze(paired_samples(:,:,4)),[]); % cluster in time or freq
-                    else
-                        tfce_paired_samples = limo_tfce(2,squeeze(paired_samples(:,:,4)),neighbouring_matrix);
-                    end
-                end
-                save(['tfce', filesep, tfce_name], 'tfce_paired_samples', '-v7.3');
-                clear paired_samples tfce_paired_samples;
-                
-                % do tfce for the data under H0
-                fprintf('Thresholding H0 Paired Sample T-test using TFCE \n');
-                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-                    if size(H0_paired_samples,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_paired_samples(:,:,b) = limo_tfce(2,squeeze(H0_paired_samples(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_paired_samples = limo_tfce(2,squeeze(H0_paired_samples(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_paired_samples(:,:,b) = limo_tfce(3,squeeze(H0_paired_samples(:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_paired_samples = limo_tfce(3,squeeze(H0_paired_samples(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                else
-                    if size(H0_paired_samples,1) == 1
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_paired_samples(:,b) = limo_tfce(1,squeeze(H0_paired_samples(:,:,1,b)),[],0);
-                            end
-                        else
-                            tfce_H0_paired_samples = limo_tfce(1,squeeze(H0_paired_samples(:,:,1,:)),[]);
-                        end
-                    else
-                        if exist('parfor','file') ~=0
-                            parfor b=1:nboot
-                                tfce_H0_paired_samples(:,:,b) = limo_tfce(2,squeeze(H0_paired_samples(:,:,1,b)),neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_paired_samples = limo_tfce(2,squeeze(H0_paired_samples(:,:,1,:)),neighbouring_matrix);
-                        end
-                    end
-                end
-                save(['H0', filesep, tfce_H0_name],'tfce_H0_paired_samples', '-v7.3');
-                clear H0_paired_samples tfce_H0_paired_samples;
-            end
-        end % closes if nboot > 0
-        disp('Paired Yuen t-test for trimmed means done')
+        end % closes if LIMO.design.bootstrap > 0
+        
+        if LIMO.design.tfce ~= 0
+            limo_tfce_handling(fullfile(LIMO.dir,name));
+            LIMO.design.tfce = 1;
+            save(fullfile(LIMO.dir,'LIMO.mat'));
+        end
+        disp('Paired t-test done')
         
         %------------------------------------------------------------------
         % Regression // percentile bootstrap under H0
@@ -742,8 +550,6 @@ switch type
         data       = varargin{2}; % 3D or 4D
         regressors = varargin{3}; % the predictors across subjects like e.g. age
         parameter  = varargin{4}; % the parameters from 1st level matrices the regression is computed on (just for name)
-        nboot      = varargin{5};
-        tfce       = varargin{6};
         clear varargin
         
         % ------------------------------------------------
@@ -823,8 +629,6 @@ switch type
         cat   = varargin{3}; % matrix of values
         cont  = varargin{4}; % matrix of values
         LIMO  = varargin{5};
-        nboot = varargin{6};
-        tfce  = varargin{7};
         clear varargin
         
         % ------------------------------------------------
@@ -939,11 +743,11 @@ switch type
                 index = find(LIMO.design.X(:,c));
                 data(:,:,index) = data(:,:,index) - repmat(nanmean(data(:,:,index),3),[1 1 length(index)]);
             end
-            boot_table            = limo_create_boot_table(data,nboot);
-            H0_Condition_effect   = NaN(size(data,1),size(data,2),2,nboot);
+            boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
+            H0_Condition_effect   = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
             
             array = find(~isnan(data(:,1,1))); % skip empty electrodes
-            for b=1:nboot
+            for b=1:LIMO.design.bootstrap
                 fprintf('computing boostrap %g/%g\n',b,LIMO.design.bootstrap);
                 for electrode=1:size(array,1)
                     e     = array(electrode);
@@ -977,12 +781,12 @@ switch type
                 fprintf('Creating H0 Condition_1 TFCE scores \n');
                 if size(H0_Condition_effect,1) == 1
                     tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:nboot
+                    parfor b=1:LIMO.design.bootstrap
                         tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
                     end
                 else
                     tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:nboot
+                    parfor b=1:LIMO.design.bootstrap
                         tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
                     end
                 end
@@ -1001,35 +805,27 @@ switch type
             save(['H0' filesep 'boot_table'],'boot_table');
             clear data H0_Condition_effect ;
         end
-
+        
         if strcmp(LIMO.design.method,'Generalized Welch''s method')
             disp('Robust Gp ANOVA for trimmed means (generalization of Welch''s method) done')
         else
             disp('ANOVA/ANCOVA analysis done');
         end
-            
+        
         %----------------------------------------------------------------------------------------------
         % Repeated Measure ANOVA (multivariate approach) - bootstrap centering data
         %----------------------------------------------------------------------------------------------
     case {6}
         
         if ischar(varargin{2})
-            data = load(varargin{2}); 
-            data = getfield(data,cell2mat((fieldnames(data)))); 
+            data = load(varargin{2});
+            data = getfield(data,cell2mat((fieldnames(data))));
         else
             data = varargin{2}; % e,f,subjects,measures
         end
         
         gp_vector         = varargin{3}; % length of data, indices groups
-        if size(data,3) ~= length(gp_vector)
-            error('gp vector is not commensurate to the data (dimension 3)')
-        end
-        
         factor_levels     = varargin{4}; % vector eg [2 3]
-        if size(data,4) ~= prod(factor_levels)
-            error('factor_levels are not commensurate to the data (dimension 3)')
-        end
-        
         if ischar(varargin{5})
             LIMO = load(varargin{5});
             LIMO = LIMO.LIMO;
@@ -1038,18 +834,36 @@ switch type
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-            tmp = NaN(size(data,1), size(data,2),size(data,3),size(data,4),size(data,5));
+            tmp = NaN(size(data,1), size(data,2)*size(data,3),size(data,4),size(data,5));
             for measure = 1:size(data,5)
-                tmp(:,:,:,measure) = limo_tf_4d_reshape(squeeze(data(:,:,:,:,measure)));
+                if size(data,1) == 1
+                    tmp(:,:,:,measure) = limo_tf_4d_reshape(data(1,:,:,:,measure));
+                else
+                    tmp(:,:,:,measure) = limo_tf_4d_reshape(squeeze(data(:,:,:,:,measure)));
+                end
             end
             clear data; data=tmp; clear tmp;
-        end
-        nboot   = varargin{6};
-        tfce    = varargin{7};
-        if nargin > 7
-            if strcmpi(varargin{8},'go')
-                go = varargin{9};
+            if size(data,3) ~= length(gp_vector)
+                error('gp vector is not commensurate to the data (dimension 4)')
             end
+            if size(data,4) ~= prod(factor_levels)
+                error('factor_levels are not commensurate to the data (dimension 5)')
+            end
+        else
+            if size(data,3) ~= length(gp_vector)
+                error('gp vector is not commensurate to the data (dimension 3)')
+            end
+            if size(data,4) ~= prod(factor_levels)
+                error('factor_levels are not commensurate to the data (dimension 4)')
+            end
+        end
+        
+        if nargin > 4
+            if strcmpi(varargin{5},'go')
+                go = varargin{6};
+            end
+        else
+            go = 'no';
         end
         clear varargin
         
@@ -1101,17 +915,17 @@ switch type
             LIMO.design.method = 'Mean';
             C                  = limo_OrthogContrasts(factor_levels);
             tmp_Rep_ANOVA      = NaN(size(data,1),size(data,2),length(C),2); % store F and p for each within factor and interactions
-            LIMO.design.C      = C; 
+            LIMO.design.C      = C;
             index = length(factor_levels)+1;
             
             for i= 1:length(factor_levels)
-                LIMO.design.effects{i} = ['Main effect ' num2str(i)]; 
+                LIMO.design.effects{i} = ['Main effect ' num2str(i)];
             end
             
             for i= 2:length(factor_levels)
                 n = nchoosek([1:length(factor_levels)],i);
                 for j=1:size(n,1)
-                    LIMO.design.effects{index} = ['Interaction ' num2str(n(j,:))]; index = index+1; 
+                    LIMO.design.effects{index} = ['Interaction ' num2str(n(j,:))]; index = index+1;
                 end
             end
             x             = kron(eye(prod(factor_levels)),ones(size(data,3),1));
@@ -1119,8 +933,8 @@ switch type
             
         elseif type == 3 % one factor within and one factor between
             LIMO.design.method                = 'Mean';
-            gp_values                         = unique(gp_vector); 
-            k                                 = length(gp_values); 
+            gp_values                         = unique(gp_vector);
+            k                                 = length(gp_values);
             X                                 = NaN(size(gp_vector,1),k+1);
             for g =1:k
                 X(:,g) = gp_vector == gp_values(g);
@@ -1130,18 +944,18 @@ switch type
             tmp_Rep_ANOVA                     = NaN(size(data,1),size(data,2),1,2);
             Rep_ANOVA_Gp_effect               = NaN(size(data,1),size(data,2),2);
             tmp_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),1,2);
-            LIMO.design.C{1}                  = C; 
+            LIMO.design.C{1}                  = C;
             LIMO.design.effects               = 'Main effect';
             x                                 = kron(X(:,1:k),eye(prod(factor_levels)));
             LIMO.design.X                     = [x sum(x,2)]; % just for display
-           
+            
         elseif type == 4 % many factors within and one factor between
             LIMO.design.method                = 'Mean';
-            gp_values                         = unique(gp_vector); 
-            k                                 = length(gp_values); 
+            gp_values                         = unique(gp_vector);
+            k                                 = length(gp_values);
             X                                 = NaN(size(gp_vector,1),k+1);
             for g =1:k
-                X(:,g) = gp_vector == gp_values(g); 
+                X(:,g) = gp_vector == gp_values(g);
             end
             X(:,end)                          = 1; % design matrix for gp effects
             C                                 = limo_OrthogContrasts(factor_levels);
@@ -1251,8 +1065,8 @@ switch type
             Rep_filenames = cell(1,nb_effects);
             for i=1:nb_effects
                 if contains(LIMO.design.effects{i},'Main effect')
-                    if isfield(LIMO.design,'factor_names') 
-                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g_%s.mat',i,LIMO.design.factor_names{i});                        
+                    if isfield(LIMO.design,'factor_names')
+                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g_%s.mat',i,LIMO.design.factor_names{i});
                     else
                         Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g.mat',i);
                     end
@@ -1274,7 +1088,7 @@ switch type
             end
             
             if type == 3 || type ==4
-                IRep_filenames = cell(1,nb_effects); 
+                IRep_filenames = cell(1,nb_effects);
                 for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
                     if contains(LIMO.design.effects{i},'Main effect')
                         if isfield(LIMO.design,'factor_names')
@@ -1300,7 +1114,7 @@ switch type
                 end
                 
                 % Main group effet
-                save('Rep_ANOVA_Gp_effect.mat',Rep_ANOVA_Gp_effect,'-v7.3'); 
+                save('Rep_ANOVA_Gp_effect.mat',Rep_ANOVA_Gp_effect,'-v7.3');
                 if nargout ~= 0, filepath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
             end
         end
@@ -1319,7 +1133,7 @@ switch type
         % ----------------------------------------------------------------
         % now do the bootstrap
         % ---------------------
-        if nboot > 0
+        if LIMO.design.bootstrap > 0
             boot_files = dir(fullfile(LIMO.dir,'H0'));
             if ~isempty(boot_files)
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
@@ -1332,17 +1146,17 @@ switch type
             mkdir(fullfile(LIMO.dir,'H0'))
             disp('making bootstrap files ...')
             if type ==1
-                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,nboot);
+                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
             elseif type == 2
-                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,nboot);
+                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
             elseif type == 3
-                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,nboot);
-                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,nboot);
-                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),1,2,nboot);
+                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
+                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
             else
-                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,nboot);
-                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,nboot);
-                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),length(C),2,nboot);
+                tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
+                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
             end
             
             % the data have to be centered (H0) for each cell
@@ -1368,12 +1182,12 @@ switch type
             % create an index to use across all electrodes and frames
             % (different per gp but identical across conditions)
             disp('making random table...')
-            if nboot == 1; nboot = 1000; end
-            boot_table = limo_create_boot_table(squeeze(data(:,:,:,1)),nboot);
+            if LIMO.design.bootstrap == 1; LIMO.design.bootstrap = 1000; end
+            boot_table = limo_create_boot_table(squeeze(data(:,:,:,1)),LIMO.design.bootstrap);
             save(fullfile(LIMO.dir,['H0', filesep, 'boot_table']), 'boot_table', '-v7.3');
             
             % compute bootstrap under H0 for F and p
-            for B=1:nboot
+            for B=1:LIMO.design.bootstrap
                 fprintf('Repeated Measures ANOVA bootstrap %g \n ...', B);
                 array = find(~isnan(data(:,1,1,1)));
                 for e = 1:length(array)
@@ -1442,7 +1256,7 @@ switch type
             for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
                 name = sprintf('H0_%s',Rep_filenames{i});
                 H0_Rep_ANOVA = NaN(size(tmp_boot_H0_Rep_ANOVA,1), size(tmp_boot_H0_Rep_ANOVA, 2), size(tmp_boot_H0_Rep_ANOVA, 4), size(tmp_boot_H0_Rep_ANOVA, 5));
-                H0_Rep_ANOVA(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,:,:)); % save each factor effect as F/p/nboot values
+                H0_Rep_ANOVA(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,:,:)); % save each factor effect as F/p/LIMO.design.bootstrap values
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     H0_Rep_ANOVA = limo_tf_5d_reshape(H0_Rep_ANOVA);
                 end
@@ -1466,11 +1280,11 @@ switch type
                 save(['H0', filesep, 'H0_Rep_ANOVA_Gp_effect'], 'H0_Rep_ANOVA_Gp_effect', '-v7.3');
             end
         end
-        LIMO.design.bootstrap = nboot;
+        LIMO.design.bootstrap = LIMO.design.bootstrap;
         save(fullfile(LIMO.dir,'LIMO.mat'));
         
         % ------------------------- TFCE ---------------
-        if tfce ~= 0 % check if tfce is on and if more than one electrode
+        if LIMO.design.tfce ~= 0 % check if tfce is on and if more than one electrode
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
             for i=1:nb_effects
                 limo_tfce_handling(fullfile(LIMO.dir,Rep_filenames{i}));
