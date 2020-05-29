@@ -31,7 +31,7 @@ function out = limo_match_elec(c_elec,e_elec,a_beg,a_end,data)
 %  Copyright (C) LIMO Team 2019
 
 if numel(size(data)) == 4
-    out = NaN(size(e_elec,2),size([a_beg(1):a_end(1)],2),size([a_beg(2):a_end(2)],2),size(data,4));
+    out = NaN(size(e_elec,2),size(a_beg(1):a_end(1),2),size(a_beg(2):a_end(2),2),size(data,4));
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
@@ -41,7 +41,7 @@ if numel(size(data)) == 4
         end
     end
 else
-    out = NaN(size(e_elec,2),size([a_beg:a_end],2),size(data,3));
+    out = NaN(size(e_elec,2),size(a_beg:a_end,2),size(data,3));
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
