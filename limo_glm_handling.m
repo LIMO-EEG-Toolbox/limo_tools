@@ -260,20 +260,20 @@ if LIMO.design.bootstrap ~=0
     % avoid overwriting / recomputing H0 if done
     % (limo_eeg(4) called via the results interface)
     if exist('H0','dir')
-        ow = questdlg('overwrite H0?','limo check','yes','no','yes');
-        if strcmp(ow,'no') || isempty(ow)
-            if LIMO.design.tfce == 1 && ~exist('TFCE','dir')
-                skip_H0boot = 'yes';
-            else
+        if ~exist('TFCE','dir') && LIMO.design.tfce == 1
+            overwrite_H0boot = questdlg('H0 present for tfce, overwrite?','limo check','yes','no','no');
+        else
+            overwrite_H0boot = questdlg('overwrite H0?','limo check','yes','no','yes');
+            if strcmp(overwrite_H0boot,'no') || isempty(overwrite_H0boot)
                 warndlg2('Analysis stopped - not overwriting H0')
                 return
             end
         end
     else
-        skip_H0boot = 'no';
+        overwrite_H0boot = 'yes';
     end
     
-    if strcmp(skip_H0boot,'no')
+    if strcmp(overwrite_H0boot,'yes')
         try
             mkdir H0;
             fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping GLM, ... \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
