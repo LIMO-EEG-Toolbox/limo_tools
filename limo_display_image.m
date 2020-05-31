@@ -51,12 +51,9 @@ for c=1:n_cluster
     sigframes                         = sum(tmp,1);
     cluster_start(c)                  = find(sigframes,1,'first');
     cluster_end(c)                    = find(sigframes,1,'last');
-    cluster_maxv(c)                   = max(tmp(:));
+    V                                 = max(tmp(:));
+    cluster_maxv(c)                   = V(1);
     [cluster_maxe(c),cluster_maxf(c)] = find(tmp==cluster_maxv(c));
-    if length(cluster_maxe(c))>1           % if we have multiple times the exact same max values
-        cluster_maxe(c)               = cluster_maxe(1); 
-        cluster_maxe(c)               = cluster_maxe(1);  
-    end
 end
 
 
