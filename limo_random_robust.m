@@ -13,42 +13,42 @@ function LIMOPath = limo_random_robust(varargin)
 %
 % limo_random_robust(1,y,parameter number,LIMO)
 %                    1 = a one-sample t-test
-%                    y = data (dim electrodes, time or freq, subjects)
-%                      = data (dim electrodes, freq, time, subjects)
+%                    y = data (dim channels, time or freq, subjects)
+%                      = data (dim channels, freq, time, subjects)
 %                      = the name of the Yr file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
 %
 % limo_random_robust(2,y1,y2,parameter number,LIMO)
 %                    2 = two samples t-test
-%                    y1 = data (dim electrodes, time or freq, subjects)
-%                       = data (dim electrodes, freq, time, subjects)
+%                    y1 = data (dim channels, time or freq, subjects)
+%                       = data (dim channels, freq, time, subjects)
 %                       = the name of the Y1r file
-%                    y2 = data (dim electrodes, time or freq, subjects)
-%                       = data (dim electrodes, freq, time, subjects)
+%                    y2 = data (dim channels, time or freq, subjects)
+%                       = data (dim channels, freq, time, subjects)
 %                       = the name of the Y2r file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
 %
 % limo_random_robust(3,y1,y2,parameter number,LIMO)
 %                    3 = paired t-test
-%                    y1 = data (dim electrodes, time or freq, subjects)
-%                       = data (dim electrodes, freq, time, subjects)
+%                    y1 = data (dim channels, time or freq, subjects)
+%                       = data (dim channels, freq, time, subjects)
 %                       = the name of the Y1r file
-%                    y2 = data (dim electrodes, time or freq, subjects)
-%                       = data (dim electrodes, freq, time, subjects)
+%                    y2 = data (dim channels, time or freq, subjects)
+%                       = data (dim channels, freq, time, subjects)
 %                       = the name of the Y2r file
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
 %
 % limo_random_robust(4,y,X,parameter number,LIMO)
 %                    4 = regression analysis
-%                    y = data (dim electrodes, time or freq, subjects)
-%                      = data (dim electrodes, freq, time, subjects)
+%                    y = data (dim channels, time or freq, subjects)
+%                      = data (dim channels, freq, time, subjects)
 %                    X = continuous regressor(s)
 %                    parameter number = describe which parameter is currently analysed (e.g. 1 - use for maming only)
 %
 % limo_random_robust(5,y,cat,cont,LIMO,'go',option)
 %                    5 = N-way ANOVA/ANCOVA
-%                    y = data (dim electrodes, time or freq, subjects)
-%                      = data (dim electrodes, freq, time, subjects)
+%                    y = data (dim channels, time or freq, subjects)
+%                      = data (dim channels, freq, time, subjects)
 %                      = the name of the Yr file
 %                    cat = categorical variable(s)
 %                    cont = continuous regressors (covariates)
@@ -59,8 +59,8 @@ function LIMOPath = limo_random_robust(varargin)
 %
 % limo_random_robust(6,y,gp,factor_levels,LIMO,'go',option)
 %                    6 = Repeated measures ANOVA/ANCOVA using multivariate approach
-%                    y = data (dim electrodes, time or freq, subjects, measures)
-%                      = data (dim electrodes, freq, time, subjects, measures)
+%                    y = data (dim channels, time or freq, subjects, measures)
+%                      = data (dim channels, freq, time, subjects, measures)
 %                      = the name of the Yr file
 %                    gp = a vector defining gps
 %                    factor_levels = a vector specifying the levels of each repeated measure factor
@@ -74,28 +74,28 @@ function LIMOPath = limo_random_robust(varargin)
 % write on the disk matrices correponding to the test (Yr and LIMO.mat are generated in limo_random_select,
 % and for Regression, ANOVA, the LIMO.mat structure is updated)
 %
-% 1 one_sample_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_one_sample_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
+% 1 one_sample_parameter_X (channels, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_one_sample_ttest_parameter_X (channels, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
-% 2 two_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_two_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
+% 2 two_samples_parameter_X (channels, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_two_samples_ttest_parameter_X (channels, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
-% 3 paired_samples_parameter_X (electrodes, frames [time, freq or freq-time], [mean value, se, df, t, p])
-%   H0_paired_samples_ttest_parameter_X (electrodes, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
+% 3 paired_samples_parameter_X (channels, frames [time, freq or freq-time], [mean value, se, df, t, p])
+%   H0_paired_samples_ttest_parameter_X (channels, frames, [T values under H0, p values under H0], LIMO.design.bootstrap)
 %
-% 4 R2 (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_R2 (electrodes, frames, [F p], LIMO.design.bootstrap)
-%   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Covariate_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
+% 4 R2 (channels, frames [time, freq or freq-time], [F p values])
+%   H0_R2 (channels, frames, [F p], LIMO.design.bootstrap)
+%   Covariate_effect_X (channels, frames [time, freq or freq-time], [F p values])
+%   H0_Covariate_effect_X (channels, frames, [F p], LIMO.design.bootstrap)
 %
-% 5 Condition_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Condition_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
-%   Covariate_effect_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   H0_Covariate_effect_X (electrodes, frames, [F p], LIMO.design.bootstrap)
+% 5 Condition_effect_X (channels, frames [time, freq or freq-time], [F p values])
+%   H0_Condition_effect_X (channels, frames, [F p], LIMO.design.bootstrap)
+%   Covariate_effect_X (channels, frames [time, freq or freq-time], [F p values])
+%   H0_Covariate_effect_X (channels, frames, [F p], LIMO.design.bootstrap)
 %
-% 6 Rep_ANOVA_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
-%   Rep_ANOVA_Gp_effect (electrodes, frames [time, freq or freq-time], [F p values])
-%   Rep_ANOVA_Interaction_gp_Factor_X (electrodes, frames [time, freq or freq-time], [F p values])
+% 6 Rep_ANOVA_Factor_X (channels, frames [time, freq or freq-time], [F p values])
+%   Rep_ANOVA_Gp_effect (channels, frames [time, freq or freq-time], [F p values])
+%   Rep_ANOVA_Interaction_gp_Factor_X (channels, frames [time, freq or freq-time], [F p values])
 %   H0_XXXXX same as above, including LIMO.design.bootstrap on the last dimension
 %
 % LIMOPath = LIMO.dir or [] if failed
@@ -154,15 +154,15 @@ switch type
         clear tmp
         
         % ------------------------------------------------
-        % make a one_sample file per parameter (electrodes, frames, [mean value, se, df, t, p])
+        % make a one_sample file per parameter (channels, frames, [mean value, se, df, t, p])
         one_sample = NaN(size(data,1), size(data,2), 5);
         name       = sprintf('one_sample_ttest_parameter_%g',parameter);
         
-        for electrode = 1:size(data,1) % run per electrode because we have to remove NaNs
-            fprintf('analyse parameter %g electrode %g \n',parameter, electrode);
-            tmp = data(electrode,:,:);
+        for channel = 1:size(data,1) % run per channel because we have to remove NaNs
+            fprintf('analyse parameter %g channel %g \n',parameter, channel);
+            tmp = data(channel,:,:);
             if nansum(tmp(1,:)) == 0
-                error('there is at least one empty electrode using your expected chanlocs')
+                error('there is at least one empty channel using your expected chanlocs')
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
             end
@@ -172,12 +172,12 @@ switch type
             end
             
             if strcmpi(LIMO.design.method,'Trimmed Mean')
-                [one_sample(electrode,:,4),one_sample(electrode,:,1),~,one_sample(electrode,:,2), ...
-                    one_sample(electrode,:,5),~,one_sample(electrode,:,3)] = limo_trimci(Y);
+                [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
+                    one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
             elseif strcmpi(LIMO.design.method,'Mean')
-                [one_sample(electrode,:,1),one_sample(electrode,:,3),~,sd,n, ...
-                    one_sample(electrode,:,4),one_sample(electrode,:,5)] = limo_ttest(1,Y,0,5/100);
-                one_sample(electrode,:,2) = sd./sqrt(n);
+                [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
+                    one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
+                one_sample(channel,:,2) = sd./sqrt(n);
             else
                 error('unrecognized LIMO.design.method: %s',LIMO.design.method)
             end
@@ -218,26 +218,26 @@ switch type
                 save(['H0', filesep, 'boot_table'], 'boot_table')
                 
                 % get results under H0
-                for electrode = 1:size(data,1)
-                    fprintf('bootstrap: electrode %g parameter %g \n',electrode,parameter);
-                    tmp = centered_data(electrode,:,:);
+                for channel = 1:size(data,1)
+                    fprintf('bootstrap: channel %g parameter %g \n',channel,parameter);
+                    tmp = centered_data(channel,:,:);
                     Y   = tmp(1,:,find(~isnan(tmp(1,1,:))));
                     if strcmpi(LIMO.design.method,'Trimmed Mean')
                         parfor b=1:LIMO.design.bootstrap
-                            [t{b},~,~,~,p{b},~,~] = limo_trimci(Y(1,:,boot_table{electrode}(:,b)));
+                            [t{b},~,~,~,p{b},~,~] = limo_trimci(Y(1,:,boot_table{channel}(:,b)));
                         end
                     elseif strcmpi(LIMO.design.method,'Mean')
                         parfor b=1:LIMO.design.bootstrap
-                            [~,~,~,~,~,t{b},p{b}] = limo_ttest(1,Y(1,:,boot_table{electrode}(:,b)),0,5/100);
+                            [~,~,~,~,~,t{b},p{b}] = limo_ttest(1,Y(1,:,boot_table{channel}(:,b)),0,5/100);
                         end
                     end
                     
                     for b=1:LIMO.design.bootstrap
-                        H0_one_sample(electrode,:,1,b) = t{b};
-                        H0_one_sample(electrode,:,2,b) = p{b};
+                        H0_one_sample(channel,:,1,b) = t{b};
+                        H0_one_sample(channel,:,2,b) = p{b};
                     end
                     clear tmp Y
-                end % closes for electrode
+                end % closes for channel
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     H0_one_sample = limo_tf_5d_reshape(H0_one_sample);
@@ -306,21 +306,21 @@ switch type
         clear tmp tmp2
         
         % ------------------------------------------------
-        % make a two_samples file per parameter (electrodes, frames, [mean value, se, df, t, p])
+        % make a two_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         two_samples = NaN(size(data1,1), size(data1,2),5);
         name = sprintf('two_samples_ttest_parameter_%g_%g',parameter);
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
-            electrode = array(e);
-            fprintf('analyse parameter %g electrode %g',parameter, electrode); disp(' ');
-            tmp = data1(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            tmp = data2(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            [two_samples(electrode,:,4),two_samples(electrode,:,1),two_samples(electrode,:,2),...
-                CI,two_samples(electrode,:,5),tcrit,two_samples(electrode,:,3)]=limo_yuen_ttest(Y1,Y2); clear Y1 Y2
-            % [two_samples(electrode,:,1),two_samples(electrode,:,3),ci,sd,n,two_samples(electrode,:,4),two_samples(electrode,:,5)]=limo_ttest(2,Y1,Y2,.05);
+            channel = array(e);
+            fprintf('analyse parameter %g channel %g',parameter, channel); disp(' ');
+            tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+            tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+            [two_samples(channel,:,4),two_samples(channel,:,1),two_samples(channel,:,2),...
+                CI,two_samples(channel,:,5),tcrit,two_samples(channel,:,3)]=limo_yuen_ttest(Y1,Y2); clear Y1 Y2
+            % [two_samples(channel,:,1),two_samples(channel,:,3),ci,sd,n,two_samples(channel,:,4),two_samples(channel,:,5)]=limo_ttest(2,Y1,Y2,.05);
             % sd = sd.^2; a = sd(1,:)./size(Y1,3); b = sd(1,:)./size(Y2,3);
-            % two_samples(electrode,:,2) = sqrt(a + b); clear Y1 Y2
+            % two_samples(channel,:,2) = sqrt(a + b); clear Y1 Y2
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -362,25 +362,25 @@ switch type
                 
                 % get results under H0
                 for e = 1:size(array,1)
-                    electrode = array(e);
-                    fprintf('bootstrapping electrode %g/%g parameter %g \n',e,size(array,1),parameter);
-                    tmp = data1_centered(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    tmp = data2_centered(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+                    channel = array(e);
+                    fprintf('bootstrapping channel %g/%g parameter %g \n',e,size(array,1),parameter);
+                    tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+                    tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     if exist('parfor','file') ~=0
                         parfor b=1:LIMO.design.bootstrap
-                            [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)));
+                            [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
                         end
                         
                         for b=1:LIMO.design.bootstrap
-                            H0_two_samples(electrode,:,1,b) = t{b};
-                            H0_two_samples(electrode,:,2,b) = p{b};
+                            H0_two_samples(channel,:,1,b) = t{b};
+                            H0_two_samples(channel,:,2,b) = p{b};
                         end
                         clear t p
                         
                     else
                         for b=1:LIMO.design.bootstrap
-                            [H0_two_samples(electrode,:,1,b),diff,se,CI,H0_two_samples(electrode,:,2,b),tcrit,df]=limo_yuen_ttest(Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)));
-                            % [m,dfe,ci,sd,n,H0_two_samples(electrode,:,1,b),H0_two_samples(electrode,:,2,b)]=limo_ttest(2,Y1(1,:,boot_table1{electrode}(:,b)),Y2(1,:,boot_table2{electrode}(:,b)),0.05);
+                            [H0_two_samples(channel,:,1,b),diff,se,CI,H0_two_samples(channel,:,2,b),tcrit,df]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
+                            % [m,dfe,ci,sd,n,H0_two_samples(channel,:,1,b),H0_two_samples(channel,:,2,b)]=limo_ttest(2,Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)),0.05);
                         end
                     end
                     clear Y1 Y2
@@ -452,20 +452,20 @@ switch type
         clear tmp tmp2
         
         % ------------------------------------------------
-        % make a paired_samples file per parameter (electrodes, frames, [mean value, se, df, t, p])
+        % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
         name = sprintf('paired_samples_ttest_parameter_%s',num2str(parameter')');
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
-            electrode = array(e);
-            fprintf('analyse parameter %s electrode %g',num2str(parameter')', electrode); disp(' ');
-            tmp = data1(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            tmp = data2(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            [paired_samples(electrode,:,4),paired_samples(electrode,:,1),paired_samples(electrode,:,2),...
-                CI,paired_samples(electrode,:,5),tcrit,paired_samples(electrode,:,3)]=limo_yuend_ttest(Y1,Y2); clear Y1 Y2
-            % [paired_samples(electrode,:,1),paired_samples(electrode,:,3),ci,sd,n,paired_samples(electrode,:,4),paired_samples(electrode,:,5)]=limo_ttest(1,Y1,Y2,.05); clear Y1 Y2
-            % paired_samples(electrode,:,2) = sd./sqrt(n);
+            channel = array(e);
+            fprintf('analyse parameter %s channel %g',num2str(parameter')', channel); disp(' ');
+            tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+            tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+            [paired_samples(channel,:,4),paired_samples(channel,:,1),paired_samples(channel,:,2),...
+                CI,paired_samples(channel,:,5),tcrit,paired_samples(channel,:,3)]=limo_yuend_ttest(Y1,Y2); clear Y1 Y2
+            % [paired_samples(channel,:,1),paired_samples(channel,:,3),ci,sd,n,paired_samples(channel,:,4),paired_samples(channel,:,5)]=limo_ttest(1,Y1,Y2,.05); clear Y1 Y2
+            % paired_samples(channel,:,2) = sd./sqrt(n);
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -504,25 +504,25 @@ switch type
                 
                 % get results under H0
                 for e = 1:size(array,1)
-                    electrode = array(e);
-                    fprintf('bootstrapping electrode %g/%g parameter %s \n',e,size(array,1),num2str(parameter')');
-                    tmp = data1_centered(electrode,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    tmp = data2_centered(electrode,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+                    channel = array(e);
+                    fprintf('bootstrapping channel %g/%g parameter %s \n',e,size(array,1),num2str(parameter')');
+                    tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+                    tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     if exist('parfor','file') ~=0
                         parfor b=1:LIMO.design.bootstrap
-                            [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)));
+                            [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
                         end
                         
                         for b=1:LIMO.design.bootstrap
-                            H0_paired_samples(electrode,:,1,b) = t{b};
-                            H0_paired_samples(electrode,:,2,b) = p{b};
+                            H0_paired_samples(channel,:,1,b) = t{b};
+                            H0_paired_samples(channel,:,2,b) = p{b};
                         end
                         clear t p
                         
                     else
                         for b=1:LIMO.design.bootstrap
-                            [H0_paired_samples(electrode,:,1,b),diff,se,CI,H0_paired_samples(electrode,:,2,b),tcrit,df]=limo_yuend_ttest(Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)));
-                            % [m,dfe,ci,sd,n,H0_paired_samples(electrode,:,1,b),H0_paired_samples(electrode,:,2,b)]=limo_ttest(1,Y1(1,:,boot_table{electrode}(:,b)),Y2(1,:,boot_table{electrode}(:,b)),0.05);
+                            [H0_paired_samples(channel,:,1,b),diff,se,CI,H0_paired_samples(channel,:,2,b),tcrit,df]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
+                            % [m,dfe,ci,sd,n,H0_paired_samples(channel,:,1,b),H0_paired_samples(channel,:,2,b)]=limo_ttest(1,Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)),0.05);
                         end
                     end
                     clear Y1 Y2
@@ -682,9 +682,9 @@ switch type
                     Condition_effect = NaN(size(data,1),size(data,2),2);
                     array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
                     for e=1:size(array,1)
-                        electrode = array(e); fprintf('processing electrode %g \n,',electrode);
-                        [Condition_effect(electrode,:,1), Condition_effect(electrode,:,2),Yhat(electrode,:,:)] = ...
-                            limo_robust_1way_anova(squeeze(data(electrode,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
+                        channel = array(e); fprintf('processing channel %g \n,',channel);
+                        [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
+                            limo_robust_1way_anova(squeeze(data(channel,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
                     end
                     Condition_effect = limo_tf_4d_reshape(Condition_effect);
                     save Condition_effect_1 Condition_effect; clear Condition_effect_1
@@ -746,11 +746,11 @@ switch type
             boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect   = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
             
-            array = find(~isnan(data(:,1,1))); % skip empty electrodes
+            array = find(~isnan(data(:,1,1))); % skip empty channels
             for b=1:LIMO.design.bootstrap
                 fprintf('computing boostrap %g/%g\n',b,LIMO.design.bootstrap);
-                for electrode=1:size(array,1)
-                    e     = array(electrode);
+                for channel=1:size(array,1)
+                    e     = array(channel);
                     index = find(~isnan(squeeze(data(e,1,:))));
                     X     = LIMO.design.X(index,1:end-1);
                     if sum(sum(X) == 0) ==0
@@ -999,9 +999,9 @@ switch type
             % ---------------
             array = find(~isnan(data(:,1,1,1)));
             for e = 1:length(array)
-                electrode = array(e);
-                fprintf('analyse electrode %g/%g\n ...', electrode,size(data,1));
-                tmp = squeeze(data(electrode,:,:,:));
+                channel = array(e);
+                fprintf('analyse channel %g/%g\n ...', channel,size(data,1));
+                tmp = squeeze(data(channel,:,:,:));
                 if size(data,2) == 1
                     Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
                     gp = gp_vector(find(~isnan(Y(1,:,1))),:);
@@ -1021,40 +1021,40 @@ switch type
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C); % usual means
                     end
-                    tmp_Rep_ANOVA(electrode,:,1,1) = result.F;
-                    tmp_Rep_ANOVA(electrode,:,1,2) = result.p;
+                    tmp_Rep_ANOVA(channel,:,1,1) = result.F;
+                    tmp_Rep_ANOVA(channel,:,1,2) = result.p;
                 elseif type == 2
                     if strcmp(LIMO.design.method,'Trimmed Mean')
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C); % trimmed means
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C); % usual means
                     end
-                    tmp_Rep_ANOVA(electrode,:,:,1) = result.F';
-                    tmp_Rep_ANOVA(electrode,:,:,2) = result.p';
+                    tmp_Rep_ANOVA(channel,:,:,1) = result.F';
+                    tmp_Rep_ANOVA(channel,:,:,2) = result.p';
                 elseif type == 3
                     if strcmp(LIMO.design.method,'Trimmed Mean')
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB); % trimmed means
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C,XB); % usual means
                     end
-                    tmp_Rep_ANOVA(electrode,:,1,1) = result.repeated_measure.F;
-                    tmp_Rep_ANOVA(electrode,:,1,2) = result.repeated_measure.p;
-                    Rep_ANOVA_Gp_effect(electrode,:,1) = result.gp.F;
-                    Rep_ANOVA_Gp_effect(electrode,:,2) = result.gp.p;
-                    tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,1) = result.interaction.F;
-                    tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,2) = result.interaction.p;
+                    tmp_Rep_ANOVA(channel,:,1,1) = result.repeated_measure.F;
+                    tmp_Rep_ANOVA(channel,:,1,2) = result.repeated_measure.p;
+                    Rep_ANOVA_Gp_effect(channel,:,1) = result.gp.F;
+                    Rep_ANOVA_Gp_effect(channel,:,2) = result.gp.p;
+                    tmp_Rep_ANOVA_Interaction_with_gp(channel,:,1) = result.interaction.F;
+                    tmp_Rep_ANOVA_Interaction_with_gp(channel,:,2) = result.interaction.p;
                 elseif type == 4
                     if strcmp(LIMO.design.method,'Trimmed Mean')
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB); % trimmed means
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C,XB); % usual means
                     end
-                    tmp_Rep_ANOVA(electrode,:,:,1) = result.repeated_measure.F';
-                    tmp_Rep_ANOVA(electrode,:,:,2) = result.repeated_measure.p';
-                    Rep_ANOVA_Gp_effect(electrode,:,1) = result.gp.F;
-                    Rep_ANOVA_Gp_effect(electrode,:,2) = result.gp.p;
-                    tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,:,1) = result.interaction.F';
-                    tmp_Rep_ANOVA_Interaction_with_gp(electrode,:,:,2) = result.interaction.p';
+                    tmp_Rep_ANOVA(channel,:,:,1) = result.repeated_measure.F';
+                    tmp_Rep_ANOVA(channel,:,:,2) = result.repeated_measure.p';
+                    Rep_ANOVA_Gp_effect(channel,:,1) = result.gp.F;
+                    Rep_ANOVA_Gp_effect(channel,:,2) = result.gp.p;
+                    tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,1) = result.interaction.F';
+                    tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,2) = result.interaction.p';
                 end
                 nb_effects = size(tmp_Rep_ANOVA,3);
                 clear tmp Y gp result
@@ -1077,7 +1077,7 @@ switch type
                 end
                 
                 % save each factor effect as F/p values
-                % use reshape instead of squeeze in case there is only 1 electrode
+                % use reshape instead of squeeze in case there is only 1 channel
                 Rep_ANOVA = reshape(tmp_Rep_ANOVA(:,:,i,:),...
                     [size(tmp_Rep_ANOVA,1) size(tmp_Rep_ANOVA,2) size(tmp_Rep_ANOVA,4)]);
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -1179,7 +1179,7 @@ switch type
             end
             save(fullfile(LIMO.dir,['H0', filesep, 'centered_data']), 'centered_data', '-v7.3');
             
-            % create an index to use across all electrodes and frames
+            % create an index to use across all channels and frames
             % (different per gp but identical across conditions)
             disp('making random table...')
             if LIMO.design.bootstrap == 1; LIMO.design.bootstrap = 1000; end
@@ -1191,8 +1191,8 @@ switch type
                 fprintf('Repeated Measures ANOVA bootstrap %g \n ...', B);
                 array = find(~isnan(data(:,1,1,1)));
                 for e = 1:length(array)
-                    electrode = array(e);
-                    tmp = squeeze(centered_data(electrode,:,boot_table{electrode}(:,B),:));
+                    channel = array(e);
+                    tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,B),:));
                     if size(centered_data,2) == 1
                         Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
                         gp = gp_vector(find(~isnan(Y(1,:,1))),:);
@@ -1212,40 +1212,40 @@ switch type
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C);
                         end
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = result.F;
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = result.p;
+                        tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.F;
+                        tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.p;
                     elseif type == 2
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C);
                         end
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = result.F';
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = result.p';
+                        tmp_boot_H0_Rep_ANOVA(channel,:,:,1,B) = result.F';
+                        tmp_boot_H0_Rep_ANOVA(channel,:,:,2,B) = result.p';
                     elseif type == 3
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C,XB);
                         end
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,1,1,B) = result.repeated_measure.F;
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,1,2,B) = result.repeated_measure.p;
-                        H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = result.gp.F;
-                        H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = result.gp.p;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,1,B) = result.interaction.F;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,1,2,B) = result.interaction.p;
+                        tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.repeated_measure.F;
+                        tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.repeated_measure.p;
+                        H0_Rep_ANOVA_Gp_effect(channel,:,1,B) = result.gp.F;
+                        H0_Rep_ANOVA_Gp_effect(channel,:,2,B) = result.gp.p;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,1,B) = result.interaction.F;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,2,B) = result.interaction.p;
                     elseif type == 4
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C,XB);
                         end
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,:,1,B) = result.repeated_measure.F';
-                        tmp_boot_H0_Rep_ANOVA(electrode,:,:,2,B) = result.repeated_measure.p';
-                        H0_Rep_ANOVA_Gp_effect(electrode,:,1,B) = result.gp.F;
-                        H0_Rep_ANOVA_Gp_effect(electrode,:,2,B) = result.gp.p;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,1,B) = result.interaction.F';
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(electrode,:,:,2,B) = result.interaction.p';
+                        tmp_boot_H0_Rep_ANOVA(channel,:,:,1,B) = result.repeated_measure.F';
+                        tmp_boot_H0_Rep_ANOVA(channel,:,:,2,B) = result.repeated_measure.p';
+                        H0_Rep_ANOVA_Gp_effect(channel,:,1,B) = result.gp.F;
+                        H0_Rep_ANOVA_Gp_effect(channel,:,2,B) = result.gp.p;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,:,1,B) = result.interaction.F';
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,:,2,B) = result.interaction.p';
                         clear y result
                     end
                     clear XB Y gp tmp
@@ -1284,7 +1284,7 @@ switch type
         save(fullfile(LIMO.dir,'LIMO.mat'));
         
         % ------------------------- TFCE ---------------
-        if LIMO.design.tfce ~= 0 % check if tfce is on and if more than one electrode
+        if LIMO.design.tfce ~= 0 % check if tfce is on and if more than one channel
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
             for i=1:nb_effects
                 limo_tfce_handling(fullfile(LIMO.dir,Rep_filenames{i}));
