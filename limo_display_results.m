@@ -1351,7 +1351,7 @@ elseif LIMO.Level == 2
         elseif Type == 1 && strcmp(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmp(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
-                limo_display_results_tf(LIMO,toplot,mask,mytitle);
+                limo_display_image_tf(LIMO,toplot,mask,mytitle);
             else
                 % plot time*freq map <-- should be handled by limo_display_image
                 % limo_display_image(LIMO,toplot,mask,mytitle)
