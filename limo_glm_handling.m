@@ -21,12 +21,36 @@ if strcmp(LIMO.design.status,'to do')
     R2    = load('R2');    R2    = R2.(cell2mat(fieldnames(R2)));
     Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
   
-    % check dimensions (3D vs 4D) 
+    % check method
+    % --------------------------------------
+    if size(Yr,1) == 1
+        array = 1;
+    else
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            array = find(~isnan(Yr(:,1,1,1))); % skip empty channels
+        else
+            array = find(~isnan(Yr(:,1,1))); 
+        end
+    end
+    
+    try
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            limo_pcout(squeeze(Yr(array(1),1,:,:))');
+        else
+            limo_pcout(squeeze(Yr(array(1),:,:))');
+        end
+    catch pcout_error
+        if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
+            LIMO.design.method = 'OLS'; disp('Cannot use WLS, not enough observations - switching to OLS')
+        end
+    end
+    
+    % check dimensions (3D vs 4D)
     % --------------------------------------
     if strcmpi(LIMO.Analysis,'Time-Frequency') 
-         [~,n_freqs,~,~] = size(Yr);
-         Yr    = limo_tf_4d_reshape(Yr); % reshape to 3D
-         Yhat  = limo_tf_4d_reshape(Yhat);
+         [~,n_freqs,n_times,~] = size(Yr); 
+         Yr    = limo_tf_4d_reshape(Yr); 
+         Yhat  = limo_tf_4d_reshape(Yhat); % reshape to 3D
          Res   = limo_tf_4d_reshape(Res);
          R2    = limo_tf_4d_reshape(R2);
          Betas = limo_tf_4d_reshape(Betas);
@@ -45,23 +69,7 @@ if strcmp(LIMO.design.status,'to do')
         tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),LIMO.design.nb_continuous,2);
     end
     
-    % -------------- loop the analysis electrode per electrode
-    if size(Yr,1) == 1
-        array = 1;
-    else
-        array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
-    end
-    
     % ------------- prepare weight matrix  -------------------------------------
-    try
-        limo_pcout(squeeze(Yr(array(1),:,:))');
-    catch pcout_error
-        if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-            LIMO.design.method = 'OLS'; disp('Cannot use WLS, not enough observations - switching to OLS')
-        end
-    end
-    
-    
     if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
         if strcmpi(LIMO.Analysis,'Time-Frequency')
             W = ones(size(Yr,1),n_freqs,size(Yr,3));
@@ -72,14 +80,19 @@ if strcmp(LIMO.design.status,'to do')
         W = ones(size(Yr));
     end
     
-    % ------------ run limo_glm per electrodes ---------------------------
+    % ------------ run limo_glm per channels ---------------------------
     update = 1;
-    X = LIMO.design.X;
+    X      = LIMO.design.X;
+    if isfield(LIMO,'model')
+        LIMO = removefields(LIMO,'model');
+    end
+    
+    warning off;
     for e = 1:size(array,1)
-        electrode = array(e); warning off;
+        channel = array(e); 
         if LIMO.Level == 2
             fprintf('analyzing channel %g/%g \n',e,size(array,1));
-            Y             = squeeze(Yr(electrode,:,:));
+            Y             = squeeze(Yr(channel,:,:));
             index         = find(~isnan(Y(1,:)));
             if isempty(index)
                 index     = 1:size(Y,2);
@@ -94,11 +107,11 @@ if strcmp(LIMO.design.status,'to do')
                 fprintf('analyzing component %g/%g \n',e,size(array,1));
             end
             index = 1:size(Yr,3);
-            model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
+            model = limo_glm(squeeze(Yr(channel,:,:))',LIMO);
         end
         
-        % update the LIMO.mat (do it only once)
-        if update == 1 && ~strcmpi(LIMO.design.method,'IRLS')
+        % update the LIMO.mat 
+        if update == 1 && strcmpi(LIMO.design.method,'OLS')
             LIMO.model.model_df = model.df;
             if LIMO.design.nb_conditions ~=0
                 LIMO.model.conditions_df  = model.conditions.df;
@@ -110,69 +123,120 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
-        elseif update == 1 && strcmpi(LIMO.design.method,'IRLS')
-            LIMO.model.model_df(electrode,:) = model.df;
+        elseif update == 1 % each channel can have different weighting and thus different df 
+            LIMO.model.model_df{channel} = model.df;
             if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df(electrode,:,:)  = model.conditions.df;
+                LIMO.model.conditions_df{channel}  = model.conditions.df;
             end
             if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df(electrode,:,:)  = model.interactions.df;
+                LIMO.model.interactions_df{channel}  = model.interactions.df;
             end
             if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df(electrode,:,:)  = model.continuous.df;
+                LIMO.model.continuous_df{channel}  = model.continuous.df;
+            end
+            
+            % remove cell as sizes are identical for a given method
+            if e == size(array,1)
+                tmp = cell2mat(LIMO.model.model_df)';
+                df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                LIMO.model.model_df = [df dfe]; clear tmp
+                if LIMO.design.nb_conditions ~=0
+                    tmp = cell2mat(LIMO.model.conditions_df)';
+                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model.conditions_df = [df dfe]; clear tmp
+                end
+                if LIMO.design.nb_interactions ~=0
+                    tmp =  cell2mat(LIMO.model.interactions_df);
+                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model.interactions_df = [df dfe]; clear tmp
+                end
+                if LIMO.design.nb_continuous ~=0
+                    tmp = cell2mat(LIMO.model.continuous_df);
+                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model.continuous_df = [df dfe]; clear tmp
+                end
             end
         end
         
         % update the files to be stored on the disk
-        if strcmp(LIMO.design.method,'IRLS')
-            W(electrode,:,index) = model.W';
-        elseif strcmp(LIMO.design.method,'WLS')
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                W(electrode,:,index) = model.W;
-            else
-                W(electrode,index) = model.W;
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            if strcmp(LIMO.design.method,'IRLS')
+                W(channel,:,index) = model.W';
+                for ft=size(W,2):-1:1 % each freq*time has different weighting
+                    WX = LIMO.design.X .* repmat(squeeze(W(channel,ft,:)),1,size(X,2));
+                    fitted_data(:,ft)  = (WX*squeeze(model.betas(:,ft,:)));
+                end
+            elseif strcmp(LIMO.design.method,'WLS')
+                W(channel,:,index) = model.W'; 
+                for f=n_freqs:-1:1 % each freq has different weighting
+                    WX = LIMO.design.X .* repmat(squeeze(W(channel,f,:)),1,size(X,2));
+                    fitted_data(1,f,:,:)  = (WX*squeeze(model.betas(:,f,:)))';
+                end
+                fitted_data = squeeze(limo_tf_4d_reshape(fitted_data))';
+                % reshape beta freq to ft
+                for c=size(model.betas,1):-1:1
+                    tmp(c,:) = reshape(model.betas(c,:,:), [n_freqs*n_times,1]);
+                end
+                model.betas = tmp; clear tmp
+
+            else % OLS, W is already ones
+                fitted_data = LIMO.design.X*model.betas;
             end
+        else
+            if strcmp(LIMO.design.method,'IRLS')
+                W(channel,:,index) = model.W';
+            elseif strcmp(LIMO.design.method,'WLS')
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    W(channel,:,index) = model.W;
+                else
+                    W(channel,index) = model.W;
+                end
+            end
+            fitted_data = LIMO.design.X*model.betas;
         end
-        fitted_data             = LIMO.design.X*model.betas;
-        Yhat(electrode,:,index) = fitted_data';
-        Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data';
-        clear fitted_data
-        R2(electrode,:,1)       = model.R2_univariate;
-        R2(electrode,:,2)       = model.F;
-        R2(electrode,:,3)       = model.p;
-        Betas(electrode,:,:)    = model.betas';
         
+        % all these always 3D - reshape before saving
+        Yhat(channel,:,index) = fitted_data';
+        Res(channel,:,index)  = squeeze(Yr(channel,:,index)) - fitted_data';
+        clear fitted_data
+        R2(channel,:,1)       = model.R2_univariate;
+        R2(channel,:,2)       = model.F;
+        R2(channel,:,3)       = model.p;
+        Betas(channel,:,:)    = model.betas';
+
         if prod(LIMO.design.nb_conditions) ~=0
             if length(LIMO.design.nb_conditions) == 1
-                tmp_Condition_effect(electrode,:,1,1) = model.conditions.F;
-                tmp_Condition_effect(electrode,:,1,2) = model.conditions.p;
+                tmp_Condition_effect(channel,:,1,1) = model.conditions.F;
+                tmp_Condition_effect(channel,:,1,2) = model.conditions.p;
             else
                 for i=1:length(LIMO.design.nb_conditions)
-                    tmp_Condition_effect(electrode,:,i,1) = model.conditions.F(i,:);
-                    tmp_Condition_effect(electrode,:,i,2) = model.conditions.p(i,:);
+                    tmp_Condition_effect(channel,:,i,1) = model.conditions.F(i,:);
+                    tmp_Condition_effect(channel,:,i,2) = model.conditions.p(i,:);
                 end
             end
         end
         
         if LIMO.design.fullfactorial == 1
             for i=1:length(LIMO.design.nb_interactions)
-                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(i,:);
-                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(i,:);
+                tmp_Interaction_effect(channel,:,i,1) = model.interactions.F(i,:);
+                tmp_Interaction_effect(channel,:,i,2) = model.interactions.p(i,:);
             end
         end
         
         if LIMO.design.nb_continuous ~=0
             if LIMO.design.nb_continuous == 1
-                tmp_Covariate_effect(electrode,:,1,1) = model.continuous.F;
-                tmp_Covariate_effect(electrode,:,1,2) = model.continuous.p;
+                tmp_Covariate_effect(channel,:,1,1) = model.continuous.F;
+                tmp_Covariate_effect(channel,:,1,2) = model.continuous.p;
             else
                 for i=1:LIMO.design.nb_continuous
-                    tmp_Covariate_effect(electrode,:,i,1) = model.continuous.F(:,i);
-                    tmp_Covariate_effect(electrode,:,i,2) = model.continuous.p(:,i);
+                    tmp_Covariate_effect(channel,:,i,1) = model.continuous.F(:,i);
+                    tmp_Covariate_effect(channel,:,i,2) = model.continuous.p(:,i);
                 end
             end
         end
+        clear model
     end
+    warning on;
     
     % save data on the disk and clean out
     disp('saving data to disk')
@@ -250,7 +314,7 @@ if strcmp(LIMO.design.status,'to do')
         end
         clear Covariate_effect tmp_Covariate_effect
     end
-    clear file electrode filename model reg dir i W
+    clear file channel filename model reg dir i W
 end
 
 
@@ -283,10 +347,10 @@ if LIMO.design.bootstrap ~=0
             if size(Yr,1) == 1
                 array = 1;
             else
-                array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+                array = find(~isnan(Yr(:,1,1))); % skip empty channels
             end
             
-            if LIMO.design.bootstrap <= 800
+            if LIMO.design.bootstrap < 800
                 if LIMO.design.bootstrap == 101
                     fprintf('bootstrap set to 101, this is a testing hack, otherwise the minimum required would be 800\n')
                 else
@@ -338,20 +402,20 @@ if LIMO.design.bootstrap ~=0
             X = LIMO.design.X;
             h = waitbar(0,'bootstraping data','name','% done');
             for e = 1:size(array,1)
-                electrode = array(e);
+                channel = array(e);
                 waitbar(e/size(array,1))
-                fprintf('bootstrapping electrode %g \n',electrode);
+                fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
-                    Y = squeeze(Yr(electrode,:,:));
+                    Y = squeeze(Yr(channel,:,:));
                     index = find(~isnan(Y(1,:))); % because across subjects, we can have missing data
-                    model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
+                    model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.method,LIMO.Analysis,[],[],boot_table{channel});
                 else
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         for f=1:size(Yr,2)
-                            model{f} = limo_glm_boot(squeeze(Yr(electrode,f,:,:))',LIMO,boot_table);
+                            model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
                         end
                     else
-                        model = limo_glm_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);
+                        model = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
                     end
                 end
                 
@@ -359,43 +423,43 @@ if LIMO.design.bootstrap ~=0
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     for f=1:length(model)
                         for B = 1:nboot % now loop because we use cells
-                            H0_Betas(electrode,f,:,:,B) = model{f}.betas{B};
-                            H0_R2(electrode,f,:,1,B)  = model{f}.R2_univariate{B};
-                            H0_R2(electrode,f,:,2,B)  = model{f}.F{B};
-                            H0_R2(electrode,f,:,3,B)  = model{f}.p{B};
+                            H0_Betas(channel,f,:,:,B) = model{f}.betas{B};
+                            H0_R2(channel,f,:,1,B)  = model{f}.R2_univariate{B};
+                            H0_R2(channel,f,:,2,B)  = model{f}.F{B};
+                            H0_R2(channel,f,:,3,B)  = model{f}.p{B};
                             
                             if prod(LIMO.design.nb_conditions) ~=0
                                 if length(LIMO.design.nb_conditions) == 1
-                                    tmp_H0_Conditions(electrode,f,:,1,1,B) = model{f}.conditions.F{B};
-                                    tmp_H0_Conditions(electrode,f,:,1,2,B) = model{f}.conditions.p{B};
+                                    tmp_H0_Conditions(channel,f,:,1,1,B) = model{f}.conditions.F{B};
+                                    tmp_H0_Conditions(channel,f,:,1,2,B) = model{f}.conditions.p{B};
                                 else
                                     for i=1:length(LIMO.design.nb_conditions)
-                                        tmp_H0_Conditions(electrode,f,:,i,1,B) = model{f}.conditions.F{B}(i,:);
-                                        tmp_H0_Conditions(electrode,f,:,i,2,B) = model{f}.conditions.p{B}(i,:);
+                                        tmp_H0_Conditions(channel,f,:,i,1,B) = model{f}.conditions.F{B}(i,:);
+                                        tmp_H0_Conditions(channel,f,:,i,2,B) = model{f}.conditions.p{B}(i,:);
                                     end
                                 end
                             end
                             
                             if LIMO.design.fullfactorial == 1
                                 if length(LIMO.design.nb_interactions) == 1
-                                    tmp_H0_Interaction_effect(electrode,f,:,1,1,B) = model{f}.interactions.F{B};
-                                    tmp_H0_Interaction_effect(electrode,f,:,1,2,B) = model{f}.interactions.p{B};
+                                    tmp_H0_Interaction_effect(channel,f,:,1,1,B) = model{f}.interactions.F{B};
+                                    tmp_H0_Interaction_effect(channel,f,:,1,2,B) = model{f}.interactions.p{B};
                                 else
                                     for i=1:length(LIMO.design.nb_interactions)
-                                        tmp_H0_Interaction_effect(electrode,f,:,i,1,B) = model{f}.interactions.F{B}(i,:);
-                                        tmp_H0_Interaction_effect(electrode,f,:,i,2,B) = model{f}.interactions.p{B}(i,:);
+                                        tmp_H0_Interaction_effect(channel,f,:,i,1,B) = model{f}.interactions.F{B}(i,:);
+                                        tmp_H0_Interaction_effect(channel,f,:,i,2,B) = model{f}.interactions.p{B}(i,:);
                                     end
                                 end
                             end
                             
                             if LIMO.design.nb_continuous ~=0
                                 if LIMO.design.nb_continuous == 1
-                                    tmp_H0_Covariates(electrode,f,:,1,1,B) = model{f}.continuous.F{B};
-                                    tmp_H0_Covariates(electrode,f,:,1,2,B) = model{f}.continuous.p{B};
+                                    tmp_H0_Covariates(channel,f,:,1,1,B) = model{f}.continuous.F{B};
+                                    tmp_H0_Covariates(channel,f,:,1,2,B) = model{f}.continuous.p{B};
                                 else
                                     for i=1:LIMO.design.nb_continuous
-                                        tmp_H0_Covariates(electrode,f,:,i,1,B) = model{f}.continuous.F{B}(:,i);
-                                        tmp_H0_Covariates(electrode,f,:,i,2,B) = model{f}.continuous.p{B}(:,i);
+                                        tmp_H0_Covariates(channel,f,:,i,1,B) = model{f}.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(channel,f,:,i,2,B) = model{f}.continuous.p{B}(:,i);
                                     end
                                 end
                             end
@@ -403,43 +467,43 @@ if LIMO.design.bootstrap ~=0
                     end
                 else % erp or spec
                     for B = 1:nboot
-                        H0_Betas(electrode,:,:,B) = model.betas{B};
-                        H0_R2(electrode,:,1,B)    = model.R2_univariate{B};
-                        H0_R2(electrode,:,2,B)    = model.F{B};
-                        H0_R2(electrode,:,3,B)    = model.p{B};
+                        H0_Betas(channel,:,:,B) = model.betas{B};
+                        H0_R2(channel,:,1,B)    = model.R2_univariate{B};
+                        H0_R2(channel,:,2,B)    = model.F{B};
+                        H0_R2(channel,:,3,B)    = model.p{B};
                         
                         if prod(LIMO.design.nb_conditions) ~=0
                             if length(LIMO.design.nb_conditions) == 1
-                                tmp_H0_Conditions(electrode,:,1,1,B) = model.conditions.F{B};
-                                tmp_H0_Conditions(electrode,:,1,2,B) = model.conditions.p{B};
+                                tmp_H0_Conditions(channel,:,1,1,B) = model.conditions.F{B};
+                                tmp_H0_Conditions(channel,:,1,2,B) = model.conditions.p{B};
                             else
                                 for i=1:length(LIMO.design.nb_conditions)
-                                    tmp_H0_Conditions(electrode,:,i,1,B) = model.conditions.F{B}(i,:);
-                                    tmp_H0_Conditions(electrode,:,i,2,B) = model.conditions.p{B}(i,:);
+                                    tmp_H0_Conditions(channel,:,i,1,B) = model.conditions.F{B}(i,:);
+                                    tmp_H0_Conditions(channel,:,i,2,B) = model.conditions.p{B}(i,:);
                                 end
                             end
                         end
                         
                         if LIMO.design.fullfactorial == 1
                             if length(LIMO.design.nb_interactions) == 1
-                                tmp_H0_Interaction_effect(electrode,:,1,1,B) = model.interactions.F{B};
-                                tmp_H0_Interaction_effect(electrode,:,1,2,B) = model.interactions.p{B};
+                                tmp_H0_Interaction_effect(channel,:,1,1,B) = model.interactions.F{B};
+                                tmp_H0_Interaction_effect(channel,:,1,2,B) = model.interactions.p{B};
                             else
                                 for i=1:length(LIMO.design.nb_interactions)
-                                    tmp_H0_Interaction_effect(electrode,:,i,1,B) = model.interactions.F{B}(i,:);
-                                    tmp_H0_Interaction_effect(electrode,:,i,2,B) = model.interactions.p{B}(i,:);
+                                    tmp_H0_Interaction_effect(channel,:,i,1,B) = model.interactions.F{B}(i,:);
+                                    tmp_H0_Interaction_effect(channel,:,i,2,B) = model.interactions.p{B}(i,:);
                                 end
                             end
                         end
                         
                         if LIMO.design.nb_continuous ~=0
                             if LIMO.design.nb_continuous == 1
-                                tmp_H0_Covariates(electrode,:,1,1,B) = model.continuous.F{B};
-                                tmp_H0_Covariates(electrode,:,1,2,B) = model.continuous.p{B};
+                                tmp_H0_Covariates(channel,:,1,1,B) = model.continuous.F{B};
+                                tmp_H0_Covariates(channel,:,1,2,B) = model.continuous.p{B};
                             else
                                 for i=1:LIMO.design.nb_continuous
-                                    tmp_H0_Covariates(electrode,:,i,1,B) = model.continuous.F{B}(:,i);
-                                    tmp_H0_Covariates(electrode,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
+                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
                                 end
                             end
                         end
@@ -497,7 +561,7 @@ if LIMO.design.bootstrap ~=0
                 clear tmp_H0_Covariates
             end
             
-            clear electrode model H0_R2;
+            clear channel model H0_R2;
             cd(LIMO.dir); disp(' ');
             
         catch boot_error
@@ -550,7 +614,7 @@ if LIMO.design.tfce == 1
     end
        
     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-    mkdir TFCE; neighbouring_matrix = LIMO.data.neighbouring_matrix;
+    mkdir tfce; 
     
     % R2
     limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no')
