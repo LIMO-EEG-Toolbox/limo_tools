@@ -7,11 +7,8 @@ function varargout = limo_display_image_tf(varargin)
 %       3 - 3D matrix of significant cells
 %       4 - title (from limo_stat_values_tf)
 %
-% A. Stewart v1 mar14 axs - basic GUI set up + 3D tf plots from 3 point-of-view 
-% C. Pernet added mask,title, - fixed various bugs - made it show topoplot and time courses +
-% fixed the code to update at each 'click' 9-04-2014
-% ------------------------------
-%  Copyright (C) LIMO Team 2019
+% ----------------------------------------------------------------------
+%  Copyright (C) LIMO Team 2020
 
 %% Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -125,8 +122,8 @@ if strcmp(get(hObject,'Visible'),'off')
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -242,8 +239,8 @@ switch popup_sel_index
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -270,8 +267,8 @@ switch popup_sel_index
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -329,8 +326,8 @@ switch popup_sel_index
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -630,6 +627,9 @@ while button == 1
                
         % stat value
         axes(handles.tf_course_plot);
+        if handles.slider_sel > handles.maxt
+            handles.slider_sel = handles.maxt;
+        end
         d = squeeze(handles.data3d(channel,:,handles.slider_sel)); axis tight
         plot(handles.freqs_here,d,'LineWidth',3); M = max(d(:));
         ylabel('Stat value','fontsize',10); xlabel('Frequencies','fontsize',10,'VerticalAlignment','top');
@@ -662,8 +662,8 @@ while button == 1
                 else
                     Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
                 end
-                newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-                Ylabels  = Ylabels(newticks);
+                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+                Ylabels  = Ylabels(newyticks);
             else
                 ylabel('optimized electrode','fontsize',10);
             end
@@ -693,6 +693,9 @@ while button == 1
         
         % stat value
         axes(handles.tf_course_plot);
+        if handles.slider_sel > handles.maxf
+            handles.slider_sel = handles.maxf;
+        end
         d = squeeze(handles.data3d(channel,handles.slider_sel,:)); axis tight
         plot(handles.times_here,d,'LineWidth',3); M = max(d(:));
         ylabel('Stat value','fontsize',10); xlabel('Time','fontsize',10,'VerticalAlignment','top');
@@ -725,8 +728,8 @@ while button == 1
                 else
                     Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
                 end
-                newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-                Ylabels  = Ylabels(newticks);
+                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+                Ylabels  = Ylabels(newyticks);
             else
                 ylabel('optimized electrode','fontsize',10);
             end
