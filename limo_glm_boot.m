@@ -478,7 +478,7 @@ switch method
                         H                                    = Betas'*X'*M*X*Betas;
                         df_continuous(n)                     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
                         F_continuous(n,:)                    = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
-                        pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
+                        pval_continuous(n,:)                 = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                     end
                     
                     F_CONTVALUES{B}  = F_continuous';

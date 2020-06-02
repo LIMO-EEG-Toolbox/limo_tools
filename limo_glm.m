@@ -11,8 +11,10 @@ function model = limo_glm(varargin)
 % FORMATS: model = limo_glm(Y,LIMO)
 %          model = limo_glm(Y, X, nb_conditions, nb_interactions, ...
 %                  nb_continuous, method, Analysis type, n_freqs, n_times)
+%
 % INPUTS:
 %   Y               = 2D matrix of EEG data with format trials x frames
+%                     (frame can be the concatenation of freq*time)
 %   LIMO            = structure that contains the above information (except Y)
 %                     or input info that are in LIMO.mat
 %   X               = 2 dimensional design matrix
@@ -47,10 +49,9 @@ function model = limo_glm(varargin)
 % (OLS), weighted least squares (WLS) which attribute unique weights per trial
 % and iterative reweighted least squares (IRLS) which attribute weights for
 % each observations
-% - For WLS, since this weights are derived for the entire trial, there is a
-% depencies similar to a multivariate approach, for which we have no analytical
-% solution and the p-values must then be derived post-hoc via bootstrap.
-% see < WLS paper>
+% - For WLS, since the weights are derived for the entire trial, using a
+% dimention reduction the df are adjusted for the subspace spanned by the
+% parameters see < WLS paper>
 % - For IRLS, dfe are computed using the Satterthwaite approximation and
 % a MSE correction is used
 % - Each effect is accounted for given the other effects; this means that one
@@ -184,13 +185,13 @@ elseif strcmp(method,'WLS-TF')
     rf     = NaN(1,n_freqs);
     for f=1:n_freqs
         [Betas(:,f,:),W(:,f),rf(f)] = limo_WLS(X,squeeze(Y(f,:,:)));
-        WX{f} = X .* repmat(W(:,f),1,size(X,2)); % per freq = switch method
+        WX{f} = X .* repmat(W(:,f),1,size(X,2)); 
         index1=index1+1;
     end
     
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
-    % WX = X.*W; per frame =  switch method
+    % WX = X.*W per frame =  switch method
 end
 
 %% ------------------------------------
@@ -281,8 +282,7 @@ switch method
             
             model.conditions.F                   = F_conditions;
             model.conditions.df                  = [df_conditions ; dfe];
-            model.conditions.p               = pval_conditions;
-            
+            model.conditions.p                   = pval_conditions;           
             
             % ------------------------------------------------
         elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
@@ -326,7 +326,7 @@ switch method
             
             model.conditions.F      = F_conditions;
             model.conditions.df     = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            model.conditions.p  = pval_conditions;
+            model.conditions.p      = pval_conditions;
             
             % ------------------------------------------------
         elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
@@ -388,7 +388,7 @@ switch method
             
             model.conditions.F       = F_conditions;
             model.conditions.df      = [df_conditions ; repmat(dfe,1,numel(df_conditions))]';
-            model.conditions.p   = pval_conditions;
+            model.conditions.p       = pval_conditions;
             
             % ---------------------------
             % now deal with interactions
@@ -458,7 +458,7 @@ switch method
             
             model.interactions.F       = F_interactions;
             model.interactions.df      = [df_interactions ; repmat(dfe,1,numel(df_interactions))]';
-            model.interactions.p   = pval_interactions;
+            model.interactions.p       = pval_interactions;
         end
         
         % -----------------------------------
@@ -496,7 +496,7 @@ switch method
                 
                 model.continuous.F                   = F_continuous';
                 model.continuous.df                  = [1 dfe];
-                model.continuous.p               = pval_continuous';
+                model.continuous.p                   = pval_continuous';
             end
         end
         
@@ -521,10 +521,9 @@ switch method
             % degrees of freedom
             % -------------------
             df  = rank(WX{freq})-1;
-            EV  = abs(eig(corr(R*squeeze(Y(freq,:,:)))));
-            x   = single(EV>=1) + (EV - floor(EV));
-            dfe = size(Y,2) - sum(x) + rank(WX{freq}) + 1;
-            
+            HM  = WX{freq}*pinv(WX{freq}); % Hat matrix, projection onto X
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
+
             % model R^2
             % -----------
             C              = eye(size(X,2));
@@ -536,16 +535,18 @@ switch method
             H              = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
             Rsquare        = diag(H)./diag(T);
             F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
-            
+            p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
+           
             % update the model structure
             % ----------------------------
             
             for t=1:size(Y,3)
-                model.betas_se(:,f,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX{freq}'*WX{freq})));
+                model.betas_se(:,freq,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX{freq}'*WX{freq})));
             end
-            model.R2_univariate(f,:)  = Rsquare;
-            model.F(f,:)              = F_Rsquare;
-            model.df(f,:)             = [df dfe];
+            model.R2_univariate(freq,:)  = Rsquare;
+            model.F(freq,:)              = F_Rsquare;
+            model.df(freq,:)             = [df dfe];
+            model.p(freq,:)              = p_Rsquare;
             
             %% Compute effects
             % ------------------
@@ -558,7 +559,8 @@ switch method
                 if nb_conditions ~= 0 && nb_continuous == 0
                     df_conditions                    = df;
                     F_conditions                     = F_Rsquare;
-                    
+                    pval_conditions                  = p_Rsquare;
+
                 elseif nb_conditions ~= 0 && nb_continuous ~= 0
                     C                                = eye(size(X,2));
                     C(:,(nb_conditions+1):size(X,2)) = 0;
@@ -569,10 +571,12 @@ switch method
                     H                                = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
                     df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                     F_conditions                     = (diag(H)/df_conditions) ./ (diag(E)/dfe);
+                    pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
                 end
                 
                 model.conditions.F(freq,:)              = F_conditions';
                 model.conditions.df(freq,:)             = [df_conditions ; dfe]';
+                model.conditions.p(freq,:)              = pval_conditions;
                 
                 % ------------------------------------------------
             elseif nb_factors > 1  && isempty(nb_interactions) % N-ways ANOVA without interactions
@@ -596,7 +600,7 @@ switch method
                     C                    = eye(size(X,2));
                     C(:,eoni)            = 0; % set all but factor of interest to 0
                     C0                   = eye(size(X,2)) - C*pinv(C);
-                    X0                   = WX*C0; % the reduced model include all but the factor f
+                    X0                   = WX{freq}*C0; % the reduced model include all but the factor f
                     R0                   = eye(size(Y,2)) - (X0*pinv(X0));
                     M                    = R0 - R; % hat matrix for factor f
                     H                    = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
@@ -616,7 +620,8 @@ switch method
                 
                 model.conditions.F(:,freq,:)      = F_conditions';
                 model.conditions.df(:,freq,:)     = [df_conditions ; repmat(dfe,1,numel(df_conditions))];
-                
+                model.conditions.p(:,freq,:)      = pval_conditions;
+            
                 % ------------------------------------------------
             elseif nb_factors > 1  && ~isempty(nb_interactions) % N-ways ANOVA with interactions
                 % ------------------------------------------------
@@ -677,7 +682,8 @@ switch method
                 
                 model.conditions.F(:,freq,:)      = F_conditions';
                 model.conditions.df(:,freq,:)     = [df_conditions ; repmat(dfe,1,numel(df_conditions))];
-                
+                model.conditions.p(:,freq,:)      = pval_conditions;
+
                 % ---------------------------
                 % now deal with interactions
                 % ---------------------------
@@ -745,6 +751,7 @@ switch method
                 
                 model.interactions.F(:,freq,:)  = F_interactions;
                 model.interactions.df(:,freq,:) = [df_interactions ; repmat(dfe,1,numel(df_interactions))]';
+                model.interactions.p(:,freq,:)  = pval_interactions;
             end
             
             % -----------------------------------
@@ -775,11 +782,64 @@ switch method
                         H                                = squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:));
                         df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
                         F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
-                    end
+                        pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
+                   end
                     
-                    model.continuous.F(:,freq,:)                   = F_continuous';
-                    model.continuous.df(:,freq,:)                  = [1 dfe];
+                    model.continuous.F(:,freq,:)         = F_continuous';
+                    model.continuous.df(:,freq,:)        = [1 dfe];
+                    model.continuous.p(:,freq,:)         = pval_continuous';
                 end
+            end
+        end
+        
+        % reshape to output the same size as input
+        % except betas - keeping the parameters for modeling
+        model.R2_univariate = reshape(model.R2_univariate, [n_freqs*n_times,1]);
+        model.F             = reshape(model.F, [n_freqs*n_times,1]);
+        model.p             = reshape(model.p, [n_freqs*n_times,1]);
+        
+        if isfield(model,'conditions')
+            if nb_factors == 1
+                model.conditions.F  = reshape(model.conditions.F, [n_freqs*n_times,1]);
+                model.conditions.p  = reshape(model.conditions.p, [n_freqs*n_times,1]);
+            else
+                for f = length(nb_conditions):-1:1
+                    tmpF(f,:)  = reshape(model.conditions.F(f,:,:), [n_freqs*n_times,1]);
+                    tmpp(f,:)  = reshape(model.conditions.p(f,:,:), [n_freqs*n_times,1]);
+                end
+                model.conditions.F  = tmpF;
+                model.conditions.p  = tmpp;
+                clear tmpF tmpp
+            end
+        end
+        
+        if isfield(model,'interactions')
+            if nb_factors == 2 && nb_continuous == 0
+                model.interactions.F  = reshape(model.conditions.F, [n_freqs*n_times,1]);
+                model.interactions.p  = reshape(model.conditions.p, [n_freqs*n_times,1]);
+            else
+                for f = length(nb_interactions)
+                    tmpF(f,:)  = reshape(model.interactions.F(f,:,:), [n_freqs*n_times,1]);
+                    tmpp(f,:)  = reshape(model.interactions.p(f,:,:), [n_freqs*n_times,1]);
+                end
+                model.conditions.F  = tmpF;
+                model.conditions.p  = tmpp;
+                clear tmpF tmpp
+            end
+        end
+ 
+        if isfield(model,'continuous')
+            if nb_factors == 0 && nb_continuous == 1
+                model.continuous.F  = reshape(model.continuous.F, [n_freqs*n_times,1]);
+                model.continuous.p  = reshape(model.continuous.p, [n_freqs*n_times,1]);
+            else
+                for f = 1:nb_continuous
+                    tmpF(f,:)  = reshape(model.continuous.F(f,:,:), [n_freqs*n_times,1]);
+                    tmpp(f,:)  = reshape(model.continuous.p(f,:,:), [n_freqs*n_times,1]);
+                end
+                model.continuous.F  = tmpF;
+                model.continuous.p  = tmpp;
+                clear tmpF tmpp
             end
         end
         
