@@ -407,15 +407,12 @@ switch varargin{1}
             LIMO.design.name = 'Mean';
         end
         
-        disp('design matrix done ...')
-
-        % fix a bug which occurs if you run several subjects in a row with
-        % the GUI and use contrasts - a new subject will have a contrast field
-        % must be a way to solve this properly ??
-        tofix = isfield(LIMO,'contrast');
-        if tofix == 1
-            LIMO.contrast = [];
+        % if you run several subjects in a row with
+        % the GUI and use contrasts - a new subject can have a contrast field
+        if isfield(LIMO,'contrast')
+            LIMO = removefields(LIMO, 'contrast');
         end
+        disp('design matrix done ...')
         
         % ---------------
         LIMO.design.status = 'to do';
