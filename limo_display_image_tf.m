@@ -376,8 +376,8 @@ switch popup_sel_index
     colormap(gca, handles.cc); img_prop = get(gca);
     newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
     Xlabels = round(handles.times_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-    newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newyticks))); set(gca,'YTickLabel', split(string(Ylabels)))
+    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
+    Ylabels = fliplr(round(handles.freqs_here(newxticks))); set(gca,'YTickLabel', split(string(Ylabels)))
     title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(handles.maxe).labels)]);
     xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
 end
