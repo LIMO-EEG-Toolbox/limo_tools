@@ -69,7 +69,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 
 opt.mode                = 'session'; % run in the current session -- see psom for other options // in batch we use parfor
 opt.max_queued          = Inf; % with a maximum of possible sessions
-opt.time_between_checks = 2; % and 2sec between job submission
+opt.time_between_checks = 3; % and x sec between job submission
 opt.flag_pause          = false; % don't bother asking to start jobs
 opt.flag_debug          = true; % report a bit more of issues
 psom_gb_vars
