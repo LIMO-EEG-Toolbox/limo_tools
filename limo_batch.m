@@ -351,34 +351,47 @@ for subject = 1:N
     limopt{subject} = opt;
     limopt{subject}.path_logs = [LIMO_files.LIMO filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject)];
 end
-    
-parfor subject = 1:N
-    disp('--------------------------------')
-    fprintf('processing subject %g/%g \n',subject,N)
-    disp('--------------------------------')
-    try
-        psom_run_pipeline(pipeline(subject),limopt{subject})
-        
-        % example of debugging 
-        % ---------------------
-        % psom reported with function failed, eg limo_batch_import
-        % pipeline(subject).import tells you the command line to test
-        % put the point brack where needed and call e.g.
-        % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
-        % limo_batch_design_matrix(pipeline(subject).design.files_in)
-        % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
-        % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
+
+limo_settings_script;
+if ~limo_settings.psom % debugging mode, serial analysis
+    for subject = 1:N
+        disp('--------------------------------')
+        fprintf('processing subject %g/%g \n',subject,N)
+        disp('--------------------------------')
+        psom_pipeline_debug(pipeline(subject));
         report{subject} = ['subject ' num2str(subject) ' processed'];
         procstatus(subject) = 1;
-    catch ME
-        report{subject} = sprintf('subject %g failed: %s',subject,ME.message');
-        if strcmp(option,'model specification') 
-            remove_limo(subject) = 1;
-        elseif strcmp(option,'both')
-            remove_limo(subject) = 1;
-            remove_con(subject) = 1;
-        elseif strcmp(option,'contrast only')
-            remove_con(subject) = 1;
+    end
+else % parallel call to the pipeline
+    parfor subject = 1:N
+        disp('--------------------------------')
+        fprintf('processing subject %g/%g \n',subject,N)
+        disp('--------------------------------')
+        
+        try
+            psom_run_pipeline(pipeline(subject),limopt{subject})
+            
+            % example of debugging
+            % ---------------------
+            % psom reported with function failed, eg limo_batch_import
+            % pipeline(subject).import tells you the command line to test
+            % put the point brack where needed and call e.g.
+            % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
+            % limo_batch_design_matrix(pipeline(subject).design.files_in)
+            % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
+            % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
+            report{subject} = ['subject ' num2str(subject) ' processed'];
+            procstatus(subject) = 1;
+        catch ME
+            report{subject} = sprintf('subject %g failed: %s',subject,ME.message');
+            if strcmp(option,'model specification')
+                remove_limo(subject) = 1;
+            elseif strcmp(option,'both')
+                remove_limo(subject) = 1;
+                remove_con(subject) = 1;
+            elseif strcmp(option,'contrast only')
+                remove_con(subject) = 1;
+            end
         end
     end
 end
