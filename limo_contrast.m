@@ -128,7 +128,7 @@ switch type
                         if Test == 0 % T contrast
                             
                             % Update con file [mean value, se, df, t, p]
-                            var                      = (squeeze(Res(channel,freq,:,:))*squeeze(Res(channel,freq,:,:))') / dfe(channel,freq);
+                            var                    = (squeeze(Res(channel,freq,:,:))*squeeze(Res(channel,freq,:,:))') / dfe(channel,freq);
                             con(channel,freq,:,1)  = C*squeeze(Betas(channel,freq,:,:))';
                             con(channel,freq,:,3)  = dfe(channel,freq);
                             WX                       = X.*repmat(squeeze(LIMO.design.weights(channel,freq,:)),1,size(X,2));
@@ -187,23 +187,29 @@ switch type
                     if Test == 0 % T contrast
                         
                         % Update con file [mean value, se, df, t, p]
-                        var                            = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe;
-                        con(channel,:,1)             = C*squeeze(Betas(channel,:,:))';
-                        con(channel,:,3)             = dfe;
                         if strcmpi(LIMO.design.method,'OLS')
-                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(X'*X)*C')); 
+                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe;
+                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
+                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
+                            con(channel,:,3)         = dfe;
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
                             con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe)).*2; % times 2 because it's directional
                         elseif strcmpi(LIMO.design.method,'WLS')
-                            WX                         = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2));
+                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel);
+                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
+                            WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2));
                             con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already 
+                            con(channel,:,3)         = dfe(channel);
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
-                            con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe)).*2; 
+                            con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
                         elseif strcmpi(LIMO.design.method,'IRLS')
                             for frame = 1:size(Betas,2)
-                                WX                     = X.*repmat(LIMO.design.weights(channel,frame,:),1,size(X,2));
-                                con(channel,:,2)     = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
-                                con(channel,:,4)     = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                                var                  = (squeeze(Res(channel,frame,:))*squeeze(Res(channel,frame,:))') / dfe(channel,frame);
+                                con(channel,frame,1) = C*squeeze(Betas(channel,frame,:))';
+                                WX                   = X.*repmat(LIMO.design.weights(channel,frame,:),1,size(X,2));
+                                con(channel,frame,2) = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                                con(channel,frame,3) = dfe(channel,frame);
+                                con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                                 con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(frame))).*2;
                             end
                         end
