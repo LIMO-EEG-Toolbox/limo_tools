@@ -76,18 +76,12 @@ function path_updates_Callback(hObject, eventdata, handles)
 limo_path_update
 guidata(hObject, handles);
 
-% --- Executes during object creation, after setting all properties.
-function batch_Callback(hObject, eventdata, handles)
-limo_batch;
-guidata(hObject, handles);
-
 
 % ---------------------------------------------------------------
 % --- Executes on button press in check_weights.
 function check_weights_Callback(hObject, eventdata, handles)
 limo_CheckWeight
 guidata(hObject, handles);
-
 
 
 % --- Executes on button press in electrode_optimization.

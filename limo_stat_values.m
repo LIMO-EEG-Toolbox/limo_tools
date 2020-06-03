@@ -575,7 +575,7 @@ end
 %% Repeated measure ANOVA
 % ------------------------
 
-if strncmp(FileName,'Rep_ANOVA',9)
+if contains(FileName,'Rep_ANOVA',9)
     
     % all files have dim electrode x time frames x F/p
     if strncmp(FileName,'Rep_ANOVA_Interaction',21)

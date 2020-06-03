@@ -72,7 +72,7 @@ if strcmp(defaults.analysis,'Time')
     % start
     if isempty(defaults.start) || defaults.start < min(timevect)
         LIMO.data.start = timevect(1);
-        LIMO.data.trim1 = 1;    
+        LIMO.data.trim1 = 1;
     else
         [~,position]    = min(abs(timevect - defaults.start));
         LIMO.data.start = timevect(position);
@@ -82,14 +82,14 @@ if strcmp(defaults.analysis,'Time')
     % end
     if isempty(defaults.end) || defaults.end > max(EEGLIMO.times)
         LIMO.data.end   = timevect(end);
-        LIMO.data.trim2 = length(timevect);    
+        LIMO.data.trim2 = length(timevect);
     else
         [~,position]    = min(abs(EEGLIMO.times - defaults.end));
         LIMO.data.end   = timevect(position);
         LIMO.data.trim2 = position;
     end
-
-        LIMO.data.timevect  = timevect(LIMO.data.trim1:LIMO.data.trim2);
+    
+    LIMO.data.timevect  = timevect(LIMO.data.trim1:LIMO.data.trim2);
     
 elseif strcmp(defaults.analysis,'Frequency') 
     

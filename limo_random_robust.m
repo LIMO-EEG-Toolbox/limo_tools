@@ -869,7 +869,9 @@ switch type
         
         % ------------------------------------------------
         % update the LIMO structure
-        cd(LIMO.dir)
+        if isfield(LIMO,'dir')
+            cd(LIMO.dir)
+        end
         LIMO.data.Cat                = gp_vector;
         LIMO.data.Cont               = 0;
         LIMO.data.data_dir           = pwd;
