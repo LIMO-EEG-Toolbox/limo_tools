@@ -41,7 +41,9 @@ if strcmp(LIMO.design.status,'to do')
         end
     catch pcout_error
         if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-            LIMO.design.method = 'OLS'; disp('Cannot use WLS, not enough observations - switching to OLS')
+            error('%s\n running the analysis using OLS solves this issue',pcout_error.message)
+        else
+            error('%s\n',pcout_error.message)
         end
     end
     
