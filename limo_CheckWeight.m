@@ -53,20 +53,20 @@ elseif ischar(LIMO_files)
 end
 
 % those files are there?
-for f=1:length(LIMO_files)
-    if ~exist(LIMO_files{f},'file');
+for f=length(LIMO_files):-1:1
+    if ~exist(LIMO_files{f},'file')
         error([LIMO_files{f} ' doesn''t exist'])
     end
     
     [limo_paths{f},name,ext]=fileparts(LIMO_files{f});
-    if ~strcmp([name ext],'LIMO.mat');
+    if ~strcmp([name ext],'LIMO.mat')
         error([LIMO_files{f} ' is not a LIMO.mat file'])
     end
     
     load(LIMO_files{f});
     if f==1
         limo.Analysis = LIMO.Analysis;
-        limo.Type = LIMO.Type;
+        limo.Type     = LIMO.Type;
     else
         if limo.Analysis ~= LIMO.Analysis
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
@@ -79,9 +79,10 @@ for f=1:length(LIMO_files)
 end
 
 if ~isfield(limo,'data')
-    [to_load,path] = uigetfile2('*mat','load chanlocs'); chan = load([path to_load]);
-    limo.data.chanlocs = chan.expected_chanlocs;
-    limo.data.neighbouring_matrix =  channeighbstructmat;
+    [to_load,path]                = uigetfile2('*mat','load chanlocs'); 
+    chan                          = load([path to_load]);
+    limo.data.chanlocs            = chan.expected_chanlocs;
+    limo.data.neighbouring_matrix = channeighbstructmat;
 end
 
 if ~isempty(varargin)
@@ -101,14 +102,14 @@ if ~isempty(varargin)
 end
    
 %% compute
-mkdir('Weights_checking'); cd('Weights_checking');
-[first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
+mkdir('Weights_checking'); cd('Weights_checking'); LIMO.dir = pwd;
+[~,~,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
 if strcmp(limo.plotrank,'on')
     if strcmpi(limo.Analysis,'Time-Frequency')
-        data = NaN(size(chan.expected_chanlocs,2),(limo.data.highf-limo.data.lowf+1),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
+        data       = NaN(size(chan.expected_chanlocs,2),(limo.data.highf-limo.data.lowf+1),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3),size(data,4));
     else
-        data = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
+        data       = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3));
     end
 end
@@ -269,5 +270,5 @@ cd ..
 disp('analysis done')
 disp('Plot central tendency to check weights per subject and decile')
 disp('view results ''all'' for outliers and bias')
-
+limo_results
 
