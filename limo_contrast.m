@@ -652,9 +652,11 @@ switch type
             
             %  compute
             clear Yr
+            array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
             for b = 1:LIMO.design.bootstrap
                 fprintf('contrast bootstrap %g \n',b);
-                for channel = 1:size(centered_data,1)
+                for c = 1:length(array)
+                    channel = array(c);
                     % Inputs
                     tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
                     Y   = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
