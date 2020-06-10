@@ -41,9 +41,9 @@ add_subplots = 1;
 if ~isempty(LIMO.design.X)
     X = LIMO.design.X;
     Xdisplay = X;
-    N = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
     if isfield(LIMO,'design.nb_continuous')
-        if  prod(LIMO.design.nb_continuous) ~= 0;
+        if  prod(LIMO.design.nb_continuous) ~= 0
+            N = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
             REGdisplay = X(:,N+1:size(X,2)-1);
             REGdisplay = REGdisplay + max(abs(min(REGdisplay)));
             Xdisplay(:,N+1:size(X,2)-1) = REGdisplay ./ max(max(REGdisplay));

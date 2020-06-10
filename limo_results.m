@@ -299,23 +299,9 @@ if FilterIndex ~= 0
                 name = sprintf('H0_Covariate_effect_%s.mat',FileName(18:end-4));
                 load(name); PCT_test = ver('distcomp');
                 if size(H0_Covariate_effect,1) == 1
-                    if ~isempty(PCT_test)
-                        tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),handles.LIMO.LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),handles.LIMO.LIMO.data.neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                    end
+                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
                 else
-                    if ~isempty(PCT_test)
-                        tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),handles.LIMO.LIMO.design.bootstrap);
-                        parfor b=1:nboot
-                            tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),handles.LIMO.LIMO.data.neighbouring_matrix,0);
-                        end
-                    else
-                        tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
-                    end
+                    tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),handles.LIMO.LIMO.data.neighbouring_matrix);
                 end
                 full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score'); cd ..
                 clear H0_Covariate_effect tfce_H0_score;

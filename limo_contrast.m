@@ -512,9 +512,11 @@ switch type
 
             %  compute
             load boot_table; clear Yr
+            array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
             for b = 1:LIMO.design.bootstrap
                 fprintf('contrast bootstrap %g \n',b);
-                for electrode = 1:size(centered_data,1)
+                for e = 1:length(array)
+                    electrode = array(e);
                     % Inputs
                     resampling_index = boot_table{electrode}(:,b);
                     tmp = squeeze(centered_data(electrode,:,resampling_index,:));
