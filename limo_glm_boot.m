@@ -55,7 +55,7 @@ if nargin == 2 || nargin == 3
         nboot = size(boot_table,2);
     end
     
-elseif nargin == 9 || nargin == 10
+elseif nargin == 7 || nargin == 8
     y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
@@ -64,11 +64,11 @@ elseif nargin == 9 || nargin == 10
     method          = varargin{6};
     Analysis        = varargin{7};
     
-    if nargin == 9
+    if nargin == 7
         nboot       = 800; 
         boot_table  = randi(size(y,1),size(y,1),nboot);
-    elseif nargin == 10
-        boot_table  = varargin{10};
+    elseif nargin == 8
+        boot_table  = varargin{8};
         nboot       = size(boot_table,2);
     end
     
@@ -269,7 +269,7 @@ switch method
                     H                                = (Betas'*X'*M*X*Betas);
                     df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
                     F_conditions                     = (diag(H)/df) ./ (diag(E)/dfe);
-                    pval_conditions              = 1 - fcdf(F_conditions(:), df_conditions, dfe);
+                    pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
                 end
                 
                 F_CONDVALUES{B}  = F_conditions;
