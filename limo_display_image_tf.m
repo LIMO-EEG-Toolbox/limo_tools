@@ -53,6 +53,7 @@ if isfield(handles.LIMO.data,'tf_times')
 else
     handles.times_here = linspace(handles.LIMO.data.start,handles.LIMO.data.end,size(handles.data3d,3));
 end
+
 % for each cluster, get start/end/max value
 % if unthresholded, uncorrected, tfce or max = mask is made up of ones
 handles.n_cluster     = max(handles.mask(:));
@@ -70,6 +71,7 @@ if (size(handles.data3d,4)) == 3
 end
 handles.maxv         = max(handles.data3d(:));
 handles.maxvi        = find(handles.data3d == handles.maxv);
+
 if length(handles.maxvi) ~= 1
     handles.maxvi = handles.maxvi(1);
 end
@@ -77,6 +79,7 @@ end
 handles.slider_sel                         = handles.maxt; 
 plot_data.freqs_here                       = handles.LIMO.data.tf_freqs; 
 plot_data.times_here                       = handles.LIMO.data.tf_times; 
+
 guidata(hObject, plot_data);
 guidata(hObject, handles);
 
@@ -442,8 +445,8 @@ if popup_sel_index==1
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
