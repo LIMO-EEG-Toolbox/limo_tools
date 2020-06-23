@@ -311,7 +311,7 @@ if strncmp(FileName,'one_sample',10)
                 else
                     [mask,M] = limo_clustering(M.^2,squeeze(matfile.one_sample(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
                 end
-                Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 mytitle = sprintf('One Sample t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
@@ -412,7 +412,7 @@ if strncmp(FileName,'two_samples',11)
                 else
                     [mask,M] = limo_clustering(M.^2,squeeze(matfile.two_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
                 end
-                Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 mytitle = sprintf('Two Samples t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
@@ -514,7 +514,7 @@ if strncmp(FileName,'paired_samples',14)
                 else
                     [mask,M] = limo_clustering(M.^2,squeeze(matfile.paired_samples(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
                 end
-                Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 mytitle = sprintf('Paired t-values cluster correction (%g %s)', Nclust, Mclust);
             catch ME
@@ -577,30 +577,42 @@ end
 
 if contains(FileName,'Rep_ANOVA')
     
-    % all files have dim electrode x time frames x F/p
-    if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-        M    = matfile.Rep_ANOVA_Interaction_with_gp(:,:,1); % get the F values
-        PVAL = matfile.Rep_ANOVA_Interaction_with_gp(:,:,2);
-    elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-        M    = matfile.Rep_ANOVA_Gp_effect(:,:,1); % get the F values
-        PVAL = matfile.Rep_ANOVA_Gp_effect(:,:,2);
-    elseif strncmp(FileName,'Rep_ANOVA',9)
-        M    = matfile.Rep_ANOVA(:,:,1); % get the F values
-        PVAL = matfile.Rep_ANOVA(:,:,2);
+    % all files have dim electrode x [freq/time] frames x F/p
+    if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+        if contains(FileName,'Rep_ANOVA_Interaction')
+            M    = matfile.Rep_ANOVA_Interaction_with_gp(:,:,:,1); % get F values
+            PVAL = matfile.Rep_ANOVA_Interaction_with_gp(:,:,:,2); % get P values
+        elseif contains(FileName,'Rep_ANOVA_Gp_effect')
+            M    = matfile.Rep_ANOVA_Gp_effect(:,:,:,1); 
+            PVAL = matfile.Rep_ANOVA_Gp_effect(:,:,:,2);
+        elseif contains(FileName,'Rep_ANOVA_Main')
+            M    = matfile.Rep_ANOVA(:,:,:,1); 
+            PVAL = matfile.Rep_ANOVA(:,:,:,2);
+        end
+    else
+        if contains(FileName,'Rep_ANOVA_Interaction')
+            M    = matfile.Rep_ANOVA_Interaction_with_gp(:,:,1); 
+            PVAL = matfile.Rep_ANOVA_Interaction_with_gp(:,:,2);
+        elseif contains(FileName,'Rep_ANOVA_Gp_effect')
+            M    = matfile.Rep_ANOVA_Gp_effect(:,:,1); 
+            PVAL = matfile.Rep_ANOVA_Gp_effect(:,:,2);
+        elseif contains(FileName,'Rep_ANOVA_Main')
+            M    = matfile.Rep_ANOVA(:,:,1); 
+            PVAL = matfile.Rep_ANOVA(:,:,2);
+        end
     end
-    
-    MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
+    MCC_data = fullfile(LIMO.dir,['H0' filesep 'H0_' FileName]);
     
     % no correction for multiple testing
     % -----------------------------------
     if MCC == 1
         mask = PVAL <= p;
         M    = PVAL;
-        if strncmp(FileName,'Rep_ANOVA_Interaction',21)
+        if contains(FileName,'Rep_ANOVA_Interaction')
             mytitle = sprintf('Interaction F-values uncorrected threshold');
-        elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
+        elseif contains(FileName,'Rep_ANOVA_Gp_effect')
             mytitle = sprintf('Gp effect F-values uncorrected threshold');
-        elseif strncmp(FileName,'Rep_ANOVA',9)
+        elseif contains(FileName,'Rep_ANOVA_Main')
             mytitle = sprintf('Main Effect F-values uncorrected threshold');
         end
         
@@ -611,56 +623,40 @@ if contains(FileName,'Rep_ANOVA')
         
         if exist(MCC_data,'file')
             try
-                if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    H0_Rep_ANOVA_Interaction_with_gp = load(MCC_data);
-                    H0_Rep_ANOVA_Interaction_with_gp = H0_Rep_ANOVA_Interaction_with_gp.H0_Rep_ANOVA_Interaction_with_gp;
-                    bootT                            = squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:));
-                    bootP                            = squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,2,:));
-                    if size(matfile.Rep_ANOVA_Interaction_with_gp,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
+                H0_data = load(MCC_data);
+                H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    bootT = squeeze(H0_data(:,:,:,1,:));
+                    bootP = squeeze(H0_data(:,:,:,2,:));
+                    if size(M,1) == 1
+                        tmp = NaN(1,size(M,2),size(M,3),size(bootT,4));
+                        tmp(1,:,:,:) = bootT; bootT = tmp;
+                        tmp(1,:,:,:) = bootP; bootP = tmp;
+                        clear tmp
+                    end
+                else
+                    bootT = squeeze(H0_data(:,:,1,:));
+                    bootP = squeeze(H0_data(:,:,2,:));
+                    if size(M,1) == 1
+                        tmp = NaN(1,size(M,2),size(bootT,4));
                         tmp(1,:,:) = bootT; bootT = tmp;
                         tmp(1,:,:) = bootP; bootP = tmp;
                         clear tmp
                     end
-                    clear H0_Rep_ANOVA_Interaction_with_gp
-                elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    H0_Rep_ANOVA_Gp_effect = load(MCC_data);
-                    H0_Rep_ANOVA_Gp_effect = H0_Rep_ANOVA_Gp_effect.H0_Rep_ANOVA_Gp_effect;
-                    bootT                  = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:));
-                    bootP                  = squeeze(H0_Rep_ANOVA_Gp_effect(:,:,2,:));
-                    if size(matfile.Rep_ANOVA_Gp_effect,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
-                        tmp(1,:,:) = bootT; bootT = tmp;
-                        tmp(1,:,:) = bootP; bootP = tmp;
-                        clear tmp
-                    end
-                    clear H0_Rep_ANOVA_Gp_effect
-                elseif strncmp(FileName,'Rep_ANOVA',9)
-                    H0_Rep_ANOVA = load(MCC_data);
-                    H0_Rep_ANOVA = H0_Rep_ANOVA.H0_Rep_ANOVA;
-                    bootT        = squeeze(H0_Rep_ANOVA(:,:,1,:)); % get all F values under H0
-                    bootP        = squeeze(H0_Rep_ANOVA(:,:,2,:)); % get all P values under H0
-                    if size(matfile.Rep_ANOVA,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
-                        tmp(1,:,:) = bootT; bootT = tmp;
-                        tmp(1,:,:) = bootP; bootP = tmp;
-                        clear tmp
-                    end
-                    clear H0_Rep_ANOVA
                 end
                 
                 if size(M,1) == 1
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p);
+                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p); % temporal clustering
                 else
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,MCC,p); % F values
+                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,2,p); % spatial-temporal clustering
                 end
-                Nclust   = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                if strncmp(FileName,'Rep_ANOVA_Interaction',21)
+                if contains(FileName,'Rep_ANOVA_Interaction')
                     mytitle = sprintf('Interaction F-values cluster correction (%g %s)', Nclust, Mclust);
-                elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
+                elseif contains(FileName,'Rep_ANOVA_Gp_effect')
                     mytitle = sprintf('Gp effect F-values cluster correction (%g %s)', Nclust, Mclust);
-                elseif strncmp(FileName,'Rep_ANOVA',9)
+                elseif contains(FileName,'Rep_ANOVA_Main')
                     mytitle = sprintf('Main effect F-values cluster correction (%g %s)', Nclust, Mclust);
                 end
                 
@@ -785,7 +781,7 @@ if strncmp(FileName,'LI_Map',6)
                 clear H0_LI_Map
                 
                 [mask,M]  = limo_clustering(M.^2,squeeze(matfile.LI(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-                Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
+                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 mytitle = sprintf('LI Map T-values cluster correction (%g %s)', Nclust, Mclust);
                 
