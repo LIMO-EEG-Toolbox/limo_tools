@@ -248,11 +248,10 @@ if LIMO.Level == 1
                         save LIMO LIMO
                     end
                     
-                    if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
-                        limo_display_image(LIMO,toplot,mask,mytitle,flag)
-                                               
-                    else % strcmp(LIMO.Analysis,'Time-Frequency')  - 3D maps
+                    if ndims(toplot)==3
                         limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
+                    else
+                        limo_display_image(LIMO,toplot,mask,mytitle,flag)
                     end
                 end
                 
@@ -1195,7 +1194,7 @@ if LIMO.Level == 1
     
 elseif LIMO.Level == 2
     
-    if ~strncmp(FileName,'LIMO',4) % in all cases but course plot
+    if ~contains(FileName,'LIMO') % in all cases but course plot
         
         % if previously plotted, recover from the cache
         data_cached = 0;
@@ -1232,11 +1231,7 @@ elseif LIMO.Level == 2
         % -------------------------------------------
         if data_cached == 0 
             
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                [M, mask, mytitle] = limo_stat_values_tf(FileName,p,MCC,LIMO,choice,[]);
-            else
-                [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
-            end
+            [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
             
             if isempty(mask)
                 return

@@ -4,7 +4,7 @@ function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 % time or frequency (x) and electrodes (y) - for ERSP it precomputes what
 % needs to be plotted and call LIMO_display_image_tf
 %
-% FORMAT: LIMO_display_image(LIMO,toplot,mask,mytitle,dynamic)
+% FORMAT: limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 %
 % INPUTS:
 %   LIMO.mat  = Name of the file to image
@@ -53,7 +53,7 @@ for c=1:n_cluster
     cluster_end(c)                    = find(sigframes,1,'last');
     V                                 = max(tmp(:));
     cluster_maxv(c)                   = V(1);
-    [cluster_maxe(c),cluster_maxf(c)] = find(tmp==cluster_maxv(c));
+    [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
 
 

@@ -57,11 +57,24 @@ end
 % for each cluster, get start/end/max value
 % if unthresholded, uncorrected, tfce or max = mask is made up of ones
 handles.n_cluster     = max(handles.mask(:));
-handles.cluster_start = NaN(1,handles.n_cluster); % start of each cluster
-handles.cluster_end   = NaN(1,handles.n_cluster); % end of each cluster
+handles.cluster_start = NaN(2,handles.n_cluster); % start of each cluster
+handles.cluster_end   = NaN(2,handles.n_cluster); % end of each cluster
 handles.cluster_maxv  = NaN(1,handles.n_cluster); % max value for each cluster
 handles.cluster_maxe  = NaN(1,handles.n_cluster); % channel location of the max value of each cluster
 handles.cluster_maxf  = NaN(1,handles.n_cluster); % frame location of the max value of each cluster
+handles.cluster_maxt  = NaN(1,handles.n_cluster); % frame location of the max value of each cluster
+for c=1:handles.n_cluster
+    tmp                               = handles.data3d.*(handles.mask==c);
+    sigframes                         = squeeze(sum(tmp,1));
+    handles.cluster_start(:,c)        = [find(sum(sigframes,2),1,'first') find(sum(sigframes,1),1,'first')];
+    handles.cluster_end(:,c)          = [find(sum(sigframes,2),1,'last')  find(sum(sigframes,1),1,'last')];
+    V                                 = max(tmp(:));
+    handles.cluster_maxv(c)           = V(1);
+    [e,f,t]                           = ind2sub(size(tmp),find(tmp==V(1)));
+    handles.cluster_maxe(c)           = e;
+    handles.cluster_maxf(c)           = f;
+    handles.cluster_maxt(c)           = t;
+end
 clear varargin scale n_cluster
 
 % Find max values, save idx and value
@@ -175,6 +188,23 @@ if strcmp(get(hObject,'Visible'),'off')
     Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
     title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(handles.maxe).labels)]);
     xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+    
+    % report all clusters in command window
+    if handles.n_cluster > 1
+        for c=1:handles.n_cluster
+            fprintf('cluster %g starts at %gms %gHz, ends at %gms %gHz, max %g @ %gms %gHz channel %s \n', c, ...
+                round(handles.times_here(handles.cluster_start(2,c))),round(handles.freqs_here(handles.cluster_start(1,c))),...
+                round(handles.times_here(handles.cluster_end(2,c))),round(handles.freqs_here(handles.cluster_end(1,c))),...
+                handles.cluster_maxv(c), handles.times_here(handles.cluster_maxt(c)), handles.freqs_here(handles.cluster_maxf(c)),...
+                handles.LIMO.data.chanlocs(handles.cluster_maxe(c)).labels);
+        end
+    else % no clusters
+        fprintf('1st significant frame at %gms %gHz, last signifiant frame at %gms %gHz, max %g @ %gms %gHz channel %s \n', ...
+                round(handles.times_here(handles.cluster_start(2,c))),round(handles.freqs_here(handles.cluster_start(1,c))),...
+                round(handles.times_here(handles.cluster_end(2,c))),round(handles.freqs_here(handles.cluster_end(1,c))),...
+                handles.cluster_maxv(c), handles.times_here(handles.cluster_maxt(c)), handles.freqs_here(handles.cluster_maxf(c)),...
+                handles.LIMO.data.chanlocs(handles.cluster_maxe(c)).labels);
+    end
 end
 
 function varargout = limo_display_results_tf_OutputFcn(hObject, eventdata, handles)
@@ -541,8 +571,8 @@ elseif popup_sel_index==2
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -559,9 +589,9 @@ elseif popup_sel_index==2
     newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
     Xlabels = round(handles.freqs_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
     if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+        Ylabels   = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
         newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels  = Ylabels(newyticks);
+        Ylabels   = Ylabels(newyticks);
     else
         if isempty(handles.LIMO.design.electrode)
             if isfield(handles.LIMO.data,'chanlocs')
@@ -569,8 +599,8 @@ elseif popup_sel_index==2
             else
                 Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
             end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newticks);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+            Ylabels  = Ylabels(newyticks);
         else
             ylabel('optimized electrode','fontsize',10);
         end
@@ -611,7 +641,6 @@ popup_sel_index = get(handles.pop_up_dimensions, 'Value');
 [x,y,button]    = ginput(1);
 
 while button == 1
-    fprintf('The current mouse location is: %g %g \n',x,y);
     clickedAx = gca;
     if clickedAx ==handles.Main_display
         if x < 1; x=1; end
@@ -625,9 +654,12 @@ while button == 1
     
     if popup_sel_index == 1  % if showing elec x freq
         
-        if x > numel(plot_data.freqs_here); x=numel(plot_data.freqs_here); end
+        if x > numel(plot_data.freqs_here)
+            x=numel(plot_data.freqs_here); 
+        end
         freq = floor(x); channel = floor(y);
-               
+        
+        
         % stat value
         axes(handles.tf_course_plot);
         if handles.slider_sel > handles.maxt
@@ -644,7 +676,6 @@ while button == 1
         colormap(gca, handles.cc(2:end,:));
         mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(handles.slider_sel), round(handles.freqs_here(freq)));
         title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
-        
         axes(handles.Main_display);
         colormap(gca, handles.cc);
 
@@ -688,6 +719,14 @@ while button == 1
         title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(channel).labels)]);
         xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
         
+        try
+            p_values = evalin('base','p_values');
+            if ~isnan(p_values(channel,freq,handles.slider_sel))
+                fprintf('Stat value: %g, p_value %g \n',handles.data3d(channel,freq,handles.slider_sel),p_values(channel,freq,handles.slider_sel));
+            end
+        catch pvalerror
+            fprintf('couldn''t figure the p value?? %s \n',pvalerror.message)
+        end
         
     elseif popup_sel_index == 2  % if showing elec x times on main
         
@@ -754,10 +793,18 @@ while button == 1
         Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
         title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(channel).labels)]);
         xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+        
+        try
+            p_values = evalin('base','p_values');
+            if ~isnan(p_values(channel,handles.slider_sel,time))
+                fprintf('Stat value: %g, p_value %g \n',handles.data3d(channel,handles.slider_sel,time),p_values(channel,handles.slider_sel,time));
+            end
+        catch pvalerror
+            fprintf('couldn''t figure the p value?? %s \n',pvalerror.message)
+        end
     end
     
     [x,y,button]=ginput(1);
-
 end
 
 guidata(hObject, handles);
