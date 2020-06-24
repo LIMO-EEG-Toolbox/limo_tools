@@ -18,10 +18,14 @@ function go = limo_contrast_checking(varargin)
 %
 % Cyril Pernet, v5. 2019
 % Valid constrasts are a sum (ones), a weighted sum (ones/N) 
-% or projection invariant (orthogonal usualy).
+% or projection invariant (orthogonal usually).
 % -----------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
+if nargin == 0
+    help limo_contrast_checking
+    return
+end
 
 %% update the contrast with 0s
 % ----------------------------------------
@@ -60,7 +64,7 @@ if nargin == 1 || nargin == 3
         end
 
         if w ~= size(X,2)
-            disp('c must have the same numner of columns as X')
+            disp('c must have the same number of columns as X')
             error('dimensions must agree')
         end
     end
