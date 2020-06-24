@@ -67,7 +67,7 @@ else
     for f=1:size(Files,2)
         load(Files{f});
         if LIMO.Level ~=1
-            fprintf('cannot reprocessing 2nd level LIMO.mat\n %s\n',Paths{f})
+            fprintf('cannot reprocess 2nd level LIMO.mat\n %s\n',Paths{f})
         else
             cd(LIMO.dir)
             LIMO.design.status = 'to do';
@@ -94,8 +94,13 @@ function contrasts_Callback(hObject, eventdata, handles)
 
 clc; uiresume
 guidata(hObject, handles);
+opt = questdlg('run constrasts for all subjects or open one subject?','option','all','one','all');
 delete(handles.figure1)
-limo_contrast_manager
+if strcmp(opt,'one')
+    limo_contrast_manager
+else
+    limo_batch('contrast only');
+end
 
 
 % [file,dir_path] = uigetfile('*.mat','select a LIMO.mat file');
@@ -139,6 +144,6 @@ function Quit_Callback(hObject, eventdata, handles)
 clc
 uiresume
 try
-    matlabpool('close');
+    parpool('close');
 end
 delete(handles.figure1)

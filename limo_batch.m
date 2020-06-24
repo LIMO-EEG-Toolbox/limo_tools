@@ -135,6 +135,7 @@ if nargin <= 1
                 FileName = load([PathName FileName]);
                 batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
             end
+            LIMO_files.LIMO = PathName;
         else
             disp('limo batch aborded'); return
         end
@@ -187,8 +188,10 @@ if nargin == 4
     LIMO_files.LIMO = study_root;
 else
     current = pwd;
-    LIMO_files.LIMO = current;
     mkdir('limo_batch_report')
+    if isempty(LIMO_files)
+        LIMO_files.LIMO = current;
+    end
 end
 
 %% -------------------------------------
@@ -335,6 +338,8 @@ procstatus = zeros(1,N);
 if isfield(LIMO_files,'con')
     LIMO_files.con = LIMO_files.con';
     remove_con     = zeros(1,N);
+else
+    remove_con     = 0;
 end
 
 
@@ -344,7 +349,12 @@ end
 if ~exist('glm_name','var') && strcmp(option,'contrast only') 
     [~,glm_name]=fileparts(fileparts(pipeline(1).n_contrast.files_in));
 end
-save([LIMO_files.LIMO filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
+
+if strcmp(option,'contrast only')
+    save([LIMO_files.LIMO filesep 'limo_con_pipeline_' glm_name '.mat'],'pipeline')
+else
+    save([LIMO_files.LIMO filesep 'limo_pipeline_' glm_name '.mat'],'pipeline')
+end
 
 % allocate names
 for subject = 1:N
@@ -417,11 +427,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         for subject = 1:N
             if strcmp(option,'contrast only')
                 load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
-                for l=1:size(LIMO.contrast,2)
-                    if isequal(LIMO.contrast{l}.C,batch_contrast.mat(c,:))
-                        con_num = l; break
-                    end
-                end
+                con_num = find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast));
                 name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
@@ -438,6 +444,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
     end
 end
+
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'batch_report_' glm_name '.txt'], report')
 
