@@ -67,9 +67,9 @@ varargout{1} = 'LIMO random effect terminated';
 
 %% Callbacks
 
-%-------------------------
-%         BASIC_STATS_PANEL
-%------------------------
+%---------------------------
+%   BASIC_STATS_PANEL
+%---------------------------
 
 % Robust estimates and CI
 % ---------------------------------------------------------------
@@ -125,7 +125,7 @@ end
  
 
 %-------------------------------
-%         Parameters parameter
+%    Parameters 
 %------------------------------
 
 % get the number of bootstraps
@@ -192,9 +192,9 @@ if go == 0
     return
 else
     if handles.ica == 1
-        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+        limo_random_select('one sample t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
     elseif test_chan_loc(handles)
-        limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+        limo_random_select('one sample t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
     end
 end
 
@@ -207,9 +207,9 @@ if go == 0
     return
 else
 if handles.ica == 1
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
 end
 
@@ -224,9 +224,9 @@ if go == 0
     return
 else
 if handles.ica == 1
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
 end
 
@@ -240,9 +240,9 @@ if go == 0
     return
 else
 if handles.ica == 1
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
 end
 
@@ -256,11 +256,13 @@ go = update_dir(handles,'AN(C)OVA');
 if go == 0
     return
 else
-if handles.ica == 1
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
-end
+    answer = questdlg('What ANOVA model do you want to run?', 'Model selection', 'Repeated Measures ANOVA', ...
+        'N-Ways ANOVA','ANCOVA','Repeated Measures ANOVA');
+    if handles.ica == 1
+        limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    elseif test_chan_loc(handles)
+        limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    end
 end
 
 %------------------------

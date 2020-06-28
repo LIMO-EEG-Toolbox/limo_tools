@@ -858,9 +858,9 @@ switch type
             end
         end
         
-        if nargin > 4
-            if strcmpi(varargin{5},'go')
-                go = varargin{6};
+        if nargin > 5
+            if strcmpi(varargin{6},'go')
+                go = varargin{7};
             end
         else
             go = 'no';
