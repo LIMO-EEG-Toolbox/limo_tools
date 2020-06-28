@@ -303,7 +303,7 @@ global LIMO handles
 if ~isempty(handles.C)
     if handles.go == 1
         
-        if LIMO.design.bootstrap ==1
+        if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir')
             choice = questdlg('an associated bootstrap should be present','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
         else
             choice = 'don''t compute any bootstraps';
@@ -373,11 +373,11 @@ if ~isempty(handles.C)
             % -------------------------------------------
             %          2nd level Repeated measure ANOVA
             % -------------------------------------------
-        elseif LIMO.Level == 2 && strncmp(LIMO.design.name,'Repeated',8)
+        elseif LIMO.Level == 2 && contains(LIMO.design.name,'Repeated')
             
-            try
+            if isfield(LIMO,'contrast')
                 previous_con = size(LIMO.contrast,2);
-            catch ME
+            else
                 previous_con = 0;
             end
             index = previous_con+1;
@@ -391,27 +391,18 @@ if ~isempty(handles.C)
             load Yr; save LIMO LIMO
             limo_contrast(Yr,LIMO,3);
             
-            if LIMO.design.bootstrap ~= 0
-                cd H0; limo_contrast(Yr, LIMO, 4); cd ..
+            if strcmpi(choice,'compute bootstrap contrast')
+                limo_contrast(Yr, LIMO, 4); 
             end
             
-            if LIMO.design.tfce == 1
-                if numel(size(Yr)) == 5
-                    if size(Yr,1)==1 % ERSP 1 channel
-                        type = 2;
-                    else
-                        type = 3;
-                    end
-                else % ERP - Spec
-                    if size(Yr,1)>1 % many channels
-                        type = 2;
-                    else
-                        type = 1;
-                    end
+            if LIMO.design.tfce == 1 
+                filename = fullfile(LIMO.dir,['ess_' num2str(index) '.mat']);
+                limo_tfce_handling(filename)
+                if LIMO.design.nb_conditions ~= 1
+                    filename = fullfile(LIMO.dir,['ess_gp_interaction_' num2str(index) '.mat']);
+                    limo_tfce_handling(filename)
                 end
-                filename = sprintf('ess_%g.mat',index); load(filename);
             end
-            
             clear Yr LIMO
             disp('contrast evaluation done ...')
         end 

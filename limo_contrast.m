@@ -557,6 +557,17 @@ switch type
         % ---------------------------------------------
         
         cd(LIMO.dir);
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
+            tmp = NaN(size(Yr,1), size(Yr,2)*size(Yr,3),size(Yr,4),size(Yr,5));
+            for measure = 1:size(Yr,5)
+                if size(Yr,1) == 1
+                    tmp(:,:,:,measure) = limo_tf_4d_reshape(Yr(1,:,:,:,measure));
+                else
+                    tmp(:,:,:,measure) = limo_tf_4d_reshape(squeeze(Yr(:,:,:,:,measure)));
+                end
+            end
+            clear Yr; Yr = tmp; clear tmp
+        end
         % [mean value, se, df, F, p])
         if gp_values == 1
             ess = zeros(size(Yr,1),size(Yr,2),5);
@@ -564,7 +575,7 @@ switch type
                 fprintf('channel %g \n',channel);
                 % Inputs
                 tmp = squeeze(Yr(channel,:,:,:));
-                Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
                 gp = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
                 % mean, se, df
                 n = size(Y,2);
@@ -583,39 +594,48 @@ switch type
         else
             ess = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
             ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
+            
             % design matrix for gp effects
-            k = LIMO.design.nb_conditions;
             gp_vector = LIMO.data.Cat;
-            gp_values = unique(gp_vector); k = length(gp_values); X = NaN(size(gp_vector,1),k+1);
-            for g =1:k; X(:,g) = gp_vector == gp_values(g); end; X(:,end) = 1; % design matrix for gp effects
+            gp_values = unique(gp_vector); 
+            k         = length(gp_values); 
+            X         = NaN(size(gp_vector,1),k+1);
+            for g =1:k
+                X(:,g) = gp_vector == gp_values(g); 
+            end
+            X(:,end) = 1; 
             
             % call rep anova
             for channel = 1:size(Yr,1)
                 fprintf('channel %g \n',channel);
                 % Inputs
                 tmp = squeeze(Yr(channel,:,:,:));
-                Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                gp = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
-                XB = X(find(~isnan(tmp(1,:,1))),:);
+                Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
+                XB  = X(find(~isnan(tmp(1,:,1))),:);
                 % mean, se, df
                 n = size(Y,2);
-                g=floor((20/100)*n);
+                g = floor((20/100)*n);
                 for time=1:size(Y,1)
-                    [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
-                    TD(time,:,:) = v((g+1):(n-g),:); % trimmed data
-                    ess(channel,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
-                    I = zeros(1,1,n); I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
+                    [v,indices]          = sort(squeeze(Y(time,:,:))); % sorted data
+                    TD(time,:,:)         = v((g+1):(n-g),:);           % trimmed data
+                    ess(channel,time,1)  = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
+                    I                    = zeros(1,1,n); 
+                    I(1,1,:)             = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
                     ess2(channel,time,1) = limo_trimmed_mean(I);
-                    v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
-                    v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
-                    [~,reorder] = sort(indices);
-                    for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
-                    S(time,:,:) = cov(SD); % winsorized covariance
-                    ess(channel,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
+                    v(1:g+1,:)           = repmat(v(g+1,:),g+1,1);
+                    v(n-g:end,:)         = repmat(v(n-g,:),g+1,1);      % winsorized data
+                    [~,reorder]          = sort(indices);
+                    for j = 1:size(Y,3)
+                        SD(:,j) = v(reorder(:,j),j); % restore the order of original data
+                    end 
+                    S(time,:,:)          = cov(SD);  % winsorized covariance
+                    ess(channel,time,2)  = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
                     ess2(channel,time,2) = NaN;
                 end
                 df  = rank(C); dfe = n-df;
                 ess(channel,:,3) = dfe;
+                
                 % F and p values
                 result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
                 ess(channel,:,1,4)  = result.repeated_measure.F;
@@ -626,11 +646,19 @@ switch type
         end
         
         filename = sprintf('ess_%g.mat',index);
-        save (filename, 'ess');
+        if strcmp(LIMO.Analysis,'Time-Frequency') 
+            ess = limo_tf_4d_reshape(ess);
+        end
+        save(filename, 'ess', '-v7.3');
+        
         if exist('ess2','var')
-            ess = ess2;
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                ess = limo_tf_4d_reshape(ess2);
+            else
+                ess = ess2;
+            end
             filename = sprintf('ess_gp_interaction_%g.mat',index);
-            save (filename, 'ess');
+            save(filename, 'ess', '-v7.3');
         end
         
     case(4)
@@ -639,19 +667,25 @@ switch type
         % ---------------------------------------------
         
         cd(LIMO.dir)
+        filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_' num2str(size(LIMO.contrast,2)) '.mat']);
         if gp_values == 1
-            H0_ess = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap);
-            filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
+           if strcmp(LIMO.Analysis,'Time-Frequency')
+                H0_ess = NaN(size(Yr,1),size(Yr,2)*size(Yr,3),2,LIMO.design.bootstrap);
+            else
+                H0_ess = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap);
+            end
+            clear Yr
             
             % prepare the boostrap centering the data
-            if exist('centered_data.mat','file')
-                load('centered_data'); load('boot_table');
-            elseif exist(['H0' filesep 'centered_data.mat'],'file')
-                cd('H0'); load('centered_data'); load('boot_table');
+            cd([LIMO.dir filesep 'H0']);
+            if ~exist('centered_data.mat','file') || ~exist('boot_table.mat','file')
+                error('H0 data and/or resampling table missing')
+            else
+                centered_data = load('centered_data'); centered_data = centered_data.(cell2mat(fieldnames(centered_data)));
+                boot_table    = load('boot_table');    boot_table = boot_table.(cell2mat(fieldnames(boot_table)));
             end
             
             %  compute
-            clear Yr
             array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
             for b = 1:LIMO.design.bootstrap
                 fprintf('contrast bootstrap %g \n',b);
@@ -667,11 +701,21 @@ switch type
                     H0_ess(channel,:,2,b) = result.p;
                 end
             end
-            save (filename, 'H0_ess');
             
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                H0_ess = limo_tf_5d_reshape(H0_ess);
+            end
+            save(filename, 'H0_ess', '-v7.3');
+
         else
-            H0_ess  = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
-            H0_ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                H0_ess = zeros(size(Yr,1),size(Yr,2)*size(Yr,3),5); % dim rep measures, F,p
+                H0_ess2 = zeros(size(Yr,1),size(Yr,2)*size(Yr,3),5); % dim gp*interaction F,p
+            else
+                H0_ess  = zeros(size(Yr,1),size(Yr,2),5); 
+                H0_ess2 = zeros(size(Yr,1),size(Yr,2),5); 
+            end
+            clear Yr
             % design matrix for gp effects
             k         = LIMO.design.nb_conditions;
             gp_vector = LIMO.data.Cat; 
@@ -724,12 +768,19 @@ switch type
                 H0_ess2(channel,:,2,5) = result.interaction.p;
             end
             
-            filename = sprintf('H0_ess_%g.mat',index);
-            save (filename, 'H0_ess');
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                H0_ess = limo_tf_5d_reshape(H0_ess);
+            end
+            save(filename, 'H0_ess', '-v7.3');
+
             if exist('H0_ess2','var')
-                H0_ess = H0_ess2;
-                filename = sprintf('H0_ess_gp_interaction_%g.mat',index);
-                save (filename, 'H0_ess');
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    H0_ess = limo_tf_5d_reshape(H0_ess2);
+                else
+                    H0_ess = H0_ess2;
+                end
+                filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_gp_interaction_' num2str(index) '.mat']);
+                save(filename, 'H0_ess', '-v7.3');
             end
         end
 end
