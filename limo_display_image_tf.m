@@ -44,14 +44,14 @@ handles.title      = varargin{4};
 handles.plot_sel   = 1;
 % get axes right away
 if isfield(handles.LIMO.data,'tf_freqs')
-    handles.freqs_here = handles.LIMO.data.tf_freqs;
+    handles.freqs_here = round(handles.LIMO.data.tf_freqs);
 else
-    handles.freqs_here = linspace(handles.LIMO.data.lowf,handles.LIMO.data.highf,size(handles.data3d,2));
+    handles.freqs_here = round(linspace(handles.LIMO.data.lowf,handles.LIMO.data.highf,size(handles.data3d,2)));
 end
 if isfield(handles.LIMO.data,'tf_times')
-    handles.times_here = handles.LIMO.data.tf_times;
+    handles.times_here = round(handles.LIMO.data.tf_times);
 else
-    handles.times_here = linspace(handles.LIMO.data.start,handles.LIMO.data.end,size(handles.data3d,3));
+    handles.times_here = round(linspace(handles.LIMO.data.start,handles.LIMO.data.end,size(handles.data3d,3)));
 end
 
 % for each cluster, get start/end/max value
@@ -71,9 +71,9 @@ for c=1:handles.n_cluster
     V                                 = max(tmp(:));
     handles.cluster_maxv(c)           = V(1);
     [e,f,t]                           = ind2sub(size(tmp),find(tmp==V(1)));
-    handles.cluster_maxe(c)           = e;
-    handles.cluster_maxf(c)           = f;
-    handles.cluster_maxt(c)           = t;
+    handles.cluster_maxe(c)           = e(1);
+    handles.cluster_maxf(c)           = f(1);
+    handles.cluster_maxt(c)           = t(1);
 end
 clear varargin scale n_cluster
 
@@ -123,9 +123,8 @@ if strcmp(get(hObject,'Visible'),'off')
     imagesc(squeeze(handles.scale(:,:,handles.maxt)));
     colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
     title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(handles.maxt))),'fontsize',12,'VerticalAlignment','bottom');
-    Xlabels = handles.freqs_here(1):handles.freqs_here(end);
-    newyticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-    Xlabels = Xlabels(newyticks); set(gca,'XTickLabel', split(string(Xlabels)))
+    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
+    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
     xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
     if handles.LIMO.Level == 1
         Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
@@ -257,9 +256,8 @@ switch popup_sel_index
     imagesc(squeeze(handles.scale(:,:,handles.maxt)));
     colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
     title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(handles.maxt))),'fontsize',12,'VerticalAlignment','bottom');
-    Xlabels = handles.freqs_here(1):handles.freqs_here(end);
-    newyticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-    Xlabels = Xlabels(newyticks); set(gca,'XTickLabel', split(string(Xlabels)))
+    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
+    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
     xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
     if handles.LIMO.Level == 1
         Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
@@ -344,9 +342,8 @@ switch popup_sel_index
     imagesc(squeeze(handles.scale(:,handles.maxf,:)));
     colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
     title(sprintf('%s @ %gHz',regexprep(handles.title,'\n+',''), round(handles.freqs_here(handles.maxf))),'fontsize',12,'VerticalAlignment','bottom');
-    Xlabels = handles.times_here(1):handles.times_here(end);
-    newyticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-    Xlabels = Xlabels(newyticks); set(gca,'XTickLabel', split(string(Xlabels)))
+    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
+    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
     xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
     if handles.LIMO.Level == 1
         Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
@@ -460,9 +457,8 @@ if popup_sel_index==1
     axes(handles.Main_display);
     imagesc(D); colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
     title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(slider_sel))),'fontsize',12,'VerticalAlignment','bottom');
-    Xlabels = handles.freqs_here(1):handles.freqs_here(end);
-    newyticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-    Xlabels = Xlabels(newyticks); set(gca,'XTickLabel', split(string(Xlabels)))
+    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
+    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
     xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
     if handles.LIMO.Level == 1
         Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
@@ -556,9 +552,8 @@ elseif popup_sel_index==2
     axes(handles.Main_display);
     imagesc(D); colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
     title(sprintf('%s @ %g Hz',regexprep(handles.title,'\n+',''), round(handles.freqs_here(slider_sel))),'fontsize',12,'VerticalAlignment','bottom');
-    Xlabels = handles.times_here(1):handles.times_here(end);
-    newyticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-    Xlabels = Xlabels(newyticks); set(gca,'XTickLabel', split(string(Xlabels)))
+    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
+    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
     xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
     if handles.LIMO.Level == 1
         Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
@@ -809,16 +804,86 @@ end
 
 guidata(hObject, handles);
 
-
-
 %%%%%%%%%%%%%%%%%%% MAKE A MOVIE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes on button press in gifbutton.
 function gifbutton_Callback(hObject, eventdata, handles)
 % hObject    handle to gifbutton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
+vidObj = VideoWriter(handles.title);
+open(vidObj);
+h=figure('Name',handles.title);
+set(gcf,'Color','w','InvertHardCopy','off', 'units','normalized', 'outerposition',[0 0 1 1]);
+popup_sel_index = get(handles.pop_up_dimensions, 'Value');
+if popup_sel_index == 1  % if showing elec x freq
+    for t=1:size(handles.scale,3)
+        imagesc(squeeze(handles.scale(:,:,t)));
+        colormap(gca, handles.cc); img_prop = get(gca);
+        newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
+        Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
+        if handles.LIMO.Level == 1
+            Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+            Ylabels  = Ylabels(newyticks);
+        else
+            if isempty(handles.LIMO.design.electrode)
+                if isfield(handles.LIMO.data,'chanlocs')
+                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+                else
+                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
+                end
+                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+                Ylabels  = Ylabels(newyticks);
+            else
+                ylabel('optimized electrode','fontsize',10);
+            end
+        end
+        if exist('Ylabels','var')
+            set(gca,'YTick',newyticks);
+            set(gca,'YTickLabel', Ylabels);
+        end
+        title(['Channels x Freq @ ' num2str(round(handles.times_here(t))) ' ms'],'VerticalAlignment','bottom');
+        xlabel('Freq (Hz)','fontsize',10); axis tight
+        drawnow
+        pause(0.25)
+    end
+else
+    for f=1:size(handles.scale,2)
+        imagesc(squeeze(handles.scale(:,f,:)));
+        colormap(gca, handles.cc); img_prop = get(gca);
+        newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
+        Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
+        if handles.LIMO.Level == 1
+            Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+            Ylabels  = Ylabels(newyticks);
+        else
+            if isempty(handles.LIMO.design.electrode)
+                if isfield(handles.LIMO.data,'chanlocs')
+                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+                else
+                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
+                end
+                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+                Ylabels  = Ylabels(newyticks);
+            else
+                ylabel('optimized electrode','fontsize',10);
+            end
+        end
+        if exist('Ylabels','var')
+            set(gca,'YTick',newyticks);
+            set(gca,'YTickLabel', Ylabels);
+        end
+        title(['Channels x Times @ ' num2str(round(handles.freqs_here(f))) ' Hz'],'VerticalAlignment','bottom');
+        xlabel('Freq (Hz)','fontsize',10); axis tight
+        drawnow
+        pause(0.25)
+    end
+end
+warning off
+close(vidObj); close(h)
+warning on
+guidata(hObject, handles);
 
 
 %%%%%%%%%%%%%%%%%%%% MENU %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -831,28 +896,34 @@ function FileMenu_Callback(hObject, eventdata, handles)
 function OpenMenuItem_Callback(hObject, eventdata, handles)
 
 [file,p] = uigetfile('*.mat','select effect file');
+if ~exist(fullfile(p,'LIMO.mat'),'file')
+    error('there is no LIMO.mat associated with this file')
+end
+
 if ~isequal(file, 0)
-    cd(p); load(file); load LIMO;
-    do_not_update = 0;
-    if strncmp(file,'Covariate_effect',16)
-        data3d     = squeeze(Covariate_effect(:,:,:,1));
-    elseif strncmp(file,'Condition_effect',16)
-        data3d     = squeeze(Condition_effect(:,:,:,1));
-    elseif strncmp(file,'R2',2)
-        data3d     = squeeze(R2(:,:,:,2));
-    elseif strncmp(file,'one_sample',10)
-        data3d     = squeeze(one_sample(:,:,:,4));
-    else
-        do_not_update = 1;
-        errordlg('file not supported')
-    end
+    data3d = load(file); data3d = data3d.(cell2mat(fieldnames(data3d)));
+    LIMO = load(fullfile(p,'LIMO.mat')); LIMO = LIMO.(cell2mat(fieldnames(LIMO)));
+     do_not_update = 0;
+     if contains(file,'R2','IgnoreCase',true)
+         data3d     = squeeze(data3d(:,:,:,2));
+     elseif contains(file,'one_sample','IgnoreCase',true)
+         data3d     = squeeze(data3d(:,:,:,4));
+     else
+         try
+             data3d     = squeeze(data3d(:,:,:,1));
+         catch nosqueeze
+             do_not_update = 1;
+             errordlg(sprintf('file not supported \n%s',nosqueeze.message))
+         end
+     end
     
     % ---------------------
     if do_not_update == 0
         clc; uiresume
         guidata(hObject, handles);
         delete(handles.figure1)
-        limo_display_results_tf(LIMO,data3d,ones(size(data3d)),file)
+        file(strfind(file,'_')) = ' ';
+        limo_display_image_tf(LIMO,data3d,ones(size(data3d)),file)
     end
 end
 
@@ -917,7 +988,7 @@ Ylabels = Ylabels(newticks);
 set(gca,'YTick',newticks);
 set(gca,'YTickLabel', Ylabels);
 
-% ----- Colormap --------
+% ----- Colormap limits --------
 try
     maxval = max(abs(max(scale(:))),abs(min(scale(:))));
     if max(scale(:)) < 0

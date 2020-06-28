@@ -75,7 +75,7 @@ if strcmp(LIMO.Analysis,'Time')
     end
 
     if size(timevect,2) ~= size(toplot,2)
-        timevect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+        timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
         LIMO.data.timevect =  timevect;
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
@@ -94,13 +94,29 @@ if strcmp(LIMO.Analysis,'Time')
 %        Spectrum            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif strcmp(LIMO.Analysis,'Frequency')
-    freqvect = LIMO.data.freqlist;
-    if size(freqvect,2) == 1; freqvect = freqvect'; end
+    if isfield(LIMO.data,'freqlist')
+        freqvect = LIMO.data.freqlist;
+        if size(freqvect,2) == 1; freqvect = freqvect'; end
+    else
+        freqvect = [];
+    end
+    
     if size(freqvect,2) ~= size(toplot,2)
         freqvect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+        LIMO.data.freqlist =  freqvect;
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
+    
     frame_zeros = 1;
     ratio =  (freqvect(end)-freqvect(1)) / length(freqvect);
+    if LIMO.data.start < 0
+        frame_zeros = find(freqvect == 0);
+        if isempty(frame_zeros)
+            frame_zeros = round(abs(LIMO.data.start) / ratio)+1;
+        end
+    else
+        frame_zeros = 1;
+    end
 end
 
 
@@ -360,13 +376,13 @@ set(gca,'LineWidth',2)
 % ----- X --------
 if strcmp(LIMO.Analysis,'Time')
     xlabel('Time in ms','FontSize',10)
+    newticks = round(linspace(1,length(LIMO.data.timevect),length(img_prop.XTick)));
+    Xlabels = LIMO.data.timevect(newticks);
 elseif strcmp(LIMO.Analysis,'Frequency')
     xlabel('Frequency in Hz','FontSize',10)
+    newticks = round(linspace(1,length(LIMO.data.freqlist),length(img_prop.XTick)));
+    Xlabels = LIMO.data.freqlist(newticks);
 end
-Xlabels = LIMO.data.start:LIMO.data.end;
-newticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-Xlabels = Xlabels(newticks);
-set(gca,'XTick',newticks);
 set(gca,'XTickLabel', split(string(Xlabels)))
  
 % ----- Y --------
