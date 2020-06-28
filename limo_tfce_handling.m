@@ -442,14 +442,14 @@ else % 2nd level
         
     % AN(C)OVA
     % ---------
-    elseif contains(LIMO.design.name,'ANOVA','IgnoreCase',true) || ...
+    elseif contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true) || ...
             contains(LIMO.design.name,'ANCOVA','IgnoreCase',true)
    
         disp('to do')
         
     % Reapeated Measure ANOVA
     % -----------------------
-    elseif strncmp(LIMO.design.name,'Repeated measures ANOVA',23)
+    elseif contains(LIMO.design.name,'Repeated measures ANOVA','IgnoreCase',true)
         
         if contains(filename,'Main_effect')
             % -----------------------------

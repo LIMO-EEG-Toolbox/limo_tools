@@ -39,8 +39,17 @@ if ~ispc
     filter = filter';
     filter = strcat(filter(:));
 end
-if nargin >= 3; title     = varargin{3}; end
-if nargin == 4; path2file = varargin{4}; end
+
+if nargin >= 3
+    title = varargin{3};
+end
+
+if nargin == 4
+    path2file = varargin{4};
+    if iscell(path2file)
+        path2file = cell2mat(path2file);
+    end
+end
 
 go = 1; index = 1;
 while go == 1
@@ -51,11 +60,11 @@ while go == 1
                 [name,path] = uigetfile(filter,title);
         end
     else
-        if exist(path2file,'file') == 2
+        if exist(path2file,'file') 
             [path,filename,filext] = fileparts(path2file);
             name = [filename filext]; clear filename filext;
         else
-            error('A valid path to the file must be provided ');
+            error('A valid path to the file must be provided \n %s not found',path2file);
         end
     end
     
