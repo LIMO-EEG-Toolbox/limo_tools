@@ -1506,158 +1506,83 @@ elseif LIMO.Level == 2
         % Course plot
         %--------------------------
         
-        if strncmp(FileName,'one_sample',10) || strncmp(FileName,'two_samples',11) || strncmp(FileName,'paired_samples',14) || ...
-                strncmp(FileName,'con_',4) || strncmp(FileName,'ess_',4)
+        if contains(FileName,'one_sample','IgnoreCase',true) || contains(FileName,'two_samples','IgnoreCase',true) || ...
+                contains(FileName,'paired_samples','IgnoreCase',true) || contains(FileName,'con','IgnoreCase',true) || ...
+                contains(FileName,'ess','IgnoreCase',true)
             % ------------------------------------------------------------------------------------------------------------
             % stat file dim = (electrodes, frames, [mean value, se, df, t, p])
             % H0 file dim = (electrodes,frames,[t, p],nboot)
             
-            if contains(FileName,'one_sample'); data = one_sample; clear one_sample;
-            elseif contains(FileName,'two_samples'); data = two_samples; clear two_samples
-            elseif  contains(FileName,'paired_samples');  data = paired_samples; clear paired_samples
-            elseif  contains(FileName,'con'); data = con; clear con
-            elseif  contains(FileName,'ess'); data = ess; clear ess
-            end
+            if contains(FileName,'one_sample','IgnoreCase',true)
+                data = one_sample; clear one_sample;
+            elseif contains(FileName,'two_samples','IgnoreCase',true)
+                data = two_samples; clear two_samples
+            elseif  contains(FileName,'paired_samples','IgnoreCase',true)
+                data = paired_samples; clear paired_samples
+            elseif  contains(FileName,'con','IgnoreCase',true)
+                data = con; clear con
+            elseif  contains(FileName,'ess','IgnoreCase',true)
+                data = ess; clear ess
+            end  
             
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                if size(data,1) > 1
-                    if isempty(g.channels)
-                        channel = inputdlg('which channel to plot','Plotting option');
-                    else
-                        channel = g.channels;
-                    end
-                    if isempty(channel) || strcmp(cell2mat(channel),'')
-                        tmp = squeeze(data(:,:,:,4));
-                        [channel,freq_index,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
-                        clear tmp ; frequency = LIMO.data.tf_freqs(freq_index);
-                    else
-                        channel = eval(cell2mat(channel));
-                        if length(channel) > 1
-                            error('1 channel only can be plotted')
-                        elseif channel > size(data,1)
-                            error('channel number invalid')
-                        end
-                    end
-                else
-                    channel = 1;
-                end
-                
-                frequency = inputdlg('which frequency to plot','Plotting option');
-                if isempty(frequency) || strcmp(cell2mat(frequency),'')
-                    if ~exist('freq_index','var')
-                        [v,f] = max(squeeze(data(channel,:,:,4)));
-                        [v,c]=max(v); freq_index = f(c);
-                        frequency = LIMO.data.tf_freqs(freq_index);
-                    end
-                else
-                    frequency = eval(cell2mat(frequency));
-                    [~,freq_index] = min(abs(LIMO.data.tf_freqs-frequency));
-                    if length(frequency) > 1
-                        error('1 frequency only can be plotted')
-                    elseif freq_index > size(data,2)
-                        error('frequency number invalid')
-                    end
-                end
-                
-            else % Time or Freq or ITC
-                if size(data,1) > 1
-                    if isempty(g.channels)
-                        channel = inputdlg('which channel to plot','Plotting option');
-                    else
-                        channel = g.channels;
-                    end
-                    if isempty(channel) || strcmp(cell2mat(channel),'')
-                        [v,e] = max(data(:,:,4)); [v,c]=max(v); channel = e(c);
-                    else
-                        channel = eval(cell2mat(channel));
-                        if length(channel) > 1
-                            error('1 channel only can be plotted')
-                        elseif channel > size(data,1)
-                            error('channel number invalid')
-                        end
-                    end
-                else
-                    channel = 1;
-                end
-            end
-            
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                trimci(:,2) = squeeze(data(channel,freq_index,:,1));
-                if strncmp(FileName,'ess',4)
-                    start_at = max(strfind(FileName,'_'))+1;
-                    C = LIMO.contrast{eval(FileName(start_at:end-4))}.C;
-                    df = rank(C); % rank of the relevant contrast
-                    trimci(:,1) = squeeze(trimci(:,2))-finv(p./2*size(C,1),df,squeeze(data(channel,frequency,:,3))).*squeeze(data(channel,frequency,:,2));
-                    trimci(:,3) = squeeze(trimci(:,2))+finv(p./2*size(C,1),df,squeeze(data(channel,frequency,:,3))).*squeeze(data(channel,frequency,:,2));
-                else
-                    trimci(:,1) = squeeze(trimci(:,2))-tinv(p./2,squeeze(data(channel,frequency,:,3))).*squeeze(data(channel,frequency,:,2));
-                    trimci(:,3) = squeeze(trimci(:,2))+tinv(p./2,squeeze(data(channel,frequency,:,3))).*squeeze(data(channel,frequency,:,2));
-                end
-                
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,:,[4 5])),LIMO);
+                data                  = squeeze(data(channel,freq,time,:,:)); % 2D
+                sig                   = squeeze(single(mask(channel,freq,time))); %1D
             else
-                trimci(:,2) = squeeze(data(channel,:,1));
-                if strncmp(FileName,'ess',4)
-                    start_at = max(strfind(FileName,'_'))+1;
-                    C = LIMO.contrast{eval(FileName(start_at:end-4))}.C;
-                    df = rank(C); % rank of the relevant contrast
-                    trimci(:,1) = squeeze(trimci(:,2))-finv(p./2*size(C,1),df,squeeze(data(channel,:,3))).*squeeze(data(channel,:,2));
-                    trimci(:,3) = squeeze(trimci(:,2))+finv(p./2*size(C,1),df,squeeze(data(channel,:,3))).*squeeze(data(channel,:,2));
-                else
-                    trimci(:,1) = squeeze(trimci(:,2))-(tinv(p./2,squeeze(data(channel,:,3))).*squeeze(data(channel,:,2)))';
-                    trimci(:,3) = squeeze(trimci(:,2))+(tinv(p./2,squeeze(data(channel,:,3))).*squeeze(data(channel,:,2)))';
+                [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,[4 5])),LIMO);
+                data                  = squeeze(data(channel,time,:));
+                sig                   = single(mask(channel,:));
+            end
+            sig(find(sig==0)) = NaN;
+            
+            % compute
+            trimci      = NaN(size(data,1),3);
+            trimci(:,2) = data(:,1);
+            if contains(FileName,'ess','IgnoreCase',true)
+                start_at = max(strfind(FileName,'_'))+1;
+                C = LIMO.contrast{eval(FileName(start_at:end-4))}.C;
+                df = rank(C); % rank of the relevant contrast
+                trimci(:,1) = squeeze(trimci(:,2))-(finv(1-p./2*size(C,1),df,data(:,3)).*data(:,2));
+                trimci(:,3) = squeeze(trimci(:,2))+(finv(1-p./2*size(C,1),df,data(:,3)).*data(:,2));
+            else
+                trimci(:,1) = squeeze(trimci(:,2))-(tinv(1-p./2,data(:,3)).*data(:,2));
+                trimci(:,3) = squeeze(trimci(:,2))+(tinv(1-p./2,data(:,3)).*data(:,2));
+                tinv((1 - alpha / 2), df) .* ser;
+            end
+            
+            % plot
+            if strcmpi(LIMO.Analysis,'Time')
+                xvect = LIMO.data.timevect;
+            elseif strcmpi(LIMO.Analysis,'Frequency')
+                xvect=LIMO.data.freqlist;
+            elseif strcmpi(LIMO.Analysis,'Time-Frequency')
+                if length(time) > 1
+                    xvect = LIMO.data.tf_times;
+                elseif length(freq) > 1
+                    xvect = LIMO.data.tf_freqs;
                 end
             end
             
             figure;
             set(gcf,'Color','w')
-            if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Time-Frequency')
-                if isfield(LIMO.data,'tf_times')
-                    timevect = LIMO.data.tf_times;
-                    sig = squeeze(single(mask(channel,freq_index,:))); sig(find(sig==0)) = NaN;
-                else
-                    timevect = LIMO.data.start:1000/LIMO.data.sampling_rate:LIMO.data.end;
-                    sig = single(mask(channel,:)); sig(find(sig==0)) = NaN;
-                end
-                plot(timevect,squeeze(trimci(:,2)),'LineWidth',3);
-                try
-                    fillhandle = patch([timevect fliplr(timevect)], [squeeze(trimci(:,1)),fliplr(squeeze(trimci(:,3)))], [1 0 0]);
-                catch no_fill
-                    fillhandle = patch([timevect fliplr(timevect)], [squeeze(trimci(:,1));flipud(squeeze(trimci(:,3)))]', [1 0 0]);
-                end
+            plot(xvect,squeeze(trimci(:,2)),'LineWidth',3);
+            fillhandle = patch([xvect,fliplr(xvect)], [trimci(:,1)' fliplr(trimci(:,3)')], [1 0 0]);
+            set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);% set edge color
+            grid on; box on; axis tight
+            h = axis;  hold on;
+            plot(xvect,(sig./10+1).*h(3),'k.','MarkerSize',20)
+            if strcmp(LIMO.Analysis,'Time') || strcmpi(LIMO.Analysis,'Time-Frequency') && length(time) > 1
                 xlabel('Time in ms','FontSize',14)
                 ylabel('Amplitude (A.U.)','FontSize',14)
-            elseif strcmp(LIMO.Analysis,'Frequency')
-                plot(LIMO.data.freqlist,squeeze(trimci(:,2)),'LineWidth',3);
-                sig = single(mask(channel,:)); sig(find(sig==0)) = NaN;
-                if size(LIMO.data.freqlist,2) == 1
-                    freq_axis = [LIMO.data.freqlist' flipud(LIMO.data.freqlist)'];
-                else
-                    freq_axis = [LIMO.data.freqlist fliplr(LIMO.data.freqlist)];
-                end
-                
-                try
-                    fillhandle = patch(freq_axis, [squeeze(trimci(:,1))' flipud(squeeze(trimci(:,3)))'], [1 0 0]);
-                catch no_fill
-                    fillhandle = patch(freq_axis, [squeeze(trimci(:,1)) fliplr(squeeze(trimci(:,3)))], [1 0 0]);
-                end
+            elseif strcmp(LIMO.Analysis,'Frequency') || strcmpi(LIMO.Analysis,'Time-Frequency') && length(freq) > 1
                 xlabel('Frequency in Hz','FontSize',14)
                 ylabel('Spectral Power (A.U.)','FontSize',14)
             end
-            
-            set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-            grid on; box on; axis tight
-            h = axis;  hold on;
-            try
-                plot(timevect,(sig./10+1).*h(3),'r.','MarkerSize',20)
-            catch no_timevect
-                plot(LIMO.data.freqlist,(sig./10+1).*h(3),'r.','MarkerSize',20)
-            end
-            
-            set(gca,'FontSize',14,'layer','top');
             if size(data,1)>1
-                title(sprintf('%s \n channel %s (%g)',mytitle,LIMO.data.chanlocs(channel).labels,channel),'FontSize',16); drawnow;
+                title(sprintf('%s \n %s %s (%g)',mytitle,LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel),'FontSize',16); drawnow;
             else
-                title(sprintf('%s \n optimized channel',mytitle),'FontSize',16); drawnow;
+                title(sprintf('%s \n virtual %s',mytitle,LIMO.Type(1:end-1)),'FontSize',16); drawnow;
             end
             assignin('base','Plotted_data',trimci);
             
@@ -2018,8 +1943,8 @@ elseif LIMO.Level == 2
             if contains(FileName,'Rep_ANOVA_Main')
                 % -----------------------------------
                 
-                % which ERP to make
-                % ------------------
+                % which summary stat
+                % -------------------
                 extra = questdlg('Summarize data using:','Data plot option','Mean','Trimmed','Trimmean');
                 if isempty(extra)
                     return
