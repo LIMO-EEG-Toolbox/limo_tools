@@ -8,7 +8,7 @@ function result = limo_rep_anova(varargin)
 % have to account for sphericity and thus it saves a lot of computational time.
 % In short we simply either run a T2 on the repeated measures or a MANOVA 
 % (generalized T2 on transformed data). The code implements equations described 
-% in:bRencher (2002) Methods of multivariate analysis John Wiley.
+% in Rencher (2002) Methods of multivariate analysis John Wiley.
 %
 % INPUT
 %
@@ -16,7 +16,7 @@ function result = limo_rep_anova(varargin)
 %   result = limo_rep_anova(data,gp,factors,C,S)
 %   result = limo_rep_anova(data,gp,factors,C,X)
 %
-% - data is a 3D matrix (f time frames * n subjects * p measures) of repeated measures
+% - data is a 3D matrix (time frames * n subjects * p measures) of repeated measures
 % - gp is a vector (n*1) indicating to which group subjects belong.
 %       For instance enter [1 1 1 2 2 2 3 3 3] to indicate that subjects
 %       1-3 belonged to group 1, subjects 4-6 belonged to group 2...
@@ -94,7 +94,7 @@ function result = limo_rep_anova(varargin)
 %            analysis + added the time dimension to speed things up
 % GAR April 2013: updated help & comments; added name output
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 
 %% input stuff
