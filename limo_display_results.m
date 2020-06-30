@@ -1548,7 +1548,6 @@ elseif LIMO.Level == 2
             else
                 trimci(:,1) = squeeze(trimci(:,2))-(tinv(1-p./2,data(:,3)).*data(:,2));
                 trimci(:,3) = squeeze(trimci(:,2))+(tinv(1-p./2,data(:,3)).*data(:,2));
-                tinv((1 - alpha / 2), df) .* ser;
             end
             
             % plot
