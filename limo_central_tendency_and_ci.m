@@ -16,23 +16,23 @@ function result=limo_central_tendency_and_ci(varargin)
 %
 % INPUTS
 % limo_central_tendency_and_ci(expected_chan_loc)
-%                expected_chan_loc is the name of the electrode structure from EEGLAB
+%                expected_chan_loc is the name of the channel structure from EEGLAB
 %                this option calls the GUI
 %
-% limo_central_tendency_and_ci(data, 'Analysis_type',selected_electrodes,savename)
-%                data is a [electrode * frame * trials/subjects] matrix
+% limo_central_tendency_and_ci(data, 'Analysis_type',selected_channels,savename)
+%                data is a [channel * frame * trials/subjects] matrix
 %                Analysis_type should be 'Mean', 'Trimmed mean', 'HD' or 'Median'
-%                selected_electrodes can be [] for all brain or 1 or many channels (1 per trial/subject)
+%                selected_channels can be [] for all brain or 1 or many channels (1 per trial/subject)
 %                savename (optional) name for saving files
 %
-% limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_electrodes,savename)
+% limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_channels,savename)
 %                Files are the full names (with paths) of LIMO.mat files
 %                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]
-%                expected_chan_loc is the electrode structure from EEGLAB but for the group of subjects
+%                expected_chan_loc is the channel structure from EEGLAB but for the group of subjects
 %                Estimator should be 'Mean', 'Weighted mean', 'Trimmed mean', 'HD' or 'Median'
 %                Estimator 1 is applied to trials within-subjects
 %                Estimator 2 is applied across subjects
-%                selected_electrodes can be [] for all brain or 1 or many channels (=nb files) 
+%                selected_channels can be [] for all brain or 1 or many channels (=nb files) 
 %                savename (optional) name for saving files
 %
 % OUTPUTS result = limo_central_tendency_and_ci()
@@ -76,38 +76,49 @@ if nargin == 3 || nargin == 4
     if strcmpi(Estimator2,'Trimmed mean') || strcmpi(Estimator2,'HD') ...
             || strcmpi(Estimator2,'Median') || strcmpi(Estimator2,'Mean') ...
             || strcmpi(Estimator2,'All')
-        Analysis_type = 'Full scalp analysis';
+        Analysis_type = 'Full brain analysis';
         parameters = 1;
     else
         error('type of estimator not recognized') ;
     end
-    selected_electrodes = varargin{3};
-    if ~isempty(selected_electrodes)
-        data = data(selected_electrodes,:,:);
+    selected_channels = varargin{3};
+    if ~isempty(selected_channels)
+        data = data(selected_channels,:,:);
     end
     
     if nargin == 4
         savename = varargin{4};
+        [p,f,ext]=fileparts(savename);
+        if strcmp(ext,'.mat')
+            savename=fullfile(p,f);
+        end
     end
     
 elseif nargin == 6 || nargin == 7
     % ---------------------------
     
     Files = varargin{1};
-    for i=1:size(Files,2)
-        Paths{i} = Files{i}(1:end-9);
+    if size(Files,1) == 1
+        Files = textread(Files,'%s','delimiter','');  % select a txt file listing all files
     end
     
+    for i=length(Files):-1:1
+        Paths{i} = Files{i}(1:end-9);
+    end
     parameters          = varargin{2};
     expected_chanlocs   = varargin{3};
+    if ischar(expected_chanlocs)
+        expected_chanlocs = load(expected_chanlocs);
+        expected_chanlocs = expected_chanlocs.expected_chanlocs;
+    end
     Estimator1          = varargin{4};
     Estimator2          = varargin{5};
-    selected_electrodes = varargin{6};
-    if isempty(selected_electrodes)
-        Analysis_type = 'Full scalp analysis';
+    selected_channels   = varargin{6};
+    if isempty(selected_channels)
+        Analysis_type = 'Full brain analysis';
     else
-        Analysis_type = '1 electrode only';
-        expected_chanlocs = expected_chanlocs(selected_electrodes);
+        Analysis_type = '1 channel only';
+        expected_chanlocs = expected_chanlocs(selected_channels);
     end
     
     % match frames
@@ -115,60 +126,60 @@ elseif nargin == 6 || nargin == 7
     limo.data.neighbouring_matrix = expected_chanlocs;
     [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
     
-    % get data for all parameters dim [electrode, frame, param, nb subjects
+    % get data for all parameters dim [channel, frame, param, nb subjects
     % ---------------------------------------------------------------------
     disp('gathering data ...'); index = 1;
     for i=1:size(Paths,2) % for each subject
         fprintf('processing subject %g\n',i);
-        cd(Paths{i}); load LIMO ; load Yr;
+        LIMO = load(fullfile(Paths{i},'LIMO.mat')); LIMO = LIMO.LIMO;
+        Yr = load(fullfile(Paths{i},'Yr.mat')); 
         if strcmp(LIMO.Analysis,'Time-Frequency')
+            Yr = limo_tf_4d_reshape(Yr.Yr);
             begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
             ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));
             ends_at(2) = size(Yr,3) - (last_frame(i,1) - min(last_frame(:,1)));
         else
+            Yr = Yr.Yr;
             begins_at = max(first_frame) - first_frame(i) + 1;
             ends_at = size(Yr,2) - (last_frame(i) - min(last_frame));
         end
         
-        for j=1:length(parameters)
-            if parameters(j) < sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
-                index = LIMO.design.X(:,parameters(j))==1;
-                tmp =  NaN(size(Yr,1),size(Yr,2),sum(index));
-                for k=1:size(Yr,1)
-                    if strcmpi(Estimator1,'Weighted Mean')
-                        tmp(k,:,index) =  squeeze(Yr(k,:,index)).*repmat(LIMO.design.weights(k,index),[size(Yr,2),1]) ;
-                    else
-                        tmp(k,:,index) =  squeeze(Yr(k,:,index));
-                    end
+        if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
+            index = logical(sum(LIMO.design.X(:,parameters)==1,2));
+            tmp =  NaN(size(Yr,1),size(Yr,2),sum(index(:)));
+            for k=1:size(Yr,1)
+                if strcmpi(Estimator1,'Weighted Mean')
+                    tmp(k,:,index) =  squeeze(Yr(k,:,index)).*repmat(LIMO.design.weights(k,index),[size(Yr,2),1]) ;
+                else
+                    tmp(k,:,index) =  squeeze(Yr(k,:,index));
                 end
-                
-                
-                % 1st level analysis
-                % --------------------
-                if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
-                    tmp = limo_trimmed_mean(tmp,20);
-                elseif strcmpi(Estimator1,'Median') % median raw data
-                    tmp = nanmedian(tmp,3);
-                elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
-                    tmp = limo_harrell_davis(tmp,0.5);
-                elseif strcmpi(Estimator1,'Mean') || strcmpi(Estimator1,'Weighted Mean') % mean of raw data
-                    tmp = nanmean(tmp,3);
-                end
-                
-                if strcmp(Analysis_type,'Full scalp analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-                    data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                    if size(selected_electrodes,2) == 1
-                        data(1,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                    else
-                        out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                        data(1,:,j,i) = out(i,:,:); % matches the expected chanloc of the subject
-                    end
-                end
-                clear tmp
-            else
-                fprintf('parameter %g not computed - continuous regressor',j);disp(' ')
             end
+            
+            % 1st level analysis
+            % --------------------
+            if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
+                tmp = limo_trimmed_mean(tmp,20);
+            elseif strcmpi(Estimator1,'Median') % median raw data
+                tmp = nanmedian(tmp,3);
+            elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
+                tmp = limo_harrell_davis(tmp,0.5);
+            elseif strcmpi(Estimator1,'Mean') || strcmpi(Estimator1,'Weighted Mean') % mean of raw data
+                tmp = nanmean(tmp,3);
+            end
+            
+            if strcmp(Analysis_type,'Full brain analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+                data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+            elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                if size(selected_channels,2) == 1
+                    data(1,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                else
+                    out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                    data(1,:,i) = out(i,:,:); % matches the expected chanloc of the subject
+                end
+            end
+            clear tmp
+        else
+            fprintf('parameter %g not computed - continuous regressor',j);disp(' ')
         end
     end
     
@@ -177,7 +188,11 @@ elseif nargin == 6 || nargin == 7
     end
     
     if nargin == 7
-        savename = varargin{4};
+        savename = varargin{7};
+        [p,f,ext]=fileparts(savename);
+        if strcmp(ext,'.mat')
+            savename=fullfile(p,f);
+        end
     end
 
 elseif nargin == 1
@@ -186,8 +201,8 @@ elseif nargin == 1
     % Expected_chanlocs
     load(varargin{1});
     
-    % check if Betas or ERPs
-    option = questdlg('type of analysis','what data to analyse?','ERPs','Betas','Con','ERPs');
+    % check if Betas/Con 
+    option = questdlg('type of analysis','what data to analyse?','Raw Data','Betas','Con','Raw Data');
     if isempty(option)
         return
     end
@@ -256,33 +271,33 @@ elseif nargin == 1
         limo.Analysis = 'Time';
         limo.Level = 2;
         
-        % match electrodes
+        % match channels
         % --------------
-        Analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
+        Analysis_type   = questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
         if isempty(Analysis_type)
             return;
         end
         
-        if strcmp(Analysis_type,'1 electrode only')
-            electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            if isempty(cell2mat(electrode))
-                [file,dir,index] = uigetfile('*.mat','select your electrode file');
+        if strcmp(Analysis_type,'1 channel only')
+            channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
+            if isempty(cell2mat(channel))
+                [file,dir,index] = uigetfile('*.mat','select your channel file');
                 if isempty(file)
                     return
                 else
                     cd(dir); load(file);
                     % check the vector has the same length as the number of files
-                    if length(electrode_vector) ~= size(Names,2)
-                        errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
+                    if length(channel_vector) ~= size(Names,2)
+                        errordlg('the nb of channels does not match the number of subjects','channel error'); return;
                     end
                     % restric the channels
-                    expected_chanlocs = expected_chanlocs(electrode_vector);
+                    expected_chanlocs = expected_chanlocs(channel_vector);
                 end
-            elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == size(Names,2);
-                selected_electrodes = eval(cell2mat(electrode));
-                expected_chanlocs = expected_chanlocs(selected_electrodes);
+            elseif size(eval(cell2mat(channel)),2) == 1 || size(eval(cell2mat(channel)),2) == size(Names,2);
+                selected_channels = eval(cell2mat(channel));
+                expected_chanlocs = expected_chanlocs(selected_channels);
             else
-                errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
+                errordlg('the nb of channels does not match the number of subjects','channel error'); return;
             end
         end
         
@@ -309,7 +324,7 @@ elseif nargin == 1
                 end
             end
             
-            if strcmp(Analysis_type,'Full scalp analysis')
+            if strcmp(Analysis_type,'Full brain analysis')
                 if strcmp(LIMO.Analysis,'Time-Frequency')
                     if strcmpi(option,'Con') && exist('con','var')
                         data(:,:,:,i)   = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
@@ -324,8 +339,8 @@ elseif nargin == 1
                     end
                 end
                 
-            elseif strcmp(Analysis_type,'1 electrode only')
-                if size(selected_electrodes,2) == 1
+            elseif strcmp(Analysis_type,'1 channel only')
+                if size(selected_channels,2) == 1
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         if strcmp(option,'Con') && exist('con','var')
                             data(1,:,:,i)                      = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
@@ -339,7 +354,7 @@ elseif nargin == 1
                             data(1,:,1:length(parameters),i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Betas(:,:,parameters)));
                         end
                     end
-                else % optimized electrode
+                else % optimized channel
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         if strcmp(option,'Con') && exist('con','var')
                             out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(con(:,:,:,1)));
@@ -369,7 +384,7 @@ elseif nargin == 1
         
         % select data
         % -----------
-        [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},'Select LIMO files or list');
+        [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},'Select LIMO files');
         
         % check it's LIMO.mat files and which param to test
         % --------------------------------------------------
@@ -404,34 +419,34 @@ elseif nargin == 1
         
         % check what type of analysis
         % ---------------------------
-        Analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 electrode only','Full scalp analysis');
+        Analysis_type   = questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
         if isempty(Analysis_type)
             return;
         end
         
-        if strcmp(Analysis_type,'1 electrode only')
-            electrode = inputdlg('which electrode to analyse [?]','Electrode option'); % can be 1 nb or a vector of electrodes (electrode optimized analysis)
-            if isempty(cell2mat(electrode))
-                [file,dir,index] = uigetfile('*.mat','select your electrode file');
+        if strcmp(Analysis_type,'1 channel only')
+            channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
+            if isempty(cell2mat(channel))
+                [file,dir,index] = uigetfile('*.mat','select your channel file');
                 if isempty(file)
                     return
                 else
                     cd(dir); load(file);
                     % check the vector has the same length as the number of files
-                    if length(electrode_vector) ~= length(Paths)
-                        errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
+                    if length(channel_vector) ~= length(Paths)
+                        errordlg('the nb of channels does not match the number of subjects','channel error'); return;
                     end
-                    selected_electrodes = electrode_vector;
-                    expected_chanlocs = expected_chanlocs(selected_electrodes);
+                    selected_channels = channel_vector;
+                    expected_chanlocs = expected_chanlocs(selected_channels);
                 end
-            elseif size(eval(cell2mat(electrode)),2) == 1 || size(eval(cell2mat(electrode)),2) == size(Names,2);
-                selected_electrodes = eval(cell2mat(electrode));
-                expected_chanlocs = expected_chanlocs(selected_electrodes);
+            elseif size(eval(cell2mat(channel)),2) == 1 || size(eval(cell2mat(channel)),2) == size(Names,2);
+                selected_channels = eval(cell2mat(channel));
+                expected_chanlocs = expected_chanlocs(selected_channels);
             else
-                errordlg('the nb of electrodes does not match the number of subjects','Electrode error'); return;
+                errordlg('the nb of channels does not match the number of subjects','channel error'); return;
             end
         else
-            selected_electrodes = [];
+            selected_channels = [];
         end
         
         % select method
@@ -453,7 +468,7 @@ elseif nargin == 1
         limo.Analysis = 'Time';
         limo.Level = 2;
         
-        % get data for all parameters dim [electrode, frame, param, nb subjects
+        % get data for all parameters dim [channel, frame, param, nb subjects
         % ---------------------------------------------------------------------
         disp('gathering data ...'); index = 1;
         for i=1:size(Paths,2) % for each subject
@@ -473,8 +488,8 @@ elseif nargin == 1
                     if parameters(j) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
                         index = LIMO.design.X(:,parameters(j))==1;
                         if strcmp(weighted_mean,'yes')
-                            for electrode=1:size(Yr,1)
-                                tmp(electrode,:,:) =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
+                            for channel=1:size(Yr,1)
+                                tmp(channel,:,:) =  squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                             end
                         else
                             tmp =  squeeze(Yr(:,:,index)); % retain those trials only
@@ -489,13 +504,13 @@ elseif nargin == 1
                         elseif strcmp(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                             tmp = limo_harrell_davis(tmp,0.5);
                         elseif strcmp(Estimator1,'Mean') % mean of raw data
-                            tmp = nanmean(tmp,3);
+                                 tmp = nanmean(tmp,3);
                         end
                         
-                        if strcmp(Analysis_type,'Full scalp analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                        if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                             data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
-                        elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                            if size(selected_electrodes,2) == 1
+                        elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                            if size(selected_channels,2) == 1
                                 data(1,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             else
                                 out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
@@ -511,8 +526,8 @@ elseif nargin == 1
                 if max(parameters) <= sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions)
                     index = find(sum(LIMO.design.X(:,parameters)==1,2)); % find all trials from selected columns
                     if strcmp(weighted_mean,'yes')
-                        for electrode=1:size(Yr,1)
-                            tmp(electrode,:,:) =  squeeze(Yr(electrode,:,index)).*repmat(LIMO.design.weights(electrode,index),size(Yr,2),1);
+                        for channel=1:size(Yr,1)
+                            tmp(channel,:,:) =  squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                         end
                     else
                         tmp =  squeeze(Yr(:,:,index)); % retain those trials only
@@ -530,22 +545,22 @@ elseif nargin == 1
                         tmp = nanmean(tmp,3);
                     end
                     
-                    if strcmp(Analysis_type,'Full scalp analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                    if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
                             data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         else
                             data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
-                    elseif strcmp(Analysis_type,'1 electrode only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                    elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
-                            if size(selected_electrodes,2) == 1
+                            if size(selected_channels,2) == 1
                                 data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             else
                                 out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                                 data(1,:,:,i) = out(i,:,:,:); % matches the expected chanloc of the subject
                             end
                         else
-                            if size(selected_electrodes,2) == 1;
+                            if size(selected_channels,2) == 1
                                 data(1,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             else
                                 out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
@@ -560,6 +575,10 @@ elseif nargin == 1
             end
             clear Yr
         end
+        % update estimator1 name
+        if strcmp(weighted_mean,'yes')
+            Estimator1 = 'Weighted mean';
+        end
     end
     
 else
@@ -572,7 +591,7 @@ end % closes varargin
 cd(current_dir)
 
 if ~isempty(data)
-    % Data is either [electrode, frame, trials/subject] or [electrode,
+    % Data is either [channel, frame, trials/subject] or [channel,
     % frame, conditions (from parameters), subjects]
     if length(size(data)) == 3
         tmp = data; clear data
@@ -624,15 +643,15 @@ if ~isempty(data)
         index = 1; h = waitbar(0,'computing','name','% done');
         M = NaN(size(data,1),size(data,2),size(data,3),3);
         for k = 1:size(data,3)
-            for electrode =1:size(data,1)
+            for channel =1:size(data,1)
                 waitbar(index/(size(data,3)*size(data,1)));
                 index = index+1;
-                tmp = squeeze(data(electrode,:,k,:));
+                tmp = squeeze(data(channel,:,k,:));
                 Y = tmp(:,find(~isnan(tmp(1,:))));
                 [est,ci] = limo_central_estimator(Y,'mean');
-                M(electrode,:,k,1) = ci(1,:);
-                M(electrode,:,k,2) = est;
-                M(electrode,:,k,3) = ci(2,:);
+                M(channel,:,k,1) = ci(1,:);
+                M(channel,:,k,2) = est;
+                M(channel,:,k,3) = ci(2,:);
             end
         end
         close(h);
@@ -659,15 +678,15 @@ if ~isempty(data)
         index = 1; h = waitbar(0,'computing','name','% done');
         TM = NaN(size(data,1),size(data,2),size(data,3),3);
         for k=1:size(data,3) % for each parameter
-            for electrode =1:size(data,1)
+            for channel =1:size(data,1)
                 waitbar(index/(size(data,3)*size(data,1)));
                 index = index+1;
-                tmp = squeeze(data(electrode,:,k,:));
+                tmp = squeeze(data(channel,:,k,:));
                 Y = tmp(:,find(~isnan(tmp(1,:))));
                 [est,ci] = limo_central_estimator(Y,'trimmed mean');
-                TM(electrode,:,k,1) = ci(1,:);
-                TM(electrode,:,k,2) = est;
-                TM(electrode,:,k,3) = ci(2,:);
+                TM(channel,:,k,1) = ci(1,:);
+                TM(channel,:,k,2) = est;
+                TM(channel,:,k,3) = ci(2,:);
             end
         end
         close(h);
@@ -695,15 +714,15 @@ if ~isempty(data)
         HD = NaN(size(data,1),size(data,2),size(data,3),3);
         index = 1; h = waitbar(0,'computing','name','% done');
         for k=1:size(data,3)
-            for electrode =1:size(data,1)
+            for channel =1:size(data,1)
                 waitbar(index/(size(data,3)*size(data,1)));
                 index = index+1;
-                tmp = squeeze(data(electrode,:,k,:));
+                tmp = squeeze(data(channel,:,k,:));
                 Y = tmp(:,find(~isnan(tmp(1,:))));
                 [est,ci] = limo_central_estimator(Y,'HD');
-                HD(electrode,:,k,1) = ci(1,:);
-                HD(electrode,:,k,2) = est;
-                HD(electrode,:,k,3) = ci(2,:);
+                HD(channel,:,k,1) = ci(1,:);
+                HD(channel,:,k,2) = est;
+                HD(channel,:,k,3) = ci(2,:);
             end
         end
         close(h);
@@ -730,15 +749,15 @@ if ~isempty(data)
         index = 1; h = waitbar(0,'computing','name','% done');
         Med = NaN(size(data,1),size(data,2),size(data,3),3);
         for k=1:size(data,3)
-            for electrode =1:size(data,1)
+            for channel =1:size(data,1)
                 waitbar(index/(size(data,3)*size(data,1)));
                 index = index+1;
-                tmp = squeeze(data(electrode,:,k,:));
+                tmp = squeeze(data(channel,:,k,:));
                 Y = tmp(:,find(~isnan(tmp(1,:))));
                 [est,ci] = limo_central_estimator(Y,'median');
-                Med(electrode,:,k,1) = ci(1,:);
-                Med(electrode,:,k,2) = est;
-                Med(electrode,:,k,3) = ci(2,:);
+                Med(channel,:,k,1) = ci(1,:);
+                Med(channel,:,k,2) = est;
+                Med(channel,:,k,3) = ci(2,:);
             end
         end
         close(h);
