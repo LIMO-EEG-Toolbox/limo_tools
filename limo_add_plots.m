@@ -9,15 +9,16 @@ function limo_add_plots(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-out = 0;
-turn = 1;
-current = pwd;
-electrode = [];
+out       = 0;
+turn      = 1;
+channel = [];
 
 if ~isempty(varargin)
     [path,infile] = fileparts(varargin{1});
-    infile = [infile '.mat'];
-    if isempty(path); path = [pwd filesep]; end
+    infile        = [infile '.mat'];
+    if isempty(path)
+        path = [pwd filesep]; 
+    end
 else
     infile = [];
 end
@@ -151,18 +152,14 @@ while out == 0
     %% prep figure the 1st time rounnd
     % ------------------------------
     if turn == 1
-        plotfig = figure('Name','Central Tendency Estimate','color','w'); hold on
+        figure('Name','Central Tendency Estimate','color','w'); hold on
         
         % frame info
         % ----------
         if strcmpi(limo.Analysis,'Time')
             vect = limo.data.start:(1000/limo.data.sampling_rate):limo.data.end;  % in msec
-        elseif strcmpi(limo/Analysis,'Frequency')
-            vect = limo.data.freqlist;
-            if size(vect,2) == 1; vect = vect'; end
-            if size(vect,2) ~= size(toplot,2)
-                vect = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
-            end
+        elseif strcmpi(limo.Analysis,'Frequency')
+            vect = linspace(limo.data.start,limo.data.end,size(Data,2));
         else
             v = inputdlg('enter x axis interval e.g. [0:0.5:200]');
             if isempty(v)
@@ -182,37 +179,37 @@ while out == 0
         end
     end
     
-    %% electrode to plot
+    %% channel to plot
     % ----------------
     if size(Data,1) == 1
-        Data = squeeze(Data(1,:,:)); toplot = [];
+        Data = squeeze(Data(1,:,:)); 
     else
         if nargin == 3
-            electrode = varargin{3};
+            channel = varargin{3};
         else
-            if isempty(electrode)
-                electrode = inputdlg(['which electrode to plot 1 to' num2str(size(Data,1))],'electrode choice');
+            if isempty(channel)
+                channel = inputdlg(['which channel to plot 1 to' num2str(size(Data,1))],'channel choice');
             end
         end
         
-        if strcmp(electrode,'') || isempty(electrode)
+        if strcmp(channel,'') || isempty(channel)
             tmp = Data(:,:,2); 
             if sum(isnan(tmp(:))) == numel(tmp)
                 error('the data file appears empty (only NaNs)')
             else
                 if abs(max(tmp(:))) > abs(min(tmp(:)))
-                    [electrode,~,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
+                    [channel,~,~] = ind2sub(size(tmp),find(tmp==max(tmp(:))));
                 else
-                    [electrode,~,~] = ind2sub(size(tmp),find(tmp==min(tmp(:))));
+                    [channel,~,~] = ind2sub(size(tmp),find(tmp==min(tmp(:))));
                 end
-                if length(electrode) ~= 1; electrode = electrode(1); end
-                Data = squeeze(Data(electrode,:,:)); fprintf('ploting channel %g\n',electrode)
+                if length(channel) ~= 1; channel = channel(1); end
+                Data = squeeze(Data(channel,:,:)); fprintf('ploting channel %g\n',channel)
             end
         else
             try
-                Data = squeeze(Data(electrode,:,:));
+                Data = squeeze(Data(channel,:,:));
             catch
-                Data = squeeze(Data(eval(cell2mat(electrode)),:,:));
+                Data = squeeze(Data(eval(cell2mat(channel)),:,:));
             end
         end
     end
@@ -252,10 +249,10 @@ while out == 0
         mytitle = sprintf('%s & %s',mytitle,name{turn});
     end
     
-    if iscell(electrode)
-        electrode = eval(cell2mat(electrode));
+    if iscell(channel)
+        channel = eval(cell2mat(channel));
     end
-    title(sprintf('electrode %g \n %s',electrode,mytitle),'Fontsize',16);
+    title(sprintf('channel %g \n %s',channel,mytitle),'Fontsize',16);
     
     % updates
     turn = turn+1;
