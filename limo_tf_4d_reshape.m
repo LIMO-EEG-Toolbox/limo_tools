@@ -3,7 +3,7 @@ function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 % Simple function to 'stack' elec-freqs-times-N or 'unstack' 
 % elec-freqs*times-N matrices
 %
-% FORMAT reshaped = limo_tf_4d_reshape(reshape_in)
+% FORMAT reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 %
 % INPUT/OUTPUT 4D elec-freqs-times-N / 3D elec-freqs*times-N (all freq at a given time point)
 %              3D elec-freqs*times-N / 4D elec-freqs-times-N
@@ -28,11 +28,13 @@ if ~exist('LIMO','var')
     if exist(fullfile(pwd,'LIMO.mat'),'file')
         LIMO = load('LIMO.mat');
         LIMO = LIMO.LIMO;
-    elseif exist(fullfile(fileparts(pwd),'LIMO.mat'),file)
+    elseif exist(fullfile(fileparts(pwd),'LIMO.mat'),'file')
         LIMO = load(fullfile(fileparts(pwd),'LIMO.mat'));
         LIMO = LIMO.LIMO;
     else
-        error('no LIMO variable/file found - use forced dim as 2nd argument')
+        if nargin == 1
+            error('no LIMO variable/file found - use forced dim as 2nd argument')
+        end
     end
 end
 
