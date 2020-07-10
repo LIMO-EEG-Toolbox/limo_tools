@@ -66,20 +66,17 @@ end
 mask2  = logical(mask); % logical - faster for masking
 
 % compute corrected p-values: number of times observed mass > bootstrap
+pval = NaN(size(mask));
 if sum(mask2(:))>0
-    L=posclusterslabelmat.*mask2; % remove non significant clusters
-    CL_list=setdiff(unique(L),0);
-    pval = NaN(size(L));
+    L       = posclusterslabelmat.*mask2; % remove non significant clusters
+    CL_list = setdiff(unique(L),0);
     for CL=1:length(CL_list)
-        L(L==CL_list(CL))=CL;
-        p=1-(sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot);
+        p = 1-(sum(sum(ori_f(L==CL_list(CL)))>=boot_maxclustersum)./nboot);
         if p ==0
             p = 1/nboot; % never 0
         end
-        pval(L==CL) = p;
+        pval(L==CL_list(CL)) = p;
     end
-else
-    pval=NaN;
 end
 
 
