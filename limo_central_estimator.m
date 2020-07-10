@@ -5,7 +5,7 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 %
 % FORMAT [est,HDI,bb] = limo_central_estimator(Y,'estimator',prob_coverage);
 %
-% INPUTS Y is a 2D matrix, e.g. time frames x participants
+% INPUTS Y is a 2D matrix, e.g. frames x participants
 %        estimator is 'Mean', 'Trimmed mean', (default) 'HD' (Mid-decile Harell-Davis) or 'Median'
 %        prob_coverage is the probability coverage- default 0.95%
 %
