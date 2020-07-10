@@ -377,6 +377,8 @@ elseif nargin == 1
             else
                 errordlg('the nb of channels does not match the number of subjects','channel error'); return;
             end
+        else
+            expected_chanlocs = limo.data.expected_chanlocs;
         end
         
         % make one large matrix
