@@ -105,6 +105,7 @@ if nargin == 3 || nargin == 4
             disp('updating data structure with local LIMO.mat')
             LIMO                    = load('LIMO.mat');
             limo.Level              = LIMO.LIMO.Level;
+            limo.Analysis           = LIMO.LIMO.Analysis;
             limo.data.sampling_rate = LIMO.LIMO.data.sampling_rate;
             limo.data.trim1         = LIMO.LIMO.data.trim1;
             limo.data.trim2         = LIMO.LIMO.data.trim2;
@@ -173,8 +174,10 @@ elseif nargin == 6 || nargin == 7
     parameters          = varargin{2};
     expected_chanlocs   = varargin{3};
     if ischar(expected_chanlocs)
-        expected_chanlocs = load(expected_chanlocs);
-        expected_chanlocs = expected_chanlocs.expected_chanlocs;
+        expected_chanlocs             = load(expected_chanlocs);
+        limo.data.neighbouring_matrix = expected_chanlocs.channeighbstructmat;
+        limo.data.expected_chanlocs   = expected_chanlocs.expected_chanlocs;
+        expected_chanlocs             = limo.data.expected_chanlocs;
     end
     Estimator1          = varargin{4};
     Estimator2          = varargin{5};
@@ -188,7 +191,6 @@ elseif nargin == 6 || nargin == 7
     
     % match frames
     % -------------
-    limo.data.neighbouring_matrix = expected_chanlocs;
     [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
     
     % get data for all parameters dim [channel, frame, param, nb subjects
@@ -213,15 +215,15 @@ elseif nargin == 6 || nargin == 7
                 if strcmpi(Estimator1,'Weighted Mean')
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         for f=size(Yr,2):-1:1
-                            fw(1,f,:,:) = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
+                            fw(1,f,:,:)  = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
                         end
-                        tmp(channel,:,:) = limo_tf_4d_reshape(fw);
+                        tmp(channel,:,:) = limo_tf_4d_reshape(fw,LIMO.data.size3D);
                         clear fw;
                     else
-                        tmp(channel,:,:) =  squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
+                        tmp(channel,:,:) = squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                     end
                 else
-                    tmp(channel,:,index) =  squeeze(Yr(channel,:,index));
+                    tmp(channel,:,index) = squeeze(Yr(channel,:,index));
                 end
             end
             
@@ -239,24 +241,24 @@ elseif nargin == 6 || nargin == 7
             
             if strcmp(Analysis_type,'Full brain analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
                  if strcmp(LIMO.Analysis,'Time-Frequency')
-                     data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                     data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                  else
                      data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                  end
             elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                 if strcmp(LIMO.Analysis,'Time-Frequency')
                     if size(selected_channels,2) == 1
-                        data(1,:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                        data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                     else
-                        out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp)); 
-                        data(1,:,:,:,i) = out(i,:,:); 
+                        out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3))); 
+                        data(1,:,:,i) = out(i,:,:); 
                     end
                 else
                     if size(selected_channels,2) == 1
-                        data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
+                        data(1,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                     else
                         out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
-                        data(1,:,:,i) = out(i,:,:); % matches the expected chanloc of the subject
+                        data(1,:,i) = out(i,:,:); % matches the expected chanloc of the subject
                     end
                 end
             end
@@ -344,10 +346,10 @@ elseif nargin == 1
         
         % match frames
         % ------------
-        limo.data.neighbouring_matrix = expected_chanlocs.channeighbstructmat;
-        limo.data.expected_chanlocs   = expected_chanlocs.expected_chanlocs;
+        limo.data.neighbouring_matrix               = expected_chanlocs.channeighbstructmat;
+        limo.data.expected_chanlocs                 = expected_chanlocs.expected_chanlocs;
         [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo);
-        limo.Level = 2;
+        limo.Level                                  = 2;
         
         % match channels
         % --------------
@@ -359,11 +361,12 @@ elseif nargin == 1
         if strcmp(Analysis_type,'1 channel only')
             channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
-                [file,dir,index] = uigetfile('*.mat','select your channel file');
-                if isempty(file)
+                [file,dirf,index] = uigetfile('*.mat','select your channel file');
+                if index == 0
                     return
                 else
-                    cd(dir); load(file);
+                    channel_vector = load(fullfile(dirf,file));
+                    channel_vector = channel_vector.cell2mat(fieldname(channel_vector));
                     % check the vector has the same length as the number of files
                     if length(channel_vector) ~= size(Names,2)
                         errordlg('the nb of channels does not match the number of subjects','channel error'); return;
@@ -545,14 +548,14 @@ elseif nargin == 1
                                     for f=size(Yr,2):-1:1
                                         fw(1,f,:,:) = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
                                     end
-                                    tmp(channel,:,:) = limo_tf_4d_reshape(fw);
+                                    tmp(channel,:,:) = limo_tf_4d_reshape(fw,LIMO.data.size3D);
                                     clear fw;
                                 else
-                                    tmp(channel,:,:) =  squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
+                                    tmp(channel,:,:) = squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                                 end
                             end
                         else
-                            tmp =  squeeze(Yr(:,:,index)); % retain those trials only
+                            tmp = squeeze(Yr(:,:,index)); % retain those trials only
                         end
                         
                         % 1st level analysis
@@ -569,16 +572,16 @@ elseif nargin == 1
                         
                         if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                             if strcmp(LIMO.Analysis,'Time-Frequency')
-                                data(:,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                                data(:,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                             else
                                 data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             end
                         elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                             if strcmp(LIMO.Analysis,'Time-Frequency')
                                 if size(selected_channels,2) == 1
-                                    data(1,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                                    data(1,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                                 else
-                                    out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp)); 
+                                    out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3))); 
                                     data(1,:,:,j,i) = out(i,:,:); 
                                 end
                             else
@@ -604,15 +607,15 @@ elseif nargin == 1
                                 for f=size(Yr,2):-1:1
                                      fw(1,f,:,:) = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
                                 end
-                                tmp(channel,:,:) = limo_tf_4d_reshape(fw);
+                                tmp(channel,:,:) = limo_tf_4d_reshape(fw,LIMO.data.size3D);
                                 clear fw;
                             else
-                                tmp(channel,:,:) =  squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
+                                tmp(channel,:,:) = squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                             end
                         end
                     else
                         if strcmp(LIMO.Analysis,'Time-Frequency')
-                            tmp =  limo_tf_4d_reshape(squeeze(Yr(:,:,:,index)));
+                            tmp =  limo_tf_4d_reshape(squeeze(Yr(:,:,:,index)),LIMO.data.size3D);
                         else
                             tmp =  squeeze(Yr(:,:,index)); % retain those trials only
                         end
@@ -632,16 +635,16 @@ elseif nargin == 1
                     
                     if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
-                            data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                            data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                         else
                             data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
                     elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                         if strcmp(LIMO.Analysis,'Time-Frequency')
                             if size(selected_channels,2) == 1
-                                data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,limo_tf_4d_reshape(tmp));
+                                data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                             else
-                                out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                                out = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3))); % out is for all expected chanlocs, ie across subjects
                                 data(1,:,:,i) = out(i,:,:,:); % matches the expected chanloc of the subject
                             end
                         else
@@ -716,10 +719,10 @@ if ~isempty(data)
         
         if exist('Estimator1','var')
             newname = sprintf('%s_single_subjects_%s',name,Estimator1);
-            if ~strcmpi(limo.Analysis,'Time-Frequency') && size(data,3) ~=1
+            if ~strcmpi(limo.Analysis,'Time-Frequency') 
                 Data.data = data; Data.limo = limo;
                 save (newname,'Data'); clear Data
-            elseif strcmpi(limo.Analysis,'Time-Frequency') && size(data,4) ~=1
+            elseif strcmpi(limo.Analysis,'Time-Frequency')
                 Data.data = data; Data.limo = limo;
                 save (newname,'Data'); clear Data
             end
@@ -749,7 +752,7 @@ if ~isempty(data)
                     index              = index+1;
                     if  strcmpi(Analysis_type,'1 channel only')
                         for f=size(data,2):-1:1
-                            tmp(1,f,:,:) = (data(1,f,:,k,:));
+                            tmp(1,f,:,:) = data(1,f,:,k,:);
                         end
                         tmp            = limo_tf_4d_reshape(tmp,...
                             [size(data,1) size(data,2)*size(data,3) size(data,5)]);
@@ -807,9 +810,18 @@ if ~isempty(data)
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
                     waitbar(index/(size(data,4)*size(data,1)));
-                    index               = index+1;
-                    tmp                 = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)));
-                    tmp                 = squeeze(tmp(channel,:,:));
+                    index              = index+1;
+                    if  strcmpi(Analysis_type,'1 channel only')
+                        for f=size(data,2):-1:1
+                            tmp(1,f,:,:) = data(1,f,:,k,:);
+                        end
+                        tmp            = limo_tf_4d_reshape(tmp,...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    else
+                        tmp            = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)),...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    end
+                    tmp                = squeeze(tmp(channel,:,:));
                     Y                   = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]            = limo_central_estimator(Y,'trimmed mean');
                     TM(channel,:,:,k,1) = reshape(ci(1,:),size(data,2),size(data,3));
@@ -859,9 +871,18 @@ if ~isempty(data)
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
                     waitbar(index/(size(data,4)*size(data,1)));
-                    index               = index+1;
-                    tmp                 = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)));
-                    tmp                 = squeeze(tmp(channel,:,:));
+                    index              = index+1;
+                    if  strcmpi(Analysis_type,'1 channel only')
+                        for f=size(data,2):-1:1
+                            tmp(1,f,:,:) = data(1,f,:,k,:);
+                        end
+                        tmp            = limo_tf_4d_reshape(tmp,...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    else
+                        tmp            = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)),...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    end
+                    tmp                = squeeze(tmp(channel,:,:));
                     Y                   = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]            = limo_central_estimator(Y,'HD');
                     HD(channel,:,:,k,1) = reshape(ci(1,:),size(data,2),size(data,3));
@@ -912,9 +933,18 @@ if ~isempty(data)
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
                     waitbar(index/(size(data,4)*size(data,1)));
-                    index                = index+1;
-                    tmp                  = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)));
-                    tmp                  = squeeze(tmp(channel,:,:));
+                    index              = index+1;
+                    if  strcmpi(Analysis_type,'1 channel only')
+                        for f=size(data,2):-1:1
+                            tmp(1,f,:,:) = data(1,f,:,k,:);
+                        end
+                        tmp            = limo_tf_4d_reshape(tmp,...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    else
+                        tmp            = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)),...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    end
+                    tmp                = squeeze(tmp(channel,:,:));
                     Y                    = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]             = limo_central_estimator(Y,'median');
                     Med(channel,:,:,k,1) = reshape(ci(1,:),size(data,2),size(data,3));
