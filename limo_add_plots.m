@@ -45,7 +45,7 @@ while out == 0
         data       = getfield(data,cell2mat(fieldnames(data)));
         datatype   = fieldnames(data);
         datatype   = datatype(cellfun(@(x) strcmp(x,'limo'), fieldnames(data))==0);
-        options    = {'mean','trimmed mean','median','Harrell_Davis','diff','data'};
+        options    = {'mean','trimmed_mean','median','Harrell_Davis','diff','data'};
         if sum(strcmpi(datatype,options)) == 0
             errordlg2('unknown file to plot');
             return
@@ -152,35 +152,39 @@ while out == 0
     end
     
     % store each iteration into Data
-    if size(tmp,1) == 1 && size(tmp,3) == 1 % only 1 channel and 1 variable
-        D           = squeeze(tmp(:,:,1,:));
-        Data        = nan(1,size(tmp,2),size(tmp,4));
-        Data(1,:,:) = D; clear D;
-    elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
-        Data        = squeeze(tmp(:,:,1,:));
-    else 
-        if nargin >= 2
-            v = varargin{2};
-        elseif ~exist('v','var')            
-            if subjects_plot == 0
-                v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
-                if isempty(v)
-                    out = 1; return
-                elseif ischar(v)
-                    v = eval(v);
+    if strcmpi('diff',datatype)
+        Data        = tmp;
+    else
+        if size(tmp,1) == 1 && size(tmp,3) == 1 % only 1 channel and 1 variable
+            D           = squeeze(tmp(:,:,1,:));
+            Data        = nan(1,size(tmp,2),size(tmp,4));
+            Data(1,:,:) = D; clear D;
+        elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
+            Data        = squeeze(tmp(:,:,1,:));
+        else
+            if nargin >= 2
+                v = varargin{2};
+            elseif ~exist('v','var')
+                if subjects_plot == 0
+                    v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                    if isempty(v)
+                        out = 1; return
+                    elseif ischar(v)
+                        v = eval(v);
+                    end
                 end
             end
-        end
-        
-        if  subjects_plot == 0 && length(v)>1
-            errordlg2('only 1 parameter value expected'); return
-        else
-            if size(tmp,1) == 1 && size(tmp,3) > 1
-                D           = squeeze(tmp(:,:,v,:));
-                Data        = nan(1,size(tmp,2),size(tmp,4));
-                Data(1,:,:) = D; clear D;
+            
+            if  subjects_plot == 0 && length(v)>1
+                errordlg2('only 1 parameter value expected'); return
             else
-                Data        = squeeze(tmp(:,:,v,:));
+                if size(tmp,1) == 1 && size(tmp,3) > 1
+                    D           = squeeze(tmp(:,:,v,:));
+                    Data        = nan(1,size(tmp,2),size(tmp,4));
+                    Data(1,:,:) = D; clear D;
+                else
+                    Data        = squeeze(tmp(:,:,v,:));
+                end
             end
         end
     end
@@ -234,7 +238,7 @@ while out == 0
             end
         end
         
-        if strcmp(channel,'') || isempty(channel)
+        if strcmp(channel,'') 
             tmp = Data(:,:,2); 
             if sum(isnan(tmp(:))) == numel(tmp)
                 error('the data file appears empty (only NaNs)')
@@ -307,7 +311,7 @@ while out == 0
     if iscell(channel)
         channel = eval(cell2mat(channel));
     end
-    title(sprintf('channel %g \n %s',channel,mytitle),'Fontsize',16);
+    title(sprintf('channel %g \n %s',channel,mytitle),'Fontsize',16,'Interpreter','none');
     
     % updates
     turn = turn+1;
