@@ -73,7 +73,6 @@ function Image_results_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
 if FilterIndex ~= 0
     cd(PathName);
-    check_boot_and_tfce(handles,fullfile(PathName,FileName))
     if contains(FileName,'tfce')
         if exist(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)),'file')
             [PathName,FileName] = fileparts(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)));
@@ -82,8 +81,9 @@ if FilterIndex ~= 0
            error('parent file %s not found',fullfile(fileparts(PathName(1:end-1)),FileName(6:end))) 
         end
     end
-    tmp = load([PathName filesep 'LIMO.mat']);
+    tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
+    check_boot_and_tfce(handles,fullfile(PathName,FileName))
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -95,9 +95,17 @@ function Topoplot_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Result to plot');
 if FilterIndex == 1
     cd(PathName);
-    check_boot_and_tfce(handles)
+    if contains(FileName,'tfce')
+        if exist(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)),'file')
+            [PathName,FileName] = fileparts(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)));
+            FileName = [FileName '.mat'];
+        else
+           error('parent file %s not found',fullfile(fileparts(PathName(1:end-1)),FileName(6:end))) 
+        end
+    end
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
+    check_boot_and_tfce(handles,fullfile(PathName,FileName))
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -109,9 +117,17 @@ function ERP_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile('*.mat','Select LIMO file or summary stat file');
 if FilterIndex == 1
     cd(PathName);
-    check_boot_and_tfce(handles)
+    if contains(FileName,'tfce')
+        if exist(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)),'file')
+            [PathName,FileName] = fileparts(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)));
+            FileName = [FileName '.mat'];
+        else
+           error('parent file %s not found',fullfile(fileparts(PathName(1:end-1)),FileName(6:end))) 
+        end
+    end
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
+    check_boot_and_tfce(handles,fullfile(PathName,FileName))
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -197,17 +213,56 @@ cd(PathName); handles.LIMO = load('LIMO.mat');
 limo_model_selection(handles.LIMO.LIMO,1);
 guidata(hObject, handles);
 
+        
+%-------------------------
+%         NEW ANALYSES
+%------------------------
+
+% --- New contrast.
+% ---------------------------------------------------------------
+function New_Contrast_Callback(hObject, eventdata, handles)
+
+clc; uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_contrast_manager
+
+% Semi-Partial coef
+% ---------------------------------------------------------------
+function Partial_coef_Callback(hObject, eventdata, handles)
+[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+if FileName ~=0
+    cd(PathName); handles.LIMO = load('LIMO.mat');
+    limo_semi_partial_coef(handles.LIMO.LIMO)
+end
+guidata(hObject, handles);
+
+%------------------------
+%         OTHERS
+%------------------------
+
+% --- Executes on button press in Help.
+% ---------------------------------------------------------------
+function Help_Callback(hObject, eventdata, handles)
+web(fullfile(fileparts(which('limo_eeg')),[filesep 'help' filesep 'limo_results.html']));
+guidata(hObject, handles);
+
+% --- Executes on button press in Quit.
+% ---------------------------------------------------------------
+function Quit_Callback(hObject, eventdata, handles)
+clc; uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_gui
+
 % -----------------------------------------------------------
 % subroutine to check bootstrap and tfce on any button clicks
-% if requested call original functions to do it
 % ------------------------------------------------------------
 function check_boot_and_tfce(handles,currentfile)
 if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
-        handles.tfce == 1 && handles.MCC ~= 3    
+        handles.tfce == 1 && handles.MCC == 3    
    
     [filepath,filename,ext] = fileparts(currentfile);
-    tmp                     = load([filepath filesep 'LIMO.mat']);
-    handles.LIMO            = tmp.LIMO; clear tmp
 
     % deal with bootstrap
     if handles.bootstrap ~= 0
@@ -228,7 +283,8 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                 end
             else % handles.LIMO.Level == 2
                 if strncmp(filename,'one_sample',10)
-                    
+                        limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
+                            str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif strncmp(filename,'two_samples',11)
                     
                 elseif strncmp(filename,'paired_samples',14)
@@ -269,45 +325,4 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
         end
     end
 end            
-        
-%-------------------------
-%         NEW ANALYSES
-%------------------------
 
-% --- New contrast.
-% ---------------------------------------------------------------
-function New_Contrast_Callback(hObject, eventdata, handles)
-
-clc; uiresume
-guidata(hObject, handles);
-delete(handles.figure1)
-limo_contrast_manager
-
-% Semi-Partial coef
-% ---------------------------------------------------------------
-function Partial_coef_Callback(hObject, eventdata, handles)
-[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
-if FileName ~=0
-    cd(PathName); handles.LIMO = load('LIMO.mat');
-    limo_semi_partial_coef(handles.LIMO.LIMO)
-end
-guidata(hObject, handles);
-
-
-%------------------------
-%         OTHERS
-%------------------------
-
-% --- Executes on button press in Help.
-% ---------------------------------------------------------------
-function Help_Callback(hObject, eventdata, handles)
-web(fullfile(fileparts(which('limo_eeg')),[filesep 'help' filesep 'limo_results.html']));
-guidata(hObject, handles);
-
-% --- Executes on button press in Quit.
-% ---------------------------------------------------------------
-function Quit_Callback(hObject, eventdata, handles)
-clc; uiresume
-guidata(hObject, handles);
-delete(handles.figure1)
-limo_gui
