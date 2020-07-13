@@ -74,7 +74,15 @@ function Image_results_Callback(hObject, eventdata, handles)
 if FilterIndex ~= 0
     cd(PathName);
     check_boot_and_tfce(handles,fullfile(PathName,FileName))
-    tmp          = load([PathName filesep 'LIMO.mat']);
+    if contains(FileName,'tfce')
+        if exist(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)),'file')
+            [PathName,FileName] = fileparts(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)));
+            FileName = [FileName '.mat'];
+        else
+           error('parent file %s not found',fullfile(fileparts(PathName(1:end-1)),FileName(6:end))) 
+        end
+    end
+    tmp = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
