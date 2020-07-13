@@ -134,8 +134,8 @@ switch type
         LIMO      = varargin{4};
         cd(LIMO.dir);
         
-        if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-            data = limo_tf_4d_reshape(varargin{2});
+        if strcmp(LIMO.Analysis,'Time-Frequency') 
+            data = limo_tf_4d_reshape(data);
         end
         clear varargin
         
