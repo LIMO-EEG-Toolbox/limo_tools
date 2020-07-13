@@ -48,7 +48,11 @@ end
 
 % load data and set outputs to empty
 % ----------------------------------
-matfile = load(fullfile(LIMO.dir,FileName)); 
+if exist(FileName,'file')
+    matfile = load(FileName);
+else
+    matfile = load(fullfile(LIMO.dir,FileName));
+end
 M       = []; 
 mask    = []; 
 mytitle = [];
@@ -579,27 +583,11 @@ if contains(FileName,'Rep_ANOVA')
     
     % all files have dim electrode x [freq/time] frames x F/p
     if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-        if contains(FileName,'Rep_ANOVA_Interaction')
-            M    = matfile.Rep_ANOVA_Interaction_with_gp(:,:,:,1); % get F values
-            PVAL = matfile.Rep_ANOVA_Interaction_with_gp(:,:,:,2); % get P values
-        elseif contains(FileName,'Rep_ANOVA_Gp_effect')
-            M    = matfile.Rep_ANOVA_Gp_effect(:,:,:,1); 
-            PVAL = matfile.Rep_ANOVA_Gp_effect(:,:,:,2);
-        elseif contains(FileName,'Rep_ANOVA_Main')
-            M    = matfile.Rep_ANOVA(:,:,:,1); 
-            PVAL = matfile.Rep_ANOVA(:,:,:,2);
-        end
+        M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,:,1);
+        PVAL = matfile.(cell2mat(fieldnames(matfile)))(:,:,:,2);
     else
-        if contains(FileName,'Rep_ANOVA_Interaction')
-            M    = matfile.Rep_ANOVA_Interaction_with_gp(:,:,1); 
-            PVAL = matfile.Rep_ANOVA_Interaction_with_gp(:,:,2);
-        elseif contains(FileName,'Rep_ANOVA_Gp_effect')
-            M    = matfile.Rep_ANOVA_Gp_effect(:,:,1); 
-            PVAL = matfile.Rep_ANOVA_Gp_effect(:,:,2);
-        elseif contains(FileName,'Rep_ANOVA_Main')
-            M    = matfile.Rep_ANOVA(:,:,1); 
-            PVAL = matfile.Rep_ANOVA(:,:,2);
-        end
+        M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,1);
+        PVAL = matfile.(cell2mat(fieldnames(matfile)))(:,:,2);
     end
     MCC_data = fullfile(LIMO.dir,['H0' filesep 'H0_' FileName]);
     
