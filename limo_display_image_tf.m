@@ -42,6 +42,7 @@ handles.cc         = limo_color_images(scale);
 handles.scale      = scale;
 handles.title      = varargin{4};
 handles.plot_sel   = 1;
+
 % get axes right away
 if isfield(handles.LIMO.data,'tf_freqs')
     handles.freqs_here = round(handles.LIMO.data.tf_freqs);
@@ -81,14 +82,15 @@ clear varargin scale n_cluster
 if (size(handles.data3d,4)) == 3
     dim = inputdlg('which dimension to use','4D input - plotting option');
     handles.data3d = handles.data3d(:,:,:,dim);
+    handles.scale  = handles.scale(:,:,:,dim);
 end
-handles.maxv         = max(handles.data3d(:));
-handles.maxvi        = find(handles.data3d == handles.maxv);
+handles.maxv       = max(handles.scale(:));
+handles.maxvi      = find(handles.scale == handles.maxv);
 
 if length(handles.maxvi) ~= 1
     handles.maxvi = handles.maxvi(1);
 end
-[handles.maxe, handles.maxf, handles.maxt] = ind2sub(size(handles.data3d), handles.maxvi);
+[handles.maxe, handles.maxf, handles.maxt] = ind2sub(size(handles.scale), handles.maxvi);
 handles.slider_sel                         = handles.maxt; 
 plot_data.freqs_here                       = handles.LIMO.data.tf_freqs; 
 plot_data.times_here                       = handles.LIMO.data.tf_times; 

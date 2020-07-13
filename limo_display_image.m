@@ -31,8 +31,13 @@ end
 
 %% get some informations for the plots
 
-v = max(toplot(:));      % from the 2D data to plot, find max
-[e,f]=find(toplot==v);   % which channel and time/frequency frame
+% what do we plot?  the data (toplot) masked (tpically of significance)
+scale           = toplot.*single(mask>0);  
+scale(scale==0) = NaN;   
+cc              = limo_color_images(scale); % get a color map commensurate to that
+
+v = max(scale(:));       % from the 2D data to plot, find max
+[e,f]=find(scale==v);    % which channel and time/frequency frame
 if length(e)>1           % if we have multiple times the exact same max values
     e = e(1); f = f(1);  % then take the 1st (usually an artefact but allows to see it)
 end
@@ -56,12 +61,6 @@ for c=1:n_cluster
     [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
 
-
-%% what do we plot? 
-
-scale           = toplot.*single(mask>0);  % the data masked (tpically of significance)
-scale(scale==0) = NaN;   
-cc              = limo_color_images(scale); % get a color map commensurate to that
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             ERP            %
@@ -242,7 +241,7 @@ if contains(mytitle,'cluster')
             timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
         elseif strcmp(LIMO.Analysis,'Frequency')
         fprintf('cluster %g starts at %gHz ends at %gHz, max %g @ %gHz channel %s \n', c, ...
-            freqvect(cluster_start(c)),timefreqvect(cluster_end(c)), cluster_maxv(c), freq(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+            freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
         end
     end
 else % no clusters
@@ -376,14 +375,9 @@ set(gca,'LineWidth',2)
 % ----- X --------
 if strcmp(LIMO.Analysis,'Time')
     xlabel('Time in ms','FontSize',10)
-    newticks = round(linspace(1,length(LIMO.data.timevect),length(img_prop.XTick)));
-    Xlabels = LIMO.data.timevect(newticks);
 elseif strcmp(LIMO.Analysis,'Frequency')
     xlabel('Frequency in Hz','FontSize',10)
-    newticks = round(linspace(1,length(LIMO.data.freqlist),length(img_prop.XTick)));
-    Xlabels = LIMO.data.freqlist(newticks);
 end
-set(gca,'XTickLabel', split(string(Xlabels)))
  
 % ----- Y --------
 if strcmp(LIMO.Type,'Components')
