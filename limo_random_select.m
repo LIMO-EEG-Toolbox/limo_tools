@@ -158,7 +158,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if isempty(parameters)
+    if ~exist('parameters','var')
         parameters = check_files(Names,1);
     else
         parameters = check_files(Names,1,parameters{1});
@@ -195,10 +195,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         end
         
         root = LIMO.dir;
-        for i=parameters
+        for i=length(parameters):-1:1
             if length(parameters) ~= 1 % make subfolders
-                mkdir(fullfile(root,['parameter_' num2str(i)]));
-                LIMO.dir = fullfile(root,['parameter_' num2str(i)]);
+                mkdir(fullfile(root,['parameter_' num2str(parameters(i))]));
+                LIMO.dir = fullfile(root,['parameter_' num2str(parameters(i))]);
             end
             
             if strcmp(analysis_type,'1 channel/component only') && size(data,1) == 1
@@ -228,7 +228,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             Yr = tmp_data; clear tmp_data
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
-            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),i,LIMO);
+            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),parameters(i),LIMO);
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
