@@ -102,6 +102,7 @@ if contains(filename,'Covariate_effect_') % continuous regressors, any level
     
     H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
     if exist(H0filename,'file')
+        fprintf('Applying TFCE to null data ... \n')
         H0_Covariate_effect = load(H0filename);
         H0_Covariate_effect = H0_Covariate_effect.(cell2mat(fieldnames(H0_Covariate_effect)));
         if size(H0_Covariate_effect,1) == 1
@@ -170,6 +171,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
         
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_R2 = load(H0filename);
             H0_R2 = H0_R2.(cell2mat(fieldnames(H0_R2)));
             if size(H0_R2,1) == 1
@@ -224,6 +226,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
         
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_Condition_effect = load(H0filename);
             H0_Condition_effect = H0_Condition_effect.(cell2mat(fieldnames(H0_Condition_effect)));
             if size(H0_Condition_effect,1) == 1
@@ -278,6 +281,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
         
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_Interaction_effect = load(H0filename);
             H0_Interaction_effect = H0_Interaction_effect.(cell2mat(fieldnames(H0_Interaction_effect)));
             if size(H0_Interaction_effect,1) == 1
@@ -322,6 +326,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
         
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_con = load(H0filename);
             H0_con = H0_con.(cell2mat(fieldnames(H0_con)));
             if strcmp(LIMO.Analysis ,'Time-Frequency')
@@ -345,6 +350,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
         
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_ess = load(H0filename);
             H0_ess = H0_ess.(cell2mat(fieldnames(H0_ess)));
             if strcmp(LIMO.Analysis ,'Time-Frequency')
@@ -400,6 +406,7 @@ else % 2nd level
         % do tfce for the data under H0
         H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
         if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
             H0_data = load(H0filename);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -473,6 +480,7 @@ else % 2nd level
             
             H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
             if exist(H0filename,'file')
+                fprintf('Applying TFCE to null data ... \n')
                 boot_H0_Rep_ANOVA = load(H0filename);
                 boot_H0_Rep_ANOVA = boot_H0_Rep_ANOVA.(cell2mat(fieldnames(boot_H0_Rep_ANOVA)));
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -509,6 +517,7 @@ else % 2nd level
             
             H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
             if exist(H0filename,'file')
+                fprintf('Applying TFCE to null data ... \n')
                 H0_ess = load(H0filename);
                 H0_ess = H0_ess.(cell2mat(fieldnames(H0_ess)));
                 tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
