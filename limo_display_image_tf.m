@@ -98,7 +98,6 @@ plot_data.times_here                       = handles.LIMO.data.tf_times;
 guidata(hObject, plot_data);
 guidata(hObject, handles);
 
-
 % ----------------------------------------------------------
 % This sets up the initial plot - only do when invisible
 % ----------------------------------------------------------
@@ -107,89 +106,20 @@ guidata(hObject, handles);
 if strcmp(get(hObject,'Visible'),'off') 
 
     % stat value
-    axes(handles.tf_course_plot); 
-    D = squeeze(handles.data3d(handles.maxe,:,handles.maxt));
-    plot(handles.freqs_here,D,'LineWidth',3); M = max(D(:));
-    ylabel('Stat value','fontsize',10); xlabel('Frequencies','fontsize',10,'VerticalAlignment','top');
-    title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(handles.maxf)),'VerticalAlignment','bottom'); grid on; axis tight
+    plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,:,handles.maxt)),'Frequency')
 
     % topoplot
-    axes(handles.topoplot);
-    topoplot(squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.LIMO.data.chanlocs);
-    colormap(gca, handles.cc(2:end,:));
-    mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(handles.maxt), round(handles.freqs_here(handles.maxf)));
-    title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
-
+    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+    
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
+    
     % main display
-    axes(handles.Main_display);   
-    imagesc(squeeze(handles.scale(:,:,handles.maxt)));
-    colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
-    title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(handles.maxt))),'fontsize',12,'VerticalAlignment','bottom');
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
+    plot_main(handles,squeeze(handles.scale(:,:,handles.maxt)),'Frequency',handles.times_here(handles.maxt));
     
-    % channel * time
-    axes(handles.sub_display1); cla;
-    imagesc(squeeze(handles.scale(:,handles.maxf,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    title(['Channels x Times @ ' num2str(round(handles.freqs_here(handles.maxf))) ' Hz'],'VerticalAlignment','bottom');
-    xlabel('Time (ms)','fontsize',10); axis tight
+    % channel*time
+    plot_chantime(handles,squeeze(handles.scale(:,handles.maxf,:)),round(handles.freqs_here(handles.maxf)))
 
-    % time * frequency 
-    axes(handles.sub_display2); cla;
-    imagesc(squeeze(handles.scale(handles.maxe,:,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    set(gca,'XTick',newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-    title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(handles.maxe).labels)]);
-    xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
-    
     % report all clusters in command window
     if handles.n_cluster > 1
         for c=1:handles.n_cluster
@@ -211,7 +141,6 @@ end
 function varargout = limo_display_results_tf_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
-
 %% interactive part
 
 % ------------------------------------------------------------------
@@ -219,6 +148,7 @@ varargout{1} = handles.output;
 %              and Electrode * Time (slide in Frequencies)
 % ------------------------------------------------------------------
 function Main_display_CreateFcn(hObject, eventdata, handles)
+
 function topoplot_CreateFcn(hObject, eventdata, handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -232,183 +162,40 @@ set(hObject, 'String', {'Electrodes x Frequencies', 'Electrodes x Times'});
 function pop_up_dimensions_Callback(hObject, eventdata, handles)
 
 popup_sel_index = get(hObject,'Value');  
-axes(handles.Main_display); cla;
-timep = numel(handles.times_here);
-freqp = numel(handles.freqs_here);
-
 switch popup_sel_index
     case 1
         
     % stat value
-    axes(handles.tf_course_plot); 
-    D = squeeze(handles.data3d(handles.maxe,:,handles.maxt));
-    plot(handles.freqs_here,D,'LineWidth',3); M = max(D(:));
-    ylabel('Stat value','fontsize',10); xlabel('Frequencies','fontsize',10,'VerticalAlignment','top');
-    title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(handles.maxf)),'VerticalAlignment','bottom'); grid on; axis tight
+    plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,:,handles.maxt)),'Frequency')
 
     % topoplot
-    axes(handles.topoplot);
-    topoplot(squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.LIMO.data.chanlocs);
-    colormap(gca, handles.cc(2:end,:));
-    mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(handles.maxt), round(handles.freqs_here(handles.maxf)));
-    title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
+    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
 
     % main display
-    axes(handles.Main_display);   
-    imagesc(squeeze(handles.scale(:,:,handles.maxt)));
-    colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
-    title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(handles.maxt))),'fontsize',12,'VerticalAlignment','bottom');
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
+    plot_main(handles,squeeze(handles.scale(:,:,handles.maxt)),'Frequency',handles.times_here(handles.maxt));
     
-    % channel * time
-    axes(handles.sub_display1); cla;
-    imagesc(squeeze(handles.scale(:,handles.maxf,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    title(['Channels x Times @ ' num2str(round(handles.freqs_here(handles.maxf))) ' Hz'],'VerticalAlignment','bottom');
-    xlabel('Time (ms)','fontsize',10); axis tight
+    % channel*time
+    plot_chantime(handles,squeeze(handles.scale(:,handles.maxf,:)),round(handles.freqs_here(handles.maxf)))
 
-    % time * frequency 
-    axes(handles.sub_display2); cla;
-    imagesc(squeeze(handles.scale(handles.maxe,:,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    set(gca,'XTick',newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-    title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(handles.maxe).labels)]);
-    xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
-        
     case 2
         
     % stat value
-    axes(handles.tf_course_plot); 
-    D = squeeze(handles.data3d(handles.maxe,handles.maxf,:));
-    plot(handles.times_here,D,'LineWidth',3); M = max(D(:));
-    ylabel('Stat value','fontsize',10); xlabel('Time','fontsize',10,'VerticalAlignment','top');
-    title(sprintf('Max stat %g @ %gms',M,handles.times_here(handles.maxt)),'VerticalAlignment','bottom'); grid on; axis tight
+    plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,handles.maxf,:)),'Time')
 
     % topoplot
-    axes(handles.topoplot);
-    topoplot(squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.LIMO.data.chanlocs);
-    colormap(gca, handles.cc(2:end,:));
-    mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(handles.maxt), round(handles.freqs_here(handles.maxf)));
-    title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
+    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
 
     % main display
-    axes(handles.Main_display);   
-    imagesc(squeeze(handles.scale(:,handles.maxf,:)));
-    colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
-    title(sprintf('%s @ %gHz',regexprep(handles.title,'\n+',''), round(handles.freqs_here(handles.maxf))),'fontsize',12,'VerticalAlignment','bottom');
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
+    plot_main(handles,squeeze(handles.scale(:,handles.maxf,:)),'Time',handles.freqs_here(handles.maxf));
     
-    % channel * freq
-    axes(handles.sub_display1); cla;
-    imagesc(squeeze(handles.scale(:,:,handles.maxt)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-    Xlabels = round(handles.freqs_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    title(['Channels x Frequencies @ ' num2str(round(handles.times_here(handles.maxt))) 'ms'],'VerticalAlignment','bottom');
-    xlabel('Frequencies (Hz)','fontsize',10); axis tight
-
-    % time * frequency 
-    axes(handles.sub_display2); cla;
-    imagesc(squeeze(handles.scale(handles.maxe,:,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = round(handles.times_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newxticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-    title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(handles.maxe).labels)]);
-    xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+    % channel*freq
+    plot_chanfreq(handles,squeeze(handles.scale(:,:,handles.maxt)),round(handles.times_here(handles.maxt)))
 end
 guidata(hObject, handles);
 
@@ -426,8 +213,6 @@ end
 function slider_Callback(hObject, eventdata, handles)
 plot_data       = guidata(hObject);
 popup_sel_index = get(handles.pop_up_dimensions, 'Value');
-timep           = numel(handles.times_here);
-freqp           = numel(handles.freqs_here);
 
 if popup_sel_index==1
     slider_sel = get(hObject,'Value');
@@ -435,194 +220,50 @@ if popup_sel_index==1
     if slider_sel == 0
         slider_sel = 1; % Don't want the 0th entry, set to 1 instead
     end
-    D = squeeze(handles.scale(:,:,slider_sel));
-    [maxe,maxf]=ind2sub(size(D),find(D == max(D(:))));
-    plot_data.maxe = maxe;
-    plot_data.maxf = maxf;
-    plot_data.maxt = slider_sel;
+    D              = squeeze(handles.scale(:,:,slider_sel));
+    [maxe,maxf]    = ind2sub(size(D),find(D == max(D(:))));
     
     % stat value
-    axes(handles.tf_course_plot);
-    d = squeeze(handles.data3d(maxe,:,slider_sel)); axis tight
-    plot(handles.freqs_here,d,'LineWidth',3); M = max(d(:));
-    ylabel('Stat value','fontsize',10); xlabel('Frequencies','fontsize',10,'VerticalAlignment','top');
-    title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(maxf)),'VerticalAlignment','bottom'); grid on; axis tight
+    plot_statvalues(handles,squeeze(handles.data3d(maxe,:,slider_sel)),'Frequency')
+
+    % topoplot
+    plot_topography(handles,D(:,maxf),maxf,slider_sel)
+      
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.scale(maxe,:,:))),maxe);
+
+    % main display
+    plot_main(handles,D,'Frequency',handles.times_here(slider_sel))
     
-    % topoplot at max freq
-    axes(handles.topoplot); cla
-    topoplot(D(:,maxf),handles.LIMO.data.chanlocs);
-    colormap(gca, handles.cc(2:end,:));
-    mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(slider_sel), round(handles.freqs_here(maxf)));
-    title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
-    
-    % show electrode * freq
-    axes(handles.Main_display);
-    imagesc(D); colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
-    title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), round(handles.times_here(slider_sel))),'fontsize',12,'VerticalAlignment','bottom');
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-    Xlabels = handles.freqs_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    
-    % channel * time
-    axes(handles.sub_display1); cla;
-    imagesc(squeeze(handles.scale(:,maxf,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    title(['Channels x Times @ ' num2str(round(handles.freqs_here(maxf))) ' Hz'],'VerticalAlignment','bottom');
-    xlabel('Time (ms)','fontsize',10); axis tight
-    
-    % time * frequency
-    axes(handles.sub_display2); cla;
-    imagesc(squeeze(handles.scale(maxe,:,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    set(gca,'XTick',newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-    title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(maxe).labels)]);
-    xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
-    
+    % channel*time
+    plot_chantime(handles,squeeze(handles.scale(:,maxf,:)),round(handles.freqs_here(maxf)))
+        
 elseif popup_sel_index==2
     slider_sel2 = get(hObject,'Value');
     slider_sel = int32(ceil(numel(handles.freqs_here)*slider_sel2)); % Scale slider to correct ints
     if slider_sel == 0
         slider_sel = 1; % Don't want the 0th entry, set to 1 instead
     end
-    D = squeeze(handles.scale(:,slider_sel,:));
-    [maxe,maxt]=ind2sub(size(D),find(D == max(D(:))));
-    plot_data.maxe = maxe;
-    plot_data.maxf = slider_sel;
-    plot_data.maxt = maxt;
+    D              = squeeze(handles.scale(:,slider_sel,:));
+    [maxe,maxt]    = ind2sub(size(D),find(D == max(D(:))));
 
     % stat value
-    axes(handles.tf_course_plot);
-    d = squeeze(handles.data3d(maxe,slider_sel,:)); axis tight
-    plot(handles.times_here,d,'LineWidth',3); M = max(d(:));
-    ylabel('Stat value','fontsize',10); xlabel('Time','fontsize',10,'VerticalAlignment','top');
-    title(sprintf('Max stat %g @ %gms',M,handles.times_here(maxt)),'VerticalAlignment','bottom'); grid on; axis tight
+    plot_statvalues(handles,squeeze(handles.data3d(maxe,slider_sel,:)),'Time')
+
+    % topoplot
+    plot_topography(handles,D(:,maxt),slider_sel,maxt)
+   
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.scale(maxe,:,:))),maxe);
+
+    % main display
+    plot_main(handles,D,'Time',handles.freqs_here(slider_sel))
     
-    % topoplot at max freq
-    axes(handles.topoplot); cla
-    topoplot(D(:,maxt),handles.LIMO.data.chanlocs);
-    colormap(gca, handles.cc(2:end,:));
-    mytitle = sprintf('topoplot @%gms & %gHz', round(handles.times_here(maxt)),handles.freqs_here(slider_sel));
-    title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
-    
-    % show electrode * time
-    axes(handles.Main_display);
-    imagesc(D); colormap(gca, handles.cc); img_prop = get(gca); set(gca,'LineWidth',2);
-    title(sprintf('%s @ %g Hz',regexprep(handles.title,'\n+',''), round(handles.freqs_here(slider_sel))),'fontsize',12,'VerticalAlignment','bottom');
-    newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-    Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-    xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
-    if handles.LIMO.Level == 1
-        Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-        Ylabels  = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    
-    % channel * freq
-    axes(handles.sub_display1); cla;
-    imagesc(squeeze(handles.scale(:,:,maxt)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-    Xlabels = round(handles.freqs_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-    if handles.LIMO.Level == 1
-        Ylabels   = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-        Ylabels   = Ylabels(newyticks);
-    else
-        if isempty(handles.LIMO.design.electrode)
-            if isfield(handles.LIMO.data,'chanlocs')
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            else
-                Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-            end
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newyticks);
-        else
-            ylabel('optimized electrode','fontsize',10);
-        end
-    end
-    if exist('Ylabels','var')
-        set(gca,'YTick',newyticks);
-        set(gca,'YTickLabel', Ylabels);
-    end
-    title(['Channels x Frequencies @ ' num2str(round(handles.times_here(maxt))) 'ms'],'VerticalAlignment','bottom');
-    xlabel('Frequencies (Hz)','fontsize',10); axis tight
-    
-    % time * frequency
-    axes(handles.sub_display2); cla;
-    imagesc(squeeze(handles.scale(maxe,:,:)));
-    colormap(gca, handles.cc); img_prop = get(gca);
-    newticks = round(linspace(1,length(handles.times_here),length(img_prop.YTick)));
-    Xlabels = round(handles.times_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-    newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-    Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-    title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(maxe).labels)]);
-    xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+    % channel*freq
+    plot_chanfreq(handles,squeeze(handles.scale(:,:,maxt)),round(handles.times_here(maxt)))
 end
 
 handles.slider_sel=slider_sel;
-guidata(hObject, plot_data);
 guidata(hObject, handles);
 
 
@@ -635,86 +276,44 @@ function mouse_input_Callback(hObject, eventdata, handles)
 
 plot_data       = guidata(hObject);
 popup_sel_index = get(handles.pop_up_dimensions, 'Value');
-[x,y,button]    = ginput(1);
+button          = 1;
 
 while button == 1
-    clickedAx = gca;
-    if clickedAx ==handles.Main_display
+    [x,y,button] = ginput(1);
+     clickedAx   = gca;
+    if clickedAx == handles.Main_display
         if x < 1; x=1; end
         if y < 1; y=1; end
-        popup_sel_index_str = {'Frequency', 'Time', 'Electrode'};
-        timep = numel(handles.times_here);
-        freqp = numel(handles.freqs_here);
     else
         break
     end
     
     if popup_sel_index == 1  % if showing elec x freq
         
-        if x > numel(plot_data.freqs_here)
-            x=numel(plot_data.freqs_here); 
-        end
-        freq = floor(x); channel = floor(y);
-        
+        if x < min(plot_data.freqs_here); x=min(plot_data.freqs_here); end
+        if x > max(plot_data.freqs_here); x=max(plot_data.freqs_here); end
+        freq = round(x); channel = round(y);
+        [~,freq_position] = min(abs(plot_data.freqs_here-freq));
         
         % stat value
-        axes(handles.tf_course_plot);
         if handles.slider_sel > handles.maxt
             handles.slider_sel = handles.maxt;
         end
-        d = squeeze(handles.data3d(channel,:,handles.slider_sel)); axis tight
-        plot(handles.freqs_here,d,'LineWidth',3); M = max(d(:));
-        ylabel('Stat value','fontsize',10); xlabel('Frequencies','fontsize',10,'VerticalAlignment','top');
-        title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(freq)),'VerticalAlignment','bottom'); grid on; axis tight
+        plot_statvalues(handles,squeeze(handles.data3d(channel,:,handles.slider_sel)),'Frequency')
         
-        % topoplot at max freq
-        axes(handles.topoplot); cla
-        topoplot(squeeze(handles.data3d(:,freq,handles.slider_sel)),handles.LIMO.data.chanlocs);
-        colormap(gca, handles.cc(2:end,:));
-        mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(handles.slider_sel), round(handles.freqs_here(freq)));
-        title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
+        % topoplot
+        plot_topography(handles,squeeze(handles.data3d(:,freq_position,handles.slider_sel)),freq_position,handles.slider_sel)
+        
+        % time/freq map
+        plot_tfmap(handles,flipud(squeeze(handles.scale(channel,:,:))),channel);
+                
+        % reset colormap
         axes(handles.Main_display);
         colormap(gca, handles.cc);
-
-        % channel * time
-        axes(handles.sub_display1); cla;
-        imagesc(squeeze(handles.scale(:,freq,:)));
-        colormap(gca, handles.cc); img_prop = get(gca);
-        newxticks = round(linspace(1,length(handles.times_here),length(img_prop.XTick)));
-        Xlabels = handles.times_here(newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-        if handles.LIMO.Level == 1
-            Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newyticks);
-        else
-            if isempty(handles.LIMO.design.electrode)
-                if isfield(handles.LIMO.data,'chanlocs')
-                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-                else
-                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-                end
-                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-                Ylabels  = Ylabels(newyticks);
-            else
-                ylabel('optimized electrode','fontsize',10);
-            end
-        end
-        if exist('Ylabels','var')
-            set(gca,'YTick',newyticks);
-            set(gca,'YTickLabel', Ylabels);
-        end
-        title(['Channels x Times @ ' num2str(round(handles.freqs_here(freq))) ' Hz'],'VerticalAlignment','bottom');
-        xlabel('Time (ms)','fontsize',10); axis tight
         
-        % time * frequency
-        axes(handles.sub_display2); cla;
-        imagesc(squeeze(handles.scale(channel,:,:)));
-        colormap(gca, handles.cc); img_prop = get(gca);
-        set(gca,'XTick',newxticks); set(gca,'XTickLabel', split(string(Xlabels)))
-        newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-        Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-        title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(channel).labels)]);
-        xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+        % channel*time
+        fprintf('frequency selected: %g Hz\n',freq)
+        plot_chantime(handles,squeeze(handles.scale(:,freq_position,:)),freq)
         
         try
             p_values = evalin('base','p_values');
@@ -727,69 +326,30 @@ while button == 1
         
     elseif popup_sel_index == 2  % if showing elec x times on main
         
-        if x > numel(plot_data.times_here); x=numel(plot_data.times_here); end
-        time = floor(x); channel = floor(y);
-        
+        if x < min(plot_data.times_here); x=min(plot_data.times_here); end
+        if x > max(plot_data.times_here); x=max(plot_data.times_here); end
+        time = round(x); channel = round(y);
+        [~,time_position] = min(abs(plot_data.times_here-time));
+
         % stat value
-        axes(handles.tf_course_plot);
         if handles.slider_sel > handles.maxf
             handles.slider_sel = handles.maxf;
         end
-        d = squeeze(handles.data3d(channel,handles.slider_sel,:)); axis tight
-        plot(handles.times_here,d,'LineWidth',3); M = max(d(:));
-        ylabel('Stat value','fontsize',10); xlabel('Time','fontsize',10,'VerticalAlignment','top');
-        title(sprintf('Max stat %g @ %gms',M,handles.times_here(handles.slider_sel)),'VerticalAlignment','bottom'); grid on; axis tight
+        plot_statvalues(handles,squeeze(handles.data3d(channel,handles.slider_sel,:)),'Time')
         
-        % topoplot at max freq
-        axes(handles.topoplot); cla
-        topoplot(squeeze(handles.data3d(:,handles.slider_sel,time)),handles.LIMO.data.chanlocs);
-        colormap(gca, handles.cc(2:end,:));
-        mytitle = sprintf('topoplot @%gms & %gHz', round(handles.times_here(time)),round(handles.freqs_here(handles.slider_sel)));
-        title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
-        
+        % topoplot
+        plot_topography(handles,squeeze(handles.data3d(:,handles.slider_sel,time_position)),handles.slider_sel,time_position)
+                
+        % time/freq map
+        plot_tfmap(handles,flipud(squeeze(handles.scale(channel,:,:))),channel);
+
+        % reset colormap
         axes(handles.Main_display);
         colormap(gca, handles.cc);
         
-        % channel * freq
-        axes(handles.sub_display1); cla;
-        imagesc(squeeze(handles.scale(:,:,time)));
-        colormap(gca, handles.cc); img_prop = get(gca);
-        newxticks = round(linspace(1,length(handles.freqs_here),length(img_prop.XTick)));
-        Xlabels = round(handles.freqs_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-        if handles.LIMO.Level == 1
-            Ylabels  = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-            newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-            Ylabels  = Ylabels(newyticks);
-        else
-            if isempty(handles.LIMO.design.electrode)
-                if isfield(handles.LIMO.data,'chanlocs')
-                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-                else
-                    Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
-                end
-                newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
-                Ylabels  = Ylabels(newyticks);
-            else
-                ylabel('optimized electrode','fontsize',10);
-            end
-        end
-        if exist('Ylabels','var')
-            set(gca,'YTick',newyticks);
-            set(gca,'YTickLabel', Ylabels);
-        end
-        title(['Channels x Frequencies @ ' num2str(round(handles.times_here(time))) 'ms'],'VerticalAlignment','bottom');
-        xlabel('Frequencies (Hz)','fontsize',10); axis tight
-        
-        % time * frequency
-        axes(handles.sub_display2); cla;
-        imagesc(squeeze(handles.scale(channel,:,:)));
-        colormap(gca, handles.cc); img_prop = get(gca);
-        newticks = round(linspace(1,length(handles.times_here),length(img_prop.YTick)));
-        Xlabels = round(handles.times_here(newxticks)); set(gca,'XTickLabel', split(string(Xlabels)))
-        newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-        Ylabels = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
-        title(['Frequency x time @ channel ' num2str(handles.LIMO.data.chanlocs(channel).labels)]);
-        xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequencies','fontsize',10);
+        % channel*freq
+        fprintf('time selected: %g ms\n',time)
+        plot_chanfreq(handles,squeeze(handles.scale(:,:,time_position)),time)
         
         try
             p_values = evalin('base','p_values');
@@ -800,8 +360,6 @@ while button == 1
             fprintf('couldn''t figure the p value?? %s \n',pvalerror.message)
         end
     end
-    
-    [x,y,button]=ginput(1);
 end
 
 guidata(hObject, handles);
@@ -809,9 +367,7 @@ guidata(hObject, handles);
 %%%%%%%%%%%%%%%%%%% MAKE A MOVIE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes on button press in gifbutton.
 function gifbutton_Callback(hObject, eventdata, handles)
-% hObject    handle to gifbutton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 vidObj = VideoWriter(handles.title);
 open(vidObj);
 h=figure('Name',handles.title);
@@ -887,7 +443,6 @@ close(vidObj); close(h)
 warning on
 guidata(hObject, handles);
 
-
 %%%%%%%%%%%%%%%%%%%% MENU %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes during object creation, after setting all properties.
 
@@ -929,7 +484,6 @@ if ~isequal(file, 0)
     end
 end
 
-
 % --------------------------------------------------------------------
 function PrintMenuItem_Callback(hObject, eventdata, handles)
 
@@ -946,61 +500,112 @@ clc; uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 
-%% set axes and labels 
-% -------------------------------------------------------------------------
-function set_imgaxes(LIMO,scale)
-
-img_prop = get(gca);
-set(gca,'LineWidth',2)
-
-% ----- X --------
-if strcmp(LIMO.Analysis,'Time')
-    xlabel('Time in ms','FontSize',10)
-elseif strcmp(LIMO.Analysis,'Frequency')
-    xlabel('Frequency in Hz','FontSize',10)
+%% routines
+function plot_statvalues(handles,courseplot,dim)
+axes(handles.tf_course_plot); cla
+[M,position] = max(courseplot(:));
+if strcmpi(dim,'Time')
+    plot(handles.times_here,courseplot,'LineWidth',3);
+    title(sprintf('Max stat %g @ %gms',M,handles.times_here(position)),'VerticalAlignment','bottom');
+elseif strcmpi(dim,'Frequency')
+    plot(handles.freqs_here,courseplot,'LineWidth',3);
+    title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(position)),'VerticalAlignment','bottom');
 end
-Xlabels = LIMO.data.start:LIMO.data.end;
-newticks = round(linspace(1,length(Xlabels),length(img_prop.XTick)));
-Xlabels = Xlabels(newticks);
-set(gca,'XTick',newticks);
-set(gca,'XTickLabel', split(string(Xlabels)))
- 
-% ----- Y --------
-if strcmp(LIMO.Type,'Components')
-    if size(scale,1) == 1
-        ylabel('Optimized component','FontSize',10);
-    else
-        ylabel('Components','FontSize',10);
-    end
+xlabel(dim,'fontsize',10,'VerticalAlignment','top');
+ylabel('Stat value','fontsize',10); 
+box on; grid on; axis tight
+
+function plot_topography(handles,topomap,freq_value,time_value)
+axes(handles.topoplot); cla
+topoplot(topomap,handles.LIMO.data.chanlocs);
+colormap(gca, handles.cc(2:end,:));
+mytitle = sprintf('topoplot @%gms & %gHz', handles.times_here(time_value), round(handles.freqs_here(freq_value)));
+title(mytitle, 'Units', 'normalized', 'Position', [1.2, 0.5],'Rotation',-90,'FontWeight','bold','VerticalAlignment','top')
+
+function plot_tfmap(handles,tf_map,channel_value)
+
+axes(handles.sub_display2); cla
+imagesc(handles.times_here,handles.freqs_here,tf_map);
+colormap(gca, handles.cc); img_prop = get(gca);
+newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
+Ylabels  = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
+title(['Time-Frequency @ channel ' num2str(handles.LIMO.data.chanlocs(channel_value).labels)]);
+xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequency','fontsize',10);
+
+function plot_main(handles,scaled_data,dim,dimvalue)
+
+axes(handles.Main_display); cla
+if ~isempty(handles.LIMO.design.electrode)
+    chan_vect = 1;
 else
-    if size(scale,1) == 1
-        ylabel('Optimized channel','FontSize',10);
-    else
-        ylabel('Channels','FontSize',10);
-    end
+    chan_vect = 1:length(handles.LIMO.data.chanlocs);
 end
 
-if isfield(LIMO.data, 'chanlocs')
-    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.chanlocs, 'UniformOutput', false);
+if strcmpi(dim,'Frequency')
+    imagesc(handles.freqs_here,chan_vect,scaled_data); 
+    title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), dimvalue),'fontsize',12,'VerticalAlignment','bottom');
+    xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
+elseif strcmpi(dim,'Time')
+    imagesc(handles.times_here,chan_vect,scaled_data); 
+    title(sprintf('%s @ %gHz',regexprep(handles.title,'\n+',''), dimvalue),'fontsize',12,'VerticalAlignment','bottom');
+    xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
+end
+colormap(gca, handles.cc); 
+set(gca,'LineWidth',2);
+set_Ylabels(handles,get(gca));
+
+function plot_chantime(handles,map,freqvalue)
+
+axes(handles.sub_display1); cla
+if ~isempty(handles.LIMO.design.electrode)
+    chan_vect = 1;
 else
-    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
+    chan_vect = 1:length(handles.LIMO.data.chanlocs);
 end
-newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-Ylabels = Ylabels(newticks);
-set(gca,'YTick',newticks);
-set(gca,'YTickLabel', Ylabels);
 
-% ----- Colormap limits --------
-try
-    maxval = max(abs(max(scale(:))),abs(min(scale(:))));
-    if max(scale(:)) < 0
-        caxis([-maxval 0])
-    elseif min(scale(:)) > 0 
-        caxis([0 maxval])
+imagesc(handles.times_here,chan_vect,map);
+title(['Channels x Time @ ' num2str(freqvalue) ' Hz'],'VerticalAlignment','bottom');
+xlabel('Time (ms)','fontsize',10); axis tight
+colormap(gca, handles.cc); 
+set_Ylabels(handles,get(gca));
+
+function plot_chanfreq(handles,map,timevalue)
+
+axes(handles.sub_display1); cla
+if ~isempty(handles.LIMO.design.electrode)
+    chan_vect = 1;
+else
+    chan_vect = 1:length(handles.LIMO.data.chanlocs);
+end
+
+imagesc(handles.freqs_here,chan_vect,map);
+title(['Channels x Frequency @ ' num2str(timevalue) 'ms'],'VerticalAlignment','bottom');
+xlabel('Frequencies (Hz)','fontsize',10); axis tight
+colormap(gca, handles.cc);
+set_Ylabels(handles,get(gca));
+
+function set_Ylabels(handles,img_prop)
+
+if handles.LIMO.Level == 1
+    Ylabels   = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+    newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+    Ylabels   = Ylabels(newyticks);
+else
+    if isempty(handles.LIMO.design.electrode)
+        if isfield(handles.LIMO.data,'chanlocs')
+            Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
+        else
+            Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
+        end
+        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+        Ylabels  = Ylabels(newyticks);
     else
-        caxis([-maxval maxval])
+        ylabel('optimized electrode','fontsize',10);
     end
-catch caxiserror
-    fprintf('axis issue: %s\n',caxiserror.message)
+end
+
+if exist('Ylabels','var')
+    set(gca,'YTick',newyticks);
+    set(gca,'YTickLabel', Ylabels);
 end
 
