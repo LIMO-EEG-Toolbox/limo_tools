@@ -1205,7 +1205,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             end
             
             if isfield(LIMO.design,'parameters')
-                parameters(:,i) = check_files(Names,1,[LIMO.design.parameters{i,:}]);
+                if ~isempty(LIMO.design.parameters)
+                    parameters(:,i) = check_files(Names,1,[LIMO.design.parameters{i,:}]);
+                else
+                    parameters(:,i) = check_files(Names,1);
+                end
             else
                 parameters(:,i) = check_files(Names,1);
             end
