@@ -55,7 +55,7 @@ if nargin < 3
     if isnumeric(data1)
         fprintf('%s loaded \n',file);
     else
-       error('couldn''t load the data') 
+       error('couldn''t load the data %s\n',file) 
     end
         
     % select 2nd dataset 
@@ -76,7 +76,7 @@ if nargin < 3
     if isnumeric(data2)
         fprintf('%s loaded \n',file);
     else
-       error('couldn''t load the data') 
+       error('couldn''t load the data %s\n',file) 
     end
     
     % type 
@@ -298,22 +298,8 @@ save (fullfile(newpath,newname),'Data');
 if strcmp(figure_flag,'on') || figure_flag == 1
     
     if ndims(Diff) == 4
-        whichdim = questdlg('which domain to plot?','averaging dimension','time','frequency','time');
+        whichdim = questdlg('which domain to plot?','showing means only','time','frequency','time');
         if isempty(whichdim)
-            return
-        elseif strcmpi(whichdim,'Frequency')
-            est1 = squeeze(mean(est1,3));
-            CI1  = squeeze(mean(CI1 ,4));
-            est2 = squeeze(mean(est2,3));
-            CI2  = squeeze(mean(CI2 ,4));
-            Diff = squeeze(mean(Diff,3));
-        elseif strcmpi(whichdim,'Time')
-            est1 = squeeze(mean(est1,2));
-            CI1  = squeeze(mean(CI1 ,3));
-            est2 = squeeze(mean(est2,2));
-            CI2  = squeeze(mean(CI2 ,3));
-            Diff = squeeze(mean(Diff,2));
-        else
             return
         end
     end
@@ -324,7 +310,15 @@ if strcmp(figure_flag,'on') || figure_flag == 1
         if isempty(channel)  % cancel
             return
         elseif strcmp(channel,'') % ok empty
-            [~,channel]=max(max(squeeze(Diff(:,:,2)),[],2));
+            if ndims(Diff) == 4
+                if strcmpi(whichdim ,'time')
+                    [~,channel]=max(max(max(squeeze(Diff(:,:,:,2)),[],3)'));
+                else
+                    [~,channel]=max(max(squeeze((max(squeeze(Diff(:,:,:,2)),[],2))),[],2));
+                end
+            else
+                [~,channel]=max(max(squeeze(Diff(:,:,2)),[],2));
+            end
         else
             channel = eval(cell2mat(channel));
             if length(channel) > 1
@@ -338,7 +332,7 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     end
     
     if strcmpi(LIMO.Analysis,'Time')
-        if isfield(data.LIMO.data,'timevect')
+        if isfield(LIMO.data,'timevect')
             vect = LIMO.data.timevect;
         else
             vect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;  % in msec
@@ -363,14 +357,8 @@ if strcmp(figure_flag,'on') || figure_flag == 1
                 vect = linspace(LIMO.data.low_f,LIMO.data.high_f,size(Diff,2));
             end
         end
-    end
-    
-    if  length(vect) ~= length(squeeze(est1(channel,:)))
-        if length(vect) ~= length(squeeze(est1(channel,:)))
-                fprintf('error in computing %s frames \n',LIMO.Analysis)
-        end
-        dlg = sprintf('enter %s interval by hand e.g. [0:0.5:40]',LIMO.Analysis);
-        v = inputdlg(dlg);
+    else
+        v   = inputdlg('time/freq info missing: enter x-axis interval by hand e.g. [0:0.5:40]');
         if isempty(v)
             return
         else
@@ -388,14 +376,26 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     end
     
     % figure
-    figure;set(gcf,'Color','w'); subplot(3,2,[1 2 3 4]); hold on
-    plot(vect,squeeze(est1(channel,:)),'LineWidth',3);
-    fillhandle = patch([vect fliplr(vect)],[squeeze(CI1(channel,1,:))' fliplr(squeeze(CI1(channel,2,:))')], [0 0 1]);
-    set(fillhandle,'EdgeColor',[0 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    plot(vect,squeeze(est2(channel,:)),'r','LineWidth',3);
-    fillhandle = patch([vect fliplr(vect)],[squeeze(CI2(channel,1,:))' fliplr(squeeze(CI2(channel,2,:))')], [1 0 0]);
-    set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    grid on; axis tight; ylabel('Amplitude','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
+    figure;set(gcf,'Color','w'); 
+    subplot(3,2,[1 2 3 4]); 
+    if ndims(Diff) == 4
+        if strcmpi(whichdim ,'time')
+            cm = limo_color_images(size(est1,2)*2);
+            for f=1:size(est1,2)
+                top_plot(vect,squeeze(est1(channel,f,:)),squeeze(est2(channel,f,:)),[],[],cm([f f+size(est1,2)],:),'ss'); 
+            end
+        else
+            cm = limo_color_images(size(est1,3)*2);
+            for t=1:size(est1,3)
+                top_plot(vect,squeeze(est1(channel,:,t)),squeeze(est2(channel,:,t)),[],[],cm([t t+size(est1,3)],:),'ss');
+            end
+        end
+    else
+        top_plot(vect,squeeze(est1(channel,:)),squeeze(est2(channel,:)),...
+            squeeze(CI1(channel,:,:)),squeeze(CI2(channel,:,:)),[0 0 1; 1 0 0],'all')
+    end
+    grid on; axis tight; ylabel('Amplitude','FontSize',12); 
+    set(gca,'FontSize',12,'layer','top'); box on
     if strcmpi(percent,'mean') || percent == 0
         title(['Means and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',14); drawnow;
     elseif strcmpi(percent,'20% trimmed mean') || percent == 20
@@ -403,12 +403,24 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     elseif strcmpi(percent,'median') || percent == 50
         title(['Medians and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',14); drawnow;
     end
-
-    subplot(3,2,[5 6]); hold on
-    plot(vect,squeeze(Diff(channel,:,2)),'LineWidth',3);
-    fillhandle = patch([vect fliplr(vect)], [squeeze(Diff(channel,:,1)),fliplr(squeeze(Diff(channel,:,3)))], [1 0 0]);
-    set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    grid on; axis tight; xlabel('Time ','FontSize',12)
+    
+    subplot(3,2,[5 6]); 
+    if ndims(Diff) == 4
+        if strcmpi(whichdim ,'time')
+            cm = limo_color_images(size(est1,2)); 
+            for f=1:size(est1,2)
+                bottom_plot(vect,squeeze(Diff(channel,f,:,:)),cm(f,:),'ss')
+            end
+        else
+            cm = limo_color_images(size(est1,3)); 
+            for t=1:size(est1,3)
+                bottom_plot(vect,squeeze(Diff(channel,:,t,:)),cm(t,:),'ss')
+            end
+        end
+    else
+        bottom_plot(vect,squeeze(Diff(channel,:,:)),[0 1 0.2],'all')
+    end
+    grid on; axis tight; xlabel(LIMO.Analysis,'FontSize',12)
     ylabel('Amplitude Difference','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
     if strcmpi(percent,'mean') || percent == 0
         title(['Mean Difference and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',14); drawnow;
@@ -417,4 +429,26 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     elseif strcmpi(percent,'median') || percent == 50
         title(['Median Difference and ' num2str(100-alpha_level*100) '%HDI'],'FontSize',14); drawnow;
     end
+end
+end
+
+function top_plot(vect,est1,est2,CI1,CI2,cm,option)
+plot(vect,est1,'LineWidth',3,'Color',cm(1,:)); hold on
+if strcmpi(option,'all')
+    fillhandle = patch([vect fliplr(vect)],[CI1(1,:) fliplr(CI1(2,:))], cm(1,:));
+    set(fillhandle,'EdgeColor',cm(1,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);
+end
+plot(vect,est2,'LineWidth',3,'Color',cm(2,:));
+if strcmpi(option,'all')
+    fillhandle = patch([vect fliplr(vect)],[CI2(1,:) fliplr(CI2(2,:))], cm(2,:));
+    set(fillhandle,'EdgeColor',cm(2,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);
+end
+end
+
+function bottom_plot(vect,Diff,cm,option)
+plot(vect,Diff(:,2)','LineWidth',3,'Color',cm);hold on
+if strcmpi(option,'all')
+    fillhandle = patch([vect fliplr(vect)], [Diff(:,1)',flipud(Diff(:,3))'], cm);
+    set(fillhandle,'EdgeColor',cm,'FaceAlpha',0.2,'EdgeAlpha',0.8);
+end
 end
