@@ -2075,6 +2075,7 @@ elseif stattest == 5
 end
 end
 
+%% repeated measure levels
 function levels = getlevels(params)
 % drill-down the cell array of repeated measures parameters
 

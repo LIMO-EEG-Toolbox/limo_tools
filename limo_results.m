@@ -282,18 +282,18 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                     end
                 end
             else % handles.LIMO.Level == 2
-                if strncmp(filename,'one_sample',10)
+                if contains(filename,'one_sample')
                         limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
                             str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
-                elseif strncmp(filename,'two_samples',11)
+                elseif contains(filename,'two_samples')
                     
-                elseif strncmp(filename,'paired_samples',14)
+                elseif contains(filename,'paired_samples')
                     
-                elseif strncmp(filename,'Covariate_effect',16)
+                elseif contains(filename,'Covariate_effect')
                     
-                elseif strncmp(filename,'ANOVA',12)
+                elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
                      
-                elseif strncmp(filename,'Rep_ANOVA',9)
+                elseif contains(filename,'Rep_ANOVA')
                     if strncmp(filename,'con',3)
                         if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
                             limo_contrast([filepath filesep 'Yr.mat'], ...
@@ -309,9 +309,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                             errordlg2('there is no bootstrap file for this contrast file')
                         end
                     else
+                        disp('Bootstraping Repeated Measure ANOVA')
+                        handles.LIMO.design.bootstrap = handles.bootstrap;
+                        handles.LIMO.design.tfce      = handles.tfce;
                         limo_random_robust(6,fullfile(filepath,'Yr.mat'),handles.LIMO.data.Cat, ...
-                            handles.LIMO.design.repeated_measure, handles.LIMO, ...
-                            handles.bootstrap, handles.tfce,'go','yes')
+                            handles.LIMO.design.repeated_measure, handles.LIMO, 'go','yes')
                     end
                 end
             end
