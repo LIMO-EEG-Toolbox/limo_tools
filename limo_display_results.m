@@ -1269,11 +1269,7 @@ elseif LIMO.Level == 2
                         end
                     end
                     toplot = squeeze(ess(:,:,:,4));
-                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    toplot = squeeze(Rep_ANOVA_Interaction_with_gp(:,:,:,1));
-                elseif strncmp(FileName,'Rep_ANOVA_Gp',12)
-                    toplot = squeeze(Rep_ANOVA_Gp_effect(:,:,:,1));
-                elseif strncmp(FileName,'Rep_ANOVA',9)
+                elseif contains(FileName,'Rep_ANOVA')
                     toplot = squeeze(Rep_ANOVA(:,:,:,1));
                 else
                     disp('file no supported'); return
@@ -1305,11 +1301,7 @@ elseif LIMO.Level == 2
                         end
                     end
                     toplot = squeeze(ess(:,:,4));
-                elseif strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    toplot = squeeze(Rep_ANOVA_Interaction_with_gp(:,:,1));
-                elseif strncmp(FileName,'Rep_ANOVA_Gp',12)
-                    toplot = squeeze(Rep_ANOVA_Gp_effect(:,:,1));
-                elseif strncmp(FileName,'Rep_ANOVA',9)
+                elseif contains(FileName,'Rep_ANOVA')
                     toplot = squeeze(Rep_ANOVA(:,:,1));
                 else
                     disp('file no supported'); return
