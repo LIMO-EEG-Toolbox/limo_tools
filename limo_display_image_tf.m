@@ -36,7 +36,7 @@ handles.output     = hObject;
 handles.LIMO       = varargin{1};
 handles.data3d     = varargin{2};
 handles.mask       = varargin{3};
-scale              = handles.data3d.*single(handles.mask>0); 
+scale              = handles.data3d.*single(handles.mask>0);
 scale(scale==0)    = NaN;
 handles.cc         = limo_color_images(scale);
 handles.scale      = scale;
@@ -91,9 +91,9 @@ if length(handles.maxvi) ~= 1
     handles.maxvi = handles.maxvi(1);
 end
 [handles.maxe, handles.maxf, handles.maxt] = ind2sub(size(handles.scale), handles.maxvi);
-handles.slider_sel                         = handles.maxt; 
-plot_data.freqs_here                       = handles.LIMO.data.tf_freqs; 
-plot_data.times_here                       = handles.LIMO.data.tf_times; 
+handles.slider_sel                         = handles.maxt;
+plot_data.freqs_here                       = handles.LIMO.data.tf_freqs;
+plot_data.times_here                       = handles.LIMO.data.tf_times;
 
 guidata(hObject, plot_data);
 guidata(hObject, handles);
@@ -103,23 +103,23 @@ guidata(hObject, handles);
 % ----------------------------------------------------------
 % show the channel/compoment * freq map at the time values is maximal
 
-if strcmp(get(hObject,'Visible'),'off') 
-
+if strcmp(get(hObject,'Visible'),'off')
+    
     % stat value
     plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,:,handles.maxt)),'Frequency')
-
+    
     % topoplot
-    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+    plot_topography(handles,squeeze(handles.data3d(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
     
     % time/freq map
-    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
+    plot_tfmap(handles,flipud(squeeze(handles.data3d(handles.maxe,:,:))),handles.maxe);
     
     % main display
     plot_main(handles,squeeze(handles.scale(:,:,handles.maxt)),'Frequency',handles.times_here(handles.maxt));
     
     % channel*time
     plot_chantime(handles,squeeze(handles.scale(:,handles.maxf,:)),round(handles.freqs_here(handles.maxf)))
-
+    
     % report all clusters in command window
     if handles.n_cluster > 1
         for c=1:handles.n_cluster
@@ -131,10 +131,10 @@ if strcmp(get(hObject,'Visible'),'off')
         end
     else % no clusters
         fprintf('1st significant frame at %gms %gHz, last signifiant frame at %gms %gHz, max %g @ %gms %gHz channel %s \n', ...
-                round(handles.times_here(handles.cluster_start(2,c))),round(handles.freqs_here(handles.cluster_start(1,c))),...
-                round(handles.times_here(handles.cluster_end(2,c))),round(handles.freqs_here(handles.cluster_end(1,c))),...
-                handles.cluster_maxv(c), handles.times_here(handles.cluster_maxt(c)), handles.freqs_here(handles.cluster_maxf(c)),...
-                handles.LIMO.data.chanlocs(handles.cluster_maxe(c)).labels);
+            round(handles.times_here(handles.cluster_start(2,c))),round(handles.freqs_here(handles.cluster_start(1,c))),...
+            round(handles.times_here(handles.cluster_end(2,c))),round(handles.freqs_here(handles.cluster_end(1,c))),...
+            handles.cluster_maxv(c), handles.times_here(handles.cluster_maxt(c)), handles.freqs_here(handles.cluster_maxf(c)),...
+            handles.LIMO.data.chanlocs(handles.cluster_maxe(c)).labels);
     end
 end
 
@@ -152,7 +152,7 @@ function Main_display_CreateFcn(hObject, eventdata, handles)
 function topoplot_CreateFcn(hObject, eventdata, handles)
 
 % --- Executes during object creation, after setting all properties.
-function pop_up_dimensions_CreateFcn(hObject, eventdata, handles)
+function pop_up_dimensions_CreateFcn(hObject, eventdata, ~)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -161,41 +161,41 @@ set(hObject, 'String', {'Electrodes x Frequencies', 'Electrodes x Times'});
 % --- Executes on selection change in pop_up_dimensions.
 function pop_up_dimensions_Callback(hObject, eventdata, handles)
 
-popup_sel_index = get(hObject,'Value');  
+popup_sel_index = get(hObject,'Value');
 switch popup_sel_index
     case 1
         
-    % stat value
-    plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,:,handles.maxt)),'Frequency')
-
-    % topoplot
-    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
-
-    % time/freq map
-    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
-
-    % main display
-    plot_main(handles,squeeze(handles.scale(:,:,handles.maxt)),'Frequency',handles.times_here(handles.maxt));
-    
-    % channel*time
-    plot_chantime(handles,squeeze(handles.scale(:,handles.maxf,:)),round(handles.freqs_here(handles.maxf)))
-
+        % stat value
+        plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,:,handles.maxt)),'Frequency')
+        
+        % topoplot
+        plot_topography(handles,squeeze(handles.data3d(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+        
+        % time/freq map
+        plot_tfmap(handles,flipud(squeeze(handles.data3d(handles.maxe,:,:))),handles.maxe);
+        
+        % main display
+        plot_main(handles,squeeze(handles.scale(:,:,handles.maxt)),'Frequency',handles.times_here(handles.maxt));
+        
+        % channel*time
+        plot_chantime(handles,squeeze(handles.scale(:,handles.maxf,:)),round(handles.freqs_here(handles.maxf)))
+        
     case 2
         
-    % stat value
-    plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,handles.maxf,:)),'Time')
-
-    % topoplot
-    plot_topography(handles,squeeze(handles.scale(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
-
-    % time/freq map
-    plot_tfmap(handles,flipud(squeeze(handles.scale(handles.maxe,:,:))),handles.maxe);
-
-    % main display
-    plot_main(handles,squeeze(handles.scale(:,handles.maxf,:)),'Time',handles.freqs_here(handles.maxf));
-    
-    % channel*freq
-    plot_chanfreq(handles,squeeze(handles.scale(:,:,handles.maxt)),round(handles.times_here(handles.maxt)))
+        % stat value
+        plot_statvalues(handles,squeeze(handles.data3d(handles.maxe,handles.maxf,:)),'Time')
+        
+        % topoplot
+        plot_topography(handles,squeeze(handles.data3d(:,handles.maxf,handles.maxt)),handles.maxf,handles.maxt)
+        
+        % time/freq map
+        plot_tfmap(handles,flipud(squeeze(handles.data3d(handles.maxe,:,:))),handles.maxe);
+        
+        % main display
+        plot_main(handles,squeeze(handles.scale(:,handles.maxf,:)),'Time',handles.freqs_here(handles.maxf));
+        
+        % channel*freq
+        plot_chanfreq(handles,squeeze(handles.scale(:,:,handles.maxt)),round(handles.times_here(handles.maxt)))
 end
 guidata(hObject, handles);
 
@@ -219,48 +219,76 @@ if popup_sel_index==1
     slider_sel = int32(ceil(numel(handles.times_here)*slider_sel)); % Scale to get ints 1:5 out
     if slider_sel == 0
         slider_sel = 1; % Don't want the 0th entry, set to 1 instead
+    elseif slider_sel > size(handles.scale,3)
+        slider_sel = size(handles.scale,3);
     end
     D              = squeeze(handles.scale(:,:,slider_sel));
     [maxe,maxf]    = ind2sub(size(D),find(D == max(D(:))));
+    if isempty(maxe)
+        tmp            = squeeze(handles.data3d(:,:,slider_sel));
+        [maxe,maxf]    = ind2sub(size(D),find(tmp == max(tmp(:))));
+    end
     
     % stat value
     plot_statvalues(handles,squeeze(handles.data3d(maxe,:,slider_sel)),'Frequency')
-
-    % topoplot
-    plot_topography(handles,D(:,maxf),maxf,slider_sel)
-      
-    % time/freq map
-    plot_tfmap(handles,flipud(squeeze(handles.scale(maxe,:,:))),maxe);
-
-    % main display
-    plot_main(handles,D,'Frequency',handles.times_here(slider_sel))
     
-    % channel*time
-    plot_chantime(handles,squeeze(handles.scale(:,maxf,:)),round(handles.freqs_here(maxf)))
+    % topoplot
+    plot_topography(handles,squeeze(handles.scale(:,maxf,slider_sel)),maxf,slider_sel)
+    
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.data3d(maxe,:,:))),maxe);
+    
+    if sum(isnan(D(:))) ~= numel(D)
+        % main display
+        plot_main(handles,D,'Frequency',handles.times_here(slider_sel))
         
+        % channel*time
+        plot_chantime(handles,squeeze(handles.scale(:,maxf,:)),round(handles.freqs_here(maxf)))
+    else
+        % main display
+        plot_main(handles,zeros(size(D,1),size(D,2)),'Frequency',handles.times_here(slider_sel))
+        
+        % channel*time
+        plot_chantime(handles,zeros(size(D,1),size(D,2)),round(handles.freqs_here(maxf)))
+        
+    end
 elseif popup_sel_index==2
     slider_sel2 = get(hObject,'Value');
     slider_sel = int32(ceil(numel(handles.freqs_here)*slider_sel2)); % Scale slider to correct ints
     if slider_sel == 0
         slider_sel = 1; % Don't want the 0th entry, set to 1 instead
+    elseif slider_sel > size(handles.scale,2)
+        slider_sel = size(handles.scale,2);
     end
     D              = squeeze(handles.scale(:,slider_sel,:));
     [maxe,maxt]    = ind2sub(size(D),find(D == max(D(:))));
-
+    if isempty(maxe)
+        tmp            = squeeze(handles.data3d(:,slider_sel,:));
+        [maxe,maxf]    = ind2sub(size(D),find(tmp == max(tmp(:))));
+    end
+    
     % stat value
     plot_statvalues(handles,squeeze(handles.data3d(maxe,slider_sel,:)),'Time')
-
-    % topoplot
-    plot_topography(handles,D(:,maxt),slider_sel,maxt)
-   
-    % time/freq map
-    plot_tfmap(handles,flipud(squeeze(handles.scale(maxe,:,:))),maxe);
-
-    % main display
-    plot_main(handles,D,'Time',handles.freqs_here(slider_sel))
     
-    % channel*freq
-    plot_chanfreq(handles,squeeze(handles.scale(:,:,maxt)),round(handles.times_here(maxt)))
+    % topoplot
+    plot_topography(handles,squeeze(handles.data3d(:,slider_sel,maxt)),slider_sel,maxt)
+    
+    % time/freq map
+    plot_tfmap(handles,flipud(squeeze(handles.data3d(maxe,:,:))),maxe);
+    
+    if sum(isnan(D(:))) ~= numel(D)
+        % main display
+        plot_main(handles,D,'Time',handles.freqs_here(slider_sel))
+        
+        % channel*freq
+        plot_chanfreq(handles,squeeze(handles.scale(:,:,maxt)),round(handles.times_here(maxt)))
+    else
+        % main display
+        plot_main(handles,zeros(size(D,1),size(D,3)),'Time',handles.freqs_here(slider_sel))
+        
+        % channel*freq
+        plot_chanfreq(handles,zeros(size(D,1),size(D,3)),round(handles.times_here(maxt)))
+    end
 end
 
 handles.slider_sel=slider_sel;
@@ -268,7 +296,7 @@ guidata(hObject, handles);
 
 
 % -------------------------------------------------
-%                     MOUSE INPUT 
+%                     MOUSE INPUT
 % -------------------------------------------------
 
 % --- Executes on button press in mouse_input.
@@ -280,7 +308,7 @@ button          = 1;
 
 while button == 1
     [x,y,button] = ginput(1);
-     clickedAx   = gca;
+    clickedAx   = gca;
     if clickedAx == handles.Main_display
         if x < 1; x=1; end
         if y < 1; y=1; end
@@ -305,8 +333,8 @@ while button == 1
         plot_topography(handles,squeeze(handles.data3d(:,freq_position,handles.slider_sel)),freq_position,handles.slider_sel)
         
         % time/freq map
-        plot_tfmap(handles,flipud(squeeze(handles.scale(channel,:,:))),channel);
-                
+        plot_tfmap(handles,flipud(squeeze(handles.data3d(channel,:,:))),channel);
+        
         % reset colormap
         axes(handles.Main_display);
         colormap(gca, handles.cc);
@@ -330,7 +358,7 @@ while button == 1
         if x > max(plot_data.times_here); x=max(plot_data.times_here); end
         time = round(x); channel = round(y);
         [~,time_position] = min(abs(plot_data.times_here-time));
-
+        
         % stat value
         if handles.slider_sel > handles.maxf
             handles.slider_sel = handles.maxf;
@@ -339,10 +367,10 @@ while button == 1
         
         % topoplot
         plot_topography(handles,squeeze(handles.data3d(:,handles.slider_sel,time_position)),handles.slider_sel,time_position)
-                
+        
         % time/freq map
-        plot_tfmap(handles,flipud(squeeze(handles.scale(channel,:,:))),channel);
-
+        plot_tfmap(handles,flipud(squeeze(handles.data3d(channel,:,:))),channel);
+        
         % reset colormap
         axes(handles.Main_display);
         colormap(gca, handles.cc);
@@ -460,19 +488,19 @@ end
 if ~isequal(file, 0)
     data3d = load(file); data3d = data3d.(cell2mat(fieldnames(data3d)));
     LIMO = load(fullfile(p,'LIMO.mat')); LIMO = LIMO.(cell2mat(fieldnames(LIMO)));
-     do_not_update = 0;
-     if contains(file,'R2','IgnoreCase',true)
-         data3d     = squeeze(data3d(:,:,:,2));
-     elseif contains(file,'one_sample','IgnoreCase',true)
-         data3d     = squeeze(data3d(:,:,:,4));
-     else
-         try
-             data3d     = squeeze(data3d(:,:,:,1));
-         catch nosqueeze
-             do_not_update = 1;
-             errordlg(sprintf('file not supported \n%s',nosqueeze.message))
-         end
-     end
+    do_not_update = 0;
+    if contains(file,'R2','IgnoreCase',true)
+        data3d     = squeeze(data3d(:,:,:,2));
+    elseif contains(file,'one_sample','IgnoreCase',true)
+        data3d     = squeeze(data3d(:,:,:,4));
+    else
+        try
+            data3d     = squeeze(data3d(:,:,:,1));
+        catch nosqueeze
+            do_not_update = 1;
+            errordlg(sprintf('file not supported \n%s',nosqueeze.message))
+        end
+    end
     
     % ---------------------
     if do_not_update == 0
@@ -488,11 +516,11 @@ end
 function PrintMenuItem_Callback(hObject, eventdata, handles)
 
 % saveas(handles.figure1,cell2mat(inputdlg('save figure as: ')))
- name = cell2mat(inputdlg('save figure as: '));
- fig_id = findall(0,'type','figure');
-    set(fig_id, 'PaperPositionMode', 'auto');
-    print(fig_id,'-depsc2',[name '.eps'])
-    guidata(hObject, handles);
+name = cell2mat(inputdlg('save figure as: '));
+fig_id = findall(0,'type','figure');
+set(fig_id, 'PaperPositionMode', 'auto');
+print(fig_id,'-depsc2',[name '.eps'])
+guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function CloseMenuItem_Callback(hObject, eventdata, handles)
@@ -512,7 +540,7 @@ elseif strcmpi(dim,'Frequency')
     title(sprintf('Max stat %g @ %gHz',M,handles.freqs_here(position)),'VerticalAlignment','bottom');
 end
 xlabel(dim,'fontsize',10,'VerticalAlignment','top');
-ylabel('Stat value','fontsize',10); 
+ylabel('Stat value','fontsize',10);
 box on; grid on; axis tight
 
 function plot_topography(handles,topomap,freq_value,time_value)
@@ -526,7 +554,7 @@ function plot_tfmap(handles,tf_map,channel_value)
 
 axes(handles.sub_display2); cla
 imagesc(handles.times_here,handles.freqs_here,tf_map);
-colormap(gca, handles.cc); img_prop = get(gca);
+colormap(gca, limo_color_images(tf_map)); img_prop = get(gca);
 newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
 Ylabels  = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
 title(['Time-Frequency @ channel ' num2str(handles.LIMO.data.chanlocs(channel_value).labels)]);
@@ -542,15 +570,19 @@ else
 end
 
 if strcmpi(dim,'Frequency')
-    imagesc(handles.freqs_here,chan_vect,scaled_data); 
+    imagesc(handles.freqs_here,chan_vect,scaled_data);
     title(sprintf('%s @ %g ms',regexprep(handles.title,'\n+',''), dimvalue),'fontsize',12,'VerticalAlignment','bottom');
     xlabel('Frequency bins (Hz)','VerticalAlignment','top','fontsize',10);
 elseif strcmpi(dim,'Time')
-    imagesc(handles.times_here,chan_vect,scaled_data); 
+    imagesc(handles.times_here,chan_vect,scaled_data);
     title(sprintf('%s @ %gHz',regexprep(handles.title,'\n+',''), dimvalue),'fontsize',12,'VerticalAlignment','bottom');
     xlabel('Time (ms)','VerticalAlignment','top','fontsize',10);
 end
-colormap(gca, handles.cc); 
+if sum(scaled_data(:)) ~= 0
+    colormap(gca, handles.cc);
+else
+    colormap(gca,[0.9 0.9 0.9]);
+end
 set(gca,'LineWidth',2);
 set_Ylabels(handles,get(gca));
 
@@ -562,11 +594,14 @@ if ~isempty(handles.LIMO.design.electrode)
 else
     chan_vect = 1:length(handles.LIMO.data.chanlocs);
 end
-
 imagesc(handles.times_here,chan_vect,map);
 title(['Channels x Time @ ' num2str(freqvalue) ' Hz'],'VerticalAlignment','bottom');
 xlabel('Time (ms)','fontsize',10); axis tight
-colormap(gca, handles.cc); 
+if sum(map(:)) ~= 0
+    colormap(gca, handles.cc);
+else
+    colormap(gca,[0.9 0.9 0.9]);
+end
 set_Ylabels(handles,get(gca));
 
 function plot_chanfreq(handles,map,timevalue)
@@ -581,7 +616,11 @@ end
 imagesc(handles.freqs_here,chan_vect,map);
 title(['Channels x Frequency @ ' num2str(timevalue) 'ms'],'VerticalAlignment','bottom');
 xlabel('Frequencies (Hz)','fontsize',10); axis tight
-colormap(gca, handles.cc);
+if sum(map(:)) ~= 0
+    colormap(gca, handles.cc);
+else
+    colormap(gca,[0.9 0.9 0.9]);
+end
 set_Ylabels(handles,get(gca));
 
 function set_Ylabels(handles,img_prop)
