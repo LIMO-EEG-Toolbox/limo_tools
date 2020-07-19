@@ -48,8 +48,20 @@ result = [];
 
 if type == 1 || type == 2
     Y           = varargin{1};
+    if ischar(Y)
+        Y = load(varargin{1});
+        Yr = Yr.(cell2mat(fieldnames(Yr)));
+    end
     Betas       = varargin{2};
+    if ischar(Betas)
+        Betas = load(varargin{2});
+        Betas = Betas.(cell2mat(fieldnames(Betas)));
+    end
     LIMO        = varargin{3};
+    if ischar(LIMO)
+        LIMO = load(varargin{3});
+        LIMO = LIMO.LIMO;
+    end
     if LIMO.Level == 2
         error('2nd level Analysis detected - limo_contrast wrong case');
     end
@@ -71,7 +83,15 @@ if type == 1 || type == 2
     end
 elseif type == 3 || type == 4
     Yr         = varargin{1};
+    if ischar(Yr)
+        Yr = load(varargin{1});
+        Yr = Yr.(cell2mat(fieldnames(Yr)));
+    end
     LIMO       = varargin{2};
+    if ischar(LIMO)
+        LIMO = load(varargin{3});
+        LIMO = LIMO.LIMO;
+    end
     if LIMO.Level == 1
         error('1st level Analysis detected - limo_contrast wrong case');
     end
