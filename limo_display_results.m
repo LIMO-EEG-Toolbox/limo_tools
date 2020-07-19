@@ -1050,7 +1050,7 @@ if LIMO.Level == 1
                                 end
                             else
                                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                                    [M, mask, mytitle2] = limo_stat_values_tf(name,p,MCC,LIMO,choice);
+                                    [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                                     sig = single(squeeze(mask(channel,freq_index,:))); sig(find(sig==0)) = NaN;
                                 else
                                     [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
@@ -1092,7 +1092,7 @@ if LIMO.Level == 1
                                     end
                                 else
                                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                                        [M, mask, mytitle2] = limo_stat_values_tf(name,p,MCC,LIMO,choice);
+                                        [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
                                         sig = single(squeeze(mask(channel,freq_index,:))); sig(find(sig==0)) = NaN;
                                     else
                                         [M, mask, mytitle2] = limo_stat_values(name,p,MCC,LIMO,choice);
