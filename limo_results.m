@@ -286,9 +286,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                         limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
                             str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'two_samples')
-                    
+                        limo_random_robust(2,fullfile(handles.LIMO.dir,'Yr1.mat'),...
+                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'paired_samples')
-                    
+                        limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
+                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'Covariate_effect')
                     
                 elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
