@@ -291,10 +291,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                 elseif contains(filename,'paired_samples')
                         limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
                             fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
-                elseif contains(filename,'Covariate_effect')
-                    
+                elseif contains(filename,'Covariate_effect') && contains(handles.LIMO.design.name,'Regression') 
+                       disp('to do')
                 elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
-                     
+                        limo_random_robust(5,fullfile(handles.LIMO.dir,'Yr.mat'),...
+                            handles.LIMO.data.Cat,handles.LIMO.data.Cont,handles.LIMO,'go','yes');
                 elseif contains(filename,'Rep_ANOVA')
                     if strncmp(filename,'con',3)
                         if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
