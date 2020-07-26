@@ -349,7 +349,7 @@ if LIMO.Level ==2 && contains(FileName,'ttest')
         if exist(MCC_data,'file')
             try
                 H0_sample = load(MCC_data);
-                H0_sample = H0_sample.(cell2mat(fieldnames(H0_sample)));;
+                H0_sample = H0_sample.(cell2mat(fieldnames(H0_sample)));
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     bootT = squeeze(H0_sample(:,:,:,1,:)); % get all T values under H0
                     if size(matfile,1) == 1
