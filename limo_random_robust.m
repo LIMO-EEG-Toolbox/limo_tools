@@ -126,18 +126,23 @@ switch type
         
         if ischar(varargin{2})
             data      = load(varargin{2});
-            data      = getfield(data,cell2mat(fieldnames(data)));
+            data      = data.(cell2mat(fieldnames(data)));
         else
             data  = varargin{2};
         end
         parameter = varargin{3};
-        LIMO      = varargin{4};
+        if ischar(varargin{4})
+            LIMO = load(varargin{4});
+            LIMO = LIMO.LIMO;
+        elseif isstruct(varargin{4})
+            LIMO = varargin{4};
+        end
+        clear varargin
         cd(LIMO.dir);
         
         if strcmp(LIMO.Analysis,'Time-Frequency') 
             data = limo_tf_4d_reshape(data);
         end
-        clear varargin
         
         % ------------------------------------------------
         % check the data structure
@@ -260,25 +265,30 @@ switch type
         
         if ischar(varargin{2})
             data1  = load(varargin{2});
-            data1  = getfield(data1,cell2mat(fieldnames(data1)));
+            data1  = data1.(cell2mat(fieldnames(data1)));
         else
             data1  = varargin{2};
         end
         if ischar(varargin{3})
             data2  = load(varargin{3});
-            data2  = getfield(data2,cell2mat(fieldnames(data2)));
+            data2  = data2.(cell2mat(fieldnames(data2)));
         else
             data2  = varargin{3};
         end
         parameter = varargin{4};
-        LIMO      = varargin{5};
-        cd(LIMO.dir);
-        
-        if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-            data1 = limo_tf_4d_reshape(varargin{2});
-            data2 = limo_tf_4d_reshape(varargin{3});
+        if ischar(varargin{5})
+            LIMO = load(varargin{5});
+            LIMO = LIMO.LIMO;
+        elseif isstruct(varargin{5})
+            LIMO = varargin{5};
         end
+        cd(LIMO.dir);
         clear varargin
+       
+        if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+            data1 = limo_tf_4d_reshape(data1);
+            data2 = limo_tf_4d_reshape(data2);
+        end
         
         % ------------------------------------------------
         % check the data structure
@@ -409,23 +419,29 @@ switch type
         
         if ischar(varargin{2})
             data1  = load(varargin{2});
-            data1  = getfield(data1,cell2mat(fieldnames(data1)));
+            data1  = data1.(cell2mat(fieldnames(data1)));
         else
             data1  = varargin{2};
         end
         if ischar(varargin{3})
             data2  = load(varargin{3});
-            data2  = getfield(data2,cell2mat(fieldnames(data2)));
+            data2  = data2.(cell2mat(fieldnames(data2)));
         else
             data2  = varargin{3};
         end
         parameter = varargin{4};
-        LIMO      = varargin{5};
+        if ischar(varargin{5})
+            LIMO = load(varargin{5});
+            LIMO = LIMO.LIMO;
+        elseif isstruct(varargin{5})
+            LIMO = varargin{5};
+        end
         cd(LIMO.dir);
+        clear varargin
         
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-            data1 = limo_tf_4d_reshape(varargin{2});
-            data2 = limo_tf_4d_reshape(varargin{3});
+            data1 = limo_tf_4d_reshape(data1);
+            data2 = limo_tf_4d_reshape(data2);
         end
         clear varargin
         
@@ -547,16 +563,39 @@ switch type
         %------------------------------------------------------------------
     case {4}
         
-        data       = varargin{2}; % 3D or 4D
+        if ischar(varargin{2})
+            data = load(varargin{2});
+            data = data.cell2mat(fieldnames(data));
+        else
+            data = varargin{2};
+        end
         regressors = varargin{3}; % the predictors across subjects like e.g. age
         parameter  = varargin{4}; % the parameters from 1st level matrices the regression is computed on (just for name)
-        clear varargin
+        if ischar(varargin{5})
+            LIMO = load(varargin{5});
+            LIMO = LIMO.LIMO;
+        elseif isstruct(varargin{5})
+            LIMO = varargin{5};
+        end
+        cd(LIMO.dir);
         
+        if nargin >5
+            for in = 5:2:nargin
+                if strcmpi(varargin{in},'zscore')
+                    answer = varargin{in+1};
+                elseif strcmpi(varargin{in},'go')
+                    go = varargin{in+1};
+                end
+            end
+        end
+        clear varargin
+        cd(LIMO.dir);
+        
+
         % ------------------------------------------------
         % check the data structure
-        load LIMO
         for e=1:size(data,1)
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+            if strcmp(LIMO.Analysis,'Time-Frequency')
                 tmp = isnan(data(e,1,1,:));
             else
                 tmp = isnan(data(e,1,:));
@@ -581,12 +620,15 @@ switch type
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
-        LIMO.design.method           = 'OLS'; %'IRLS';
+        LIMO.design.method           = 'IRLS';
         
-        answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
+        if ~exist('answer','var')
+            answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
+        end
+        
         if isempty(answer)
             return
-        elseif strcmp(answer,'Yes')
+        elseif strcmpi(answer,'Yes')
             LIMO.design.zscore = 1;
         else
             LIMO.design.zscore = 0;
@@ -604,32 +646,45 @@ switch type
         
         % ------------------------------------------------
         % do the analysis
-        a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
-        if strcmp(a,'Yes')
+        if ~exist('go','var')
+            go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+        end
+        
+        if strcmpi(go,'Yes')
             save LIMO LIMO
-            if nargout ~= 0, filepath = fullfile(pwd,'LIMO.mat'); end
-            clear data regressors files
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                limo_eeg_tf(4)
-            else
-                limo_eeg(4);
-            end
-            disp('regression analysis done');
+            if nargout ~= 0, LIMOPath = fullfile(pwd,'LIMO.mat'); end
+            clear data regressors files; limo_eeg(4); disp('regression analysis done');
         else
             return
         end
-        
-        
+                
         %--------------------------------------------------------------------------
         % N-ways ANOVA / ANCOVA
         %--------------------------------------------------------------------------
     case {5}
         
-        data  = varargin{2}; % 3D or 4D
-        cat   = varargin{3}; % matrix of values
-        cont  = varargin{4}; % matrix of values
-        LIMO  = varargin{5};
+        data  = varargin{2};
+        if ischar(data)
+            data = load(data);
+            data = data.(cell2mat(filenames(data)));
+        end
+        cat   = varargin{3}; 
+        cont  = varargin{4}; 
+        if ischar(varargin{5})
+            LIMO = load(varargin{5});
+            LIMO = LIMO.LIMO;
+        elseif isstruct(varargin{5})
+            LIMO = varargin{5};
+        end
+        cd(LIMO.dir);
+        
+        if nargin ==7
+            if strcmpi(varargin{6},'go')
+                go = varargin{7};
+            end
+        end
         clear varargin
+        cd(LIMO.dir);        
         
         % ------------------------------------------------
         % check the data structure
@@ -653,7 +708,6 @@ switch type
         LIMO.data.Cont                = cont;
         LIMO.data.data_dir            = pwd;
         LIMO.design.zscore            = 1;
-        LIMO.design.status            = 'to do';
         if size(cat,2) > 1
             LIMO.design.fullfactorial = 1;
         else
@@ -672,68 +726,60 @@ switch type
         
         % ------------------------------------------------
         % do the analysis
-        a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+        if ~exist('go','var')
+            go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+        end
         
-        if strcmp(a,'Yes')
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+        if strcmpi(go,'Yes')
+            if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
+                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                     data = limo_tf_4d_reshape(data);
-                    Yhat = NaN(size(data));
-                    Condition_effect = NaN(size(data,1),size(data,2),2);
-                    array = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
-                    for e=1:size(array,1)
-                        channel = array(e); fprintf('processing channel %g \n,',channel);
-                        [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
-                            limo_robust_1way_anova(squeeze(data(channel,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
-                    end
+                end
+                Yhat             = NaN(size(data));
+                Condition_effect = NaN(size(data,1),size(data,2),2);
+                array            = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
+                for e=1:size(array,1)
+                    channel = array(e); fprintf('processing channel %g \n,',channel);
+                    [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
+                        limo_robust_1way_anova(squeeze(data(channel,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
+                end
+                delete(fullfile(LIMO.dir,'Betas.mat')); % no betas here
+                delete(fullfile(LIMO.dir,'R2.mat'));    % no R2
+                
+                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                     Condition_effect = limo_tf_4d_reshape(Condition_effect);
-                    save Condition_effect_1 Condition_effect; clear Condition_effect_1
-                    delete Betas.mat % no betas here
-                    delete R2.mat % no R2
                     Yhat = limo_tf_4d_reshape(Yhat); % these are the trimmed mean
                     data = limo_tf_4d_reshape(data);
-                    Res = data - Yhat;
-                    save Yhat Yhat; clear Yhat
-                    save Res Res; clear Res
-                    LIMO.design.status = 'done';
-                    LIMO.design.method = 'Generalized Welch''s method';
-                    save LIMO LIMO
-                else
-                    LIMO.design.method = 'OLS';
-                    save LIMO LIMO; clear data LIMO
-                    limo_eeg_tf(4); return
                 end
+                save('Condition_effect_1.mat','Condition_effect', '-v7.3');
+                clear  Condition_effect_1
+                save('Yhat.mat','Yhat', '-v7.3');                                          
+                clear Yhat
+                Res = data - Yhat;
+                save('Res.mat','Res', '-v7.3');                                            
+                clear Res
+                LIMO.design.status = 'done';
+                LIMO.design.method = 'Generalized Welch''s method';
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             else
-                if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
-                    Condition_effect = NaN(size(data,1),size(data,2),2);
-                    for e=1:size(data,1)
-                        [Condition_effect(e,:,1),Condition_effect(e,:,2),Yhat(e,:,:)] = ...
-                            limo_robust_1way_anova(squeeze(data(e,:,:)),LIMO.design.X,20);
-                    end
-                    save Condition_effect_1 Condition_effect
-                    delete Betas.mat % no betas here
-                    delete R2.mat % no R2
-                    Res = data - Yhat;
-                    save Yhat Yhat; clear Yhat
-                    save Res Res; clear Res
-                    LIMO.design.status = 'done';
-                    LIMO.design.method = 'Generalized Welch''s method';
-                    save LIMO LIMO
-                else
-                    LIMO.design.method = 'OLS';
-                    save LIMO LIMO; clear data LIMO
-                    limo_eeg(4); return
-                end
+                LIMO.design.method = 'IRLS';
+                LIMO.design.status = 'to do';
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+                clear data LIMO
+                LIMOPath = LIMO.dir; 
+                limo_eeg(4); return
             end
         else
+            disp('Analysis aborted')
             return
         end
+
         
         % do the bootsrap for the 1-way robust ANOVA  -- done in limo_eeg(4) for other designs
         % ------------------------------------------------------------------------------------
         if LIMO.design.bootstrap ~= 0 &&  ...
                 LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
-            mkdir('H0');
+            mkdir(fullfile(LIMO.dir,'H0'));
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 data = limo_tf_4d_reshape(data);
@@ -759,58 +805,29 @@ switch type
                 end
             end
             
-            % do TFCE
-            if LIMO.design.tfce ~= 0
-                mkdir('TFCE')
-                
-                % TFCE the observed data
-                fprintf('Creating Condition 1 TFCE scores \n')
-                if size(Condition_effect,1) == 1
-                    tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                else
-                    tfce_score      = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                end
-                
-                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                    tfce_score = limo_tf_5d_reshape(tfce_score);
-                end
-                save(['TFCE' filesep 'tfce_Condition_effect_1.mat'],'tfce_score');
-                clear Condition_effect tfce_score;
-                
-                % TFCE H0 data
-                fprintf('Creating H0 Condition_1 TFCE scores \n');
-                if size(H0_Condition_effect,1) == 1
-                    tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:LIMO.design.bootstrap
-                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                else
-                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                    parfor b=1:LIMO.design.bootstrap
-                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                    end
-                end
-                
-                if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                    tfce_H0_score = limo_tf_5d_reshape(tfce_H0_score);
-                end
-                save(['H0' filesep 'tfce_H0_Condition_effect_1.mat'],'tfce_H0_score');
-                clear tfce_H0_score;
-            end
-            
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 H0_Condition_effect = limo_tf_5d_reshape(H0_Condition_effect);
             end
-            save(['H0' filesep 'H0_Condition_effect_1'],'H0_Condition_effect')
-            save(['H0' filesep 'boot_table'],'boot_table');
+            save(['H0' filesep 'H0_Condition_effect_1'],'H0_Condition_effect', '-v7.3');
+            save(['H0' filesep 'boot_table'],'boot_table', '-v7.3');
             clear data H0_Condition_effect ;
         end
         
+        % do TFCE
+        if LIMO.design.tfce ~= 0 % check if tfce is on and if more than one channel
+            fprintf('Thresholding bootstrapped N-way ANOVA using TFCE \n');
+            limo_tfce_handling(fullfile(LIMO.dir,'Condition_effect_1.mat'));
+            LIMO.design.tfce = 1;
+            save(fullfile(LIMO.dir,'LIMO.mat'));
+        end
+
         if strcmp(LIMO.design.method,'Generalized Welch''s method')
             disp('Robust Gp ANOVA for trimmed means (generalization of Welch''s method) done')
         else
             disp('ANOVA/ANCOVA analysis done');
         end
+        LIMOPath = LIMO.dir;
+        
         
         %----------------------------------------------------------------------------------------------
         % Repeated Measure ANOVA (multivariate approach) - bootstrap centering data
@@ -819,7 +836,7 @@ switch type
         
         if ischar(varargin{2})
             data = load(varargin{2});
-            data = getfield(data,cell2mat((fieldnames(data))));
+            data = data.(cell2mat((fieldnames(data))));
         else
             data = varargin{2}; % e,f,subjects,measures
         end
@@ -1086,7 +1103,7 @@ switch type
                     Rep_ANOVA = limo_tf_4d_reshape(Rep_ANOVA);
                 end
                 save(Rep_filenames{i},'Rep_ANOVA', '-v7.3');
-                if nargout ~= 0, filepath = [fullfile(pwd,Rep_filenames{i}),'.mat']; end
+                if nargout ~= 0, LIMOPath = [fullfile(pwd,Rep_filenames{i}),'.mat']; end
             end
             
             if type == 3 || type ==4
@@ -1112,12 +1129,12 @@ switch type
                     end
                     save(IRep_filenames{i},'Rep_ANOVA_Interaction_with_gp', '-v7.3');
                     clear Rep_ANOVA_Interaction_with_gp;
-                    if nargout ~= 0, filepath = [fullfile(pwd,IRep_filenames{i}),'.mat']; end
+                    if nargout ~= 0, LIMOPath = [fullfile(pwd,IRep_filenames{i}),'.mat']; end
                 end
                 
                 % Main group effet
                 save('Rep_ANOVA_Gp_effect.mat',Rep_ANOVA_Gp_effect,'-v7.3');
-                if nargout ~= 0, filepath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
+                if nargout ~= 0, LIMOPath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
             end
         end
         
