@@ -363,7 +363,7 @@ elseif ~contains(filename,'Covariate_effect_') && LIMO.Level == 1
     end
     
     % -------------------------------------------------------------------------
-else % 2nd level
+else % 2nd level specific tests 
     % -------------------------------------------------------------------------
     
     % t-tests
@@ -452,9 +452,53 @@ else % 2nd level
     elseif contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true) || ...
             contains(LIMO.design.name,'ANCOVA','IgnoreCase',true)
    
-        disp('to do')
+        Condition = load(filename);
+        Condition = Condition.(cell2mat(fieldnames(Condition)));
+        if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+            if size(Condition,1) == 1
+                tfce_Condition = limo_tfce(2,squeeze(Condition(1,:,:,1)),[]); % use bwlabel to cluster freq*time map
+            else
+                tfce_Condition = limo_tfce(3,squeeze(Condition(:,:,:,1)),LIMO.data.neighbouring_matrix);
+            end
+        else
+            if size(Condition,1) == 1
+                tfce_Condition = limo_tfce(1,squeeze(Condition(:,:,1)),[]);
+            else
+                tfce_Condition = limo_tfce(2,squeeze(Condition(:,:,1)),LIMO.data.neighbouring_matrix);
+            end
+        end
+        save(tfce_file, 'tfce_Condition', '-v7.3');
+        clear tfce_Condition
         
-    % Reapeated Measure ANOVA
+        H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+        if exist(H0filename,'file')
+            fprintf('Applying TFCE to null data ... \n')
+            boot_H0_Condition = load(H0filename);
+            boot_H0_Condition = boot_H0_Condition.(cell2mat(fieldnames(boot_H0_Condition)));
+            if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                if size(boot_H0_Condition,1) == 1
+                    tfce_H0_Condition = limo_tfce(2,squeeze(boot_H0_Condition(1,:,:,1,:)),[]);
+                else
+                    tfce_H0_Condition = NaN(size(boot_H0_Condition,1),size(boot_H0_Condition,2),size(boot_H0_Condition,3),LIMO.design.bootstrap);
+                    parfor b=1:nboot
+                        tfce_H0_Condition(:,:,:,b) = limo_tfce(3,squeeze(boot_H0_Condition(:,:,:,1,b)),LIMO.data.neighbouring_matrix);
+                    end
+                end
+            else
+                if size(boot_H0_Condition,1) == 1
+                    tfce_H0_Condition = limo_tfce(1,squeeze(boot_H0_Condition(1,:,1,:)),[]);
+                else
+                    tfce_H0_Condition = NaN(size(boot_H0_Condition,1),size(boot_H0_Condition,2),LIMO.design.bootstrap);
+                    parfor b=1:nboot
+                        tfce_H0_Condition(:,:,b) = limo_tfce(2,squeeze(boot_H0_Condition(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    end
+                end
+            end
+            save(H0_tfce_file, 'tfce_H0_Condition', '-v7.3');
+            clear tfce_H0_Condition
+        end
+    
+    % Repeated Measure ANOVA
     % -----------------------
     elseif contains(LIMO.design.name,'Repeated measures ANOVA','IgnoreCase',true)
         
@@ -487,8 +531,8 @@ else % 2nd level
                     if size(boot_H0_Rep_ANOVA,1) == 1
                         tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(boot_H0_Rep_ANOVA(1,:,:,1,:)),[]);
                     else
-                        % tfce_H0_Rep_ANOVA = limo_tfce(3,squeeze(boot_H0_Rep_ANOVA(:,:,:,1,:)),LIMO.data.neighbouring_matrix);
-                        parfor b=1:nboot
+                       tfce_H0_Rep_ANOVA = NaN(size(boot_H0_Rep_ANOVA,1),size(boot_H0_Rep_ANOVA,2),size(boot_H0_Rep_ANOVA,3),LIMO.design.bootstrap);
+                       parfor b=1:nboot
                             tfce_H0_Rep_ANOVA(:,:,:,b) = limo_tfce(3,squeeze(boot_H0_Rep_ANOVA(:,:,:,1,b)),LIMO.data.neighbouring_matrix);
                         end
                     end
@@ -496,7 +540,6 @@ else % 2nd level
                     if size(boot_H0_Rep_ANOVA,1) == 1
                         tfce_H0_Rep_ANOVA = limo_tfce(1,squeeze(boot_H0_Rep_ANOVA(1,:,1,:)),[]);
                     else
-                        % tfce_H0_Rep_ANOVA = limo_tfce(2,squeeze(boot_H0_Rep_ANOVA(:,:,1,:)),LIMO.data.neighbouring_matrix);
                         tfce_H0_Rep_ANOVA = NaN(size(boot_H0_Rep_ANOVA,1),size(boot_H0_Rep_ANOVA,2),LIMO.design.bootstrap);
                         parfor b=1:nboot
                             tfce_H0_Rep_ANOVA(:,:,b) = limo_tfce(2,squeeze(boot_H0_Rep_ANOVA(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
