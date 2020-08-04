@@ -344,7 +344,7 @@ clear Y
 % create files to be used by LIMO in all cases - dim = expected chanlocs
 
 % Data - update with expected chanlocs
-if ~isempty(expected_chanlocs)
+if ~isempty(expected_chanlocs) && size(Yr,1) > 1
     Yr = limo_match_elec(chanlocs,expected_chanlocs,1,size(Yr,2),Yr);
 end
 
