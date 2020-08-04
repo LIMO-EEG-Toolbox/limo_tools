@@ -98,8 +98,8 @@ if strcmp(FileName,'R2.mat')
         % ---------------------------------------
     elseif MCC == 2
         try cd('H0');load(MCC_data); cd ..
-            bootM = squeeze(H0_R2(:,:,1,:)); % get all F values under H0
-            bootP = squeeze(H0_R2(:,:,2,:)); % get all P values under H0
+            bootM = squeeze(H0_R2(:,:,2,:)); % get all F values under H0
+            bootP = squeeze(H0_R2(:,:,3,:)); % get all P values under H0
             [mask,M] = limo_clustering(M,squeeze(R2(:,:,3)),bootM,bootP,LIMO,MCC,p); % mask and cluster p values
              Nclust = unique(M(~isnan(M))); Nclust = length(Nclust) ;
              if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
