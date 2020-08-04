@@ -116,7 +116,7 @@ for in = 1:2:(nargin-2)
         regressor_file = varargin{in+1};
     elseif strcmpi(varargin{in},'skip design check')
         skip_design_check = varargin{in+1};
-    elseif strcmpi(varargin{in},'electrode')
+    elseif strcmpi(varargin{in},'channel') 
         LIMO.design.electrode = varargin{in+1};
     elseif strcmpi(varargin{in},'parameters')
         LIMO.design.parameters = varargin{in+1};
@@ -629,18 +629,27 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     
     % Ask for Gp
     % -------------
-    gp_nb = eval(cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups')));
-    if isempty(gp_nb)
-        return
-    elseif sum(gp_nb <= 1)
-        errordlg('at least 2 groups are expected for an ANOVA')
-        return
+    if ~isempty(LIMO.data.data)
+        gp_nb = size(LIMO.data.data,1);
+    else
+        gp_nb = cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups'));
+        if isempty(gp_nb)
+            return
+        elseif sum(str2double(gp_nb) <= 2) && strcmpi(stattest,'N-Ways ANOVA')
+            errordlg('at least 3 groups are expected for a N-ways ANOVA')
+            return
+        elseif sum(str2double(gp_nb) <= 1) && strcmpi(stattest,'ANCOVA')
+            errordlg('at least 2 groups are expected for an ANCOVA')
+            return
+        else
+            gp_nb          = str2double(gp_nb);
+            a              = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
+            LIMO.data.data = cell(gp_nb,1);
+        end
     end
     
     % select data per gp / conditions
     % ---------------------------------
-    a = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
-    LIMO.data.data = cell(gp_nb,1);
     for i=gp_nb:-1:1
         if isempty(LIMO.data.data{i})
             if strcmp(a,'beta') % beta files
@@ -659,7 +668,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         if isempty(Names{i}); return; end
     end
     
-    if ~exist('parameters','var')
+    if isempty(LIMO.design.parameters)
         param = cell2mat(inputdlg('which parameters to test e.g [1 3 3]','parameters option'));
         if isempty(param)
             disp('selection aborded'); return
@@ -673,6 +682,13 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         
         if length(parameters) == 1
             parameters = repmat(parameters,1,gp_nb);
+        end
+    else
+        if length(LIMO.design.parameters) == 1
+            parameters = repmat(LIMO.design.parameters,1,gp_nb);
+            LIMO.design.parameters = parameters;
+        else
+            parameters = LIMO.design.parameters;
         end
     end
     
@@ -704,28 +720,28 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % get some nice comment in LIMO.mat
     if strcmpi(analysis_type,'Full scalp analysis')
         if strcmpi(LIMO.Type,'Components')
-            if strcmpi(stattest,'N-Ways')
+            if contains(stattest,'N-Ways','IgnoreCase',true)
                 LIMO.design.name = 'N-ways ANOVA all components';
             else
                 LIMO.design.name = 'ANCOVA all components';
             end
         else
-            if strcmpi(stattest,'N-Ways')
+            if contains(stattest,'N-Ways','IgnoreCase',true)
                 LIMO.design.name = 'N-ways ANOVA all channels';
             else
                 LIMO.design.name = 'ANCOVA all channels';
             end
         end
         
-    elseif strcmp(analysis_type,'1 channel/component only')
-        if strcmp(LIMO.Type,'Components')
-            if strcmp(answer,'N-Ways')
+    elseif strcmpi(analysis_type,'1 channel/component only')
+        if strcmpi(LIMO.Type,'Components')
+            if contains(stattest,'N-Ways','IgnoreCase',true)
                 LIMO.design.name = 'N-ways ANOVA one component';
             else
                 LIMO.design.name = 'ANCOVA one component';
             end
         else
-            if strcmp(answer,'N-Ways')
+            if contains(stattest,'N-Ways','IgnoreCase',true)
                 LIMO.design.name = 'N-ways ANOVA one channel';
             else
                 LIMO.design.name = 'ANCOVA one channel';
