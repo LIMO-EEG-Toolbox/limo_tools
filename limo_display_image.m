@@ -131,17 +131,17 @@ if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
 end
 
 if size(toplot,1) == 1
-    if strcmp(LIMO.Analysis,'Time')
+    if strcmpi(LIMO.Analysis,'Time')
         plot(timevect,toplot); 
-    elseif strcmp(LIMO.Analysis,'Frequency')
+    elseif strcmpi(LIMO.Analysis,'Frequency')
         plot(freqvect,toplot); 
     end
     grid on; ylabel('stat value'); axis tight
     
     if isfield(LIMO,'Type')
-        if strcmp(LIMO.Type,'Components')
+        if strcmpi(LIMO.Type,'Components')
             mytitle2 = 'Average component';
-        elseif strcmp(LIMO.Type,'Channels')
+        elseif strcmpi(LIMO.Type,'Channels')
             mytitle2 = 'Average channel';
         end
     else
@@ -149,9 +149,9 @@ if size(toplot,1) == 1
     end
 else
     if isfield(LIMO,'Type')
-        if strcmp(LIMO.Type,'Components')
+        if strcmpi(LIMO.Type,'Components')
             mytitle2 = sprintf('stat values @ \n component %g', e);
-        elseif strcmp(LIMO.Type,'Channels')
+        elseif strcmpi(LIMO.Type,'Channels')
             label = LIMO.data.chanlocs(e).labels;
             mytitle2 = sprintf('stat values @ \n channel %s (%g)', label,e);
         end
@@ -164,9 +164,9 @@ else
         end
     end
     
-    if strcmp(LIMO.Analysis,'Time')
+    if strcmpi(LIMO.Analysis,'Time')
         plot(timevect,toplot(e,:),'LineWidth',3); 
-    elseif strcmp(LIMO.Analysis,'Frequency')
+    elseif strcmpi(LIMO.Analysis,'Frequency')
         plot(freqvect,toplot(e,:),'LineWidth',3);
     end
     grid on; axis tight
@@ -181,7 +181,7 @@ if size(toplot,1) ~= 1
     opt   = {'maplimits','maxmin','verbose','off','colormap', cc};
     
     if isfield(LIMO,'Type')
-        if strcmp(LIMO.Type,'Components')
+        if strcmpi(LIMO.Type,'Components')
             opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', cc};
             topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         else
@@ -191,10 +191,10 @@ if size(toplot,1) ~= 1
         if size(toplot,2) == 1
             title('Topoplot','FontSize',12)
         else
-            if strcmp(LIMO.Analysis,'Time')
+            if strcmpi(LIMO.Analysis,'Time')
                 title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
                 set(gca,'XTickLabel', timevect);
-            elseif strcmp(LIMO.Analysis,'Frequency')
+            elseif strcmpi(LIMO.Analysis,'Frequency')
                 title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
                 set(gca,'XTickLabel', LIMO.data.freqlist);
             end
@@ -205,10 +205,10 @@ if size(toplot,1) ~= 1
         if size(toplot,2) == 1
             title('Topoplot','FontSize',12)
         else
-            if strcmp(LIMO.Analysis,'Time')
+            if strcmpi(LIMO.Analysis,'Time')
                 title(['topoplot @ ' num2str(round(timevect(f))) 'ms'],'FontSize',12)
                 set(gca,'XTickLabel', timevect);
-            elseif strcmp(LIMO.Analysis,'Frequency')
+            elseif strcmpi(LIMO.Analysis,'Frequency')
                 title(['topoplot @' num2str(round(freqvect(f))) 'Hz'],'FontSize',12);
                 set(gca,'XTickLabel', LIMO.data.freqlist);
             end
@@ -220,10 +220,10 @@ end
 % images toplot
 % -------------------------------
 ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-if strcmp(LIMO.Analysis,'Time')
+if strcmpi(LIMO.Analysis,'Time')
     imagesc(timevect,1:size(toplot,1),scale);
     colormap(gca, cc);
-elseif strcmp(LIMO.Analysis,'Frequency')
+elseif strcmpi(LIMO.Analysis,'Frequency')
     imagesc(freqvect,1:size(toplot,1),scale);
     colormap(gca, cc);
 end
@@ -236,19 +236,19 @@ title(mytitle,'Fontsize',12)
 warning off
 if contains(mytitle,'cluster')
     for c=1:n_cluster
-        if strcmp(LIMO.Analysis,'Time')
+        if strcmpi(LIMO.Analysis,'Time')
         fprintf('cluster %g starts at %gms ends at %gms, max %g @ %gms channel %s \n', c, ...
             timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
-        elseif strcmp(LIMO.Analysis,'Frequency')
+        elseif strcmpi(LIMO.Analysis,'Frequency')
         fprintf('cluster %g starts at %gHz ends at %gHz, max %g @ %gHz channel %s \n', c, ...
             freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
         end
     end
 else % no clusters
-    if strcmp(LIMO.Analysis,'Time')
+    if strcmpi(LIMO.Analysis,'Time')
         fprintf('1st significant frame at %gms, last signifiant frame at %gms, max %g @ %gms channel %s \n', ...
             timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
-    elseif strcmp(LIMO.Analysis,'Frequency')
+    elseif strcmpi(LIMO.Analysis,'Frequency')
         fprintf('1st significant frame at %gHz, last signifiant frame at %gHz, max %g @ %gHz channel %s \n', ...
             freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
     end
@@ -289,7 +289,7 @@ if dynamic == 1
                     y = 1;
                 end
                 
-                if strcmp(LIMO.Analysis,'Time')
+                if strcmpi(LIMO.Analysis,'Time')
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
@@ -302,7 +302,7 @@ if dynamic == 1
                         colormap(gca, cc(2:end,:));
                     end
                     
-                elseif strcmp(LIMO.Analysis,'Frequency')
+                elseif strcmpi(LIMO.Analysis,'Frequency')
                     if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
                         subplot(3,3,6,'replace');
                         if size(toplot,2) == 1
@@ -321,25 +321,25 @@ if dynamic == 1
             if size(toplot,2) == 1
                 bar(toplot(y,1)); grid on; axis([0 2 0 max(toplot(:))+0.2]); ylabel('stat value')
                 if isfield(LIMO,'Type')
-                    if strcmp(LIMO.Type,'Components')
+                    if strcmpi(LIMO.Type,'Components')
                         mytitle2 = sprintf('component %g', y);
-                    elseif strcmp(LIMO.Type,'Channels')
+                    elseif strcmpi(LIMO.Type,'Channels')
                         mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
                     end
                 else
                     mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
                 end
             else
-                if strcmp(LIMO.Analysis,'Time')
+                if strcmpi(LIMO.Analysis,'Time')
                     plot(timevect,toplot(y,:),'LineWidth',3);
-                elseif strcmp(LIMO.Analysis,'Frequency')
+                elseif strcmpi(LIMO.Analysis,'Frequency')
                     plot(freqvect,toplot(y,:),'LineWidth',3);
                 end
                 grid on; axis tight
                 if isfield(LIMO,'Type')
-                    if strcmp(LIMO.Type,'Components')
+                    if strcmpi(LIMO.Type,'Components')
                         mytitle2 = sprintf('stat values @ \n component %g', y);
-                    elseif strcmp(LIMO.Type,'Channels')
+                    elseif strcmpi(LIMO.Type,'Channels')
                         mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
                     end
                 else
@@ -373,14 +373,14 @@ img_prop = get(gca);
 set(gca,'LineWidth',2)
 
 % ----- X --------
-if strcmp(LIMO.Analysis,'Time')
+if strcmpi(LIMO.Analysis,'Time')
     xlabel('Time in ms','FontSize',10)
-elseif strcmp(LIMO.Analysis,'Frequency')
+elseif strcmpi(LIMO.Analysis,'Frequency')
     xlabel('Frequency in Hz','FontSize',10)
 end
  
 % ----- Y --------
-if strcmp(LIMO.Type,'Components')
+if strcmpi(LIMO.Type,'Components')
     if size(scale,1) == 1
         ylabel('Optimized component','FontSize',10);
     else
@@ -400,9 +400,13 @@ else
     Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
 end
 newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
-Ylabels = Ylabels(newticks);
-set(gca,'YTick',newticks);
-set(gca,'YTickLabel', Ylabels);
+Ylabels  = Ylabels(newticks);
+if size(scale,1)
+    set(gca,'YTick',1);
+else
+    set(gca,'YTick',newticks);
+    set(gca,'YTickLabel', Ylabels);
+end
 
 % ----- Colormap --------
 try
