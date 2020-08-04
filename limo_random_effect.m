@@ -258,10 +258,12 @@ if go == 0
 else
     answer = questdlg('What ANOVA model do you want to run?', 'Model selection', 'Repeated Measures ANOVA', ...
         'N-Ways ANOVA','ANCOVA','Repeated Measures ANOVA');
-    if handles.ica == 1
-        limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-    elseif test_chan_loc(handles)
-        limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    if ~isempty(answer)
+        if handles.ica == 1
+            limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+        elseif test_chan_loc(handles)
+            limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+        end
     end
 end
 
