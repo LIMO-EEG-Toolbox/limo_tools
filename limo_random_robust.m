@@ -648,6 +648,7 @@ switch type
         % do the analysis
         if ~exist('go','var')
             go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+            close('LIMO design')
         end
         
         if strcmpi(go,'Yes')
@@ -728,6 +729,7 @@ switch type
         % do the analysis
         if ~exist('go','var')
             go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+            close('LIMO design')
         end
         
         if strcmpi(go,'Yes')
@@ -737,7 +739,7 @@ switch type
                 end
                 Yhat             = NaN(size(data));
                 Condition_effect = NaN(size(data,1),size(data,2),2);
-                array            = find(sum(squeeze(isnan(data(:,1,:))),2) < size(data,3));
+                array            = find(~isnan(data(:,1,1)));
                 for e=1:size(array,1)
                     channel = array(e); fprintf('processing channel %g \n,',channel);
                     [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
@@ -754,8 +756,8 @@ switch type
                 save('Condition_effect_1.mat','Condition_effect', '-v7.3');
                 clear  Condition_effect_1
                 save('Yhat.mat','Yhat', '-v7.3');                                          
-                clear Yhat
                 Res = data - Yhat;
+                clear Yhat
                 save('Res.mat','Res', '-v7.3');                                            
                 clear Res
                 LIMO.design.status = 'done';
@@ -1003,10 +1005,11 @@ switch type
             % --------------------------
             if ~exist('go','var')
                 if ~strcmpi('go','yes')
-                    figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc(LIMO.design.X);
+                    figure('Name','LIMO design'); set(gcf,'Color','w'); imagesc(LIMO.design.X);
                     colormap('gray'); title('ANOVA model','FontSize',16);xlabel('regressors');
                     ylabel('subjects'); drawnow;
                     go = questdlg('start the analysis?');
+                    close('LIMO design')
                     if ~strcmpi(go,'Yes')
                         return
                     end
