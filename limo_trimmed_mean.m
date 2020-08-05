@@ -3,12 +3,12 @@ function TM = limo_trimmed_mean(varargin)
 % Compute a trimmed mean and CI on the 3rd dimension of a 3D matrix
 %
 % INPUT
-% TM = limo_trimmed_mean(data,percent,alpha)
+% TM = limo_trimmed_mean(data,percent, alpha)
 %      data is a 3D matrix
-%      percent [0-100] is the percentage of trimming to do
-%        e.g. 20 will trim 20% on each side, thus a total of 40% of the data.
-%      alpha is the error rate of the confidence interval
-%      if alpha is not used, only the trimmed mean is computed
+%      options are percent [0-100] the percentage of trimming to do
+%                  e.g. 20 will trim 20% on each side, thus a total of 40% of the data.
+%                  alpha [0-100] is the error rate of the confidence interval
+%                  if alpha is not used, only the trimmed mean is computed
 %
 % OUTPUT
 % TM is a 2D or 3D matrix with the lower CI, the trimmed mean and the high CI
