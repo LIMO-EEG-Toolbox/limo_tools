@@ -1340,77 +1340,7 @@ elseif LIMO.Level == 2
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle);
             else
-                % plot time*freq map <-- should be handled by limo_display_image
-                % limo_display_image(LIMO,toplot,mask,mytitle)
-                mask  = squeeze(mask);
-                scale = toplot.*mask;
-                v     = max(scale(:)); 
-                [e,f] = find(scale==v);
-                if min(scale(:))<0
-                    scale(scale==0)=min(scale(:))+(min(scale(:))/10);
-                else
-                    scale(scale==0)=NaN;
-                end
-                
-                % do the figure
-                figure; set(gcf,'Color','w');
-                ax(1) = subplot(3,3,[1 2 4 5 7 8]);
-                imagesc(scale);
-                xlabel('Time','Fontsize',10); ylabel('Frequency','Fontsize',10);
-                set(gca,'XTick',LIMO.data.tf_times,'YTick',LIMO.data.tf_freqs)
-                title('Time-Frequency Map','FontSize',16);
-                color_images_(scale,LIMO);
-                set(gca,'layer','top');
-                ratio = (LIMO.data.tf_times(end) - LIMO.data.tf_times(1)) / size(toplot,2);
-                if LIMO.data.tf_times(1) < 0
-                    frame_zeros = round(abs(LIMO.data.tf_times(1) / ratio));
-                else
-                    frame_zeros = 1;
-                end
-                
-                ax(2) = subplot(3,3,6);
-                if length(f)>0
-                    f=f(1);
-                end
-                plot(LIMO.data.tf_freqs,toplot(:,f),'LineWidth',3); grid on; axis tight
-                mytitle = sprintf('freq spectrum @ %g ms)', LIMO.data.tf_times(f));
-                title(mytitle,'FontSize',12)
-                
-                ax(3) = subplot(3,3,9);
-                if length(e)>0
-                    e=e(1);
-                end
-                plot(LIMO.data.tf_times,toplot(e,:),'LineWidth',3); grid on; axis tight
-                mytitle = sprintf('time course @ %g Hz)', LIMO.data.tf_freqs(e));
-                title(mytitle,'FontSize',12)
-                
-                update = 0;
-                while update ==0
-                    try % use try so that if figure deleted no complain
-                        [x,y,button]=ginput(1);
-                    catch
-                        update = 1; break
-                    end
-                    if button > 1
-                        update = 1;
-                    end
-                    clickedAx = gca;
-                    if clickedAx ~=ax(1)
-                        disp('right click to exit')
-                    else
-                        subplot(3,3,6,'replace');
-                        frame = frame_zeros + round(x / ratio);
-                        plot(LIMO.data.tf_freqs,toplot(:,frame),'LineWidth',3); grid on; axis tight
-                        mytitle = sprintf('freq spectrum @ %g ms)', LIMO.data.tf_times(frame));
-                        title(mytitle,'FontSize',12)
-                        
-                        subplot(3,3,9,'replace'); y = round(y);
-                        plot(LIMO.data.tf_times,toplot(y,:),'LineWidth',3); grid on; axis tight
-                        mytitle = sprintf('time course @ %g Hz)', LIMO.data.tf_freqs(y));
-                        title(mytitle,'FontSize',12)
-                        clear x y button
-                    end
-                end
+                limo_display_image(LIMO,toplot,mask,mytitle)
             end
             
         elseif Type == 2
