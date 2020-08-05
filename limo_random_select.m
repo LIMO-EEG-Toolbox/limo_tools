@@ -356,49 +356,80 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
 elseif strcmpi(stattest,'two-samples t-test')
     
     LIMO.design.X = [];
+    if isempty(LIMO.data.data)
+        [Names,Paths,LIMO.data.data{1}] = limo_get_files(1);
+        LIMO.data.data_dir{1}           = Paths;
+        % Case for path to the files
+    elseif size(LIMO.data.data{1},1) == 1
+        [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
+        LIMO.data.data_dir{1}           = Paths;
+        % Case when all paths are provided
+    elseif size(LIMO.data.data{1},1) > 1
+        [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
+        LIMO.data.data_dir{1} = Paths;
+    end
+    if isempty(Names)
+        return
+    end
+    N = size(Names,2);
     
-    N = 0;
-    for gp = 2:-1:1
-        if isempty(LIMO.data.data)
-            [Names{gp},Paths{gp},LIMO.data.data{gp}] = limo_get_files([' gp' num2str(gp)]);
-            % Case for path to the files
-        elseif size(LIMO.data.data{gp},1) == 1
-            [Names{gp},Paths{gp},LIMO.data.data{gp}] = limo_get_files([],[],[],g.LIMOfiles{gp});
-            % Case when all paths are provided
-        elseif size(LIMO.data.data{gp},1) > 1
-            [Names{gp},Paths{gp},LIMO.data.data{gp}] = breaklimofiles(g.LIMOfiles{gp});
-        end
-        if isempty(Names{gp})
+    % check type of files and returns which beta param to test
+    % -------------------------------------------------------
+    if isfield(LIMO.design,'parameters')
+        parameters = LIMO.design.parameters;
+    end
+        
+    if ~exist('parameters','var')
+        parameters(1) = check_files(Names,1);
+        if isempty(parameters)
             return
         end
-        LIMO.data.data_dir{gp} = Paths{gp};
-        N = N + size(Names{gp},2);
-        if isempty(g.parameters)
-            parameters(:,gp) = check_files(Names{gp},1);
-        else
-            parameters(:,gp) = check_files(Names{gp},1,g.parameters{gp});
-        end
+    else
+        parameters(1) = check_files(Names,1,parameters(1));
+    end
+
+    if length(LIMO.data.data) == 1
+        [Names,Paths,LIMO.data.data{2}] = limo_get_files(2);
+        LIMO.data.data_dir{2}           = Paths;
+        % Case for path to the files
+    elseif size(LIMO.data.data{2},1) == 1
+        [Names,Paths,LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
+        LIMO.data.data_dir{2}           = Paths;
+        % Case when all paths are provided
+    elseif size(LIMO.data.data{2},1) > 1
+        [Names,Paths]         = breaklimofiles(LIMO.data.data{2});
+        LIMO.data.data_dir{2} = Paths;
+    end
+    if isempty(Names)
+        return
+    end
+    N = N+size(Names,2);
+    
+    % check type of files and returns which beta param to test
+    % -------------------------------------------------------
+    if length(parameters) == 1
+        parameters(2) = check_files(Names,1);
+    else
+        parameters(2) = check_files(Names,1,parameters(2));
     end
     
-    if ~exist('parameters','var')
-        disp('selection aborded')
-        return
+    if ~isfield(LIMO.design,'parameters')
+        LIMO.design.parameters = parameters;
     end
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    for a=1:size(Paths,2)
-        for b=1:size(Paths{a},2)
-            limo = load(fullfile(cell2mat(Paths{a}(b))),'LIMO.mat');
-            limo = getfield(limo,cell2mat(fieldnames(limo)));
-            if max(parameters(a)) > size(limo.design.X,2)
-                errordlg('invalid parameter(s)','Parameters error'); return
+    for gp = 1:2
+        for sub=1:size(LIMO.data.data_dir{gp},2)
+            sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}(sub),'LIMO.mat')));
+            if parameters(gp) > size(sub_LIMO.LIMO.design.X,2)-1
+                error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}(sub)))); 
             end
         end
     end
     
     % match frames, update LIMO
-    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
+    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames([LIMO.data.data_dir{1}' ; LIMO.data.data_dir{2}']',LIMO);
     
     % match channels, update LIMO
     LIMO = match_channels(2,analysis_type,LIMO);
@@ -413,16 +444,16 @@ elseif strcmpi(stattest,'two-samples t-test')
     clear Names Paths channeighbstructmat expected_chanlocs subj_chanlocs
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
-        if strcmp(g.analysis_type,'1 channel/component only')
-            tmp = squeeze(data{1}(:,:,:,1,:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
+        if strcmp(analysis_type,'1 channel/component only')
+            tmp                = squeeze(data{1}(:,:,:,1,:));
+            tmp_data1          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
             tmp_data1(1,:,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,:,1,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
+            tmp                = squeeze(data{2}(:,:,:,1,:));
+            tmp_data2          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,:,1,:));
-            tmp_data2 = squeeze(data{2}(:,:,:,1,:));
+            tmp_data1          = squeeze(data{1}(:,:,:,1,:));
+            tmp_data2          = squeeze(data{2}(:,:,:,1,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
@@ -431,16 +462,16 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
         
     else
-        if strcmp(g.analysis_type,'1 channel/component only')
-            tmp = squeeze(data{1}(:,:,1,:));
-            tmp_data1 = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 channel
+        if strcmp(analysis_type,'1 channel/component only')
+            tmp              = squeeze(data{1}(:,:,1,:));
+            tmp_data1        = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 channel
             tmp_data1(1,:,:) = tmp; clear tmp
-            tmp = squeeze(data{2}(:,:,1,:));
-            tmp_data2 = ones(1,size(tmp,1),size(tmp,2));
+            tmp              = squeeze(data{2}(:,:,1,:));
+            tmp_data2        = ones(1,size(tmp,1),size(tmp,2));
             tmp_data2(1,:,:) = tmp; clear tmp
         else
-            tmp_data1 = squeeze(data{1}(:,:,1,:));
-            tmp_data2 = squeeze(data{2}(:,:,1,:));
+            tmp_data1        = squeeze(data{1}(:,:,1,:));
+            tmp_data2        = squeeze(data{2}(:,:,1,:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
@@ -457,7 +488,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
     LIMO.design.method = 'Yuen t-test (Trimmed means)'; save LIMO LIMO
-    tmpname = LIMO_random_robust(2,tmp_data1,tmp_data2,parameters,g.nboot,g.tfce);
+    tmpname = limo_random_robust(2,tmp_data1,tmp_data2,parameters,LIMO);
     if nargout ~= 0
         LIMOPath = tmpname;
     end
@@ -505,7 +536,7 @@ elseif strcmpi(stattest,'paired t-test')
         end
         
         if length(LIMO.data.data) == 1
-            [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([' gp2']);
+            [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],'select paired file');
             % Case for path to the files
         elseif size(LIMO.data.data{2},1) == 1
             [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
@@ -1722,7 +1753,7 @@ if stattest == 1 || stattest == 4
         clear tmp
     end
     
-elseif stattest == 2
+elseif stattest == 2 % t-tests and gp ANOVA
     subject_nb = 1;
     for igp = 1:length(LIMO.data.data)
         index = 1;
@@ -1730,7 +1761,7 @@ elseif stattest == 2
             tmp = load(cell2mat(LIMO.data.data{igp}(i)));
             
             % get indices to trim data
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
                 if contains(cell2mat(LIMO.data.data{igp}(i)),'Betas')
                     tmp = tmp.Betas;
                 else
@@ -1749,7 +1780,7 @@ elseif stattest == 2
                 ends_at = size(tmp,2) - (last_frame(subject_nb) - min(last_frame));
             end
             
-            if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
+            if strcmpi(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                 if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         tmp_data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
@@ -1766,7 +1797,7 @@ elseif stattest == 2
                 end
                 removed(igp,i) = 0;
                 index = index + 1;
-            elseif strcmp(analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
+            elseif strcmpi(analysis_type,'1 channel/component only') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                 
                 % Use single channel
                 if size(LIMO.design.electrode,2) == 1
