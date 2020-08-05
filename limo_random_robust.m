@@ -373,7 +373,7 @@ switch type
                 % get results under H0
                 for e = 1:size(array,1)
                     channel = array(e);
-                    fprintf('bootstrapping channel %g/%g parameter %g \n',e,size(array,1),parameter);
+                    fprintf('bootstrapping channel %g/%g \n',e,size(array,1));
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     if exist('parfor','file') ~=0
@@ -789,7 +789,7 @@ switch type
             
             for c=1:(size(LIMO.design.X,2)-1) % size(LIMO.data.data,2) % center data
                 index = find(LIMO.design.X(:,c));
-                data(:,:,index) = data(:,:,index) - repmat(nanmean(data(:,:,index),3),[1 1 length(index)]);
+                data(:,:,index) = data(:,:,index) - repmat(limo_trimmed_mean(data(:,:,index)),[1 1 length(index)]);
             end
             boot_table            = limo_create_boot_table(data,LIMO.design.bootstrap);
             H0_Condition_effect   = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
