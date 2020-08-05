@@ -426,8 +426,12 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         index = 1; clear name
         for subject = 1:N
             if strcmp(option,'contrast only')
-                load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']);
-                con_num = find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast));
+                LIMO = load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
+                if isfield(LIMO,'contrast')
+                    con_num = find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast));
+                else
+                    con_num = c;
+                end
                 name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
             else
                 name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
