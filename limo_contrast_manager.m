@@ -58,7 +58,6 @@ end
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
-global handles
 
 % define handles used for the save callback
 handles.dir      = pwd;
@@ -82,10 +81,14 @@ varargout{1} = 'contrast done';
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global LIMO 
 
 if ~isfield(handles,'limofile') || isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+    if FilterIndex == 0
+        guidata(hObject, handles);
+        limo_results
+    end
 else
     [PathName,FileName] = fileparts(handles.limofile);
     if isempty(PathName), PathName = pwd; end
@@ -96,12 +99,12 @@ if FilterIndex ==0
     clear variables;
     varargout{1} = 'contrast cancelled';
 else
-    cd(PathName); load('LIMO.mat');
+    LIMO = load(fullfile(PathName,'LIMO.mat')); LIMO = LIMO.LIMO;
     if LIMO.Level == 2 && ~isempty(strfind(LIMO.design.name,'t-test'))
         warndlg('no contrast can be performed for a t-test','modal');
         Xdisplay = [];
     elseif LIMO.Level == 2 && contains(LIMO.design.name,'ANOVA')  % always F
-        if LIMO.design.nb_conditions == 1 % only one gp
+        if LIMO.design.nb_conditions == 1 || ~contains(LIMO.design.name,'repeated')
             Xdisplay = LIMO.design.X;
         else
             Xdisplay = LIMO.design.X(1:prod(LIMO.design.repeated_measure),1:prod(LIMO.design.repeated_measure));
@@ -137,12 +140,12 @@ end
 % --- Evaluate New Contrast
 % ---------------------------------------------------------------
 function New_Contrast_Callback(hObject, eventdata, handles)
-global LIMO handles
+global LIMO 
 
 handles.C = str2num(get(hObject,'String'));
 
-if LIMO.Level == 2 && strncmp(LIMO.design.name,'Repeated',8) % always T2 in fact (contrast T but F stat)
-    if handles.F ~= 0
+if LIMO.Level == 2 && contains(LIMO.design.name,'Repeated') % always T2 in fact (contrast T but F stat)
+    if contains(LIMO.design.name,'') && handles.F ~= 0
         uiwait(warndlg('Only T contrasts are used for this design','Hotelling T^2 test','modal'));
     end
     % adjust X for a single group
@@ -208,7 +211,6 @@ guidata(hObject,handles)
 % --- Executes on button press in F_contrast.
 % ---------------------------------------------------------------
 function F_contrast_Callback(hObject, eventdata, handles)
-global LIMO handles
 
 do_F_contrast = get(hObject,'Value');
 if do_F_contrast == 0
@@ -228,7 +230,7 @@ end
 % --- Previous Contrast
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
-global LIMO handles
+global LIMO 
 
 if isempty(LIMO)
     display_matrix_CreateFcn(hObject, eventdata, handles)
@@ -278,7 +280,6 @@ handles.output = hObject;
 guidata(hObject,handles)
 
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
-global handles
 
 contents = get(hObject,'String');
 if ~strcmp(contents(1),'none') % not 'none'
@@ -297,7 +298,7 @@ guidata(hObject,handles)
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
-global LIMO handles
+global LIMO 
 
 if ~isempty(handles.C)
     if handles.go == 1
@@ -320,7 +321,7 @@ if ~isempty(handles.C)
             
             if contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
                     contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
-                warndlg(sprintf('no contrasts for Generalized Welch''s method ANOVA,\nuse robust t-tests for sub-group comparison'),'Robust ANOVA info')
+                warndlg(sprintf('no contrasts for Generalized Welch''s method ANOVA,\nuse robust t-tests for sub-groups comparison'),'Robust ANOVA info')
                 return
                 
             else
@@ -425,7 +426,7 @@ end
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
-clc;
+clc
 uiresume
 guidata(hObject, handles);
 close(get(hObject,'Parent'));
@@ -433,6 +434,6 @@ if isempty(handles.limofile)
     limo_results;
 end
 
-clearvars LIMO handles limofile
-clear global handles LIMO
+clearvars LIMO limofile
+clear global LIMO
 return
