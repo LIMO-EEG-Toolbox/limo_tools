@@ -414,7 +414,7 @@ if LIMO.Level ==2 && contains(FileName,'ttest')
 end
 
 % ------------------------
-%% Repeated measure ANOVA
+%% Repeated measures ANOVA
 % ------------------------
 
 if contains(FileName,'Rep_ANOVA')
