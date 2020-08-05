@@ -1239,8 +1239,8 @@ elseif LIMO.Level == 2
                 warndlg('  no values under threshold  ','no significant effect','modal');
                 toplot = []; return
             else
-                assignin('base','p_values',M)
-                assignin('base','mask',mask)
+                assignin('base','p_values',squeeze(M))
+                assignin('base','mask',squeeze(mask))
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
@@ -1324,8 +1324,8 @@ elseif LIMO.Level == 2
             LIMO.cache.fig.MCC        = MCC;
             LIMO.cache.fig.stats      = toplot;
             LIMO.cache.fig.threshold  = p;
-            LIMO.cache.fig.pval       = M;
-            LIMO.cache.fig.mask       = mask;
+            LIMO.cache.fig.pval       = squeeze(M);
+            LIMO.cache.fig.mask       = squeeze(mask);
             LIMO.cache.fig.title      = mytitle;
             save LIMO LIMO
         end
@@ -1340,7 +1340,7 @@ elseif LIMO.Level == 2
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle);
             else
-                limo_display_image(LIMO,toplot,mask,mytitle)
+                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle)
             end
             
         elseif Type == 2
