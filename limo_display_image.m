@@ -484,7 +484,7 @@ else
     end
     newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
     Ylabels  = Ylabels(newticks);
-    if size(scale,1)
+    if size(scale,1) == 1
         set(gca,'YTick',1);
     else
         set(gca,'YTick',newticks);
