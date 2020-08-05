@@ -16,6 +16,7 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 %      title a default question dialogue is 'select a subject file or list
 %            file' with possible the gp number inserted, but this can be
 %            customized here
+%      files already selected file names to split
 %
 % OUTPUT Names , Paths, Full File names are returned as cells
 %
@@ -28,12 +29,18 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 
 %% defaults and inputs
 gp        = [];
-title     = 'select a subject file or list file';
+guititle  = 'select a subject file or list file';
 filter    = {'*.mat;*.txt'};
 path2file = [];
 
-if nargin >= 1; gp        = varargin{1}; end
-if nargin >= 2; filter    = varargin{2}; end
+if nargin >= 1
+    gp        = varargin{1}; 
+end
+
+if nargin >= 2 && ~isempty(varargin{2})
+    filter    = varargin{2}; 
+end
+
 if ~ispc
     filter(:,2) = {';'};
     filter = filter';
@@ -41,7 +48,7 @@ if ~ispc
 end
 
 if nargin >= 3
-    title = varargin{3};
+    guititle = varargin{3};
 end
 
 if nargin == 4
@@ -55,9 +62,9 @@ go = 1; index = 1;
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
-                [name,path] = uigetfile(filter,['select a subject file',num2str(index),' ',gp,' or list file']);
+            [name,path] = uigetfile(filter,['select a subject file or list file gp: ' num2str(gp)]);
         else
-                [name,path] = uigetfile(filter,title);
+            [name,path] = uigetfile(filter,guititle);
         end
     else
         if exist(path2file,'file') 
