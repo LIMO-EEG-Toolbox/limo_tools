@@ -319,31 +319,35 @@ if ~isempty(handles.C)
                 LIMO.Level == 2 && contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
                 ~contains(LIMO.design.name,'Repeated')
             
-            if contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
-                    contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
-                warndlg(sprintf('no contrasts for Generalized Welch''s method ANOVA,\nuse robust t-tests for sub-groups comparison'),'Robust ANOVA info')
-                return
-                
+            if isfield(LIMO,'contrast')
+                previous_con = size(LIMO.contrast,2);
             else
-                if isfield(LIMO,'contrast')
-                    previous_con = size(LIMO.contrast,2);
-                else
-                    previous_con = 0;
-                end
-                index = previous_con+1;
+                previous_con = 0;
+            end
+            index = previous_con+1;
+            
+            % update LIMO.mat
+            LIMO.contrast{index}.C = handles.C;
+            if handles.F == 0
+                LIMO.contrast{index}.V = 'T';
+            else
+                LIMO.contrast{index}.V = 'F';
+            end
+            save LIMO LIMO
+            
+            % -------------------------------------------------------
+            if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
+            % -------------------------------------------------------
                 
-                % update LIMO.mat
-                LIMO.contrast{index}.C = handles.C;
-                if handles.F == 0
-                    LIMO.contrast{index}.V = 'T';
+                if contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
+                        contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
+                    warndlg(sprintf('no contrasts for Generalized Welch''s method ANOVA,\nusing robust t-tests for sub-groups comparison'),'Robust ANOVA info')
+                    data   = load(fullfile(LIMO.dir,'Yr.mat'));
+                    limo_random_robust(2,data.Yr(:,:,:,find(LIMO.design.X(:,handles.C < 0))),...
+                        data.Yr(:,:,:,find(LIMO.design.X(:,handles.C > 0))),...
+                        [sum(find(handles.C<0)) sum(find(handles.C>0))],LIMO);
+
                 else
-                    LIMO.contrast{index}.V = 'F';
-                end
-                save LIMO LIMO
-                
-                % -------------------------------------------------------
-                if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
-                    % -------------------------------------------------------
                     limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
                     
                     if LIMO.design.bootstrap ~= 0
@@ -363,15 +367,17 @@ if ~isempty(handles.C)
                         clear Yr tmp
                         disp('boostrapped contrasts done ...')
                     end
-                    
-                elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
-                    
-                    LIMO.contrast = handles.F;
-                    save LIMO LIMO
-                    limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
                 end
-                clear Yr Betas
+                
+            % -------------------------------------------------------
+            elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
+            % -------------------------------------------------------
+                
+                LIMO.contrast = handles.F;
+                save LIMO LIMO
+                limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
             end
+            clear Yr Betas
             
             % -------------------------------------------
             %          2nd level Repeated measure ANOVA
