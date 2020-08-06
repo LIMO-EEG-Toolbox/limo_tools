@@ -44,7 +44,7 @@ end
 if ~ispc
     filter(:,2) = {';'};
     filter = filter';
-    filter = strcat(filter(:));
+    filter = strcat(filter{:});
 end
 
 if nargin >= 3
