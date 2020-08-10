@@ -88,6 +88,9 @@ delete(handles.figure1); return
 
 % load a data set -- EEG 
 % ---------------------------------------------------------------
+% --- Executes during object creation, after setting all properties.
+function Import_data_CreateFcn(hObject, eventdata, handles)
+
 function Import_data_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile({'*.txt; *.mat; *.set'}, 'Pick sets or list', 'MultiSelect', 'on');
 
@@ -479,6 +482,7 @@ if isempty(handles.CatName) && isempty(handles.ContName)
 end
 uiresume
 guidata(hObject, handles);
+limo_gui
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
@@ -490,5 +494,8 @@ uiresume
 handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
+
+
+
 
 
