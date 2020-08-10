@@ -37,7 +37,7 @@ if nargin >= 2; filter    = varargin{2}; end
 if ~ispc
     filter(:,2) = {';'};
     filter = filter';
-    filter = strcat(filter(:));
+    filter = strcat(filter{:});
 end
 if nargin >= 3; title     = varargin{3}; end
 if nargin == 4; path2file = varargin{4}; end
