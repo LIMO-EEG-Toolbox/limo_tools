@@ -31,7 +31,7 @@ if strcmp(LIMO.Analysis,'Time')
             if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.icaerp);
                 if isstruct(signal)
-                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                    signal = signal.(cell2mat(fieldnames(signal)));
                 end
             else
                 try
@@ -80,15 +80,20 @@ if strcmp(LIMO.Analysis,'Time')
             Y = newY; clear newY;
         end
     else % channels
+        erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(signal)
-                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                    signal = signal.(cell2mat(fieldnames(signal)));
                 end
-            else
+            else % likely a .daterp
                 try
-                    signal = load('-mat',EEGLIMO.etc.datafiles.daterp);
+                    if exist(EEGLIMO.etc.datafiles.daterp,'file')
+                        signal = load('-mat',EEGLIMO.etc.datafiles.daterp);
+                    else
+                        signal = load('-mat',fullfile(erp.folder,erp.name));
+                    end
                     if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.daterp):-1:1
@@ -99,17 +104,17 @@ if strcmp(LIMO.Analysis,'Time')
                 end
             end
         else
-            disp('the field EEG.etc.datafiles.daterp pointing to the data is missing - using hack')
-            cd(LIMO.data.data_dir); 
-            erp = dir('*.daterp');
+            disp('no data found (EEG.etc.datafiles): using a hack searching for daterp data')
             if ~isempty(erp)
                 for d=length(erp):-1:1
-                    signal{d} = load('-mat',erp(d).name);
-                    if isstruct(Y{d})
+                    signal{d} = load('-mat',fullfile(erp(d).folder,erp(d).name));
+                    if isstruct(signal{d})
                         signal{d}  = limo_struct2mat(signal{d}); 
                     end
                 end
                 signal = limo_concatcells(signal);
+            else
+                error('could not locate ERP data, import failed')
             end
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
@@ -123,7 +128,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             if ~iscell(EEGLIMO.etc.datafiles.icaspec) && strcmp(EEGLIMO.etc.datafiles.icaspec(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.icaspec);
                 if isstruct(signal)
-                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                    signal = signal.(cell2mat(fieldnames(signal)));
                 end
             else
                 try
@@ -170,15 +175,20 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             Y = newY; clear newY;
         end
     else % channels
+        spec = dir(fullfile(LIMO.data.data_dir,'*.datspec'));
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datspec')
             if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.datspec);
                 if isstruct(signal)
-                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                    signal = signal.(cell2mat(fieldnames(signal)));
                 end
             else
                 try
-                    signal = load('-mat',EEGLIMO.etc.datafiles.datspec);
+                    if exist(EEGLIMO.etc.datafiles.datspec,'file')
+                        signal = load('-mat',EEGLIMO.etc.datafiles.datspec);
+                    else
+                        signal = load('-mat',fullfile(spec.folder,spec.name));
+                    end
                     if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.datspec):-1:1
@@ -189,15 +199,17 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                 end
             end
         else
-            disp('the field EEG.etc.datspec pointing to the data is missing - using a hack')
-            cd(LIMO.data.data_dir); 
-            spec = dir('*.datspec');
+            disp('no data found (EEG.etc.datafiles): using a hack searching for datspec data')
             if ~isempty(spec)
                 for d=length(spec):-1:1
-                    signal{d} = load('-mat',spec(d).name);
-                    if isstruct(signal{d}); signal{d} = limo_struct2mat(signal{d}); end
+                    signal{d} = load('-mat',fullfile(spec(d).folder,spec(d).name));
+                    if isstruct(signal{d})
+                        signal{d} = limo_struct2mat(signal{d}); 
+                    end
                 end
                 signal = limo_concatcells(signal);
+            else
+                error('could not locate Spectral data, import failed')
             end
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
@@ -243,16 +255,21 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             Y = newY; clear newY;
         end
     else % channels
+        ersp = dir(fullfile(LIMO.data.data_dir,'*.dattimef'));
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
             signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
             if ~iscell(EEGLIMO.etc.datafiles.dattimef) && strcmp(EEGLIMO.etc.datafiles.dattimef(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.dattimef);
                 if isstruct(signal)
-                    signal = getfield(signal,cell2mat(fieldnames(signal)));
+                    signal = signal.(cell2mat(fieldnames(signal)));
                 end
             else
                 try
-                    signal = load('-mat',EEGLIMO.etc.datafiles.dattimef);
+                    if exist(EEGLIMO.etc.datafiles.dattimef,'file')
+                        signal = load('-mat',EEGLIMO.etc.datafiles.dattimef);
+                    else
+                        signal = load('-mat',fullfile(ersp.folder,ersp.name));
+                    end
                     if isstruct(signal); signal = limo_struct2mat(signal); end
                 catch
                     for d=length(EEGLIMO.etc.datafiles.dattimef):-1:1
@@ -270,15 +287,17 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 signal = load(EEGLIMO.etc.datafiles.datersp);
             end
         else
-            disp('no data found: using a hack searching for dattimef data')
-            cd(LIMO.data.data_dir); 
-            ersp = dir('*.dattimef');
+            disp('no data found (EEG.etc.datafiles): using a hack searching for dattimef data')
             if ~isempty(ersp)
                 for d=length(ersp):-1:1
-                    signal{d} = load('-mat',ersp(d).name);
-                    if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
+                    signal{d} = load('-mat',fullfile(ersp(d).folder,ersp(d).name));
+                    if isstruct(signal{d})
+                        signal{d}  = limo_struct2mat(signal{d}); 
+                    end
                 end
                 signal = limo_concatcells(signal);
+            else
+                error('could not locate ERP data, import failed')
             end
         end
         Y = abs(signal(:,LIMO.data.trim_lowf:LIMO.data.trim_highf,LIMO.data.trim1:LIMO.data.trim2,:)).^2; clear signal
