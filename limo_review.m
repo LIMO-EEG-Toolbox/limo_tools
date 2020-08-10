@@ -32,16 +32,13 @@ end
 %% Display
 figure('Name','Review Design')
 set(gcf,'Color','w');
-cmap = [gray(32); jet(32)];
-colormap(cmap);
-
 
 % display a scaled version of X
 add_subplots = 1;
 if ~isempty(LIMO.design.X)
     X = LIMO.design.X;
     Xdisplay = X;
-    if isfield(LIMO,'design.nb_continuous')
+    if isfield(LIMO.design, 'nb_continuous')
         if  prod(LIMO.design.nb_continuous) ~= 0
             N = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
             REGdisplay = X(:,N+1:size(X,2)-1);
@@ -49,19 +46,19 @@ if ~isempty(LIMO.design.X)
             Xdisplay(:,N+1:size(X,2)-1) = REGdisplay ./ max(max(REGdisplay));
         end
     end
-    subplot(3,3,[1 2 4 5]); imagesc(Xdisplay./2);
+    subplot(3,3,[1 2 4 5]); imagesc(Xdisplay./2); colormap(gca, gray);
     title('Design matrix','FontSize',14); ylabel('trials / subjects');caxis([0 1+eps])
 else
     if strncmp(LIMO.design.name,'one sample',10)
-        add_subplots = 0; image(ones(size(LIMO.data.data,2),1)); colormap(gray); caxis([0 1])
+        add_subplots = 0; image(ones(size(LIMO.data.data,2),1)); colormap(gca, gray); caxis([0 1])
         title('Design matrix','FontSize',14); ylabel('trials / subjects'); set(gca,'XTicks','1')
     end
 end
 
 if add_subplots == 1
     % add the covariance matrix
-    subplot(3,3,[3 6]); C = cov(X); imagesc(C); r = min(C(:))-max(C(:));
-    title('Covariance matrix','FontSize',14); xlabel('regressors');caxis([r+min(C(:)) -r])
+    subplot(3,3,[3 6]); C = cov(X); imagesc(C); r = min(C(:))-max(C(:)); colormap(gca, parula);
+    title('Covariance matrix','FontSize',14); xlabel('regressors'); caxis([r+min(C(:)) -r])
     
     % add the orthogonality matrix
     orth_matrix = eye(size(X,2));
@@ -70,7 +67,7 @@ if add_subplots == 1
         orth_matrix(combinations(i,1),combinations(i,2)) = abs(X(:,combinations(i,1))'*X(:,combinations(i,2))) / (norm(X(:,combinations(i,1)))*norm(X(:,combinations(i,2))));
         orth_matrix(combinations(i,2),combinations(i,1)) = orth_matrix(combinations(i,1),combinations(i,2));
     end
-    subplot(3,3,[7 8]); imagesc(orth_matrix./2);
+    subplot(3,3,[7 8]); imagesc(orth_matrix); colormap(gca, gray);
     title('Orthogonality matrix','FontSize',14); xlabel('regressors');caxis([0 1+eps])
 end
 
