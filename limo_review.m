@@ -46,7 +46,7 @@ if ~isempty(LIMO.design.X)
             Xdisplay(:,N+1:size(X,2)-1) = REGdisplay ./ max(max(REGdisplay));
         end
     end
-    subplot(3,3,[1 2 4 5]); imagesc(Xdisplay./2); colormap(gca, gray);
+    subplot(3,3,[1 2 4 5]); imagesc(Xdisplay); colormap(gca, gray);
     title('Design matrix','FontSize',14); ylabel('trials / subjects');caxis([0 1+eps])
 else
     if strncmp(LIMO.design.name,'one sample',10)
