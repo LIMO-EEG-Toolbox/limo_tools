@@ -33,17 +33,19 @@ if strcmp(LIMO.design.status,'to do')
         end
     end
     
-    try
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            limo_pcout(squeeze(Yr(array(1),1,:,:))');
-        else
-            limo_pcout(squeeze(Yr(array(1),:,:))');
-        end
-    catch pcout_error
-        if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-            error('%s\n running the analysis using OLS solves this issue',pcout_error.message)
-        else
-            error('%s\n',pcout_error.message)
+    if strcmpi(LIMO.design.method,'WLS')
+        try
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                limo_pcout(squeeze(Yr(array(1),1,:,:))');
+            else
+                limo_pcout(squeeze(Yr(array(1),:,:))');
+            end
+        catch pcout_error
+            if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
+                error('%s\n running the analysis using OLS solves this issue',pcout_error.message)
+            else
+                error('%s\n',pcout_error.message)
+            end
         end
     end
     
