@@ -390,6 +390,7 @@ else % parallel call to the pipeline
             % limo_batch_design_matrix(pipeline(subject).design.files_in)
             % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
+            
             report{subject} = ['subject ' num2str(subject) ' processed'];
             procstatus(subject) = 1;
         catch ME
@@ -450,7 +451,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
 end
 
 % save the report from psom
-cell2csv([LIMO_files.LIMO filesep 'batch_report_' glm_name '.txt'], report')
+cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
 
 cd(current); 
 failed = 0;
