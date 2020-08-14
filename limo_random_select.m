@@ -28,12 +28,13 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                             who contains the list of path to a group of sets. The
 %                             dimensions of the cell correspond with group, factor and
 %                             level respectively. (no default)
+%                'parameters' Cell array of parameters to be tested, relative to LIMOfiles.
+%                            ie. {[1 2]} or {[1 2],[1 2]} in case of 2 groups.
+%       --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
 %                'regressor_file' a file or matrix of data to regress when stattest = 4
 %                'analysis_type' is 'Full scalp analysis' or '1 channel/component only'
 %                'channel' Index of the electrode(s) to use if '1 channel/component only'
 %                            is selected in analysis_type
-%                'parameters' Cell array of parameters to be tested, relative to LIMOfiles.
-%                            ie. {[1 2]} or {[1 2],[1 2]} in case of 2 groups.
 %                'type' is 'Channels' or 'Component'
 %                'nboot' is the number of bootstrap to do (default = 1000)
 %                'tfce' 0/1 indicates to computes tfce or not (default = 0)
@@ -116,7 +117,7 @@ for in = 1:2:(nargin-2)
         regressor_file = varargin{in+1};
     elseif strcmpi(varargin{in},'skip design check')
         skip_design_check = varargin{in+1};
-    elseif strcmpi(varargin{in},'channel') 
+    elseif strcmpi(varargin{in},'channel')
         LIMO.design.electrode = varargin{in+1};
     elseif strcmpi(varargin{in},'parameters')
         LIMO.design.parameters = varargin{in+1};
@@ -378,7 +379,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     if isfield(LIMO.design,'parameters')
         parameters = LIMO.design.parameters;
     end
-        
+    
     if ~exist('parameters','var')
         parameters(1) = check_files(Names,1);
         if isempty(parameters)
@@ -387,7 +388,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     else
         parameters(1) = check_files(Names,1,parameters(1));
     end
-
+    
     if length(LIMO.data.data) == 1
         [Names,Paths,LIMO.data.data{2}] = limo_get_files(2);
         LIMO.data.data_dir{2}           = Paths;
@@ -423,7 +424,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         for sub=1:size(LIMO.data.data_dir{gp},2)
             sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}(sub),'LIMO.mat')));
             if parameters(gp) > size(sub_LIMO.LIMO.design.X,2)-1
-                error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}(sub)))); 
+                error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}(sub))));
             end
         end
     end
@@ -675,13 +676,15 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         else
             gp_nb          = str2double(gp_nb);
             a              = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
+            Names          = cell(gp_nb,1);
+            Paths          = cell(gp_nb,1);
             LIMO.data.data = cell(gp_nb,1);
         end
     end
     
     % select data per gp / conditions
     % ---------------------------------
-    for i=gp_nb:-1:1
+    for i=1:gp_nb
         if isempty(LIMO.data.data{i})
             if strcmp(a,'beta') % beta files
                 [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' beta file gp ',num2str(i)]);
@@ -782,7 +785,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             end
         end
     end
-
+    
     % now load covariates and check it matches data
     if strcmpi(stattest,'ANCOVA')
         [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select covariate file');
@@ -919,11 +922,24 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     
     % Ask for Repeated Measures
     % --------------------------
-    if ~isempty(LIMO.design.parameters)
-        if all(size(LIMO.design.parameters)==1)
-            factor_nb = num2str(length(LIMO.design.parameters{1}));
+    if ~isempty(LIMO.design.parameters) % infer factors from parameters
+        if size(LIMO.design.parameters,1) == 1 && gp_nb > 1
+            LIMO.design.parameters = repmat(LIMO.design.parameters,gp_nb,1);
+        end
+            
+        for g=gp_nb:-1:1
+            if all(size(LIMO.design.parameters(g,:))==1)
+                factor_nb{g} = num2str(length(LIMO.design.parameters{g}));
+            else
+                factor_nb{g} = num2str(getlevels(LIMO.design.parameters(g,:)));
+            end
+        end
+        
+        % check all factor numbers match between groups and reduce
+        if ~all(cellfun(@(x) strcmpi(x,factor_nb{1}),factor_nb))
+            error('parameters input sizes different between groups, the number of factors to infer must be identical')
         else
-            factor_nb = num2str(getlevels(LIMO.design.parameters));
+            factor_nb = factor_nb{1};
         end
     else
         factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
@@ -971,8 +987,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     N = 0; cell_nb = 1;
     % beta files
     if strcmp(a,'beta')
-        for i=gp_nb:-1:1
-            if isempty(LIMO.data.data)
+        for i=1:gp_nb 
+            if length(LIMO.data.data) < i
                 [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
                 % Case for path to the files
             elseif size(LIMO.data.data{i},1) == 1
@@ -988,7 +1004,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             
             if isfield(LIMO.design,'parameters')
                 if ~isempty(LIMO.design.parameters)
-                    parameters(:,i) = check_files(Names,1,[LIMO.design.parameters{i,:}]);
+                    parameters(:,i) = check_files(Names,1,[LIMO.design.parameters{i}]);
                 else
                     parameters(:,i) = check_files(Names,1);
                 end
@@ -1006,16 +1022,16 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         LIMO.data.data_dir = Paths;
         
     else  % multiple con files
-        for i=gp_nb:-1:1
+        for i=1:gp_nb
             if isempty(LIMO.data.data) % GUI
-                for j=length(factor_nb):-1:1
-                    for k=factor_nb(j):-1:1
+                for j=1:length(factor_nb)
+                    for k=1:factor_nb(j)
                         [names{k},paths{k},full_names{k}] = limo_get_files([' gp ',num2str(i),' factor ',num2str(j),' level ',num2str(k)]);
                         if isempty(names{k}); disp('no files found - selection aborded'); return; end
                     end
                 end
             else
-                for j=prod(factor_nb):-1:1
+                for j=1:prod(factor_nb)
                     % Case for path to the files
                     if size(LIMO.data.data{i,j},1) == 1
                         [names{j},paths{j},full_names{j}] = limo_get_files([],[],[],LIMO.data.data{i,j});
@@ -1028,20 +1044,21 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             end
             N = N + size(names{cell_nb},2);
             
-            Names{cell_nb} = names{1};
-            Paths{cell_nb} = paths{1};
+            Names{cell_nb}          = names{1};
+            Paths{cell_nb}          = paths{1};
             LIMO.data.data{cell_nb} = full_names{1};
             for l=2:size(names,2)
-                Names{cell_nb} = [Names{cell_nb} names{l}];
-                Paths{cell_nb} = [Paths{cell_nb} paths{l}];
+                Names{cell_nb}          = [Names{cell_nb} names{l}];
+                Paths{cell_nb}          = [Paths{cell_nb} paths{l}];
                 LIMO.data.data{cell_nb} = [LIMO.data.data{cell_nb} full_names{l}];
             end
             LIMO.data.data_dir{cell_nb} = Paths{cell_nb};
             check_files(Names,size(Names,2));
-            cell_nb=cell_nb+1;
+            cell_nb         = cell_nb+1;
             parameters(:,i) = 1:prod(factor_nb);
         end
     end
+    LIMO.design.parameters = parameters;
     
     % 3rd organize data
     % ---------------------------------------------------------------------
@@ -1257,7 +1274,7 @@ end % closes the function
 %                                   ROUTINES
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
-%% multiple files cell entries
+%% fileparts for multiple cell entries
 function [Names,Paths,Files] = breaklimofiles(cellfiles)
 N     = size(cellfiles,1);
 Paths = cell(1,N);
@@ -1272,7 +1289,9 @@ end
 
 %% file checking
 function parameters = check_files(Names,gp,parameters)
-% after selecting file, check they are all the same type
+% after selecting file, check they are all the same type (betas or con)
+% return parameters that match with files (eg 1 for con, or whatever value
+% for the beta file up to the number of regressors in the design matrix
 
 if nargin < 3
     parameters = [];
@@ -1365,6 +1384,7 @@ function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match
 %                                     for time-frequency these are vectors with time then frequency
 %         subj_chanlocs the chanlocs per subjects
 %         channeighbstructmat the neighbourg matrices
+%
 % the LIMO structure is also updated the reflect the smallest interval(s) across subjects,
 % which is used for the second leve analysis
 
@@ -1854,14 +1874,13 @@ end
 
 %% repeated measure levels
 function levels = getlevels(params)
-        % drill-down the cell array of repeated measures parameters
-        
-        if ~iscell(params)
-            levels = length(params);
-            if levels == 1
-                levels = [];
-            end
-        else
-            levels = [length(params) getlevels(params{1}) ];
-        end
+% drill-down the cell array of repeated measures parameters
+if ~iscell(params)
+    levels = length(params);
+    if levels == 1
+        levels = [];
     end
+else
+    levels = [length(params) getlevels(params{1}) ];
+end
+end
