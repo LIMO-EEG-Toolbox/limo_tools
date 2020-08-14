@@ -966,7 +966,7 @@ switch type
             Rep_ANOVA_Gp_effect               = NaN(size(data,1),size(data,2),2);
             tmp_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),1,2);
             LIMO.design.C{1}                  = C;
-            LIMO.design.effects               = 'Main effect';
+            LIMO.design.effects{1}            = 'Main effect';
             x                                 = kron(X(:,1:k),eye(prod(factor_levels)));
             LIMO.design.X                     = [x sum(x,2)]; % just for display
             
@@ -1005,8 +1005,9 @@ switch type
             % --------------------------
             if ~exist('go','var')
                 if ~strcmpi('go','yes')
-                    figure('Name','LIMO design'); set(gcf,'Color','w'); imagesc(LIMO.design.X);
-                    colormap('gray'); title('ANOVA model','FontSize',16);xlabel('regressors');
+                    figure('Name','LIMO design'); set(gcf,'Color','w'); 
+                    imagesc(LIMO.design.X); colormap('gray');
+                    title('ANOVA model','FontSize',16);xlabel('regressors');
                     ylabel('subjects'); drawnow;
                     go = questdlg('start the analysis?');
                     close('LIMO design')
@@ -1059,10 +1060,10 @@ switch type
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C,XB); % usual means
                     end
-                    tmp_Rep_ANOVA(channel,:,1,1) = result.repeated_measure.F;
-                    tmp_Rep_ANOVA(channel,:,1,2) = result.repeated_measure.p;
-                    Rep_ANOVA_Gp_effect(channel,:,1) = result.gp.F;
-                    Rep_ANOVA_Gp_effect(channel,:,2) = result.gp.p;
+                    tmp_Rep_ANOVA(channel,:,1,1)                   = result.repeated_measure.F;
+                    tmp_Rep_ANOVA(channel,:,1,2)                   = result.repeated_measure.p;
+                    Rep_ANOVA_Gp_effect(channel,:,1)               = result.gp.F;
+                    Rep_ANOVA_Gp_effect(channel,:,2)               = result.gp.p;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,1) = result.interaction.F;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,2) = result.interaction.p;
                 elseif type == 4
@@ -1071,10 +1072,10 @@ switch type
                     else
                         result = limo_rep_anova(Y,gp,factor_levels,C,XB); % usual means
                     end
-                    tmp_Rep_ANOVA(channel,:,:,1) = result.repeated_measure.F';
-                    tmp_Rep_ANOVA(channel,:,:,2) = result.repeated_measure.p';
-                    Rep_ANOVA_Gp_effect(channel,:,1) = result.gp.F;
-                    Rep_ANOVA_Gp_effect(channel,:,2) = result.gp.p;
+                    tmp_Rep_ANOVA(channel,:,:,1)                     = result.repeated_measure.F';
+                    tmp_Rep_ANOVA(channel,:,:,2)                     = result.repeated_measure.p';
+                    Rep_ANOVA_Gp_effect(channel,:,1)                 = result.gp.F;
+                    Rep_ANOVA_Gp_effect(channel,:,2)                 = result.gp.p;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,1) = result.interaction.F';
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,2) = result.interaction.p';
                 end
@@ -1136,7 +1137,7 @@ switch type
                 end
                 
                 % Main group effet
-                save('Rep_ANOVA_Gp_effect.mat',Rep_ANOVA_Gp_effect,'-v7.3');
+                save('Rep_ANOVA_Gp_effect.mat','Rep_ANOVA_Gp_effect','-v7.3');
                 if nargout ~= 0, LIMOPath = fullfile(pwd,'Rep_ANOVA_Gp_effect.mat'); end
             end
         end
@@ -1173,11 +1174,11 @@ switch type
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
             elseif type == 3
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
-                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
+                H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
             else
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
-                boot_H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
+                H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
             end
             
