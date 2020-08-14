@@ -549,126 +549,124 @@ else % 2nd level specific tests
                 save(H0_tfce_file, 'tfce_H0_Rep_ANOVA', '-v7.3');
                 clear tfce_H0_Rep_ANOVA
             end
-        end
+        
                
-        if contains(filename,'ess')
+        elseif contains(filename,'ess')
             % -----------------------------
             ess = load(filename);
             ess = ess.(cell2mat(fieldnames(ess)));
-            tfce_score = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
-            save(tfce_file, 'tfce_score');
+            if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                if size(ess,1) == 1
+                    tfce_ess = limo_tfce(2,squeeze(ess(1,:,:,4)),[]); % use bwlabel to cluster freq*time map
+                else
+                    tfce_ess = limo_tfce(3,squeeze(ess(:,:,:,4)),LIMO.data.neighbouring_matrix);
+                end
+            else
+                if size(ess,1) == 1
+                    tfce_ess = limo_tfce(1,squeeze(ess(:,:,4)),[]);
+                else
+                    tfce_ess = limo_tfce(2,squeeze(ess(:,:,4)),LIMO.data.neighbouring_matrix);
+                end
+            end
+            save(tfce_file, 'tfce_ess', '-v7.3');
+            clear tfce_ess
             
             H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
             if exist(H0filename,'file')
                 fprintf('Applying TFCE to null data ... \n')
                 H0_ess = load(H0filename);
                 H0_ess = H0_ess.(cell2mat(fieldnames(H0_ess)));
-                tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                save(H0_tfce_file,'tfce_H0_score','-v7.3');
+                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                    if size(H0_ess,1) == 1
+                        tfce_H0_ess = limo_tfce(2,squeeze(H0_ess(1,:,:,1,:)),[]);
+                    else
+                       tfce_H0_ess = NaN(size(H0_ess,1),size(H0_ess,2),size(H0_ess,3),LIMO.design.bootstrap);
+                       parfor b=1:nboot
+                            tfce_H0_ess(:,:,:,b) = limo_tfce(3,squeeze(H0_ess(:,:,:,1,b)),LIMO.data.neighbouring_matrix);
+                        end
+                    end
+                else
+                    if size(H0_ess,1) == 1
+                        tfce_H0_ess = limo_tfce(1,squeeze(H0_ess(1,:,1,:)),[]);
+                    else
+                        tfce_H0_ess = NaN(size(H0_ess,1),size(H0_ess,2),LIMO.design.bootstrap);
+                        parfor b=1:nboot
+                            tfce_H0_ess(:,:,b) = limo_tfce(2,squeeze(H0_ess(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                        end
+                    end
+                end
+                save(H0filename, 'tfce_H0_ess', '-v7.3');
+                clear tfce_H0_ess
+            end
+        
+        
+        elseif contains(filename,'Gp') && ~contains(filename,'Interaction','IgnoreCase',true)
+            Rep_ANOVA_Gp_effect = load(filename);
+            Rep_ANOVA_Gp_effect = Rep_ANOVA_Gp_effect.(cell2mat(fieldnames(Rep_ANOVA_Gp_effect)));
+            if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                if size(Rep_ANOVA_Gp_effect,1) == 1
+                    tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_4d_reshape(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1))),[]);
+                else
+                    tfce_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_4d_reshape(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1))),LIMO.data.neighbouring_matrix);
+                end
+            else
+                if size(Rep_ANOVA_Gp_effect,1) == 1
+                    tfce_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),[]);
+                else
+                    tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                end
+            end
+            save(tfce_file, 'tfce_Rep_ANOVA_Gp_effect', '-v7.3');
+            clear tfce_Rep_ANOVA_Gp_effect
+            
+            H0filename = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+            if exist(H0filename,'file')
+                fprintf('Applying TFCE to null data ... \n')
+                H0_tfce_Rep_ANOVA_Gp_effect = load(H0filename);
+                H0_tfce_Rep_ANOVA_Gp_effect = H0_tfce_Rep_ANOVA_Gp_effect.(cell2mat(fieldnames(H0_tfce_Rep_ANOVA_Gp_effect)));
+                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                    if size(H0_tfce_Rep_ANOVA_Gp_effect,1) == 1
+                        tfce_H0_Gp_effect = limo_tfce(2,squeeze(H0_tfce_Rep_ANOVA_Gp_effect(1,:,:,1,:)),[]);
+                    else
+                       tfce_H0_Gp_effect = NaN(size(H0_tfce_Rep_ANOVA_Gp_effect,1),size(H0_tfce_Rep_ANOVA_Gp_effect,2),size(H0_tfce_Rep_ANOVA_Gp_effect,3),LIMO.design.bootstrap);
+                       parfor b=1:nboot
+                            tfce_H0_Gp_effect(:,:,:,b) = limo_tfce(3,squeeze(H0_tfce_Rep_ANOVA_Gp_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix);
+                        end
+                    end
+                else
+                    if size(H0_tfce_Rep_ANOVA_Gp_effect,1) == 1
+                        tfce_H0_Gp_effect = limo_tfce(1,squeeze(H0_tfce_Rep_ANOVA_Gp_effect(1,:,1,:)),[]);
+                    else
+                        tfce_H0_Gp_effect = NaN(size(H0_tfce_Rep_ANOVA_Gp_effect,1),size(H0_tfce_Rep_ANOVA_Gp_effect,2),LIMO.design.bootstrap);
+                        parfor b=1:nboot
+                            tfce_H0_Gp_effect(:,:,b) = limo_tfce(2,squeeze(H0_tfce_Rep_ANOVA_Gp_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                        end
+                    end
+                end
+                save(H0filename, 'tfce_H0_Gp_effect', '-v7.3');
+                clear tfce_H0_Gp_effect
+            end
+            
+        elseif contains(filename,'Interaction','IgnoreCase',true) 
+            for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
+                fprintf('analyzing interaction effect %g \n',i)
+                tfce_name = sprintf('tfce%s%s',filesep,IRep_filenames{i});
+                if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
+                    if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
+                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),[]);
+                    else
+                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),LIMO.data.neighbouring_matrix);
+                    end
+                else
+                    if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
+                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),[]);
+                    else
+                        tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),LIMO.data.neighbouring_matrix);
+                    end
+                end
+                save(tfce_name, 'tfce_Rep_ANOVA_Interaction_with_gp');
+                clear tfce_Rep_ANOVA_Interaction_with_gp
             end
         end
-        
-%         if contains(filename,'Gp')
-%             % gp effect
-%             fprintf('analyzing gp effect \n')
-%             tfce_name = sprintf('tfce%stfce_Rep_ANOVA_Gp_effect',filesep);
-%             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-%                 if size(Rep_ANOVA_Gp_effect,1) == 1
-%                     tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_4d_reshape(squeeze(1,Rep_ANOVA_Gp_effect(:,:,1))),[]);
-%                 else
-%                     tfce_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_4d_reshape(squeeze(2,Rep_ANOVA_Gp_effect(:,:,1))),LIMO.data.neighbouring_matrix);
-%                 end
-%             else
-%                 if size(Rep_ANOVA_Gp_effect,1) == 1
-%                     tfce_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),[]);
-%                 else
-%                     tfce_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(Rep_ANOVA_Gp_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-%                 end
-%             end
-%             save(tfce_name, 'tfce_Rep_ANOVA_Gp_effect');
-%             clear tfce_Rep_ANOVA_Gp_effect
-%             
-%             % interactions
-%             for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
-%                 fprintf('analyzing interaction effect %g \n',i)
-%                 tfce_name = sprintf('tfce%s%s',filesep,IRep_filenames{i});
-%                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-%                     if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),[]);
-%                     else
-%                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_4d_reshape(squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1))),LIMO.data.neighbouring_matrix);
-%                     end
-%                 else
-%                     if size(tmp_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),[]);
-%                     else
-%                         tfce_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_Rep_ANOVA_Interaction_with_gp(:,:,i,1)),LIMO.data.neighbouring_matrix);
-%                     end
-%                 end
-%                 save(tfce_name, 'tfce_Rep_ANOVA_Interaction_with_gp');
-%                 clear tfce_Rep_ANOVA_Interaction_with_gp
-%             end
-%             
-%             % gp effect
-%             fprintf('analyzing gp effect \n')
-%             tfce_name = sprintf('H0%stfce_H0_Rep_ANOVA_Gp_effect',filesep);
-%             if ~exist('H0_Rep_ANOVA_Gp_effect','var')
-%                 load(sprintf('H0%sH0_Rep_ANOVA_Gp_effect',filesep));
-%             end
-%             
-%             if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-%                 if size(H0_Rep_ANOVA_Gp_effect,1) == 1
-%                     tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),[]);
-%                 else
-%                     tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:))),LIMO.data.neighbouring_matrix);
-%                 end
-%             else
-%                 if size(H0_Rep_ANOVA_Gp_effect,1) == 1
-%                     tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(1,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),[]);
-%                 else
-%                     tfce_H0_Rep_ANOVA_Gp_effect = limo_tfce(2,squeeze(H0_Rep_ANOVA_Gp_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-%                 end
-%             end
-%             save(tfce_name, 'tfce_H0_Rep_ANOVA_Gp_effect');
-%             clear tfce_H0_Rep_ANOVA_Gp_effect H0_Rep_ANOVA_Gp_effect
-%             
-%             % interactions
-%             for i=1:nb_effects
-%                 fprintf('analyzing interaction effect %g \n',i)
-%                 tfce_name = sprintf('H0%s%s',filesep,IRep_filenames{i});
-%                 if exist('tmp_boot_H0_Rep_ANOVA_Interaction_with_gp','var')
-%                     if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-%                         if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),[]);
-%                         else
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_5d_reshape(squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:))),LIMO.data.neighbouring_matrix);
-%                         end
-%                     else
-%                         if size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),[]);
-%                         else
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,1,:)),LIMO.data.neighbouring_matrix);
-%                         end
-%                     end
-%                 else
-%                     load(sprintf('H0%sH0_Rep_ANOVA_Interaction_gp_Factor_%g',filesep,i));
-%                     if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
-%                         if size(H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:))),[]);
-%                         else
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(3,limo_tf_5d_reshape(squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:))),LIMO.data.neighbouring_matrix);
-%                         end
-%                     else
-%                         if size(H0_Rep_ANOVA_Interaction_with_gp,1) == 1
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(1,squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:)),[]);
-%                         else
-%                             tfce_H0_Rep_ANOVA_Interaction_with_gp = limo_tfce(2,squeeze(H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:)),LIMO.data.neighbouring_matrix);
-%                         end
-%                     end
-%                 end
-%                 save(tfce_name, 'tfce_H0_Rep_ANOVA_Interaction_with_gp');
-%                 clear tfce_H0_Rep_ANOVA_Interaction_with_gp
-%             end
-%         end
     end
 end
