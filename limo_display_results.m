@@ -57,7 +57,7 @@ try g.regressor;  catch, g.regressor = [];  end % No default values
 try g.plot3type;  catch, g.plot3type = [];  end % No default values
 
 toplot = load(fullfile(PathName,FileName));
-toplot = toplot.(cell2mat(filenames(toplot)));
+toplot = toplot.(cell2mat(fieldnames(toplot)));
 if nargin <= 6
     flag = 1;
 end
@@ -275,15 +275,15 @@ if LIMO.Level == 1
                         if strcmp(FileName(end-6:end),'_EV.mat')
                             FileName = [FileName(1:end-7) '.mat'];
                             toplot   = load(fullfile(PathName,FileName));
-                            toplot   = toplot.(cell2mat(filenames(toplot)));
+                            toplot   = toplot.(cell2mat(fieldnames(toplot)));
                         end
                         name   = sprintf('%s_%g_EV',FileName(1:end-4),str2double(FileName(max(strfind(FileName,'_')):end-4))); 
                         EV     = load(fullfile(LIMO.dir,name));
-                        EV     = EV.(cell2mat(Filednames(EV)));
+                        EV     = EV.(cell2mat(fieldnames(EV)));
                         EV     = EV(1:size(Condition_effect_EV,1),:); % no point plotting 0, just pick 5 1st Eigen values
                         name   = sprintf('%s_%g_EV_var',FileName(1:end-4),str2double(FileName(max(strfind(FileName,'_')):end-4))); 
                         EV_var = load(fullfile(LIMO.dir,name));
-                        EV_var = EV_var.(cell2mat(Filednames(EV_var)));
+                        EV_var = EV_var.(cell2mat(fieldnames(EV_var)));
                         EV_var = EV_var(1:size(EV_var,1),:); 
                         test =  sum(EV_var(1,:) > 95) / size(EV_var,2); % If more than 50% of the time-frames have a 
                         %first eigenvalue with a proportion higher than 90%, the results of Roy's test are displayed,
@@ -534,7 +534,7 @@ if LIMO.Level == 1
                             title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
                         end
                     end
-                    assignin('base',EEG.setname,EEG.data);
+                    assignin('base','F values',EEG.data);
                 elseif strcmp(FileName,'semi partial_coef.mat')
                     regressor = str2double(cell2mat(inputdlg('which regressor(s) to plot (e.g. 1:3)','Plotting option')));
                     if max(regressor) > size(toplot,3); errordlg('error in regressor number'); return; end
@@ -631,8 +631,12 @@ if LIMO.Level == 1
             else
                 regressor = g.regressor;
             end
+            
             if isempty(regressor); disp('selection aborded'); return; end
-            try regressor = sort(eval(cell2mat(regressor)));
+            regressor = cell2mat(regressor);
+            if isempty(regressor); disp('selection aborded'); return; end
+            
+            try regressor = sort(str2double(regressor));
                 if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
             catch ME
                 error('can''t select this regressor: %s',ME.message); 
@@ -1469,7 +1473,7 @@ elseif LIMO.Level == 2
             % load the effect
             % --------------
             name = sprintf('Covariate_effect_%g.mat',regressor);
-            data = load(name); data = getfield(data,cell2mat(fieldnames(data)));
+            data = load(name); data = data.(cell2mat(fieldnames(data)));
             
             % which ERP to make
             % ------------------
@@ -1549,7 +1553,8 @@ elseif LIMO.Level == 2
             % ----------------------
             probs = [p/2; 1-p/2];
             z = norminv(probs);
-            load Yr;
+            Yr = load(fullfile(LIMO.dir,'Yr.mat'));
+            Yr = Yr.Yr;
             
             if strcmp(extra,'Original')
                 if sum(regressor <= categorical) == length(regressor) % for categorical variables
