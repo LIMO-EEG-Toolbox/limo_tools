@@ -715,6 +715,9 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             parameters = repmat(parameters,1,gp_nb);
         end
     else
+        if iscell(LIMO.design.parameters)
+            LIMO.design.parameters = cell2mat(LIMO.design.parameters);
+        end
         if length(LIMO.design.parameters) == 1
             parameters = repmat(LIMO.design.parameters,1,gp_nb);
             LIMO.design.parameters = parameters;
