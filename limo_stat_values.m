@@ -88,7 +88,7 @@ fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6
 %% Deal with each case of FileName
 
 % -------------------------------
-%% GLM (from 1st or 2nd level) - including robust regresion, robust ANOVA
+%% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA
 % ------------------------------------------------------------------------
 if strcmpi(LIMO.Analysis,'Time-Frequency')
     if strcmp(FileName,'R2.mat')
@@ -261,8 +261,10 @@ elseif ~isempty(M) && MCC == 3 % Stat max
     if exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]),'file')
         try
             score    = load(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]));
+            score    = score.(cell2mat(fieldnames(score)));
             H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
-            [mask,M] = limo_max_correction(score.tfce_score,H0_score.tfce_H0_score,p);
+            H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
+            [mask,M] = limo_max_correction(score,H0_score,p);
             mytitle  = sprintf('%s: correction using TFCE',titlename);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
