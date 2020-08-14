@@ -503,36 +503,22 @@ if contains(FileName,'Rep_ANOVA')
     elseif MCC == 4 % Stat max
         if exist(MCC_data,'file')
             try
-                if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    H0_Rep_ANOVA_Interaction_with_gp = load(MCC_data);
-                    H0_Rep_ANOVA_Interaction_with_gp = H0_Rep_ANOVA_Interaction_with_gp.H0_Rep_ANOVA_Interaction_with_gp;
-                    bootT                            = H0_Rep_ANOVA_Interaction_with_gp(:,:,1,:);
-                    if size(matfile.Rep_ANOVA_Interaction_with_gp,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA_Interaction_with_gp,2),size(H0_Rep_ANOVA_Interaction_with_gp,4));
+                H0_data = load(MCC_data);
+                H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    bootT = squeeze(H0_data(:,:,:,1,:));
+                    if size(M,1) == 1
+                        tmp = NaN(1,size(M,2),size(M,3),size(bootT,4));
+                        tmp(1,:,:,:) = bootT; bootT = tmp;
+                        clear tmp
+                    end
+                else
+                    bootT = squeeze(H0_data(:,:,1,:));
+                    if size(M,1) == 1
+                        tmp = NaN(1,size(M,2),size(bootT,4));
                         tmp(1,:,:) = bootT; bootT = tmp;
                         clear tmp
                     end
-                    clear H0_Rep_ANOVA_Interaction_with_gp
-                elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    H0_Rep_ANOVA_Gp_effect = load(MCC_data);
-                    H0_Rep_ANOVA_Gp_effect = H0_Rep_ANOVA_Gp_effect.H0_Rep_ANOVA_Gp_effect;
-                    bootT = H0_Rep_ANOVA_Gp_effect(:,:,1,:);
-                    if size(matfile.Rep_ANOVA_Gp_effect,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA_Gp_effect,2),size(H0_Rep_ANOVA_Gp_effect,4));
-                        tmp(1,:,:) = bootT; bootT = tmp;
-                        clear tmp
-                    end
-                    clear H0_Rep_ANOVA_Gp_effect
-                elseif strncmp(FileName,'Rep_ANOVA',9)
-                    H0_Rep_ANOVA = load(MCC_data);
-                    H0_Rep_ANOVA = H0_Rep_ANOVA.H0_Rep_ANOVA;
-                    bootT = H0_Rep_ANOVA(:,:,1,:); % get all F values under H0
-                    if size(matfile.Rep_ANOVA,1) == 1
-                        tmp = NaN(1,size(matfile.Rep_ANOVA,2),size(H0_Rep_ANOVA,4));
-                        tmp(1,:,:) = bootT; bootT = tmp;
-                        clear tmp
-                    end
-                    clear H0_Rep_ANOVA
                 end
                 
                 [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
@@ -547,6 +533,7 @@ if contains(FileName,'Rep_ANOVA')
                 errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
             end
+            
         else
             errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
             return
@@ -559,16 +546,16 @@ if contains(FileName,'Rep_ANOVA')
         H0_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
         if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
             try
-                tfce_data    = load(tfce_data);
+                tfce_data    = load(tfce_data);     
+                tfce_data    = tfce_data.(cell2mat(filednames(tfce_data)));
                 H0_tfce_data = load(H0_tfce_data);
+                H0_tfce_data = H0_tfce_data.(cell2mat(filednames(H0_tfce_data)));
+                [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p);
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
-                    [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA_Interaction_with_gp, H0_tfce_data.tfce_H0_Rep_ANOVA_Interaction_with_gp,p);
                     mytitle = sprintf('Interaction correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
-                    [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA_Gp_effect, H0_tfce_data.tfce_H0_Rep_ANOVA_Gp_effect,p);
                     mytitle = sprintf('Gp effect correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA',9)
-                    [mask,M] = limo_max_correction(tfce_data.tfce_Rep_ANOVA, H0_tfce_data.tfce_H0_Rep_ANOVA,p);
                     mytitle = sprintf('Main Effect correction using TFCE');
                 end
             catch ME
