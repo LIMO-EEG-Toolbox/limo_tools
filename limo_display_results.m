@@ -1145,7 +1145,7 @@ elseif LIMO.Level == 2
                         data_cached = 0;
                     elseif sum(mask(:)) == 0
                         warndlg('  no values under threshold  ','no significant effect','modal');
-                        toplot = []; return
+                        return
                     else
                         toplot      = LIMO.cache.fig.stats;
                         M           = LIMO.cache.fig.pval;
@@ -1172,27 +1172,19 @@ elseif LIMO.Level == 2
                 return
             elseif sum(mask(:)) == 0
                 warndlg('  no values under threshold  ','no significant effect','modal');
-                toplot = []; return
+                return
             else
                 assignin('base','p_values',squeeze(M))
                 assignin('base','mask',squeeze(mask))
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                if strncmp(FileName,'R2',2)
-                    toplot = squeeze(R2(:,:,:,1));
-                elseif strncmp(FileName,'one_sample',10)
-                    toplot = squeeze(one_sample(:,:,:,4));
-                elseif strncmp(FileName,'two_samples',11)
-                    toplot = squeeze(two_samples(:,:,:,4));
-                elseif strncmp(FileName,'paired',6)
-                    toplot = squeeze(paired_samples(:,:,:,4));
-                elseif strncmp(FileName,'Covariate',9)
-                    toplot = squeeze(Covariate_effect(:,:,:,1));
-                elseif strncmp(FileName,'Condition',9)
-                    toplot = squeeze(Condition_effect(:,:,:,1));
+                if contains(FileName,'R2')
+                    toplot = squeeze(toplot(:,:,:,1));
+                elseif contains(FileName,'t-test','IgnoreCase',true)
+                    toplot = squeeze(toplot(:,:,:,4));
                 elseif strncmp(FileName,'con_',4)
-                    toplot = squeeze(con(:,:,:,4));
+                    toplot = squeeze(toplot(:,:,:,4));
                 elseif strncmp(FileName,'ess_',4)
                     if ~exist('ess','var')
                         effect_nb = eval(FileName(22:end-4));
@@ -1203,41 +1195,36 @@ elseif LIMO.Level == 2
                             ess = ess1; clear ess1
                         end
                     end
-                    toplot = squeeze(ess(:,:,:,4));
-                elseif contains(FileName,'Rep_ANOVA')
-                    toplot = squeeze(Rep_ANOVA(:,:,:,1));
+                    toplot = squeeze(toplot(:,:,:,4));
+                elseif contains(FileName,'Condition') || ...
+                        contains(FileName,'Covariate') || ...
+                        contains(FileName,'Rep_ANOVA')
+                    toplot = squeeze(toplot(:,:,:,1));
                 else
                     disp('file no supported'); return
                 end
             else
-                if strncmp(FileName,'R2',2)
-                    toplot = squeeze(R2(:,:,1));
-                elseif strncmp(FileName,'one_sample',10)
-                    toplot = squeeze(one_sample(:,:,4));
-                elseif strncmp(FileName,'two_samples',11)
-                    toplot = squeeze(two_samples(:,:,4));
-                elseif strncmp(FileName,'paired',6)
-                    toplot = squeeze(paired_samples(:,:,4));
-                elseif strncmp(FileName,'Covariate',9)
-                    toplot = squeeze(Covariate_effect(:,:,1));
-                elseif strncmp(FileName,'Condition',9)
-                    toplot = squeeze(Condition_effect(:,:,1));
-                    assignin('base','F_values',toplot)
+                if contains(FileName,'R2')
+                    toplot = squeeze(toplot(:,:,1));
+                elseif contains(FileName,'t-test','IgnoreCase',true)
+                    toplot = squeeze(toplot(:,:,4));
                 elseif strncmp(FileName,'con_',4)
-                    toplot = squeeze(con(:,:,4));
+                    toplot = squeeze(toplot(:,:,4));
                 elseif strncmp(FileName,'ess_',4)
                     if ~exist('ess','var')
                         effect_nb = eval(FileName(22:end-4));
                         try
                             ess = eval(['ess' num2str(effect_nb)]);
                             clear(['ess' num2str(effect_nb)])
-                        catch
+                          catch
                             ess = ess1; clear ess1
                         end
                     end
-                    toplot = squeeze(ess(:,:,4));
-                elseif contains(FileName,'Rep_ANOVA')
-                    toplot = squeeze(Rep_ANOVA(:,:,1));
+                    toplot = squeeze(toplot(:,:,4));
+                elseif contains(FileName,'Condition') || ...
+                        contains(FileName,'Covariate') || ...
+                        contains(FileName,'Rep_ANOVA')
+                    toplot = squeeze(toplot(:,:,1));
                 else
                     disp('file no supported'); return
                 end
