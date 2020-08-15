@@ -126,6 +126,14 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         Pval      = squeeze(matfile.con(:,:,:,5));
         MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
+    elseif contains(FileName,'ttest')
+        matfile   = matfile.(cell2mat(fieldnames(matfile)));
+        M         = matfile(:,:,:,4); % T values
+        Pval      = matfile(:,:,:,5);
+        MCC_data  = sprintf('H0%sH0_%s', filesep, FileName);
+        name      = FileName(1:strfind(FileName,'ttest')+4);
+        name(strfind(name,'_')) = ' ';
+        titlename = sprintf('%s t-test T values',name);
     elseif strncmp(FileName,'ess_',4)
         effect_nb = eval(FileName(5:end-4));
         M         = squeeze(matfile.ess(:,:,:,end-1));
@@ -133,7 +141,8 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g F values',effect_nb);
     end
-else
+    
+else  % same with one less dimention
     if strcmp(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,2)); % F values
         Pval      = squeeze(matfile.R2(:,:,3)); % P values
@@ -169,6 +178,14 @@ else
         Pval      = squeeze(matfile.con(:,:,5));
         MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
+    elseif contains(FileName,'ttest')
+        matfile   = matfile.(cell2mat(fieldnames(matfile)));
+        M         = matfile(:,:,4); % T values
+        Pval      = matfile(:,:,5);
+        MCC_data  = sprintf('H0%sH0_%s', filesep, FileName);
+        name      = FileName(1:strfind(FileName,'ttest')+4);
+        name(strfind(name,'_')) = ' ';
+        titlename = sprintf('%s T values',name);
     elseif strncmp(FileName,'ess_',4)
         effect_nb = eval(FileName(5:end-4));
         M         = squeeze(matfile.ess(:,:,end-1));
@@ -193,27 +210,46 @@ elseif ~isempty(M) && MCC == 2
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
             if strcmpi(LIMO.Analysis,'Time-Frequency')
-                if strcmp(FileName,'R2.mat')
+                if contains(FileName,'R2') || contains(FileName,'semi_partial')
                     bootM = squeeze(H0_data(:,:,:,2,:)); % get all F values under H0
                     bootP = squeeze(H0_data(:,:,:,3,:)); % get all P values under H0
-                else
+               else
                     bootM = squeeze(H0_data(:,:,:,1,:));
                     bootP = squeeze(H0_data(:,:,:,2,:));
                 end
+                
+                if size(M,1) == 1
+                    tmp = NaN(1,size(M,2),size(M,3),size(bootM,4));
+                    tmp(1,:,:,:) = bootM; bootM = tmp;
+                    tmp(1,:,:,:) = bootP; bootP = tmp;
+                    clear tmp
+                end
             else
-                if strcmp(FileName,'R2.mat')
+                if contains(FileName,'R2') || contains(FileName,'semi_partial')
                     bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
                     bootP = squeeze(H0_data(:,:,3,:)); % get all P values under H0
                 else
                     bootM = squeeze(H0_data(:,:,1,:));
                     bootP = squeeze(H0_data(:,:,2,:));
                 end
+                
+                if size(M,1) == 1
+                    tmp = NaN(1,size(M,2),size(bootM,4));
+                    tmp(1,:,:,:) = bootM; bootM = tmp;
+                    tmp(1,:,:,:) = bootP; bootP = tmp;
+                    clear tmp
+                end
             end
             
             % finally get cluster mask and corrected p-values
             [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
-            Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
-            if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
+            Nclust   = unique(mask); 
+            Nclust   = length(Nclust)-1; % mask = mask>0;
+            if Nclust <= 1
+                Mclust = 'cluster';
+            else
+                Mclust = 'clusters';
+            end
             mytitle = sprintf('%s cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
@@ -232,13 +268,13 @@ elseif ~isempty(M) && MCC == 4 % Stat max
             H0_data = load(['H0' filesep MCC_data]);
             H0_data = H0_data.(cell2mat(fieldnames(H0_data)));
             if strcmpi(LIMO.Analysis,'Time-Frequency')
-                if strcmp(FileName,'R2.mat')
+                if contains(FileName,'R2') || contains(FileName,'semi_partial')
                     bootM = squeeze(H0_data(:,:,:,2,:)); % get all F values under H0
                 else
                     bootM = squeeze(H0_data(:,:,:,1,:));
                 end
             else
-                if strcmp(FileName,'R2.mat')
+                if contains(FileName,'R2') || contains(FileName,'semi_partial')
                     bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
                 else
                     bootM = squeeze(H0_data(:,:,1,:));
@@ -275,146 +311,6 @@ elseif ~isempty(M) && MCC == 3 % Stat max
     end
 end
 
-% ------------------------------------------
-%% T-tests
-% ------------------------------------------
-
-if LIMO.Level ==2 && contains(FileName,'ttest')
-       
-    matfile = matfile.(cell2mat(fieldnames(matfile)));
-    if strcmpi(LIMO.Analysis,'Time-Frequency')
-        M    = matfile(:,:,:,4); % T values
-        PVAL = matfile(:,:,:,5);
-    else
-        M    = matfile(:,:,4);
-        PVAL = matfile(:,:,5);
-    end
-    name    = FileName(1:strfind(FileName,'ttest')+4);
-    name(strfind(name,'_')) = ' ';
-    MCC_data = sprintf('H0%sH0_%s', filesep, FileName);
-    
-    % no correction for multiple testing
-    % -----------------------------------
-    if MCC == 1
-        mask    = PVAL <= p;
-        M       = PVAL;
-        mytitle = sprintf('%s: uncorrected threshold',name);
-        
-        % 2D cluster and 1D correction for multiple testing
-        % ------------------------------------------
-    elseif MCC == 2
-        if exist(MCC_data,'file')
-            try
-                H0_sample = load(MCC_data);
-                H0_sample = H0_sample.(cell2mat(fieldnames(H0_sample)));
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    bootT = squeeze(H0_sample(:,:,:,1,:)); % get all T values under H0
-                    bootP = squeeze(H0_sample(:,:,:,2,:)); % get all P values under H0
-                    if size(matfile,1) == 1
-                        tmp = NaN(1,size(matfile,2),size(matfile,3),size(H0_sample,4));
-                        tmp(1,:,:,:) = bootT; bootT = tmp;
-                        tmp(1,:,:,:) = bootP; bootP = tmp;
-                        clear tmp
-                    end
-                else
-                    bootT = squeeze(H0_sample(:,:,1,:)); % get all T values under H0
-                    bootP = squeeze(H0_sample(:,:,2,:)); % get all P values under H0
-                    if size(matfile,1) == 1
-                        tmp = NaN(1,size(matfile,2),size(H0_sample,4));
-                        tmp(1,:,:) = bootT; bootT = tmp;
-                        tmp(1,:,:) = bootP; bootP = tmp;
-                        clear tmp
-                    end
-                end
-                clear H0_sample
-                
-                if size(M,1) == 1
-                    [mask,M] = limo_clustering(M.^2,PVAL,bootT.^2,bootP,LIMO,3,p);
-                else
-                    [mask,M] = limo_clustering(M.^2,PVAL,bootT.^2,bootP,LIMO,MCC,p); % square T values
-                end
-                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
-                if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('%s cluster correction (%g %s)', name, Nclust, Mclust);
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
-                return
-            end
-        else 
-            errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
-            return
-        end
-        
-        % T max correction for multiple testing
-        % -------------------------------------
-    elseif MCC == 4 % Stat max
-        if exist(MCC_data,'file')
-            try
-                H0_sample = load(MCC_data);
-                H0_sample = H0_sample.(cell2mat(fieldnames(H0_sample)));
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    bootT = squeeze(H0_sample(:,:,:,1,:)); % get all T values under H0
-                    if size(matfile,1) == 1
-                        tmp = NaN(1,size(matfile,2),size(matfile,3),size(H0_sample,4));
-                        tmp(1,:,:,:) = bootT; bootT = tmp; clear tmp
-                    end
-                    bootT    = limo_tf_4d_reshape(bootT,[size(bootT,1),size(bootT,2)*size(bootT,3),size(bootT,4)]);
-                    M        = reshape(M,[size(M,1),size(M,2)*size(M,3)]);
-                    [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                    mask     = reshape(mask,size(matfile,1),size(matfile,2),size(matfile,3));
-                    M        = reshape(M,size(matfile,1),size(matfile,2),size(matfile,3));
-                else
-                    bootT          = squeeze(H0_sample(:,:,1,:)); % get all T values under H0
-                    if size(matfile,1) == 1
-                        tmp        = NaN(1,size(matfile,2),size(H0_sample,4));
-                        tmp(1,:,:) = bootT; 
-                        bootT      = tmp; clear tmp
-                    end
-                    [mask,M]        = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                end
-                clear H0_sample
-                mytitle       = sprintf('%s correction by T max',name);
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
-                return
-            end
-        else
-            errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
-            return
-        end
-        
-        % Correction using TFCE
-        % -------------------------------------
-    elseif MCC == 3 % Stat tfce
-        tfce_data    = sprintf('tfce%stfce_%s',filesep, FileName);
-        H0_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
-        if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
-            try
-                tfce_data    = load(tfce_data); 
-                tfce_data    = tfce_data.(cell2mat(fieldnames(tfce_data)));
-                H0_tfce_data = load(H0_tfce_data);
-                H0_tfce_data = H0_tfce_data.(cell2mat(fieldnames(H0_tfce_data)));
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    tfce_data    = reshape(tfce_data,[size(tfce_data,1),size(tfce_data,2)*size(tfce_data,3)]);
-                    H0_tfce_data = limo_tf_4d_reshape(H0_tfce_data,[size(H0_tfce_data,1),size(H0_tfce_data,2)*size(H0_tfce_data,3),size(H0_tfce_data,4)]);
-                    [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p);
-                    mask         = reshape(mask,size(matfile,1),size(matfile,2),size(matfile,3));
-                    M            = reshape(M,size(matfile,1),size(matfile,2),size(matfile,3));
-                else
-                    [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p);
-                end
-                mytitle          = sprintf('%s correction using TFCE',name);
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
-                return
-            end
-        else
-            errordlg('no tfce file or bootstrap file was found to compute the max distribution','tfce correction failure')
-            return
-        end
-    end
-end
-
 % ------------------------
 %% Repeated measures ANOVA
 % ------------------------
@@ -443,7 +339,6 @@ if contains(FileName,'Rep_ANOVA')
         elseif contains(FileName,'Rep_ANOVA_Main')
             mytitle = sprintf('Main Effect F-values uncorrected threshold');
         end
-        
         
         % cluster correction for multiple testing
         % ---------------------------------------
