@@ -373,10 +373,12 @@ if LIMO.Level == 1
                         ylabel(['Z2, var: ' num2str(round(Condition_effect_EV_var(2,t)),2) '%'],'Fontsize',14);
                         title(['Results of the discriminant analysis at ' num2str(time(t)) 'ms'], 'Fontsize', 18);
                         z1 = subplot(2,2,3); % First discriminant coeff
-                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        cc = limo_color_images(Discriminant_coeff(:,t,1)); % get a color map commensurate to that
+                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot'); 
                         z2 = subplot(2,2,4); % Second discriminant coeff
-                        topoplot(Discriminant_coeff(:,t,2),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        cc = limo_color_images(Discriminant_coeff(:,t,2)); % get a color map commensurate to that
+                        topoplot(Discriminant_coeff(:,t,2),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z2','Fontsize',14); colormap(z2, 'hot');
                     elseif k==2
                         figure;set(gcf,'Color','w');
@@ -393,7 +395,8 @@ if LIMO.Level == 1
                         xlabel(['Z1, var: ' num2str(round(Condition_effect_EV_var(1,t)),2) '%'],'Fontsize',14); 
                         title(['Results of the discriminant analysis at ' num2str(time(t)) 'ms'], 'Fontsize', 18);
                         z1 = subplot(2,2,[3,4]); % First discriminant coeff
-                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on');colorbar;
+                        cc = limo_color_images(Discriminant_coeff(:,t,1)); % get a color map commensurate to that
+                        topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');      
                     end
                     limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',flag)
@@ -1357,18 +1360,8 @@ elseif LIMO.Level == 2
             % stat file dim = (electrodes, frames, [mean value, se, df, t, p])
             % H0 file dim = (electrodes,frames,[t, p],nboot)
             
-            if contains(FileName,'one_sample','IgnoreCase',true)
-                data = one_sample; clear one_sample;
-            elseif contains(FileName,'two_samples','IgnoreCase',true)
-                data = two_samples; clear two_samples
-            elseif  contains(FileName,'paired_samples','IgnoreCase',true)
-                data = paired_samples; clear paired_samples
-            elseif  contains(FileName,'con','IgnoreCase',true)
-                data = con; clear con
-            elseif  contains(FileName,'ess','IgnoreCase',true)
-                data = ess; clear ess
-            end  
-            
+            data = load(fullfile(PathName,FileNme));
+            data = data.(cell2mat(fieldnames(data)));            
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,:,[4 5])),LIMO);
                 data                  = squeeze(data(channel,freq,time,:,:)); % 2D
@@ -2220,20 +2213,8 @@ end % closes the function
 % -------------------------------------------------------------------------
 function color_images_(scale,LIMO)
 
-if min(scale(:)) >= 0
-    cc=cubehelixmap('increase',64);
-elseif min(scale(:)) <= 0
-    cc=cubehelixmap('decrease',64);   
-else
-    cc = zeros(64,3);
-    tmp = scale.*(scale>0);
-    cc(33:64,:)=cubehelixmap('increase',32);
-    tmp = scale.*(scale<0);  
-    cc(1:32,:)=cubehelixmap('decrease',32);
-end
-
-%cc=colormap(jet);
-cc(1,:)=[.9 .9 .9]; % set NaNs to gray
+scale(scale==0) = NaN;   
+cc              = limo_color_images(scale); % get a color map commensurate to that
 colormap(cc);
 
 set(gca,'XMinorTick','on','LineWidth',2)
@@ -2279,28 +2260,4 @@ end
 set(gca,'YTickLabel', label_electrodes);
 end
 
-
-%% time vector and label
-% -------------------------------------------------------------------------
-% -------------------------------------------------------------------------
-function [timevect, label] = labels_time_(LIMO,ah)
-interval = 50/(1000/LIMO.data.sampling_rate); % in frame
-timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
-zero_column = find(timevect == 0);
-if isempty(zero_column) == 1 % in case it does not encompasses 0
-    zero_column = 1;
-end
-
-if  LIMO.data.start < 0
-    positive_label = timevect(zero_column:interval:end);
-    negative_label = timevect(zero_column:-interval:1);
-    if negative_label == 0
-        negative_label = LIMO.data.start*1000;
-    end
-    label = [fliplr(negative_label(2:end)) positive_label];
-else
-    label = timevect(zero_column:interval:end);
-end
-set(ah,'XTick',find(timevect==label(1)):interval:find(timevect==label(end)),'XTickLabel',round(label));
-end
 
