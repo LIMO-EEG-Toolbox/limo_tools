@@ -399,7 +399,8 @@ switch type
         
         % start the analysis
         % -------------------
-        load boot_table
+        boot_table = load(fullfile(LIMO.dir,['H0' filesep 'boot_table.mat']));
+        boot_table = boot_table.(cell2mat(fieldnames(boot_table)));
         array = find(~isnan(Y(:,1,1))); % skip empty channels
         design = X;
         
@@ -599,20 +600,30 @@ switch type
                 gp = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
                 % mean, se, df
                 n = size(Y,2);
-                g=floor((20/100)*n);
-                for time=1:size(Y,1)
-                    ess(channel,time,1) = nanmean(C(1:size(Y,3))*squeeze(Y(time,:,:))',2);
-                    ess(channel,time,2) = sqrt(C(1:size(Y,3))*cov(squeeze(Y(time,:,:)))*C(1:size(Y,3))');
+                if strcmpi(LIMO.design.method,'Mean')
+                    for time=1:size(Y,1)
+                        ess(channel,time,1) = nanmean(C(1:size(Y,3))*squeeze(Y(time,:,:))',2);
+                        ess(channel,time,2) = sqrt(C(1:size(Y,3))*cov(squeeze(Y(time,:,:)))*C(1:size(Y,3))');
+                    end
+                else
+                    ess(channel,:,1) = limo_trimmed_mean([1 Y]);
+                    for time=1:size(Y,1)
+                        ess(channel,time,2) = sqrt(C(1:size(Y,3))*cov(squeeze(ess(channel,time,1)))*C(1:size(Y,3))');
+                    end
                 end
                 df  = rank(C); dfe = n-df;
                 ess(channel,:,3) = dfe;
                 % F and p
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                if strcmpi(LIMO.design.method,'Mean')
+                    result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                else
+                    result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                end
                 ess(channel,:,4) = result.F;
                 ess(channel,:,5) = result.p;
             end
         else
-            ess = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
+            ess  = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
             ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
             
             % design matrix for gp effects
@@ -635,7 +646,12 @@ switch type
                 XB  = X(find(~isnan(tmp(1,:,1))),:);
                 % mean, se, df
                 n = size(Y,2);
-                g = floor((20/100)*n);
+                if strcmpi(LIMO.design.method,'Mean')
+                    g = 0; 
+                else
+                    g = floor((20/100)*n);
+                end
+                
                 for time=1:size(Y,1)
                     [v,indices]          = sort(squeeze(Y(time,:,:))); % sorted data
                     TD(time,:,:)         = v((g+1):(n-g),:);           % trimmed data
@@ -657,11 +673,15 @@ switch type
                 ess(channel,:,3) = dfe;
                 
                 % F and p values
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
-                ess(channel,:,1,4)  = result.repeated_measure.F;
-                ess(channel,:,1,5)  = result.repeated_measure.p;
-                ess2(channel,:,2,4) = result.interaction.F;
-                ess2(channel,:,2,5) = result.interaction.p;
+                if strcmpi(LIMO.design.method,'Mean')
+                    result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
+                else
+                    result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
+                end
+                ess(channel,:,4)  = result.repeated_measure.F;
+                ess(channel,:,5)  = result.repeated_measure.p;
+                ess2(channel,:,4) = result.interaction.F;
+                ess2(channel,:,5) = result.interaction.p;
             end
         end
         
