@@ -233,7 +233,7 @@ if popup_sel_index==1
     plot_statvalues(handles,squeeze(handles.data3d(maxe,:,slider_sel)),'Frequency')
     
     % topoplot
-    plot_topography(handles,squeeze(handles.scale(:,maxf,slider_sel)),maxf,slider_sel)
+    plot_topography(handles,squeeze(handles.data3d(:,maxf,slider_sel)),maxf,slider_sel)
     
     % time/freq map
     plot_tfmap(handles,flipud(squeeze(handles.data3d(maxe,:,:))),maxe);
