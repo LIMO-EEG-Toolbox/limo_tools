@@ -217,11 +217,11 @@ title(mytitle2,'FontSize',12)
 if size(toplot,1) ~= 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency')
     
     ax(2) = subplot(3,3,6);
-    opt   = {'maplimits','maxmin','verbose','off','colormap', cc};
+    opt   = {'maplimits','maxmin','verbose','off','colormap', limo_color_images(toplot)};
     
     if isfield(LIMO,'Type')
         if strcmpi(LIMO.Type,'Components')
-            opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', cc};
+            opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', limo_color_images(toplot)};
             topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         else
             topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
@@ -252,7 +252,6 @@ if size(toplot,1) ~= 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency')
                 set(gca,'XTickLabel', LIMO.data.freqlist);
             end
         end
-        colormap(gca, cc(2:end,:));
     end
 end
 
@@ -367,7 +366,6 @@ if dynamic == 1
                             topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
                             title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
                         end
-                        colormap(gca, cc(2:end,:));
                     end
                     
                 elseif strcmpi(LIMO.Analysis,'Frequency')
@@ -380,7 +378,6 @@ if dynamic == 1
                             topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
                             title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
                         end
-                        colormap(gca, cc(2:end,:));
                     end
                 end
                 
@@ -424,6 +421,8 @@ if dynamic == 1
                     end
                 end
                 title(mytitle2,'FontSize',12);
+
+                subplot(3,3,[1 2 4 5 7 8]); colormap(gca, cc);
                 
                 try
                     p_values = evalin('base','p_values');
