@@ -29,7 +29,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                             dimensions of the cell correspond with group, factor and
 %                             level respectively. (no default)
 %                'parameters' Cell array of parameters to be tested, relative to LIMOfiles.
-%                            ie. {[1 2]} or {[1 2],[1 2]} in case of 2 groups.
+%                            ie. {[1 2]} or {[1 2];[1 2]} in case of 2 groups.
 %       --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
 %                'regressor_file' a file or matrix of data to regress when stattest = 4
 %                'analysis_type' is 'Full scalp analysis' or '1 channel/component only'
@@ -113,13 +113,13 @@ for in = 1:2:(nargin-2)
         else
             error('analysis type argument unrecognized')
         end
-    elseif strcmpi(varargin{in},'regressor_file')
+    elseif contains(varargin{in},'regressor','IgnoreCase',true)
         regressor_file = varargin{in+1};
     elseif strcmpi(varargin{in},'skip design check')
         skip_design_check = varargin{in+1};
     elseif strcmpi(varargin{in},'channel')
         LIMO.design.electrode = varargin{in+1};
-    elseif strcmpi(varargin{in},'parameters')
+    elseif contains(varargin{in},'parameter','IgnoreCase',true)
         LIMO.design.parameters = varargin{in+1};
     elseif strcmpi(varargin{in},'factor names')
         LIMO.design.factor_names = varargin{in+1};
