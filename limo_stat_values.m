@@ -187,7 +187,7 @@ else  % same with one less dimention
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s T values',name);
     elseif strncmp(FileName,'ess_',4)
-        effect_nb = eval(FileName(5:end-4));
+        effect_nb = eval(FileName(max(strfind(FileName,'_'))+1:end-4));
         M         = squeeze(matfile.ess(:,:,end-1));
         Pval      = squeeze(matfile.ess(:,:,end));
         MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
