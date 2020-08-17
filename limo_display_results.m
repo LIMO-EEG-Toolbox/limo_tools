@@ -1214,15 +1214,6 @@ elseif LIMO.Level == 2
                 elseif strncmp(FileName,'con_',4)
                     toplot = squeeze(toplot(:,:,4));
                 elseif strncmp(FileName,'ess_',4)
-                    if ~exist('ess','var')
-                        effect_nb = eval(FileName(22:end-4));
-                        try
-                            ess = eval(['ess' num2str(effect_nb)]);
-                            clear(['ess' num2str(effect_nb)])
-                          catch
-                            ess = ess1; clear ess1
-                        end
-                    end
                     toplot = squeeze(toplot(:,:,4));
                 elseif contains(FileName,'Condition') || ...
                         contains(FileName,'Covariate') || ...
