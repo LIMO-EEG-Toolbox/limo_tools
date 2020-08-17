@@ -148,15 +148,8 @@ if LIMO.Level == 2 && contains(LIMO.design.name,'Repeated') % always T2 in fact 
     if contains(LIMO.design.name,'') && handles.F ~= 0
         uiwait(warndlg('Only T contrasts are used for this design','Hotelling T^2 test','modal'));
     end
-    % adjust X for a single group
-    if LIMO.design.nb_conditions > 1
-        index = find(LIMO.data.Cat==1);
-        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X(index,[1 2]), handles.C);
-        handles.go = limo_contrast_checking(handles.C,LIMO.design.X(index,[1 2]));
-    else
-        handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
-        handles.go = limo_contrast_checking(handles.C,LIMO.design.X);
-    end
+    handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
+    handles.go = limo_contrast_checking(handles.C,LIMO.design.X);
 else % other things than repeated measure
     if handles.F == 0
         handles.C  = limo_contrast_checking(LIMO.dir, LIMO.design.X, handles.C);
@@ -394,17 +387,17 @@ if ~isempty(handles.C)
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
             LIMO.contrast{index}.V = 'F'; % always F since we use Hotelling test
-            C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
-            load Yr; save LIMO LIMO
+            Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr; 
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             limo_contrast(Yr,LIMO,3);
             
             if strcmpi(choice,'compute bootstrap contrast')
                 limo_contrast(Yr, LIMO, 4);
             end
             
-            if LIMO.design.tfce == 1
+            if LIMO.design.tfce == 1 && strcmpi(choice,'compute bootstrap contrast')
                 filename = fullfile(LIMO.dir,['ess_' num2str(index) '.mat']);
                 limo_tfce_handling(filename)
                 if LIMO.design.nb_conditions ~= 1
