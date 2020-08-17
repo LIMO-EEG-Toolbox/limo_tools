@@ -11,7 +11,7 @@ function model = limo_glm_boot(varargin)
 % model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,boot_table)
 %
 % INPUTS
-%         Y = 2D matrix of EEG data with format trials x frames
+%         Y = 2D matrix of EEG data with format trials x time frames
 %         LIMO is a structure that contains information below
 %         X = 2 dimensional design matrix
 %         nb_conditions = a vector indicating the number of conditions per factor
@@ -89,6 +89,9 @@ end
 % -----------
 %% Data check
 % -----------
+if ndims(y) > 2 %#ok<ISMAT>
+   error('limo_glm_boot runs only on 2D data') 
+end
 
 if size(y,1)~=size(X,1)
     error('The number of events in Y and the design matrix are different')
@@ -503,7 +506,7 @@ switch method
             end
             
             tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis);
-            BETASB{B}  = tmp.betas;
+            BETASB{B}  = tmp.betas';
             MODELR2{B} = tmp.R2_univariate;
             MODELF{B}  = tmp.F;
             MODELp{B}  = tmp.p;

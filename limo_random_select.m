@@ -186,66 +186,9 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -----------------------------
     [data,removed] = getdata(1,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
     
-    % one-sample t-test
-    % -----------------
-    if strcmpi(stattest,'one sample t-test')
-        LIMO.design.X = ones(size(data,4),1);
-        
-        clear Names Paths subj_chanlocs
-        if parameters == 0
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                parameters = 1:size(data,4);
-            else
-                parameters = 1:size(data,3);
-            end
-        end
-        
-        root = LIMO.dir;
-        for i=length(parameters):-1:1
-            if length(parameters) ~= 1 % make subfolders
-                mkdir(fullfile(root,['parameter_' num2str(parameters(i))]));
-                LIMO.dir = fullfile(root,['parameter_' num2str(parameters(i))]);
-            end
-            
-            if strcmp(analysis_type,'1 channel/component only') && size(data,1) == 1
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp               = squeeze(data(:,:,:,i,:));
-                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
-                    tmp_data(1,:,:,:) = tmp; clear tmp;
-                else
-                    tmp               = squeeze(data(:,:,i,:));
-                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2));
-                    tmp_data(1,:,:)   = tmp; clear tmp;
-                end
-            else
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp_data          = squeeze(data(:,:,:,i,:));
-                else
-                    tmp_data          = squeeze(data(:,:,i,:));
-                end
-            end
-            
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
-                LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
-            end
-            
-            LIMO.design.method = 'Trimmed mean';
-            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-            Yr = tmp_data; clear tmp_data
-            save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
-            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),parameters(i),LIMO);
-            if nargout ~= 0
-                LIMOPath{i} = tmpname;
-            end
-        end
-        cd(root)
-        
-        % ------------
-        % regression
-        % -------------
-        
-    elseif strcmpi(stattest,'regression')
+    % if regression get regressor(s)
+    % -------------------------------
+    if strcmpi(stattest,'regression')
         if isempty(regressor_file)
             [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
         elseif ~ischar(regressor_file) && exist(regressor_file,'file')
@@ -263,7 +206,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             X = load(fullfile(PathName,FileName));
         elseif strcmp(FileName(end-3:end),'.mat')
             X = load(fullfile(PathName,FileName));
-            X = getfield(X,cell2mat(fieldnames(X)));
+            X = X.(cell2mat(fieldnames(X)));
         end
         disp('Regressor(s) loaded');
         
@@ -306,51 +249,73 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             errordlg2('covariate error - make sure data are in lines or columns','Covariate error');
             fprintf('%s',ME.message); return
         end
-        
-        clear Names Paths subj_chanlocs
-        if parameters == 0
-            parameters = 1:size(data,3);
+    end
+
+    % load the right parameter and compute
+    % ------------------------------------
+    root = LIMO.dir;
+    for i=length(parameters):-1:1
+        if length(parameters) ~= 1 % make subfolders
+            mkdir(fullfile(root,['parameter_' num2str(parameters(i))]));
+            LIMO.dir = fullfile(root,['parameter_' num2str(parameters(i))]);
         end
         
-        root = LIMO.dir;
-        for i=parameters
-            mkdir(fullfile(root,['parameter_' num2str(i)]));
-            LIMO.dir = fullfile(root,['parameter_' num2str(i)]);
-            if strcmp(analysis_type,'1 channel/component only')
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp               = squeeze(data(:,:,:,i,:));
-                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
-                    tmp_data(1,:,:,:) = tmp; clear tmp;
-                else
-                    tmp               = squeeze(data(:,:,i,:));
-                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2));
-                    tmp_data(1,:,:)   = tmp; clear tmp;
-                end
-            else
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp_data          = squeeze(data(:,:,:,i,:));
-                else
-                    tmp_data          = squeeze(data(:,:,i,:));
-                end
-            end
-            
+        if strcmp(analysis_type,'1 channel/component only') && size(data,1) == 1
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
-                LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
+                tmp               = squeeze(data(:,:,:,parameters(i),:));
+                tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
+                tmp_data(1,:,:,:) = tmp; clear tmp;
+            else
+                tmp               = squeeze(data(:,:,parameters(i),:));
+                tmp_data          = NaN(1,size(tmp,1),size(tmp,2));
+                tmp_data(1,:,:)   = tmp; clear tmp;
             end
-            
-            % compute
+        else
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                tmp_data          = squeeze(data(:,:,:,parameters(i),:));
+            else
+                tmp_data          = squeeze(data(:,:,parameters(i),:));
+            end
+        end
+        
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            LIMO.data.size3D = [size(tmp_data,1) size(tmp_data,2)*size(tmp_data,3) size(tmp_data,4)];
+            LIMO.data.size4D = [size(tmp_data,1) size(tmp_data,2) size(tmp_data,3) size(tmp_data,4)];
+        end
+        
+        % one-sample t-test
+        % -----------------
+        if strcmpi(stattest,'one sample t-test')
+            Yr                 = tmp_data; clear tmp_data
+            LIMO.design.X      = ones(size(data,4),1);
             LIMO.design.method = 'Trimmed mean';
-            save(fullfile(LIMO.dir,'LIMO.mat'),LIMO);
-            Yr = tmp_data; clear tmp_data
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
-            tmpname = LIMO_random_robust(4,Yr,X,i,LIMO);
+            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),parameters(i),LIMO);
+            if nargout ~= 0
+                LIMOPath{i} = tmpname;
+            end
+            cd(root)
+            
+            % ------------
+            % regression
+            % -------------
+        elseif strcmpi(stattest,'regression')
+            Yr = tmp_data; clear tmp_data
+            if strcmp(LIMO.Analysis,'Time-Frequency')
+                Yr = Yr(:,:,:,~isnan(sum(X,2)));
+            else
+                Yr = Yr(:,:,~isnan(sum(X,2)));
+            end
+            save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+            tmpname = limo_random_robust(4,Yr,X(~isnan(sum(X,2)),:),i,LIMO);
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
         end
     end
-    
+
     % ------------------------------
     %%  Two samples t-test
     % -----------------------------
@@ -1329,11 +1294,7 @@ if gp == 1
         end
         
     elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
-        if length(unique(con_val)) == 1
-            parameters = unique(con_val);
-        else
-            parameters = 1;
-        end
+        parameters = 1;
     end
     
 elseif gp > 1

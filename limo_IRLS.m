@@ -64,7 +64,7 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    oldRes = newRes;
    
    if (numiter>iterlim)
-      warning('Limo_IRLS could not converge');
+      % warning('limo_IRLS could not converge');
       break;
    end
    

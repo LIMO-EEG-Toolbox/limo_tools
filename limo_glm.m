@@ -14,7 +14,7 @@ function model = limo_glm(varargin)
 %
 % INPUTS:
 %   Y               = 2D matrix of EEG data with format trials x frames
-%                     (frame can be the concatenation of freq*time)
+%                     (frame can be the concatenation for freq*time)
 %   LIMO            = structure that contains the above information (except Y)
 %                     or input info that are in LIMO.mat
 %   X               = 2 dimensional design matrix
@@ -96,7 +96,7 @@ if nargin == 2
         n_times = varargin{2}.data.size4D(3);
     end
     clear varargin
-elseif nargin == 9
+elseif nargin >= 7
     Y               = varargin{1};
     X               = varargin{2};
     nb_conditions   = varargin{3};
@@ -104,15 +104,17 @@ elseif nargin == 9
     nb_continuous   = varargin{5};
     method          = varargin{6};
     Analysis        = varargin{7};
-    n_freqs         = varargin{8};
-    n_times         = varargin{9};
+    if nargin == 9
+        n_freqs     = varargin{8};
+        n_times     = varargin{9};
+    end
 else
     error('varargin error')
 end
 
-if isempty(nb_conditions);   nb_conditions = 0; end
+if isempty(nb_conditions);   nb_conditions   = 0; end
 if isempty(nb_interactions); nb_interactions = 0; end
-if isempty(nb_continuous);   nb_continuous = 0; end
+if isempty(nb_continuous);   nb_continuous   = 0; end
 
 nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
@@ -191,6 +193,7 @@ elseif strcmp(method,'WLS-TF')
     
 elseif strcmp(method,'IRLS')
     [Betas,W] = limo_IRLS(X,Y);
+    warning off
     % WX = X.*W per frame =  switch method
 end
 
@@ -485,7 +488,7 @@ switch method
                     C                                = zeros(size(X,2));
                     C(N_conditions+n,N_conditions+n) = 1; % pick up one regressor at a time
                     C0                               = eye(size(X,2)) - C*pinv(C);
-                    X0                               = WX*C0; % all but rehressor of interest
+                    X0                               = WX*C0; % all but regressor of interest
                     R0                               = eye(size(Y,1)) - (X0*pinv(X0));
                     M                                = R0 - R; % hat matrix for regressor of interest
                     H                                = Betas'*X'*M*X*Betas;

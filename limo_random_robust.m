@@ -622,7 +622,7 @@ switch type
         LIMO.design.status           = 'to do';
         LIMO.design.method           = 'IRLS';
         
-        if ~exist('answer','var')
+        if ~exist('answer','var') 
             answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
         end
         

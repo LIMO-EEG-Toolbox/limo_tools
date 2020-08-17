@@ -412,7 +412,17 @@ if LIMO.design.bootstrap ~=0
                 if LIMO.Level == 2
                     Y = squeeze(Yr(channel,:,:));
                     index = find(~isnan(Y(1,:))); % because across subjects, we can have missing data
-                    model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.method,LIMO.Analysis,[],[],boot_table{channel});
+                    if strcmpi(LIMO.Analysis,'Time-Frequency')
+                        for f=1:size(Yr,2)
+                            model{f} = limo_glm_boot(Y(:,f,index)',X(index,:),LIMO.design.nb_conditions,...
+                                LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                                LIMO.design.method,LIMO.Analysis,boot_table{channel});
+                        end
+                    else
+                        model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,...
+                            LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                            LIMO.design.method,LIMO.Analysis,boot_table{channel});
+                    end
                 else
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         for f=1:size(Yr,2)
