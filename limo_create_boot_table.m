@@ -2,28 +2,29 @@ function boot_table = limo_create_boot_table(data,nboot)
 
 % Builds a table of data to resample such as almost the same resampling is
 % applied across channels. At the 2nd level, not all subjects have the same
-% channels because missing data can betreated as NaN. The boot_table has 
+% channels because missing data can be treated as NaN. The boot_table has 
 % indexes which are common to all channels + some other indexes specific
-% to channels where there some NaNs.
+% to channels where there are some NaNs.
+%
+% For repeated measures (Time-Frequency, Repeated meaures ANOVA, etc)
+% call this function inputing 1 measure and apply the created table
+% to all measures
 %
 % FORMAT: boot_table = limo_create_boot_table(data,nboot)
 %
 % INPUT: data: a 3D matrix [channels x time frames x subjects];
 %        nboot: the number of bootstraps to do
-%        for repeated measures (Time-Frequency, Repeated meaures ANOVA, etc)
-%        call this function inputing 1 measure and apply to all measures the
-%        created table
 %
 % OUTPUT: boot_table is a cell array with one resampling matrix per
 %         channel
 %
 % Cyril Pernet 
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 %% edit default
 Nmin = 3; % this is the minimum number of different trials/subjects 
-          % if too low, the variance is < 1 and the stat values will be
+          % if too low, the variance is too low and the stat values will be
           % too high see Pernet et al. 2014
 
 %% start
@@ -46,7 +47,7 @@ end
 B=1;
 boot_index=zeros(size(data,3),nboot);
 if size(data,3)-1 <= Nmin
-    error(['Not enough subjects in dataset - need at least ' num2str(Nmin+2) ' subjects']);
+    error(['Not enough subjects in dataset - need at least ' num2str(Nmin) ' subjects']);
 end
 
 while B~=nboot+1
@@ -66,17 +67,17 @@ else
 end
 
 for e = size(array,1):-1:1
-    channel     = array(e);
+    channel       = array(e);
     tmp           = squeeze(data(channel,:,:)); % 2D
-    Y             = tmp(:,find(~isnan(tmp(1,:)))); % remove NaNs
     bad_subjects  = find(isnan(tmp(1,:)));
     good_subjects = find(~isnan(tmp(1,:)));
+    Y             = tmp(:,good_subjects); % remove NaNs
     
     if ~isempty(bad_subjects)
         boot_index2 = zeros(size(Y,2),nboot);
         for c=1:nboot
             common  = ismember(boot_index(:,c),good_subjects');
-            current = boot_index(find(common),c); % keep resampling of good subjets
+            current = boot_index(find(common),c); %#ok<FNDSB> % keep resampling of good subjets
             % add or remove indices
             add = size(Y,2) - size(current,1);
             if add > 0
@@ -87,7 +88,7 @@ for e = size(array,1):-1:1
             % change indices values
             tmp_boot = new_boot;
             for i=1:length(bad_subjects)
-                new_boot(find(tmp_boot > bad_subjects(i))) = tmp_boot(find(tmp_boot >  bad_subjects(i))) - i; % change range
+                new_boot(find(tmp_boot > bad_subjects(i))) = tmp_boot(find(tmp_boot >  bad_subjects(i))) - i; %#ok<FNDSB> % change range
             end
             % new boot-index
             boot_index2(:,c)  = new_boot;
