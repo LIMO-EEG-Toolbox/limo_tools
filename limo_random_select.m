@@ -38,13 +38,19 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                'type' is 'Channels' or 'Component'
 %                'nboot' is the number of bootstrap to do (default = 1000)
 %                'tfce' 0/1 indicates to computes tfce or not (default = 0)
+%                'zscore' for regression design, default [] will ask user
+%                         to zscore or not, set to 'Yes' or 'No'
+%                'skip design check' for Regression, ANOVA, ANCOVA the 
+%                                    design will pop-up and user is asked 
+%                                    to start the analysis, set to 'Yes' to
+%                                    skip this step
 %
 % OUTPUT filepath is the Path to the LIMO structure.
 %
 % Example for a repeated measure ANOVA with command line
 % LIMOPath = limo_random_select('Repeated Measures ANOVA',chanlocs,'LIMOfiles',...
 %     {'F:\WakemanHenson_Faces\eeg\derivatives\LIMO_Face_detection\Beta_files_FaceRepAll_GLM_Channels_Time_WLS.txt'},...
-%     'analysis_type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
+%     'analysis type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
 %     'factor names',{'face','repetition'},'type','Channels','nboot',0,'tfce',0);
 %
 % Cyril Pernet - The University of Edinburgh
@@ -98,7 +104,8 @@ LIMO.design.component  = [];
 LIMO.design.parameters = [];
 regressor_file         = [];
 analysis_type          = [];
-skip_design_check      = 'no';
+zopt                   = [];
+skip_design_check      = 'No';
 
 for in = 1:2:(nargin-2)
     if strcmpi(varargin{in},'LIMOfiles')
@@ -107,7 +114,7 @@ for in = 1:2:(nargin-2)
         else
             LIMO.data.data = varargin{in+1};
         end
-    elseif strcmpi(varargin{in},'analysis_type')
+    elseif strcmpi(varargin{in},'analysis type') || strcmpi(varargin{in},'analysis_type')
         if any(strcmpi(varargin{in+1},{'Full scalp analysis','1 channel/component only'}))
             analysis_type = varargin{in+1};
         else
@@ -115,7 +122,9 @@ for in = 1:2:(nargin-2)
         end
     elseif contains(varargin{in},'regressor','IgnoreCase',true)
         regressor_file = varargin{in+1};
-    elseif strcmpi(varargin{in},'skip design check')
+    elseif strcmpi(varargin{in},'zscore')
+        zopt = varargin{in+1};
+    elseif strcmpi(varargin{in},'skip design check') || strcmpi(varargin{in},'skip_design_check')
         skip_design_check = varargin{in+1};
     elseif strcmpi(varargin{in},'channel')
         LIMO.design.electrode = varargin{in+1};
@@ -191,18 +200,19 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     if strcmpi(stattest,'regression')
         if isempty(regressor_file)
             [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
-        elseif ~ischar(regressor_file) && exist(regressor_file,'file')
+            if FilterIndex == 0
+                return
+            end
+        elseif ischar(regressor_file) && exist(regressor_file,'file')
             [PathName,nametmp,exttmp] = fileparts(regressor_file);
             FileName = [nametmp exttmp]; clear nametmp exttmp;
-        elseif ~isnumeric(regressor_file)
+        elseif isnumeric(regressor_file)
             X = regressor_file;
         else
             error('LIMO_random_select error: Provide a valid regressor file');
         end
         
-        if FilterIndex == 0
-            return
-        elseif strcmp(FileName(end-3:end),'.txt')
+        if strcmp(FileName(end-3:end),'.txt')
             X = load(fullfile(PathName,FileName));
         elseif strcmp(FileName(end-3:end),'.mat')
             X = load(fullfile(PathName,FileName));
@@ -239,7 +249,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             end
             
             if size(X,2)==1 && LIMO.design.bootstrap < 599
-                if nboot ~= 0
+                if LIMO.design.bootstrap ~= 0
                     LIMO.design.bootstrap = 599;
                     disp('nb of bootstrap adjusted to 599 for a simple regression');
                 end
@@ -292,7 +302,8 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             LIMO.design.method = 'Trimmed mean';
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
-            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),parameters(i),LIMO);
+            tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
+                parameters(i),LIMO,'zscore',zopt,'go',goopt);
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
@@ -311,7 +322,14 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             LIMO.design.name = 'Robust regression';
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-            tmpname = limo_random_robust(4,Yr,X(~isnan(sum(X,2)),:),i,LIMO);
+            if isempty(zopt)
+                tmpname = limo_random_robust(4,Yr,X(~isnan(sum(X,2)),:),...
+                parameters(i),LIMO,'go',skip_design_check);
+            else
+                tmpname = limo_random_robust(4,Yr,X(~isnan(sum(X,2)),:),...
+                parameters(i),LIMO,'zscore',zopt,'go',skip_design_check);
+            end
+            
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
@@ -844,7 +862,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     
     % do the analysis
     Yr = tmp_data; clear tmp_data; save Yr Yr
-    tmpname = limo_random_robust(5,Yr,Cat,Cont,LIMO);
+    tmpname = limo_random_robust(5,Yr,Cat,Cont,LIMO,'go',skip_design_check);
     if nargout ~= 0
         LIMOPath = tmpname;
     end
