@@ -580,7 +580,7 @@ switch type
         cd(LIMO.dir);
         
         if nargin >5
-            for in = 5:2:nargin
+            for in = 6:2:nargin
                 if strcmpi(varargin{in},'zscore')
                     answer = varargin{in+1};
                 elseif strcmpi(varargin{in},'go')
