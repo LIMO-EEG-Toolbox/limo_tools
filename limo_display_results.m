@@ -1414,8 +1414,9 @@ elseif LIMO.Level == 2
             assignin('base','Plotted_data',trimci);
             
             
-        elseif strncmp(LIMO.design.name,'regression analysis',19) || strncmp(LIMO.design.name,'ANOVA',5) || strncmp(LIMO.design.name,'ANCOVA',6)
-            % --------------------------------------------------------------------------------------------------------------------------------
+        elseif contains(LIMO.design.name,'regression analysis','IgnoreCase',true) || ...
+                contains(LIMO.design.name,'ANOVA') || contains(LIMO.design.name,'ANCOVA')
+            % --------------------------------------------------------------------------------
             
             % which variable(s) to plot
             % ----------------------
@@ -1424,10 +1425,11 @@ elseif LIMO.Level == 2
                 regressor = inputdlg(input_title,'Plotting option');
                 if isempty(regressor); return; end
                 try regressor = sort(eval(cell2mat(regressor)));
-                    if max(regressor) > size(LIMO.design.X,2);
+                    if max(regressor) > size(LIMO.design.X,2)
                         errordlg('invalid regressor number');
                     end
-                catch ME
+                catch reginput_error
+                    fprinf('error: %s',reginput_error.message)
                     return
                 end
             else
