@@ -223,14 +223,14 @@ switch type
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                             con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
                         elseif strcmpi(LIMO.design.method,'IRLS')
+                            var                      = diag((squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel));
                             for frame = 1:size(Betas,2)
-                                var                  = (squeeze(Res(channel,frame,:))*squeeze(Res(channel,frame,:))') / dfe(channel,frame);
-                                con(channel,frame,1) = C*squeeze(Betas(channel,frame,:))';
-                                WX                   = X.*repmat(LIMO.design.weights(channel,frame,:),1,size(X,2));
-                                con(channel,frame,2) = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,3) = dfe(channel,frame);
-                                con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(frame))).*2;
+                                con(channel,frame,1) = C*squeeze(Betas(channel,frame,:));
+                                WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
+                                con(channel,frame,2) = sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
+                                con(channel,frame,3) = dfe(channel);
+                                con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))) ./ sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
+                                con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(channel))).*2;
                             end
                         end
                     else % F contrast
