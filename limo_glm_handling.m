@@ -247,7 +247,9 @@ if strcmp(LIMO.design.status,'to do')
     LIMO.design.X       = X;
     LIMO.design.weights = W;
     LIMO.design.status  = 'done';
-    LIMO.design.name    = 'GLM';
+    if ~isfield(LIMO.design,'name')
+        LIMO.design.name    = 'GLM';
+    end
     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 
     
     if strcmpi(LIMO.Analysis,'Time-Frequency')
