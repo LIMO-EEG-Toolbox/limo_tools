@@ -365,7 +365,11 @@ if LIMO.design.bootstrap ~=0
             nboot = LIMO.design.bootstrap;
             
             if LIMO.Level == 2
-                boot_table = limo_create_boot_table(Yr,nboot);
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    boot_table = limo_create_boot_table(squeeze(Yr(:,1,:,:)),nboot);
+                else
+                    boot_table = limo_create_boot_table(Yr,nboot);
+                end
             else
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     boot_table = randi(size(Yr,4),size(Yr,4),nboot);
@@ -401,7 +405,8 @@ if LIMO.design.bootstrap ~=0
                 end
             end
             
-            % run the analysis
+            % run the analysis, loop per channel
+            % limo_glm_boot then uses parfor to bootstrap the data under the null
             warning off;
             X = LIMO.design.X;
             h = waitbar(0,'bootstraping data','name','% done');
@@ -410,17 +415,19 @@ if LIMO.design.bootstrap ~=0
                 waitbar(e/size(array,1))
                 fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
-                    Y = squeeze(Yr(channel,:,:));
-                    index = find(~isnan(Y(1,:))); % because across subjects, we can have missing data
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
+                        Y = squeeze(Yr(channel,:,:,:));
+                        index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
                         for f=1:size(Yr,2)
-                            model{f} = limo_glm_boot(Y(:,f,index)',X(index,:),LIMO.design.nb_conditions,...
-                                LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                            model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:),...
+                                LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
                                 LIMO.design.method,LIMO.Analysis,boot_table{channel});
                         end
                     else
-                        model = limo_glm_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,...
-                            LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                        Y = squeeze(Yr(channel,:,:));
+                        index = find(~isnan(Y(1,:))); 
+                        model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),...
+                            LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
                             LIMO.design.method,LIMO.Analysis,boot_table{channel});
                     end
                 else
