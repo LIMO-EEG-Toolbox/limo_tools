@@ -50,7 +50,7 @@ if type == 1 || type == 2
     Y           = varargin{1};
     if ischar(Y)
         Y = load(varargin{1});
-        Yr = Yr.(cell2mat(fieldnames(Yr)));
+        Y = Y.(cell2mat(fieldnames(Y)));
     end
     Betas       = varargin{2};
     if ischar(Betas)
@@ -237,13 +237,12 @@ switch type
                         % Update ess file [mean values, se, df, F, p]
                         E = diag(squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))');
                         ess(channel,:,1:size(C,1)) = (C*squeeze(Betas(channel,:,:))')' ;
-                        ess(channel,:,end-3)       = E/dfe;
                         if rank(diag(C)) == 1
                             df = 1;
                         else
                             df = rank(diag(C)) - 1;
                         end
-                        ess(channel,:,end-2)       = df;
+                        ess(channel,:,end-2) = df;
                         
                         c  = zeros(length(C));
                         C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
@@ -258,18 +257,20 @@ switch type
                             R0 = eye(size(Y,3)) - (X0*pinv(X0));
                             M  = R0 - R;
                             H  = (squeeze(Betas(channel,:,:))*X'*M*X*squeeze(Betas(channel,:,:))');
+                            ess(channel,:,end-3) = E/dfe;
                             ess(channel,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
                             ess(channel,:,end)   = 1 - fcdf(ess(channel,:,end-1), df, dfe); % p value
                         else
                             for frame = 1:size(Betas,2)
-                                WX = X.*repmat(LIMO.design.weights(channel,frame,:),1,size(X,2));
+                                WX = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
                                 R  = eye(size(Y,3)) - (WX*pinv(WX));
                                 X0 = X*C0;
                                 R0 = eye(size(Y,3)) - (X0*pinv(X0));
                                 M  = R0 - R;
                                 H  = (squeeze(Betas(channel,frame,:))'*X'*M*X*squeeze(Betas(channel,frame,:)));
-                                ess(channel,frame,end-1) = (H/df)./(E(frame)/dfe);  % F value
-                                ess(channel,frame,end)   = 1 - fcdf(ess(channel,frame,end-1), df, dfe(frame)); % p value
+                                ess(channel,:,end-3) = E(frame)/dfe(channel);
+                                ess(channel,frame,end-1) = (H/df)./(E(frame)/dfe(channel));  % F value
+                                ess(channel,frame,end)   = 1 - fcdf(ess(channel,frame,end-1), df, dfe(channel)); % p value
                             end
                         end
                     end
