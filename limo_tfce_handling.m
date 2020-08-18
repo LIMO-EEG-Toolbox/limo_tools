@@ -46,6 +46,13 @@ end
 
 %% quick user check
 % ----------------
+
+% files to create
+tfce_file    = fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]);
+H0_tfce_file = fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' filename]);
+% given filename input, we expect H0 to be
+H0filename   = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+
 if strcmpi(checkfile,'yes')
     if exist(tfce_file,'file')
         answer = questdlg('tfce file already exist - overwrite?','data check','Yes','No','Yes');
@@ -81,20 +88,11 @@ if ~isfield(LIMO.data,'neighbouring_matrix')
     end
 end
 
-%% Handle names to tfce the input file
-
-% given filename input, we exp[ect H0 to be
-H0filename   = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
-
-% files to create
-tfce_file    = fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]);
-H0_tfce_file = fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' filename]);
 
 % create tfce folder
 if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
     mkdir(fullfile(LIMO.dir,'tfce'))
 end
-
 fprintf('Thresholding %s using TFCE \n',filename);
 
 % -------------------------------------------------------------------------------
