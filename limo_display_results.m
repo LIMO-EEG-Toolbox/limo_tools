@@ -1414,7 +1414,7 @@ elseif LIMO.Level == 2
             assignin('base','Plotted_data',trimci);
             
             
-        elseif contains(LIMO.design.name,'regression analysis','IgnoreCase',true) || ...
+        elseif contains(LIMO.design.name,'regression','IgnoreCase',true) || ...
                 contains(LIMO.design.name,'ANOVA') || contains(LIMO.design.name,'ANCOVA')
             % --------------------------------------------------------------------------------
             
@@ -1597,9 +1597,10 @@ elseif LIMO.Level == 2
                         reg_values(i,:) = LIMO.data.Cont(sorting_values);
                         continuous(i,:,:) = Yh(:,sorting_values);
                         if isempty(LIMO.design.electrode)
-                            mytitle{i} = sprintf('Modelled single subjects'' parameters \n sorted by regressor %g channel %s (%g)', regressor(i), LIMO.data.chanlocs(channel).labels, channel);
+                            mytitle = sprintf('Modelled subjects'' parameters \n sorted by regressor %g channel %s (%g)', ...
+                                regressor(i), LIMO.data.chanlocs(channel).labels, channel);
                         else
-                            mytitle{i} = sprintf('Modelled single subjects'' parameters \n sorted by regressor %g at optimized channel', regressor(i));
+                            mytitle = sprintf('Modelled subjects'' parameters \n sorted by regressor %g at optimized channel', regressor(i));
                         end
                     end
                 end
@@ -1637,9 +1638,9 @@ elseif LIMO.Level == 2
                         reg_values(i,:) = LIMO.data.Cont(sorting_values);
                         continuous(i,:,:) = Ya(:,sorting_values);
                         if isempty(LIMO.design.electrode)
-                            mytitle{i} = sprintf('Adjusted single subjects'' parameters \n sorted by regressor %g channel %s (%g)', regressor(i), LIMO.data.chanlocs(channel).labels, channel);
+                            mytitle = sprintf('Adjusted subjects'' parameters \n sorted by regressor %g channel %s (%g)', regressor(i), LIMO.data.chanlocs(channel).labels, channel);
                         else
-                            mytitle{i} = sprintf('Adjusted single subjects'' parameters \n sorted by regressor %g at optimized channel', regressor(i));
+                            mytitle = sprintf('Adjusted subjects'' parameters \n sorted by regressor %g at optimized channel', regressor(i));
                         end
                     end
                 end
@@ -1756,8 +1757,8 @@ elseif LIMO.Level == 2
                         zlabel('Spectral Power (A.U.)','FontSize',16)
                     end
                     % --
-                    axis tight; title(mytitle{i},'FontSize',14); drawnow;
-                    xlabel('Sorted subjects','FontSize',16)
+                    axis tight; title(mytitle,'FontSize',14); drawnow;
+                    xlabel('Sorted variable','FontSize',14)
                     try
                         set(gca,'XTick',index, 'XTickLabels', reg_values(index));
                     end
