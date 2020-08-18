@@ -989,7 +989,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             
             if isfield(LIMO.design,'parameters')
                 if ~isempty(LIMO.design.parameters)
-                    parameters(:,i) = check_files(Names,1,[LIMO.design.parameters{i}]);
+                    parameters(:,i) = check_files(Names,1,cell2mat(LIMO.design.parameters(i,:)));
                 else
                     parameters(:,i) = check_files(Names,1);
                 end
@@ -997,12 +997,13 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                 parameters(:,i) = check_files(Names,1);
             end
             
-            if length(parameters(:,i)) ~= prod(factor_nb)
-                error(['the number of parameter chosen (',num2str(length(parameters)), ...
-                    ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
-            end
             N = N + size(Names{cell_nb},2);
             cell_nb = cell_nb +1;
+        end
+        
+        if size(parameters,1) ~= prod(factor_nb)
+            error(['the number of parameter chosen (',num2str(length(parameters)), ...
+                ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
         end
         LIMO.data.data_dir = Paths;
         
