@@ -238,7 +238,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 end
             end
             
-            if size(X,2)==1 && nboot < 599
+            if size(X,2)==1 && LIMO.design.bootstrap < 599
                 if nboot ~= 0
                     LIMO.design.bootstrap = 599;
                     disp('nb of bootstrap adjusted to 599 for a simple regression');
@@ -287,6 +287,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         % -----------------
         if strcmpi(stattest,'one sample t-test')
             Yr                 = tmp_data; clear tmp_data
+            LIMO.design.name   = 'Robust one sample t-test';
             LIMO.design.X      = ones(size(data,4),1);
             LIMO.design.method = 'Trimmed mean';
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
@@ -307,6 +308,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             else
                 Yr = Yr(:,:,~isnan(sum(X,2)));
             end
+            LIMO.design.name = 'Robust regression';
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             tmpname = limo_random_robust(4,Yr,X(~isnan(sum(X,2)),:),i,LIMO);
