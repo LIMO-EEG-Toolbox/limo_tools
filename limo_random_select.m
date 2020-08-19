@@ -1082,20 +1082,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % -----------------------------
     subject_index = 1;
     matrix_index  = 1;
-    for h = gp_nb:-1:1 % each group
+    for h = 1:gp_nb % each group
         nb_subjects(h) = 0;
-        for i=size(Paths{h},2):-1:1
+        for i=1:size(Paths{h},2)
             tmp = load(cell2mat(LIMO.data.data{h}(i)));
-            if isfield(tmp,'Betas')
-                tmp = tmp.Betas;
-            elseif isfield(tmp,'con')
-                tmp = tmp.con;
-                if strcmp(LIMO.Analysis,'Time-Frequency')
-                    tmp = squeeze(tmp(:,:,:,1));
-                else
-                    tmp = squeeze(tmp(:,:,1));
-                end
-            end
+            tmp = tmp.(cell2mat(fieldnames(tmp)));
             
             % get indices to trim data
             if strcmp(LIMO.Analysis,'Time-Frequency')
