@@ -16,7 +16,8 @@ function [Names,Paths,Files] = limo_get_files(varargin)
 %      title a default question dialogue is 'select a subject file or list
 %            file' with possible the gp number inserted, but this can be
 %            customized here
-%      files already selected file names to split
+%      [hack] files already selected file names to split 
+%             [Names,Paths,Files] = limo_get_files([],[],[],'file_list.txt')
 %
 % OUTPUT Names , Paths, Full File names are returned as cells
 %
