@@ -896,6 +896,7 @@ switch type
         LIMO.data.data_dir           = pwd;
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.nb_conditions    = length(unique(gp_vector));
+        LIMO.design.nb_interactions  = 0;
         LIMO.design.nb_continuous    = 0;
         LIMO.design.fullfactorial    = 0;
         LIMO.design.zscore           = 0;
@@ -969,7 +970,8 @@ switch type
             LIMO.design.effects{1}            = 'Main effect';
             x                                 = kron(X(:,1:k),eye(prod(factor_levels)));
             LIMO.design.X                     = [x sum(x,2)]; % just for display
-            
+            LIMO.design.nb_interactions       = length(LIMO.design.C);
+           
         elseif type == 4 % many factors within and one factor between
             LIMO.design.method                = 'Mean';
             gp_values                         = unique(gp_vector);
@@ -997,23 +999,22 @@ switch type
             end
             x                                  = kron(X(:,1:k),eye(prod(factor_levels)));
             LIMO.design.X                      = [x sum(x,2)]; % just for display
-        end
+            LIMO.design.nb_interactions        = length(LIMO.design.C);
+       end
         
         if isempty(dir('Rep_ANOVA_Factor*.mat'))
             
             % check the design with user
             % --------------------------
-            if ~exist('go','var')
-                if ~strcmpi('go','yes')
-                    figure('Name','LIMO design'); set(gcf,'Color','w'); 
-                    imagesc(LIMO.design.X); colormap('gray');
-                    title('ANOVA model','FontSize',16);xlabel('regressors');
-                    ylabel('subjects'); drawnow;
-                    go = questdlg('start the analysis?');
-                    close('LIMO design')
-                    if ~strcmpi(go,'Yes')
-                        return
-                    end
+            if ~strcmpi(go,'Yes')
+                figure('Name','LIMO design'); set(gcf,'Color','w');
+                imagesc(LIMO.design.X); colormap('gray');
+                title('ANOVA model','FontSize',16);xlabel('regressors');
+                ylabel('subjects'); drawnow;
+                go = questdlg('start the analysis?');
+                close('LIMO design')
+                if ~strcmpi(go,'Yes')
+                    return
                 end
             end
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
