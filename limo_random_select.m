@@ -29,7 +29,8 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                             dimensions of the cell correspond with group, factor and
 %                             level respectively. (no default)
 %                'parameters' Cell array of parameters to be tested, relative to LIMOfiles.
-%                            ie. {[1 2]} or {[1 2];[1 2]} in case of 2 groups.
+%                            ie. {[1 2]} or {[1 2];[1 2]} in case of 2
+%                            groups. Add nested cells for more repetition levels.
 %       --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
 %                'regressor_file' a file or matrix of data to regress when stattest = 4
 %                'analysis_type' is 'Full scalp analysis' or '1 channel/component only'
@@ -958,6 +959,21 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         iscon  = cellfun(@(x) contains(x,'con'),LIMO.data.data);
         if any(isbeta) && any(iscon)
             error('input data mix Beta and con files - not supported')
+        elseif sum(isbeta) == 0 && sum(iscon) == 0
+            all_files = limo_get_files([],[],[],LIMO.data.data);
+            isbeta    = cellfun(@(x) contains(x,'Beta'),all_files);
+            iscon     = cellfun(@(x) contains(x,'con'),all_files);
+            if any(isbeta) && any(iscon)
+                error('input data mix Beta and con files - not supported')
+            elseif sum(isbeta) == 0 && sum(iscon) == 0
+                error('not all betas or all con?? issue reading files')
+            else
+                if all(isbeta)
+                    a = 'beta';
+                elseif all(iscon)
+                    a = 'con';
+                end
+            end
         else
             if all(isbeta)
                 a = 'beta';
@@ -989,7 +1005,15 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             
             if isfield(LIMO.design,'parameters')
                 if ~isempty(LIMO.design.parameters)
-                    parameters(:,i) = check_files(Names,1,cell2mat(LIMO.design.parameters(i,:)));
+                    if length(factor_nb) <=2
+                        parameters(:,i) = check_files(Names,1,cell2mat(LIMO.design.parameters(i,:)));
+                    else % cell of cells
+                        all_param = LIMO.design.parameters;
+                        while any(cellfun(@iscell,all_param))
+                            all_param = [all_param{cellfun(@iscell,all_param)} all_param(~cellfun(@iscell,all_param))];
+                        end
+                        parameters(:,i) = check_files(Names,1,cell2mat(all_param));
+                    end
                 else
                     parameters(:,i) = check_files(Names,1);
                 end
@@ -1184,6 +1208,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         end
     end
     
+    % final check
+    if sum(nb_subjects) < prod(factor_nb)
+       error('there are more variables than observations, some factors can''t be estimated') 
+    end
+
     % the expected dim in LIMO_rep_anova are [frames, subjects,
     % conditions] so we send to LIMO_random_robust data with dim
     % [channels, frames, subjects, conditions] + one vector
@@ -1221,7 +1250,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         end
     end
     clear data
-    
+        
     % finally, since all seems to match up, ask for factor names
     % ---------------------------------------------------------
     if ~isfield(LIMO.design, 'factor_names')
