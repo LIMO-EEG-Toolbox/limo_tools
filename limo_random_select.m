@@ -265,7 +265,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % load the right parameter and compute
     % ------------------------------------
     root = LIMO.dir;
-    for i=length(parameters):-1:1
+    for i=1:length(parameters)
         if length(parameters) ~= 1 % make subfolders
             mkdir(fullfile(root,['parameter_' num2str(parameters(i))]));
             LIMO.dir = fullfile(root,['parameter_' num2str(parameters(i))]);
@@ -314,12 +314,12 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             % regression
             % -------------
         elseif strcmpi(stattest,'regression')
-            Yr = tmp_data; clear tmp_data
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                Yr = Yr(:,:,:,~isnan(sum(X,2)));
+                Yr = tmp_data(:,:,:,~isnan(sum(X,2)));
             else
-                Yr = Yr(:,:,~isnan(sum(X,2)));
+                Yr = tmp_data(:,:,~isnan(sum(X,2)));
             end
+            clear tmp_data
             LIMO.design.name = 'Robust regression';
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
