@@ -1190,15 +1190,9 @@ elseif LIMO.Level == 2
                     toplot = squeeze(toplot(:,:,:,4));
                 elseif strncmp(FileName,'ess_',4)
                     if ~exist('ess','var')
-                        effect_nb = eval(FileName(22:end-4));
-                        try
-                            ess = eval(['ess' num2str(effect_nb)]);
-                            clear(['ess' num2str(effect_nb)])
-                          catch
-                            ess = ess1; clear ess1
-                        end
+                        effect_nb = eval(FileName(5:end-4));
                     end
-                    toplot = squeeze(toplot(:,:,:,4));
+                    toplot = squeeze(toplot(:,:,:,end-1));
                 elseif contains(FileName,'Condition') || ...
                         contains(FileName,'Covariate') || ...
                         contains(FileName,'Rep_ANOVA')
