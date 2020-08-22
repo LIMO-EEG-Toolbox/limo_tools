@@ -42,7 +42,8 @@ if strcmp(LIMO.design.status,'to do')
             end
         catch pcout_error
             if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-                error('%s\n running the analysis using OLS solves this issue',pcout_error.message)
+                error_msg = sprintf('error in %s\n %s\n running the analysis using OLS and downsampling data solves this issue',LIMO.dir,pcout_error.message);
+                errordlg(error_msg,'WLS issue','non-modal'); error('%s\n',pcout_error.message)
             else
                 error('%s\n',pcout_error.message)
             end
