@@ -109,6 +109,7 @@ function LIMOPath = limo_random_robust(varargin)
 LIMOPath = [];
 if nargin == 0
     help limo_random_robust
+    return
 else
     type  = varargin{1};
     if type <1 || type > 6

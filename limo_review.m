@@ -43,7 +43,7 @@ else
         if isfield(LIMO.design, 'nb_continuous')
             if  prod(LIMO.design.nb_continuous) ~= 0
                 REGdisplay = X(:,N+1:size(X,2)-1);
-                REGdisplay = REGdisplay + max(abs(min(REGdisplay)));
+                REGdisplay = REGdisplay ./ max(abs(min(REGdisplay)));
                 Xdisplay(:,N+1:size(X,2)-1) = REGdisplay ./ max(max(REGdisplay));
             end
         end
