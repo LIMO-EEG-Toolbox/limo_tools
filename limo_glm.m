@@ -822,8 +822,8 @@ switch method
                 model.interactions.p  = reshape(model.conditions.p, [n_freqs*n_times,1]);
             else
                 for f = length(nb_interactions)
-                    tmpF(f,:)  = reshape(model.interactions.F(:,:,f), [n_freqs*n_times,1]);
-                    tmpp(f,:)  = reshape(model.interactions.p(:,:,f), [n_freqs*n_times,1]);
+                    tmpF(f,:)  = reshape(model.interactions.F(f,:,:), [n_freqs*n_times,1]);
+                    tmpp(f,:)  = reshape(model.interactions.p(f,:,:), [n_freqs*n_times,1]);
                 end
                 model.conditions.F  = tmpF;
                 model.conditions.p  = tmpp;
@@ -837,8 +837,8 @@ switch method
                 model.continuous.p  = reshape(model.continuous.p, [n_freqs*n_times,1]);
             else
                 for f = 1:nb_continuous
-                    tmpF(f,:)  = reshape(model.continuous.F(:,:,f), [n_freqs*n_times,1]);
-                    tmpp(f,:)  = reshape(model.continuous.p(:,:,f), [n_freqs*n_times,1]);
+                    tmpF(:,f)  = reshape(model.continuous.F(:,:,f), [n_freqs*n_times,1]);
+                    tmpp(:,f)  = reshape(model.continuous.p(:,:,f), [n_freqs*n_times,1]);
                 end
                 model.continuous.F  = tmpF;
                 model.continuous.p  = tmpp;
