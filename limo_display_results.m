@@ -1360,7 +1360,7 @@ elseif LIMO.Level == 2
             
             % compute
             trimci      = NaN(size(data,1),3);
-            trimci(:,2) = data(:,1);
+            trimci(:,2) = data(:,1); % mean values
             if contains(FileName,'ess','IgnoreCase',true)
                 start_at = max(strfind(FileName,'_'))+1;
                 C = LIMO.contrast{eval(FileName(start_at:end-4))}.C;
@@ -1401,9 +1401,9 @@ elseif LIMO.Level == 2
                 ylabel('Spectral Power (A.U.)','FontSize',14)
             end
             if size(data,1)>1
-                title(sprintf('%s \n %s %s (%g)',mytitle,LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel),'FontSize',16); drawnow;
+                title(sprintf('%s \n%s %s %s (%g)',mytitle,'Mean values',LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel),'FontSize',16); drawnow;
             else
-                title(sprintf('%s \n virtual %s',mytitle,LIMO.Type(1:end-1)),'FontSize',16); drawnow;
+                title(sprintf('%s \n%s virtual %s',mytitle,'Mean values',LIMO.Type(1:end-1)),'FontSize',16); drawnow;
             end
             assignin('base','Plotted_data',trimci);
             
