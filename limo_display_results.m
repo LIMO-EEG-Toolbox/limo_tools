@@ -1345,7 +1345,7 @@ elseif LIMO.Level == 2
             % stat file dim = (electrodes, frames, [mean value, se, df, t, p])
             % H0 file dim = (electrodes,frames,[t, p],nboot)
             
-            data = load(fullfile(PathName,FileNme));
+            data = load(fullfile(PathName,FileName));
             data = data.(cell2mat(fieldnames(data)));            
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,:,[4 5])),LIMO);
