@@ -83,7 +83,7 @@ if FilterIndex ~= 0
     end
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
-    check_boot_and_tfce(handles,fullfile(PathName,FileName))
+    handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -258,10 +258,13 @@ limo_gui
 % -----------------------------------------------------------
 % subroutine to check bootstrap and tfce on any button clicks
 % ------------------------------------------------------------
-function check_boot_and_tfce(handles,currentfile)
+function handles = check_boot_and_tfce(handles,currentfile)
 if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
         handles.tfce == 1 && handles.MCC == 3    
    
+    handles.LIMO.design.bootstrap = handles.bootstrap;
+    handles.LIMO.design.tfce      = handles.tfce;
+    
     [filepath,filename,ext] = fileparts(currentfile);
 
     % deal with bootstrap
@@ -313,8 +316,6 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                         end
                     else
                         disp('Bootstraping Repeated Measure ANOVA')
-                        handles.LIMO.design.bootstrap = handles.bootstrap;
-                        handles.LIMO.design.tfce      = handles.tfce;
                         limo_random_robust(6,fullfile(filepath,'Yr.mat'),handles.LIMO.data.Cat, ...
                             handles.LIMO.design.repeated_measure, handles.LIMO, 'go','yes')
                     end
