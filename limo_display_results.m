@@ -1408,14 +1408,15 @@ elseif LIMO.Level == 2
             assignin('base','Plotted_data',trimci);
             
             
-        elseif contains(LIMO.design.name,'regression','IgnoreCase',true) || ...
-                contains(LIMO.design.name,'ANOVA') || contains(LIMO.design.name,'ANCOVA')
+        elseif contains(LIMO.design.name,'regression','IgnoreCase',true) && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true) || ...
+                contains(LIMO.design.name,'ANOVA') && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true) || ...
+                contains(LIMO.design.name,'ANCOVA') && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true)
             % --------------------------------------------------------------------------------
             
             % which variable(s) to plot
             % ----------------------
             if size(LIMO.design.X,2) > 2
-                input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2));
+                input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2)-1);
                 regressor = inputdlg(input_title,'Plotting option');
                 if isempty(regressor); return; end
                 try regressor = sort(eval(cell2mat(regressor)));
@@ -1431,8 +1432,14 @@ elseif LIMO.Level == 2
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
-            if max(regressor) == size(LIMO.design.X,2); tmp = regressor(1:end-1); else tmp = regressor; end
-            cat = sum(tmp<=categorical); cont = sum(tmp>categorical);
+            if max(regressor) == size(LIMO.design.X,2)
+                tmp = regressor(1:end-1); 
+            else
+                tmp = regressor; 
+            end
+            % logical arrays
+            cat = sum(tmp<=categorical); 
+            cont = sum(tmp>categorical);
             if cat >=1 && cont >=1
                 errordlg('you can''t plot categorical and continuous regressors together'); return
             end
@@ -1761,9 +1768,12 @@ elseif LIMO.Level == 2
             
             
             
-        elseif contains(FileName,'Rep_ANOVA')   % All stuffs for repeated measures ANOVA
+        elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs for repeated measures ANOVA
             % -----------------------------------------------------------------------------
             
+            if contains(FileName,'LIMO')
+                warndlg('Select summary stat file, nothing to infer from repeated measure LIMO file')
+            end
             
             if contains(FileName,'Rep_ANOVA_Main')
                 % -----------------------------------
@@ -1787,7 +1797,7 @@ elseif LIMO.Level == 2
                 C                     = LIMO.design.C{effect_nb};
                 Data                  = load(fullfile(LIMO.dir,'Yr.mat'));
                 Data                  = Data.(cell2mat(fieldnames(Data)));
-                [~,channel,freq,time] = limo_display_reducedim(Rep_ANOVA,LIMO);
+                [~,channel,freq,time] = limo_display_reducedim(Data,LIMO);
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     Data              = squeeze(Data(channel,freq,time,:,:));
                     sig               = squeeze(single(mask(channel,freq,time))); 
@@ -1804,7 +1814,7 @@ elseif LIMO.Level == 2
                         avg(time_or_freq,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
                         S(time_or_freq,:,:) = nancov(squeeze(Data(time_or_freq,:,:)));
                     end
-                    if size(Rep_ANOVA,1)>1
+                    if size(Data,1)>1
                         mytitle = sprintf('Original %s \n %s %s (%g)',mytitle,LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel);
                     else
                         mytitle = sprintf('Original %s \n virtual %s',mytitle,LIMO.Type(1:end-1));
