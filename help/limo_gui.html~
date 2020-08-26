@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 2.3  (Linux)">
+	<META NAME="AUTHOR" CONTENT="cyril pernet">
+	<META NAME="CREATED" CONTENT="20100415;15142700">
+	<META NAME="CHANGEDBY" CONTENT="cyril pernet">
+	<META NAME="CHANGED" CONTENT="20100415;15303600">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 8.5in 11in; margin: 0.79in }
+		P { margin-bottom: 0.08in }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P STYLE="margin-bottom: 0in"><IMG SRC="limo_gui_html_4089eef8.png" NAME="graphics1" ALIGN=LEFT WIDTH=665 HEIGHT=431 BORDER=0><BR CLEAR=LEFT><BR>
+</P>
+<P STYLE="margin-bottom: 0in">From the general user interface you
+can:</P>
+<P STYLE="margin-bottom: 0in">1 – start the analysis of single
+subjets (subject analysis)</P>
+<P STYLE="margin-bottom: 0in">2 – start the analysis for one or
+several groups of subjets (random effects)</P>
+<P STYLE="margin-bottom: 0in">3 – view results and further analyse
+data (results)</P>
+<P STYLE="margin-bottom: 0in">4 – enter into the batch mode to
+process data of many subjects automatically</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><U><B>Subject analysis</B></U></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">Data import allows you to read and
+import .set, i.e. data preprocessed in EEGLAB. You will also need
+some texte files (.txt) that you prepared that describe (in time) the
+occurance of the different experimental conditions.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">Analyse – at the end of the data
+import a LIMO.mat file is created containing your design matrix –
+if you did not analyse the data then, you can load the design and run
+the analysis via this button.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><U><B>Random Effects</B></U></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">This will call an interface for group
+analyses: robust means, t-tests, ANOVA etc ... EEG data have to be
+processed for each subjects first (subject analysis) and parameters
+estimates from this 1<SUP>st</SUP> analysis are used at this 2<SUP>nd</SUP>
+level.</P>
+<P STYLE="margin-bottom: 0in"> 
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><U><B>Results</B></U></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">In this section, results from both
+single subjects and group analysis can be visualized in various
+formats. Statistical results for the group can be explored using
+different correction for multiple testing technques. It is also
+possible to further explore differences between conditions using the
+contrast manager (for pair-wise comparisons in a ANOVA for instance)</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><U><B>Batch</B></U></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in">This call an interactive menu to run
+multiple single subjects analyses.</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>

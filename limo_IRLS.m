@@ -31,13 +31,13 @@ function [b w] = limo_IRLS(X,Y,tune)
 %    
 % Ignacio Suay Mas
 % -----------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2012
 
 if  nargin < 2      
     error(message('Too Few Inputs'));      
 end 
 
-if nargin == 2    
+if  nargin == 2    
  tune = 4.685; % tuning function for the bisquare
 end 
 
@@ -46,16 +46,15 @@ if (rows <= cols)
    error('IRLS cannot be computed, there is not enough trials for this design');     
 end
 
-% Find Ordinary Least Squares
+%Find Ordinary Least Square
 b = pinv(X)*Y;
 
-% H - Hat matrix; Leverages for each observation
+%H - Hat matrix; Leverages for each observation
 H = diag(X*pinv(X'*X)*X');
 % Adjustment factor
 adjfactor = 1 ./ sqrt(1-H);
-adjfactor(adjfactor==Inf) = 1; % when H=1 do nothing
 
-numiter = 0; iterlim = 100; % set a 100 iteration max
+numiter = 0; iterlim = 100;
 oldRes=1; newRes=10;
 
 while(max(abs(oldRes-newRes)) > (1E-4))
@@ -91,14 +90,6 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    
    % newRes= sum(sum(res.^2));
    newRes= sum(res(:).^2);
-   
-%    % plot
-%    if numiter == 1
-%        figure; xx = zeros(100,1);
-%    end
-%    xx(numiter) = newRes;
-%    plot([1:100],xx); drawnow
-   
 end
 
 end

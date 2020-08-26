@@ -1,14 +1,12 @@
-function [t,p,dfe]=limo_ttest_permute(Data,n_perm)
+function [t,p]=limo_ttest_permute(Data,n_perm)
 
-% pseudo one sample t-test using sign-test
-%
-% FORMAT: [t,p,dfe]=limo_ttest_permute(Data,n_perm)
-%
 % INPUTS:
+%
 % data = a matrix of data to be used in the one sample t-test
 % n_perm  = number of permutations to do.
 %
 % OUTPUTS:
+%
 % [t,p,dfe] = t and p values under H0, dfe
 %
 % compute that the mean of the data is not different from 0 (H0)
@@ -21,7 +19,7 @@ function [t,p,dfe]=limo_ttest_permute(Data,n_perm)
 % GAR 18-02-13: embedded electrode loop inside permutation loop so that the
 %               same permutation is applied to every electrode
 % -----------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2013
 
 
 %% check inputs
@@ -61,6 +59,7 @@ t = NaN(n_channels,n_var,n_perm); %p = t;
 sqrt_nXnM1=sqrt(n_obs*(n_obs-1));
 dfe = n_obs-1;
 
+%     fprintf('processing channel %g\n',c);
 if exact %Use all possible permutations
     
     for perm=1:n_perm

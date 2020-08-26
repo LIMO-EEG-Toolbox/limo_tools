@@ -5,7 +5,7 @@ function [m,dfe,ci,sd,n,t,p] = limo_bootttest1(varargin)
 % which can be subjects or trials. If vectors are compared they
 % should have dimensions (1,N).
 %
-% [m,dfe,ci,sd,n,t,p] = limo_bootttest1(data,alpha,boot)
+% [m,dfe,ci,sd,n,t,p] = limo_boottttest1(data,alpha,boot)
 %
 % INPUTS:
 %
@@ -15,12 +15,11 @@ function [m,dfe,ci,sd,n,t,p] = limo_bootttest1(varargin)
 %
 % OUTPUTS:
 %
-% [m,ci,sd,n,t,p] = means, dfe, confidence interavals, std,
+% [m,dfe,ci,sd,n,t,p] = means, dfe, confidence interavals, std,
 %                   number of observations, t values, p values
 %
 % Based on limo_ttest
 % Cyril 01-03-2011
-% removed electrode loop in 3D case: GAR 06-12-2011
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
  
@@ -28,6 +27,9 @@ function [m,dfe,ci,sd,n,t,p] = limo_bootttest1(varargin)
 if nargin == 1
     data = varargin{1};
     nd = numel(size(data));
+    if nd == 2
+        nd = size(data,2);
+    end
     alpha = 5/100;
     Nboot = 1000;
     if isvector(data)
@@ -73,7 +75,7 @@ end
 
 n = size(data,nd);
 dfe = n-1;
-
+ 
 switch (nd)
     case(1) % 1 dim
         m = NaN(Nboot);
@@ -117,17 +119,18 @@ switch (nd)
         ci = NaN(size(data,1),size(data,2),Nboot,2);
         p = NaN(size(data,1),size(data,2),Nboot);
         
-        for B=1:Nboot
-            boot_data = squeeze(data(:,:,boot(:,B)));
-            m(:,:,B) = mean(boot_data,nd);
-            sd(:,:,B) = std(boot_data,0,nd);
-            t(:,:,B) = m(:,:,B) ./ (sd(:,:,B) ./ sqrt(n));
-            c = tinv((1 - alpha / 2), n - 1) .* (sd(:,:,B) ./ sqrt(n));
-            ci(:,:,B,1) = (m(:,:,B) - c);
-            ci(:,:,B,2) = (m(:,:,B) + c);
-            p(:,:,B) = 2 * tcdf(-abs(t(:,:,B)), n - 1); % two tailed
+        for e=1:size(data,1)
+            for B=1:Nboot
+                boot_data = squeeze(data(e,:,boot(:,B)));
+                m(e,:,B) = mean(boot_data,nd-1);
+                sd(e,:,B) = std(boot_data,0,nd-1);
+                t(e,:,B) = m(e,:,B) ./ (sd(e,:,B) ./ sqrt(n));
+                c = tinv((1 - alpha / 2), n - 1) .* (sd(e,:,B) ./ sqrt(n));
+                ci(e,:,B,1) = (m(e,:,B) - c);
+                ci(e,:,B,2) = (m(e,:,B) + c);               
+                p(e,:,B) = 2 * tcdf(-abs(t(:,B)), n - 1); % two tailed
+            end
         end
-
 end
 
 

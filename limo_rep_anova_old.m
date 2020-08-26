@@ -1,9 +1,7 @@
 function results = limo_rep_anova_old(Y,gp,factors,flag)
 
 % This function allows to compute a repeated measure ANOVA (up to 3
-% factors) with several groups of subjects (same sample sizes)
-% Note that this function is not used by LIMO EEG as repeated measures are
-% analyzed using a Hotteling t-test which accounts for sphericity.
+% factors) with several groups of subjects (smae sample sizes)
 %
 % FORMAT
 % results = limo_rep_anova(Y,[ ],[2 3],1)

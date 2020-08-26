@@ -4,7 +4,7 @@ function varargout = limo_random_effect(varargin)
 % Created using GUIDE 
 % Cyril Pernet 25-08-2009 v1
 % -----------------------------
-%  Copyright (C) LIMO Team 2015
+%  Copyright (C) LIMO Team 2010
 
 %% GUI stuffs
 % -------------------------
@@ -44,18 +44,7 @@ guidata(hObject, handles);
 % define handles used for the save callback
 handles.b = 1000;
 handles.tfce = 0;
-handles.ica  = 0;
-try S=evalin('base','STUDY');
-    handles.chan_file = S.design.limo.chanloc; clear S
-    fprintf('using study channel location file \n%s\n',handles.chan_file);
-catch
-    try
-        S=evalin('base','gp_level_chanlocs');
-        handles.chan_file = S;
-    catch
-        handles.chan_file = [];
-    end
-end
+handles.chan_file = [];
 guidata(hObject, handles);
 % uiwait(handles.figure1);
 
@@ -74,31 +63,24 @@ varargout{1} = 'LIMO random effect terminated';
 % ---------------------------------------------------------------
 function Central_tendency_and_CI_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    disp('IC not supported yet')
-elseif test_chan_loc(handles)
+go = test_chan_loc(handles);
+if go == 1;
     limo_central_tendency_and_ci(handles.chan_file);
     guidata(hObject, handles);
 end
 
+% --- Executes on button press in togglebutton10.
+function togglebutton10_Callback(hObject, eventdata, handles)
 
-% --- Executes on button press in data_plot.
-function data_plot_Callback(hObject, eventdata, handles)
-
-if handles.ica == 1
-    disp('IC not supported yet')
-elseif test_chan_loc(handles)
-    limo_add_plots;
-    guidata(hObject, handles);
-end
+limo_add_plots;
+guidata(hObject, handles);
 
 
 % --- Executes on button press in differences.
 function differences_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    disp('IC not supported yet')
-elseif test_chan_loc(handles)
+go = test_chan_loc(handles);
+if go == 1;
     limo_plot_difference
     guidata(hObject, handles);
 end
@@ -107,17 +89,15 @@ end
 % ---------------------------------------------------------------
 function Parameters_box_plot_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    disp('IC not supported yet')
-elseif test_chan_loc(handles)
+go = test_chan_loc(handles);
+if go == 1;
     limo_plots(handles.chan_file)
     guidata(hObject, handles);
 end
-
  
 
 %-------------------------------
-%         Parameters parameter
+%         Bootstrap parameter
 %------------------------------
 
 % get the number of bootstraaps
@@ -132,9 +112,6 @@ elseif handles.b == 0
     set(handles.TFCE,'Value',0)
 else
     fprintf('bootstrap changed to %g \n',handles.b)
-    if handles.b > 0 && handles.b < 1000
-        warndlg(['Our simulations suggest that you need at leat 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
-    end
 end
 guidata(hObject, handles);
 
@@ -157,18 +134,6 @@ end
 guidata(hObject, handles);
 
 
-% --- Executes on button press in IC_analysis.
-function IC_analysis_Callback(hObject, eventdata, handles)
-M = get(hObject,'Value');
-if M == 1
-    handles.ica = 1;
-    disp('Analysis of ICs is on');
-elseif M == 0
-    handles.ica = 0;
-    disp('Analysis of ICs is off');
-end
-guidata(hObject, handles);
-
 
 %-------------------------
 %         TESTS_PANEL
@@ -179,10 +144,12 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function One_Sample_t_test_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+if test_chan_loc(handles)
+    if handles.b == 0
+        limo_random_select(1,handles.chan_file)
+    else
+        limo_random_select(1,handles.chan_file,handles.b,handles.tfce)
+    end
 end
 
 
@@ -190,12 +157,13 @@ end
 % ---------------------------------------------------------------
 function Two_Samples_t_test_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+if test_chan_loc(handles)
+    if handles.b == 0
+        limo_random_select(2,handles.chan_file)
+    else
+        limo_random_select(2,handles.chan_file,handles.b,handles.tfce)
+    end
 end
-
 
 
 % Paired_t_test
@@ -203,10 +171,12 @@ end
 % --- Executes on button press in Paired_t_test.
 function Paired_t_test_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+if test_chan_loc(handles)
+    if handles.b == 0
+        limo_random_select(3,handles.chan_file)
+    else
+        limo_random_select(3,handles.chan_file,handles.b,handles.tfce)
+    end
 end
 
 
@@ -215,10 +185,12 @@ end
 % --- Executes on button press in Regression.
 function Regression_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+if test_chan_loc(handles)
+    if handles.b == 0
+        limo_random_select(4,handles.chan_file)
+    else
+        limo_random_select(4,handles.chan_file,handles.b,handles.tfce)
+    end
 end
 
 
@@ -228,10 +200,12 @@ end
 % --- Executes on button press in ANOVA.
 function ANOVA_Callback(hObject, eventdata, handles)
 
-if handles.ica == 1
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+if test_chan_loc(handles)
+    if handles.b == 0
+        limo_random_select(5,handles.chan_file)
+    else
+        limo_random_select(5,handles.chan_file,handles.b,handles.tfce)
+    end
 end
 
 
@@ -264,27 +238,20 @@ end
 guidata(hObject, handles);
 
 
-% --- Executes on button press in chan_cluster_neighbours.
-function chan_cluster_neighbours_Callback(hObject, eventdata, handles)
+% --- Executes on button press in Chan_loc.
+function Chan_loc_Callback(hObject, eventdata, handles)
 
-[chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
-if sts == 1
-    load ([chan_path chan_file])
-    if exist('expected_chanlocs','var') == 1
-        test = expected_chanlocs;
-    else
-        test = eval(chan_file(1:end-4));
-    end
-    
+[chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
+if whatsup == 1
+    load (sprintf('%s\%s',chan_path,chan_file))
+    test = eval(chan_file(1:end-4));
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
-             && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && sum(channeighbstructmat(:)) ~= 0
-             % && ~isempty(test(1).urchan) % urchan should not be needed
+             && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && ~isempty(test(1).urchan) ...
+             && sum(channeighbstructmat(:)) ~= 0
             
-        handles.chan_file = [chan_path chan_file];
+        handles.chan_file = sprintf('%s\%s',chan_path,chan_file);
         disp('channel location loaded');
-        assignin('base', 'gp_level_chanlocs', [chan_path chan_file])
-         
     else
         warndlg('this file is not recognize as a channel location file or informations are missing','file error')
     end
@@ -317,11 +284,21 @@ limo_gui
 function go = test_chan_loc(handles)
 
 if isempty(handles.chan_file)
-    go = 0;
     warndlg('chanloc not specified, please load one','missing file')
+    go = 0;
 else
     go = 1;
 end
+
+
+
+
+
+
+
+
+
+
 
 
 

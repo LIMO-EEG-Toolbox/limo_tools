@@ -1,6 +1,6 @@
 function [tmpX interactions] = limo_make_interactions(x, nb_conditions)
-
-% internal routine copied from limo_design_matrix to get the interaction terms
+% routine copied from limo_design_matrix
+% allows to get the interaction terms
 %
 % FORMAT: [tmpX interactions] = limo_make_interactions(x, nb_conditions)
 % 
@@ -12,13 +12,8 @@ function [tmpX interactions] = limo_make_interactions(x, nb_conditions)
 % Cyril Pernet v1 - 21-06-2013
 % v2 fixed bug for designs > 3 factors - 05-07-2013
 % -------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+%  Copyright (C) LIMO Team 2012
 
-if nb_conditions == 0
-    disp('number of condition = 0')
-    tmpX = []; interactions = [];
-    return
-end
 
 % get each part of x for the right factors
 nb_factors = size(nb_conditions,2);

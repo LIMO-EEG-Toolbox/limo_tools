@@ -1,0 +1,6 @@
+fixed batch when if condoition/covariate not specified
+central tendency fixed for full factorial
+display results fixed for some scaling issues + ci
+limo_eeg multiple covariates issues fixed
+random_robust - issues with single electrode rep anova fixed
+stat values adjusted for single electrodes too 

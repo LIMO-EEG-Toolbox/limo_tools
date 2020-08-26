@@ -30,17 +30,13 @@ percent = 20/100; % defines the amount of trimming done
 nboot = 1000;
 alpha_level = 5/100;
 figure_flag = 1;
-if nargin < 3 
+if nargin < 3
     % data1
-    [file,locpath,filter]=uigetfile('.mat','Select 1st dataset');
-    if filter == 0
-        return
-    end
-    cd(locpath); 
-    D = load(file); D = D.Data;
+    [file,locpath]=uigetfile('.mat','Select 1st dataset');
+    cd(locpath); D = load(file);
     if isstruct(D)
         name = fieldnames(D);
-        tmp = sprintf('D.%s',cell2mat(name(1)));
+        tmp = sprintf('D.%s',cell2mat(name));
         data1 = eval(tmp);
     else
         data1 = D;    
@@ -54,11 +50,10 @@ if nargin < 3
     end
     % data2
     [file,locpath]=uigetfile('.mat','Select 1st dataset');
-    cd(locpath); 
-    D = load(file); D = D.Data;
+    cd(locpath); D = load(file);
     if isstruct(D)
         name = fieldnames(D);
-        tmp = sprintf('D.%s',cell2mat(name(1)));
+        tmp = sprintf('D.%s',cell2mat(name));
         data2 = eval(tmp);
     else
         data2 = D;
@@ -128,7 +123,10 @@ else
     end
 end
 
+% univariate bounds
 diff = NaN(size(data1,1),size(data1,2),3);
+low = round(nboot.*alpha_level./2);
+high = nboot - low;
 
 %% compute the mean difference and CI
 
@@ -141,49 +139,104 @@ switch type
             data2 = squeeze(data2(:,:,:,2));
         end
  
+        na=size(data1,3);
+        ga=floor(percent*na);
+        data1=sort(data1,3);
+        data1=data1(:,:,(ga+1):(na-ga));
+
+        na=size(data2,3);
+        ga=floor(percent*na);
+        data2=sort(data2,3);
+        data2=data2(:,:,(ga+1):(na-ga));
+
         % the difference 
         D = data1-data2;
         
-        for channel=1:size(data1,1)
-            fprintf('bootstraping data for CI estimation electrode %g \n',channel)
-            [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'trimmed mean',1-alpha_level);
-            [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'trimmed mean',1-alpha_level);
-            
-            [diff(channel,:,2),CID] = limo_central_estimator(squeeze(D(channel,:,:)),'trimmed mean',1-alpha_level);
-            diff(channel,:,1) = CID(1,:);
-            diff(channel,:,3) = CID(2,:);
+        % compute bootstrap differences
+        % ------------------------------
+        boot_table = zeros(size(data1,3),nboot); B=1;
+        while B~=nboot+1
+            tmp = randi(size(data1,3),size(data1,3),1);
+            if length(unique(tmp)) ~= 1
+                boot_table(:,B) = tmp;
+                B=B+1;
+            end
         end
+        
+        disp('bootstraping data for CI estimation ...')
+        loop = nboot / 100; index1 = 1; index2 = 100; 
+        for b=1:loop % rather than doing b loops we work by blocks of 100
+            D_boot = D(:,:,boot_table(:,index1:index2));
+            avg_boot(:,:,index1:index2) = squeeze(nanmean(reshape(D_boot,size(data1,1),size(data1,2),size(data1,3),100),3));
+            index1 = index1+100; index2 = index2+100;
+        end
+        
+        avg_boot = sort(avg_boot,3);
+        % --------------------
+        diff(:,:,1) = avg_boot(:,:,low);
+        diff(:,:,2) = nanmean(D,3);
+        diff(:,:,3) = avg_boot(:,:,high);
+        
+        TM1 = NaN(size(data1,1),size(data1,2),nboot);
+        TM2 = NaN(size(data2,1),size(data2,2),nboot);
+        for electrode=1:size(data1,1)
+            % means over resampled subjects
+            TM1(electrode,:,:) = squeeze(nanmean(reshape(data1(electrode,:,boot_table),size(data1,2),size(data1,3),nboot),2));
+            TM2(electrode,:,:) = squeeze(nanmean(reshape(data2(electrode,:,boot_table),size(data2,2),size(data2,3),nboot),2));
+        end
+        TM1 = sort(TM1,3);
+        TM2 = sort(TM2,3);
         
         % --------------------------------------------------------
         
     case {2} % independent data
         
-        if numel(size(data1)) == 4
-            data1 = squeeze(data1(:,:,:,2));
-            data2 = squeeze(data2(:,:,:,2));
-        end
-        
-        est1 =NaN(size(data1,1),size(data1,2)); est2 = est1;
-        CI1 =NaN(size(data1,1),2,size(data1,2)); CI2 = CI1;
-        for channel=1:size(data1,1)
-            fprintf('bootstraping data for CI estimation electrode %g \n',channel)
-            
-            [est1(channel,:),CI1(channel,:,:),bb1] = limo_central_estimator(squeeze(data1(channel,:,:)),'trimmed mean',1-alpha_level);
-            [est2(channel,:),CI2(channel,:,:),bb2] = limo_central_estimator(squeeze(data2(channel,:,:)),'trimmed mean',1-alpha_level);
-            diff(channel,:,2) = est1(channel,:)-est2(channel,:);
+        na=size(data1,3);
+        ga=floor(percent*na);
+        data1=sort(data1,3);
+        data1=data1(:,:,(ga+1):(na-ga));
 
-            sorted_data = sort(sort(bb1)-sort(bb2),2);
-            upper_centile = floor((1-alpha_level)*size(sorted_data,2)); % upper bound
-            nCIs = size(sorted_data,2) - upper_centile;
-            for frame = 1:size(sorted_data,1)
-                tmp = sorted_data(frame,:);
-                ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
-                [~,index]=find(ciWidth == min(ciWidth)); % densest centile
-                if length(index) > 1; index = index(1); end % many similar values
-                diff(channel,frame,1) = tmp(index);
-                diff(channel,frame,3) = tmp(index+upper_centile);
+        boot_table1 = zeros(size(data1,3),nboot); B=1;
+        while B~=nboot+1
+            tmp = randi(size(data1,3),size(data1,3),1);
+            if length(unique(tmp)) ~= 1
+                boot_table1(:,B) = tmp;
+                B=B+1;
             end
         end
+        
+        na=size(data2,3);
+        ga=floor(percent*na);
+        data2=sort(data2,3);
+        data2=data2(:,:,(ga+1):(na-ga));
+
+        boot_table2 = zeros(size(data2,3),nboot); B=1;
+        while B~=nboot+1
+            tmp = randi(size(data2,3),size(data2,3),1);
+            if length(unique(tmp)) ~= 1
+                boot_table2(:,B) = tmp;
+                B=B+1;
+            end
+        end
+        
+        TM1 = NaN(size(data1,1),size(data1,2),nboot);
+        TM2 = NaN(size(data2,1),size(data2,2),nboot);
+        for electrode=1:size(data1,1)
+            fprintf('bootstraping data for CI estimation electrode %g \n',electrode)
+            % means over resampled subjects
+            means_gp1 = squeeze(nanmean(reshape(data1(electrode,:,boot_table1),size(data1,2),size(data1,3),nboot),2));
+            means_gp2 = squeeze(nanmean(reshape(data2(electrode,:,boot_table2),size(data2,2),size(data2,3),nboot),2));
+            D = sort(means_gp1-means_gp2,2);
+            
+            TM1(electrode,:,:) = means_gp1;
+            TM2(electrode,:,:) = means_gp2;
+            % --------------------
+            diff(electrode,:,1) = D(:,low);
+            diff(electrode,:,2) = nanmean(squeeze(data1(electrode,:,:)),2)-nanmean(squeeze(data2(electrode,:,:)),2);
+            diff(electrode,:,3) = D(:,high);
+        end
+        TM1 = sort(TM1,3);
+        TM2 = sort(TM2,3);
 end
 
 % save
@@ -198,33 +251,23 @@ cd(newpath); save (newname,'diff');
 if figure_flag == 1
     % electrode info
     if size(diff,1) > 1
-        channel = inputdlg('which electrode to plot','Plotting option');
-        if isempty(channel)  % cancel
+        electrode = inputdlg('which electrode to plot','Plotting option');
+        if isempty(electrode)
             return
-        elseif strcmp(channel,'') % ok empty
-            [~,channel]=max(max(squeeze(diff(:,:,2)),[],2));
         else
-            channel = eval(cell2mat(channel));
-            if length(channel) > 1
+            electrode = eval(cell2mat(electrode));
+            if length(electrode) > 1
                 error('1 electrode only can be plotted')
-            elseif channel > size(diff,1)
+            elseif electrode > size(diff,1)
                 error('electrode number invalid')
             end
         end
     else
-        channel = 1;
+        electrode = 1;
     end
     % timing info
     [file,locpath,ind]=uigetfile('.mat','Select any LIMO with right timing info');
-    if ind ==1
-        cd(locpath); load LIMO;
-        timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
-    end
-    
-    if  single(ind == 0) || length(timevect) ~= length(squeeze(est1(channel,:)))
-        if length(timevect) ~= squeeze(est1(channel,:))
-            disp('error in computing time frames')
-        end
+    if ind == 0
         v = inputdlg('enter time interval by hand e.g. [0:0.5:200]');
         if isempty(v)
             return
@@ -240,27 +283,34 @@ if figure_flag == 1
                 timevect = 1:size(diff,2);
             end
         end
+    else
+        cd(locpath); load LIMO;
+        timevect = LIMO.data.start*1000:(1000/LIMO.data.sampling_rate):LIMO.data.end*1000; % in sec
     end
     
-    
     % figure
-    figure;set(gcf,'Color','w'); subplot(3,2,[1 2 3 4]); hold on
-    plot(timevect,squeeze(est1(channel,:)),'LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)],[squeeze(CI1(channel,1,:))' fliplr(squeeze(CI1(channel,2,:))')], [0 0 1]);
+    figure;set(gcf,'Color','w'); hold on
+    plot(timevect,nanmean(squeeze(data1(electrode,:,:)),2),'LineWidth',3);
+    fillhandle = patch([timevect fliplr(timevect)], [squeeze(TM1(electrode,:,low)),fliplr(squeeze(TM1(electrode,:,high)))], [0 0 1]);
     set(fillhandle,'EdgeColor',[0 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    plot(timevect,squeeze(est2(channel,:)),'r','LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)],[squeeze(CI2(channel,1,:))' fliplr(squeeze(CI2(channel,2,:))')], [1 0 0]);
+    plot(timevect,nanmean(squeeze(data2(electrode,:,:)),2),'r','LineWidth',3);
+    fillhandle = patch([timevect fliplr(timevect)], [squeeze(TM2(electrode,:,low)),fliplr(squeeze(TM2(electrode,:,high)))], [1 0 0]);
     set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    grid on; axis tight; ylabel('Amplitude','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
-    title(['Trimmed Means and ' num2str(100-alpha_level*100) '%CI'],'FontSize',16); drawnow;
+    grid on; axis tight; box on; 
+    xlabel('Time ','FontSize',16)
+    ylabel('Amplitude','FontSize',16)
+    title(['Trimmed Means and ' num2str(100-alpha_level*100) '%CI'],'FontSize',18); drawnow;
+    set(gca,'FontSize',14,'layer','top');
 
-    subplot(3,2,[5 6]); hold on
-    plot(timevect,squeeze(diff(channel,:,2)),'LineWidth',3);
-    fillhandle = patch([timevect fliplr(timevect)], [squeeze(diff(channel,:,1)),fliplr(squeeze(diff(channel,:,3)))], [1 0 0]);
+    figure;set(gcf,'Color','w'); hold on
+    plot(timevect,squeeze(diff(electrode,:,2)),'LineWidth',3);
+    fillhandle = patch([timevect fliplr(timevect)], [squeeze(diff(electrode,:,1)),fliplr(squeeze(diff(electrode,:,3)))], [1 0 0]);
     set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-    grid on; axis tight; xlabel('Time ','FontSize',12)
-    ylabel('Amplitude Difference','FontSize',12); set(gca,'FontSize',12,'layer','top'); box on
-    title(['Trimmed Mean difference and ' num2str(100-alpha_level*100) '%CI'],'FontSize',16); drawnow;
+    grid on; axis tight; box on; 
+    xlabel('Time ','FontSize',16)
+    ylabel('Amplitude','FontSize',16)
+    title(['Trimmed Mean difference and ' num2str(100-alpha_level*100) '%CI'],'FontSize',18); drawnow;
+    set(gca,'FontSize',14,'layer','top');
 
 end
 

@@ -1,4 +1,4 @@
-% the cluster Fieldtrip functions necessary to look at how to combine channels
+% the cluster Fieldtrip functions necessary to perform the cluster analyses
 % were renamed with the prefix limo_ft_
 %
 % LIMO_FT_PREPARE_LAYOUT calls:
@@ -14,6 +14,6 @@
 %   LIMO_FT_SENS_LABEL
 
 % -----------------------------
-%  Copyright (C) LIMO Team 2016
+%  Copyright (C) LIMO Team 2010
 
 % v1: GAR, University of Glasgow, June 2010

@@ -3,8 +3,8 @@ function varargout = limo_gui(varargin)
 % GUI of LIMO_eeg toolbox
 % created using GUIDE
 % cyril pernet 12-03-2010 v1
-% ------------------------------------------
-% Copyright (C) LIMO Team 2014
+% -----------------------------
+%  Copyright (C) LIMO Team 2010
 
 
 %% GUI stuffs
@@ -42,7 +42,7 @@ function limo_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 handles.dir = pwd;
 guidata(hObject, handles);
-% uiwait(handles.figure1);
+uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_gui_OutputFcn(hObject, eventdata, handles) 
@@ -51,21 +51,11 @@ varargout{1} = 'LIMO terminated';
 
 %% Callbacks
 
-% --- Executes on selection change in import_menu.
-function import_menu_Callback(hObject, eventdata, handles)
-handles.import = get(hObject,'Value');
+% --- Executes on button press in Data_import.
+function Data_import_Callback(hObject, eventdata, handles)
 uiresume
-guidata(hObject, handles);
 delete(handles.figure1)
-limo_eeg(2,handles.import);
-
-
-% --- Executes during object creation, after setting all properties.
-function import_menu_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
+limo_eeg(2);
 
 % --- Executes on button press in analyse.
 function analyse_Callback(hObject, eventdata, handles)
@@ -74,18 +64,11 @@ if file ==0
     return
     guidata(hObject, handles);
 else
-    load([dir_path file]);
-    if strcmp(LIMO.design.status,'done');
-        answer=questdlg('This design was already estimated, redo it?','Estimation','Yes','No','Yes');
-    else
-        answer = 'Yes';
-    end
-    
-    if strcmp(answer ,'Yes')
-        uiresume; delete(handles.figure1); 
-        cd (dir_path); LIMO.design.status ='to do';
-        save LIMO LIMO; clear LIMO; limo_eeg(4); limo_results;
-    end
+    cd (dir_path);
+    uiresume
+    delete(handles.figure1)
+    limo_eeg(4);
+    limo_eeg(1);
 end
 
 % --- Executes on button press in results.
@@ -136,7 +119,7 @@ cd (handles.dir)
 function Quit_Callback(hObject, eventdata, handles)
 clc
 uiresume
-try
-    matlabpool('close');
-end
 delete(handles.figure1)
+
+
+

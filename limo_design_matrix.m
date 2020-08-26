@@ -9,7 +9,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %
 % INPUTS: 
 %   Y                  = EEG data with format electrodes x frames x trials/subjects
-%   LIMO               = structure that contains the above information (created by limo_egg and limo_import_tlimo_import_f)
+%   LIMO               = structure that contains the above information (created by limo_egg and limo_import)
 %   or input info that are in LIMO.mat
 %   Cat                = vector describing the different conditions (if no conditions Cat = 0)
 %   Cont               = matrix describing the different covariates (if no covariates Cont = 0)
@@ -27,7 +27,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %   nb_interactions = vector that returns the number of conditions perinteraction e.g. [4 4 4 8]
 %   nb_continuous = scalar that returns the number of continuous variables e.g. [3]
 %
-%   These outputs are written to disk in DIRECTORY (allows dirty check that memery holds) and populated latter:
+%   These outputs are written to disk in DIRECTORY and populated latter:
 %
 %   Yr.mat   = NaNs - the EEG data from the .set (reorganized to fit X, that is grouped by conditions if Cat ~=0)
 %   Yhat.mat = NaNs - the predicted data (same size as Yr)
@@ -35,7 +35,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %   R2.mat   = NaNs - the model fit (same size as Yr)
 %   Beta.mat = NaNs - the beta values (dim: electrode,frame, number of paramters in the model)
 %
-% See also LIMO_IMPORT)T, LIMO_IMPORT_F, LIMO_EEG, LIMO_GLM
+% See also LIMO_IMPORT, LIMO_EEG, LIMO_GLM
 %
 % Cyril Pernet / Guillaume Rousselet v4 27/04/2009 
 % Cyril Pernet v5 29/12/2010 % removed nb_items, updated for several factors
@@ -340,7 +340,7 @@ if ~isempty(Cat)
 %         end
 %     end
     
-    % add the continuous regressors and the constant
+    % add the continuous regressors
     if add_cont == 1;
         X = [x Cont ones(size(Yr,3),1)];
     else
@@ -405,45 +405,17 @@ if ~isempty(expected_chanlocs)
     Yr = limo_match_elec(chanlocs,expected_chanlocs,1,size(Yr,2),Yr);
 end
 
-try
-    % no matter the analysis we have Beta, Yhat, Res - create them all here
-    % also R2 for univariate analyses - also test if memory hold for tmp
-    % files to be created in limo_eeg 
-    Yhat  = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
-    Res   = NaN(size(Yr,1),size(Yr,2),size(Yr,3));
-    Betas = NaN(size(Yr,1),size(Yr,2),size(X,2));
-    
-    % only for univariate analyses
-    if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = NaN(size(Yr,1),size(Yr,2),3); save R2 R2;
-    end
-    
-    % these ones will be created in limo_eeg
-    if nb_conditions ~=0
-        tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(nb_conditions),2);
-    end
-    
-    if nb_interactions ~=0
-        tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(nb_interactions),2);
-    end
-    
-    if nb_continuous ~=0
-        tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
-    end
-    
-    save Yhat Yhat; clear Yhat
-    save Betas Betas; clear Betas
-    save Res Res; clear Res
-    save Yr Yr ; clear Yr R2
-    
-    if nb_conditions ~=0; clear tmp_Condition_effect; end
-    if nb_interactions ~=0; clear tmp_Interaction_effect; end
-    if nb_continuous ~=0; clear tmp_Covariate_effect; end
-    
-catch FileError
-    sprintf('%s',FileError)
-    error('error while memory mapping futur results')
+% no matter the analysis we have Beta, Yhat, Res
+Yhat  = zeros(size(Yr,1),size(Yr,2),size(Yr,3)); save Yhat Yhat; clear Yhat
+Res   = zeros(size(Yr,1),size(Yr,2),size(Yr,3)); save Res Res; clear Res
+Betas = zeros(size(Yr,1),size(Yr,2),size(X,2)); save Betas Betas; clear Betas
+
+% only for univariate analyses
+if strcmp(type_of_analysis,'Mass-univariate')
+    R2 = zeros(size(Yr,1),size(Yr,2),3); save R2 R2; 
 end
+save Yr Yr ; clear Yr R2
+
 
 % ------
 % figure

@@ -3,13 +3,6 @@ function varargout = limo_contrast_manager(varargin)
 % GUI to create / review contrasts
 % created using GUIDE
 %
-% Usage:
-% 1- limo_display_results   (Call the GUI. The file LIMO.mat file must be selected afterwards)
-% 2- limo_display_results(PathtoFile) Will call the main GUI and load the LIMO.mat
-%    file. PathtoFile must be the full or the relative path to the LIMO.mat
-%    file. File name must be provided in the path too.  
-%    i.e PathtoFile = '/Users/username/WORK/LIMO.mat'
-%
 % In display_matrix_CreateFcn --> load LIMO.mat and display X
 % In New_Contrast_Callback --> test new contrast
 % In Done_Callback --> update LIMO.contrast and run new contrast
@@ -26,7 +19,6 @@ function varargout = limo_contrast_manager(varargin)
 % Begin initialization code
 % -------------------------
 warning off
-global limofile
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -36,11 +28,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
-    if exist(varargin{1},'file') == 2 && ~isempty(strfind(varargin{1},'LIMO.mat'))
-        limofile = varargin{1};
-    else
-        gui_State.gui_Callback = str2func(varargin{1});
-    end
+    gui_State.gui_Callback = str2func(varargin{1});
 end
 
 if nargout
@@ -68,7 +56,6 @@ handles.F   = 0;
 handles.X   = [];
 handles.output = hObject;
 guidata(hObject,handles);
-set(hObject,'Tag','figure_limo_contrast_manager');
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
@@ -83,13 +70,7 @@ varargout{1} = 'contrast done';
 function display_matrix_CreateFcn(hObject, eventdata, handles)
 global LIMO handles
 
-if isempty(handles.limofile)
-    [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
-else
-    [PathName,FileName] = fileparts(handles.limofile);
-    if isempty(PathName), PathName = pwd; end
-    FilterIndex = 1;
-end
+[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
 if FilterIndex ==0
     clear all; 
     varargout{1} = 'contrast cancelled';
@@ -224,15 +205,7 @@ end
 % --- Previous Contrast
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
-global LIMO handles limofile
-
-if exist('limofile','var') == 1 && ~isempty(limofile)
-    handles.limofile = limofile;
-else
-    handles.limofile = [];
-end
-clear global limofile
-
+global LIMO handles
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -271,8 +244,8 @@ end
 handles.output = hObject;
 guidata(hObject,handles)
 
-
   
+
 function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 global handles
 
@@ -335,54 +308,25 @@ if ~isempty(handles.C);
                 result = limo_contrast(Yr, Betas, LIMO, handles.F,1);
                 
                 if LIMO.design.bootstrap ~= 0
-                    if strcmp(LIMO.Analysis ,'Time-Frequency')
-                        disp('preparing data matrix');
-                        clear Yr Betas % release some memory
-                        cd H0; load H0_Betas.mat;
-                        tmp = zeros(size(H0_Betas,1), size(H0_Betas,2)*size(H0_Betas,3), size(H0_Betas,4), size(H0_Betas,5));
-                        for boot = 1:size(H0_Betas,5)
-                           tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
-                        end
-                        clear H0_Betas; cd ..; load Yr; cd(H0);
-                        result = limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
-                        clear tmp
-                    else
-                        clear Betas; cd H0; load H0_Betas
-                        result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
-                    end
+                    cd H0; load H0_Betas.mat;
+                    result = limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
                     clear Yr ; cd ..
                 end
                 
                 if LIMO.design.tfce == 1
                     if handles.F == 0
                         filename = sprintf('con_%g.mat',index); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_score = limo_tfce(3,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_score = limo_tfce(2,squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
-                        end
+                        tfce_score = limo_tfce(squeeze(con(:,:,4)),LIMO.data.neighbouring_matrix);
                         cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear con tfce_score
                         cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_H0_score = limo_tfce(3,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_H0_score = limo_tfce(2,squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                        end
+                        tfce_H0_score = limo_tfce(squeeze(H0_con(:,:,2,:)),LIMO.data.neighbouring_matrix);
                         filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_con tfce_score
                     else
                         filename = sprintf('ess_%g.mat',index); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_score = limo_tfce(3,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_score = limo_tfce(2,squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
-                        end
+                        tfce_score = limo_tfce(squeeze(ess(:,:,end-1)),LIMO.data.neighbouring_matrix);
                         cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                         cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            tfce_H0_score = limo_tfce(3,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
-                        else
-                            tfce_H0_score = limo_tfce(2,squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
-                        end
+                        tfce_H0_score = limo_tfce(squeeze(H0_ess(:,:,end-1,:)),LIMO.data.neighbouring_matrix);
                         filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_H0_score'); clear H0_ess tfce_score
                     end
                 end
@@ -413,7 +357,7 @@ if ~isempty(handles.C);
             
             % update LIMO.mat
             LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'F';
+            LIMO.contrast{index}.V = 'T';
             C = handles.C;
             
             % create ess files and call limo_rep_anova adding C
@@ -421,11 +365,11 @@ if ~isempty(handles.C);
             result = limo_contrast(Yr,LIMO,3);
             
             if LIMO.design.bootstrap ~= 0
-                cd H0; limo_contrast(Yr, LIMO, 4); cd ..
+                cd H0; result = limo_contrast(Yr, LIMO, 4); cd ..
             end
             
             if LIMO.design.tfce == 1
-                filename = sprintf('ess_repeated_measure_%g.mat',index); load(filename);
+                filename = sprintf('ess_%g.mat',index); load(filename);
                 tfce_score = limo_tfce(squeeze(ess(:,:,1)),LIMO.data.neighbouring_matrix);
                 cd TFCE; filename2 = sprintf('tfce_%s',filename); save ([filename2], 'tfce_score'); clear ess tfce_score
                 cd ..; cd H0; filename = sprintf('H0_%s',filename); load(filename);
@@ -445,23 +389,17 @@ if ~isempty(handles.C);
     
     uiresume
     guidata(hObject, handles);
-    close(get(hObject,'Parent'));
-    if isempty(handles.limofile)
-        limo_results;
-    end
+    close all
+    limo_results
 end
 
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
-clc; 
-uiresume
-guidata(hObject, handles);
-close(get(hObject,'Parent')); 
-if isempty(handles.limofile)
-    limo_results;
-end
 
-clearvars LIMO handles limofile
-return
+clc; uiresume
+guidata(hObject, handles);
+close; limo_results
+
+

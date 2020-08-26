@@ -26,11 +26,7 @@ function TM = limo_trimmed_mean(varargin)
 %% checkings
 
 data = varargin{1};
-percent = 20/100;
-if nargin > 1
-    percent = varargin{2};
-end
-
+percent = varargin{2};
 if nargin == 3
     option = 1;
     alpha = varargin{3};
@@ -38,16 +34,8 @@ else
     option = [];
 end
 
-reduced_dim = 0;
-if length(size(data)) ==2
-    tmp = zeros(2,size(data,1),size(data,2));
-    tmp(1,:,:) = data; tmp(2,:,:) = data;
-    clear data; data = tmp; clear tmp
-    reduced_dim = 1;
-end
-
 if length(size(data)) ~=3
-    error('data in must be a 2D or 3D matrix')
+    error('data in must be a 3D matrix')
 end
 
 
@@ -63,6 +51,7 @@ else
     TM = nanmean(datasort(:,:,(g+1):(n-g)),3);
 end
     
+
 %% compute confidence intervals
 if option == 1
     for i=1:size(data,1)
@@ -75,12 +64,7 @@ if option == 1
     end
 end
 
-if reduced_dim == 1
-   TM = TM(1,:,:);
 end
-
-end
-
 
 function [tv,g]=tvar(x,percent)
 

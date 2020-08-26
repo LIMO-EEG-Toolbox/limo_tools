@@ -1,30 +1,28 @@
 function limo_eeg(varargin)
 
-% LIMO_EEGLIMO - start up and master function of the LIMO_EEGLIMO toolbox
+% LIMO_EEG - start up and master function of the LIMO_EEG toolbox
 % Calling this function brings up different GUIs.
 % Each time an option is used it calls subroutines.
-% In this function is also implemented the call to the GLM, creating files
-% etc .. see input
 %
-% LIMO_EEGLIMO is designed to perform a hierarchical LInear MOdeling of EEGLIMO data
+% LIMO_EEG is designed to perform a hierarchical LInear MOdeling of EEG data
 % All analyses can be performed with this toolbox but the visualization
-% relies heavily on EEGLIMOlab functions http://sccn.ucsd.edu/eeglab/
-% In addition, the data format is the one used by EEGLIMOlab.
+% relies heavily on EEGlab functions http://sccn.ucsd.edu/eeglab/
+% In addition, the data format is the one used by EEGlab.
 %
-% INPUT limo_eeg(value,option)
+% INPUT limo_eeg(value)
 %                 1 - load the GUI
-%                 2,X - call limo_import (time X=1 or freuqency X=2), creating LIMO.mat file and call limo_egg(3)
+%                 2 - call limo_import, creating LIMO.mat file and call limo_egg(3)
 %                 3 - call limo_design_matrix and populate LIMO.design
-%                 4 - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
-%                 5 - shortcut to limo_results, look at possible results and print a report
-%                 6,C - shortcut to limo_contrast for the current directory,
+%                 4 - call limo_glm1 (mass univariate) or limo_glm2 (multivariate) to run 1st level analysis
+%                 5 - shortcut to limo_results, look at all possible results and print a report
+%                 6 - shortcut to limo_contrast for the current directory,
 %                 ask for a list of contrasts if not given as 2nd argument) and run them all
 %                 e.g. C = [1 1 -1 -1; 1 -1 1 -1]; limo_eeg(6,C) would do those
 %                 two contrasts for the data located in the current dir
 %
-% LIMO_EEGLIMO was primarily designed by Cyril Pernet and Guillaume Rousselet,
-% with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar, 
-% Luisa Frei, Ignacio Suay Mas and Marianne Latinus. These authors are thereafter
+% LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,
+% with the contributon of Carl Gaspar, Nicolas Chauveau, Luisa Frei,
+% Ignacio Suay Mas and Marianne Latinus. These authors are thereafter
 % referred as the LIMO Team
 %
 % THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
@@ -43,27 +41,22 @@ function limo_eeg(varargin)
 % BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR
 % THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH
 % HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-%
-% Cyril Pernet & Andrew Stewart v6 21/01/2014
-% Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
-%
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+
+% -----------------------------
+% Copyright (C) LIMO Team 2010
+
+% Cyril Pernet v5 11/06/2013
+
 
 % make sure paths are ok
-root = fileparts(which('limo_eeg'));
-pathCell = regexp(path, pathsep, 'split');
-onPath = any(strcmp([root filesep 'help'], pathCell));
-if onPath == 0
-    addpath([root filesep 'limo_cluster_functions'])
-    addpath([root filesep 'external'])
-    addpath([root filesep 'external' filesep 'psom'])
-    addpath([root filesep 'help'])
-end
-
+local_path = which('limo_eeg');
+root = local_path(1:max(find(local_path == filesep))-1);
+addpath([root filesep 'limo_cluster_functions'])
+addpath([root filesep 'help'])
 
 % in case data are already there
 if isempty(varargin);
+    global EEG
     varargin={1};
 end
 
@@ -79,22 +72,17 @@ switch varargin{1}
         % if not called via the eeglab menu but via the matlab command window
         % show the GUI
         
-        disp(' ')
         disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,');
-        disp('with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar,');
-        disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus, Ramon Martinez-Cancino,');
-        disp('and Arnaud Delorme. These authors are thereafter referred as the LIMO Team');
+        disp(' with the contributon of Carl Gaspar, Nicolas Chauveau, Luisa Frei,');
+        disp(' Ignacio Suay Mas and Marianne Latinus. These authors are thereafter');
+        disp(' referred as the LIMO Team');
         disp(' ')
-        disp('LIMO_EEG  Copyright (C) 2015  LIMO TEAM');
+        disp('LIMO_EEG  Copyright (C) 2010  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
         disp(' ');
-        disp('LIMO EEG Ref:')
-        disp('Pernet, C.R., Chauveau, N., Gaspar, C., Rousselet, G.A. (2011).')
-        disp('LIMO EEGLIMO: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic data.')
-        disp('Computational Intelligence and Neuroscience, Volume 2011')
-        disp(' ')
+        
         limo_gui
         
         %------
@@ -103,62 +91,49 @@ switch varargin{1}
         % ------------------------------------------------------------------------
         %                       IMPORT
         % ------------------------------------------------------------------------
-        % the EEGLIMO data are not imported but path / name is saved in LIMO.mat
+        % the EEG data are not imported but path / name is saved in LIMO.mat
         % Cat and Cont are imported manually from a txt or mat file
         % Other informations are i) the starting time point (sec), ii) the method to
         % use (if multivariate stats have to be computed) and iii) the working
         % directory where all informations will be saved
         
         clc;
-        if varargin{2} == 1
-            out = limo_import_t;  % Data from electrodes over time in each trial
-        elseif varargin{2} == 2
-            out = limo_import_f;  % Data from electrodes spectral power in each trial
-        elseif varargin{2} == 3
-            out = limo_import_tf; % Data from electrodes spectral power over time in each trial
-        end
+        limo_import;
+        disp('import done');
         
         % if bootstrap with tfce - get the neighbourghing matrix now so
         % the estimation and results can be all computed without any other
         % input from user (see limo_eeg(5))
         % if bootstrap do TFCE
-        if ~strcmp(out,'LIMO import aborded')
-            try
-                load LIMO
-                if LIMO.design.bootstrap == 1
-                    if ~isfield(LIMO.data,'neighbouring_matrix')
-                        answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
-                        if strcmp(answer,'Load')
-                            [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
-                            if whatsup == 0
-                                disp('selection aborded');
-                                return
-                            else
-                                cd(newpath);
-                                channeighbstructmat = load(file);
-                                channeighbstructmat = getfield(channeighbstructmat,cell2mat(fieldnames(channeighbstructmat)));
-                                cd(LIMO.dir);
-                            end
+        try
+            load LIMO
+            if LIMO.design.bootstrap == 1
+                if ~isfield(LIMO.data,'neighbouring_matrix')
+                    answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
+                    if strcmp(answer,'Load')
+                        [file,path,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+                        if whatsup == 0
+                            disp('selection aborded');
+                            return
                         else
-                            channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+                            cd(path); load(file); cd(LIMO.dir);
                         end
-                        LIMO.data.neighbouring_matrix = channeighbstructmat;
-                        save LIMO LIMO
+                    else
+                        channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
                     end
+                    LIMO.data.neighbouring_matrix = channeighbstructmat;
+                    save LIMO LIMO
                 end
-                disp('import done');
-                
-            catch
-                disp('errors related to bootstrap ?? ');
-                return
+                % make H0 and tfce directories
+                mkdir H0;
+                if LIMO.design.tfce == 1
+                    mkdir TFCE;
+                end
             end
-            
-            % now estimate the design matrix
-            limo_eeg(3)
-        else
-            disp('import aborded')
         end
         
+        % now estimate the design matrix
+        limo_eeg(3)
         
         %------
     case {3}
@@ -173,197 +148,33 @@ switch varargin{1}
         try
             load LIMO
         catch
-            [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                cd (dir_path); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
         
         
         % Check data where specified and load
-        if exist('EEGLIMO','var')
-            if strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
-                disp('Using Global variable EEGLIMO')
-            else
-                cd (LIMO.data.data_dir);
-                disp('reloading data ..');
-                EEGLIMO=pop_loadset(LIMO.data.data);
-            end
-        else
+        try
             cd (LIMO.data.data_dir);
             disp('reloading data ..');
-            EEGLIMO=pop_loadset(LIMO.data.data);
+            EEG=pop_loadset(LIMO.data.data);
+        catch
+            error('error loading data (most likely a memory issue) or cannot find the data ; error line 103/104 cd/pop_loadset')
         end
+        Y = EEG.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
+        clear EEG ALLCOM ALLEEG CURRENTSET CURRENTSTUDY LASTCOM STUDY
+        cd (LIMO.dir)
         
-        % Load either elec voltage over time, elec power over frequency, or
-        % electrode time-frequency -  depending on declared analysis
-        
-        if strcmp(LIMO.Analysis,'Time')
-            if strcmp(LIMO.Type,'Components')
-                if isfield(EEGLIMO.etc.datafiles,'icaerp')
-                    if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
-                        Y = load(EEGLIMO.etc.datafiles.icaerp);
-                        if isstruct(Y)
-                            Y = getfield(Y,cell2mat(fieldnames(Y)));
-                        end
-                    else
-                        try
-                            signal = load('-mat',EEGLIMO.etc.datafiles.icaerp);
-                            if isstruct(signal); signal  = limo_struct2mat(signal); end
-                        catch
-                            for d=1:length(EEGLIMO.etc.datafiles.icaerp)
-                                signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaerp(d)));
-                                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
-                            end
-                        end
-                        signal = limo_concatcells(signal);
-                    end
-                else
-                    signal = eeg_getdatact(EEGLIMO,'component',[1:size(EEGLIMO.icawinv,2)]);
-                end
-                Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
-
-            else % channels
-                if isfield(EEGLIMO.etc,'datafiles.daterp')
-                    if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
-                        Y = load(EEGLIMO.etc.datafiles.daterp);
-                        if isstruct(Y)
-                            Y = getfield(Y,cell2mat(fieldnames(Y)));
-                        end
-                    else
-                        for d=1:length(EEGLIMO.etc.datafiles.daterp)
-                            Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.daterp(d)));
-                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
-                        end
-                        Y = limo_concatcells(Y);
-                    end
-                else
-                    disp('the field EEGLIMO.etc.datafiles.daterp or .icaerp pointing to the data is missing - using EEGLIMO.data')
-                    Y = EEGLIMO.data(:,LIMO.data.trim1:LIMO.data.trim2,:);
-                end
-                clear EEGLIMO
-            end
-            
-        elseif strcmp(LIMO.Analysis,'Frequency')
-            if strcmp(LIMO.Type,'Components')
-                if isfield(EEGLIMO.etc.datafiles,'icaspec')
-                    if ~iscell(EEGLIMO.etc.datafiles.icaspec) && strcmp(EEGLIMO.etc.datafiles.icaspec(end-3:end),'.mat')
-                        Y = load(EEGLIMO.etc.datafiles.icaspec);
-                        if isstruct(Y)
-                            Y = getfield(Y,cell2mat(fieldnames(Y)));
-                        end
-                    else
-                         try
-                            signal = load('-mat',EEGLIMO.etc.datafiles.icaspec);
-                            if isstruct(signal); signal  = limo_struct2mat(signal); end
-                        catch
-                            for d=1:length(EEGLIMO.etc.datafiles.icaspec)
-                                signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icaspec(d)));
-                                if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
-                            end
-                        end
-                        signal = limo_concatcells(signal);
-                    end
-                else
-                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
-                end
-                Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
-                
-            else % channels
-                if isfield(EEGLIMO.etc.datafiles,'datspec')
-                    if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
-                        Y = load(EEGLIMO.etc.datafiles.datspec);
-                        if isstruct(Y)
-                            Y = getfield(Y,cell2mat(fieldnames(Y)));
-                        end
-                    else
-                        for d=1:length(EEGLIMO.etc.datafiles.datspec)
-                            Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.datspec(d)));
-                            if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
-                        end
-                        Y = limo_concatcells(Y); clear EEGLIMO
-                    end
-                else
-                    error('the field EEGLIMO.etc.datspec pointing to the data is missing')
-                end
-            end
-            clear EEGLIMO
-            
-        elseif strcmp(LIMO.Analysis,'Time-Frequency')
-            disp('Time-Frequency implementation - loading tf data...');
-            
-            if strcmp(LIMO.Type,'Components')
-                if isfield(EEGLIMO.etc.datafiles,'icatimef')
-                    try
-                        signal = load('-mat',EEGLIMO.etc.datafiles.icatimef);
-                        if isstruct(signal); signal  = limo_struct2mat(signal); end
-                    catch
-                        for d=1:length(EEGLIMO.etc.datafiles.icaspec)
-                            signal{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.icatimef(d)));
-                            if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
-                        end
-                    end
-                    signal = limo_concatcells(signal);
-                else
-                    signal = eeg_getdatact(EEGLIMO,'component',[1:length(EEGLIMO.icawinv)]);
-                end
-                Y = signal(:,LIMO.data.trim_low_f:LIMO.data.trim_high_f,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
-
-            else % channels
-                if isfield(EEGLIMO.etc.datafiles,'dattimef')
-                    if exist(EEGLIMO.etc.datafiles.dattimef,'file')
-                        for d=1:length(EEGLIMO.etc.datafiles.dattimef)
-                        Y{d} = load('-mat',cell2mat(EEGLIMO.etc.datafiles.dattimef(d)));
-                        if isstruct(Y{d}); Y{d}  = limo_struct2mat(Y{d}); end
-                    end
-                    Y = limo_concatcells(Y);
-                    clear EEGLIMO
-                    else
-                       error('The file %s \n in EEG.etc.datafile is not found', EEGLIMO.etc.datafiles.dattimef)
-                    end
-                elseif EEGLIMO.etc.datafiles.datersp % .mat file
-                    if exist(EEGLIMO.etc.datafiles.datersp,'file')
-                        Y = load(EEGLIMO.etc.datafiles.datersp);
-                        if isstruct(Y)
-                            Y = getfield(Y,cell2mat(fieldnames(Y)));
-                        end
-                    else
-                        [~,name,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
-                        try
-                            Y = load([LIMO.dir filesep name ext]);
-                            if isstruct(Y)
-                                Y = getfield(Y,cell2mat(fieldnames(Y)));
-                            end
-                        catch
-                            Y = load('-mat',[LIMO.dir filesep name '.datersp']);
-                        end
-                    end
-                else
-                    error('no data found, the field EEGLIMO.etc.dattimef or EEGLIMO.etc.datersp pointing to the data is missing')
-                end
-            end
-            
-            LIMO.data.size4D= size(Y);
-            LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
-        end
-        
-        clear ALLCOM ALLEEGLIMO CURRENTSET CURRENTSTUDY LASTCOM STUDY 
-        cd (LIMO.dir) ; save LIMO LIMO
-
-
         % make the design matrix
-        disp('computing design matrix');
-        if strcmp(LIMO.Analysis,'Time-Frequency') % use limo_design_matrix_tf
-            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
-                LIMO.design.nb_continuous] = limo_design_matrix_tf(Y, LIMO,1);
-        else  % for time or power use limo_design_matrix
-            [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
-                LIMO.design.nb_continuous] = limo_design_matrix(Y, LIMO,1);
-        end
-       
+        disp('compute design matrix');
+        [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
+            LIMO.design.nb_continuous] = limo_design_matrix(Y, LIMO,1);
+        
         % update LIMO.mat
         if prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous == 0
             if length(LIMO.design.nb_conditions) == 1
@@ -404,17 +215,14 @@ switch varargin{1}
         
         % ---------------
         LIMO.design.status = 'to do';
-        save LIMO LIMO; clear Y 
+        save LIMO LIMO
+        clear Y Cat Cont
         
         a = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
         if strcmp(a,'Yes')
-            if strcmp(LIMO.Analysis,'Time-Frequency')  
-                limo_eeg_tf(4);
-            else
-                limo_eeg(4);
-            end
+            limo_eeg(4);
+            limo_eeg(5);
             clear LIMO
-            limo_gui
         else
             return
         end
@@ -429,16 +237,25 @@ switch varargin{1}
         
         % NBOOT (updated if specified in LIMO.design)
         % ------------------------------------------
+        nboot =  599;
+        % ----------
         
         % get the LIMO.mat
-        try
-            load('LIMO.mat');
-        catch
-            [file,dir_newpath,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
-            if ind ==0
+        files = dir;
+        load_limo = 0;
+        for i=1:size(files,1)
+            if strcmp(files(i).name,'LIMO.mat')
+                load('LIMO.mat');
+                load_limo = 1;
+            end
+        end
+        
+        if load_limo == 0
+            [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            if file ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                cd (dir_path); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
@@ -449,68 +266,54 @@ switch varargin{1}
         if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
             
             % --------- load files created by limo_design_matrix ------------------
+            load Yr; load Yhat; load Res; load R2; load Betas;
+            
+           
+            % ------------- prepare weight matrice  -------------------------------------
+            if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                W = ones(size(Yr,1),size(Yr,3));
+            elseif strcmp(LIMO.design.method,'IRLS')
+                W = zeros(size(Yr));
+            end
+            
+            % ------------ prepare condition/covariates -------------------
+            if LIMO.design.nb_conditions ~=0
+                tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
+            end
+            
+            if LIMO.design.nb_interactions ~=0
+                tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_interactions),2);
+            end
+            
+            if LIMO.design.nb_continuous ~=0
+                tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),LIMO.design.nb_continuous,2);
+            end
+            
+            % -------------- loop the analysis electrode per electrode
+            if size(Yr,1) == 1
+                array = 1;
+            else
+                array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
+            end
+            
             if strcmp(LIMO.design.status,'to do')
-                load Yr; load Yhat; load Res; load R2; load Betas;
-                
-                % ------------ prepare condition/covariates -------------------
-                if LIMO.design.nb_conditions ~=0
-                    tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
-                end
-                
-                if LIMO.design.nb_interactions ~=0
-                    tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_interactions),2);
-                end
-                
-                if LIMO.design.nb_continuous ~=0
-                    tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),LIMO.design.nb_continuous,2);
-                end
-                
-                % -------------- loop the analysis electrode per electrode
-                if size(Yr,1) == 1
-                    array = 1;
-                else
-                    array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
-                end
-                
-                % ------------- prepare weight matrix  -------------------------------------
-                try 
-                    [dist,out] = limo_pcout(squeeze(Yr(array(1),:,:))');
-                catch pcout_error
-                    if strcmp(pcout_error,'Principal Component Projection cannot be computed, more observations than variables are needed')
-                        LIMO.design.method = 'OLS';
-                        disp('Cannot use WLS, not enough observations - switching to OLS')
-                    end
-                end
-                
-                if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
-                    W = ones(size(Yr,1),size(Yr,3));
-                elseif strcmp(LIMO.design.method,'IRLS')
-                    W = zeros(size(Yr));
-                end
-
-                % ------------ run limo_glm per electrodes ---------------------------
                 update = 1;
                 X = LIMO.design.X;
                 for e = 1:size(array,1)
                     electrode = array(e); warning off;
+                    fprintf('analyzing electrode %g/%g \n',electrode,size(Yr,1));
                     if LIMO.Level == 2
-                        fprintf('analyzing channel %g/%g \n',e,size(array,1));
                         Y = squeeze(Yr(electrode,:,:));
                         index = find(~isnan(Y(1,:)));
                         Y = Y(:,index);
                         LIMO.design.X = X(index,:);
-                        model = limo_glm(Y',LIMO); warning on;
+                        model = limo_glm1(Y',LIMO); warning on;
                         if isempty(index)
                             index = [1:size(Y,2)];
                         end
                     else % level 1 we should not have any NaNs
-                        if strcmp(LIMO.Type,'Channels')
-                            fprintf('analyzing channel %g/%g \n',e,size(array,1));
-                        else
-                            fprintf('analyzing component %g/%g \n',e,size(array,1));
-                        end
                         index = [1:size(Yr,3)];
-                        model = limo_glm(squeeze(Yr(electrode,:,:))',LIMO);
+                        model = limo_glm1(squeeze(Yr(electrode,:,:))',LIMO); 
                     end
                     
                     % update the LIMO.mat (do it only once)
@@ -529,15 +332,14 @@ switch varargin{1}
                     end
                     
                     % update the files to be stored on the disk
-                    if strcmp(LIMO.design.method,'IRLS')
+                    if  strcmp(LIMO.design.method,'IRLS')
                         W(electrode,:,index) = model.W;
-                    elseif strcmp(LIMO.design.method,'WLS')
+                    else
                         W(electrode,index) = model.W;
                     end
                     fitted_data = LIMO.design.X*model.betas;
                     Yhat(electrode,:,index) = fitted_data';
-                    Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data'; 
-                    clear fitted_data
+                    Res(electrode,:,index)  = squeeze(Yr(electrode,:,index)) - fitted_data'; clear fitted_data
                     R2(electrode,:,1) = model.R2_univariate;
                     R2(electrode,:,2) = model.F;
                     R2(electrode,:,3) = model.p;
@@ -561,8 +363,8 @@ switch varargin{1}
                             tmp_Interaction_effect(electrode,:,1,2) = model.interactions.p;
                         else
                             for i=1:length(LIMO.design.nb_interactions)
-                                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(:,i);
-                                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(:,i);
+                                tmp_Interaction_effect(electrode,:,i,1) = model.interactions.F(i,:);
+                                tmp_Interaction_effect(electrode,:,i,2) = model.interactions.p(i,:);
                             end
                         end
                     end
@@ -581,13 +383,12 @@ switch varargin{1}
                 end
                 
                 % save data on the disk and clean out
-                disp('saving data to disk')
                 LIMO.design.X       = X;
                 LIMO.design.weights = W;
                 LIMO.design.status = 'done';
-                save LIMO LIMO; save Yhat Yhat -v7.3;
-                save Res Res; save Betas Betas -v7.3;
-                save R2 R2 -v7.3; clear Yhat Res Betas R2
+                save LIMO LIMO; save Yhat Yhat;
+                save Res Res; save Betas Betas;
+                save R2 R2; clear Yhat Res Betas R2
                 
                 if prod(LIMO.design.nb_conditions) ~=0
                     for i=1:length(LIMO.design.nb_conditions)
@@ -636,37 +437,22 @@ switch varargin{1}
                 clear file electrode filename model reg dir i W
             end
             
-            
             % as above for bootstrap under H0
             % -------------------------------
             boot_go = 0;
             if LIMO.design.bootstrap ~=0
-                % avoid overwriting / recomputing H0 if done
-                % (limo_eeg(4) called via the results interface)
-                if ~exist('H0','dir')
-                    boot_go = 1;
-                else
-                    ow = questdlg('overwrite H0?','limo check','yes','no','yes');
-                    if strcmp(ow,'yes')
-                        boot_go = 1;
-                    end
-                end
-                
-                if ~isfield(LIMO.data,'neighbouring_matrix')
-                    answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
-                    if strcmp(answer,'Load')
-                        [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
-                        if whatsup == 0
-                            disp('selection aborded');
-                            return
+                if exist('H0','dir')
+                    if strcmp(questdlg('H0 directory detected, overwrite?','data check','Yes','No','No'),'No');
+                        if LIMO.design.tfce == 1
+                            errordlg2('bootstrap skipped - attempting to continue with tfce');
                         else
-                            cd(newpath); load(file); cd(LIMO.dir);
+                            return
                         end
                     else
-                        channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+                        boot_go = 1;
                     end
-                    LIMO.data.neighbouring_matrix = channeighbstructmat;
-                    save LIMO LIMO
+                else
+                     boot_go = 1;
                 end
             end
             
@@ -674,15 +460,8 @@ switch varargin{1}
                 try
                     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping data with the GLM can take a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
                     mkdir H0; load Yr;
-                    if size(Yr,1) == 1
-                        array = 1;
-                    else
-                        array = find(~isnan(Yr(:,1,1))); % skip empty electrodes
-                    end
-                
-                    if LIMO.design.bootstrap <= 800
-                        nboot = 800;
-                    else
+                    
+                    if LIMO.design.bootstrap > 599
                         nboot = LIMO.design.bootstrap;
                     end
                     
@@ -707,6 +486,7 @@ switch varargin{1}
                     end
                     
                     warning off;
+                    W = LIMO.design.weights;
                     X = LIMO.design.X;
                     h = waitbar(0,'bootstraping data','name','% done');
                     for e = 1:size(array,1)
@@ -716,9 +496,14 @@ switch varargin{1}
                         if LIMO.Level == 2
                             Y = squeeze(Yr(electrode,:,:));
                             index = find(~isnan(Y(1,:)));
-                            model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,LIMO.design.method,LIMO.Analysis,[],[],boot_table{electrode});
+                            if numel(size(LIMO.design.weights)) == 3
+                                model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,squeeze(LIMO.design.weights(electrode,:,index))',boot_table{electrode});
+                            else
+                                model = limo_glm1_boot(Y(:,index)',X(index,:),LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,LIMO.design.zscore,squeeze(LIMO.design.weights(electrode,index))',boot_table{electrode});
+                            end
                         else
                             % index = [1:size(Yr,3)];
+                            LIMO.design.weights = squeeze(W(electrode,:));
                             model = limo_glm1_boot(squeeze(Yr(electrode,:,:))',LIMO,boot_table);
                         end
                         
@@ -744,12 +529,12 @@ switch varargin{1}
                             
                             if LIMO.design.fullfactorial == 1
                                 if length(LIMO.design.nb_interactions) == 1
-                                    tmp_H0_Interaction_effect(electrode,:,1,1,B) = model.interactions.F{B};
-                                    tmp_H0_Interaction_effect(electrode,:,1,2,B) = model.interactions.p{B};
+                                    tmp_H0_Interaction_effect(electrode,:,1,1,:) = model.interactions.F{B};
+                                    tmp_H0_Interaction_effect(electrode,:,1,2,:) = model.interactions.p{B};
                                 else
                                     for i=1:length(LIMO.design.nb_interactions)
-                                        tmp_H0_Interaction_effect(electrode,:,i,1,B) = model.interactions.F{B}(i,:);
-                                        tmp_H0_Interaction_effect(electrode,:,i,2,B) = model.interactions.p{B}(i,:);
+                                        tmp_H0_Interaction_effect(electrode,:,i,1,:) = model.interactions.F{B}(:,i);
+                                        tmp_H0_Interaction_effect(electrode,:,i,2,:) = model.interactions.p{B}(:,i);
                                     end
                                 end
                             end
@@ -816,191 +601,96 @@ switch varargin{1}
                 end
             end
             
-            
             % TFCE if requested
             % --------------
-            if LIMO.design.tfce == 1
-                % load Yr;
-                if isfield(LIMO.data,'neighbouring_matrix') && LIMO.design.bootstrap ~=0
-                    % clear Yr;
-                    if exist('TFCE','dir')
-                        if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
-                            return
-                        end
+            load Yr; 
+            if LIMO.design.tfce == 1 && isfield(LIMO.data,'neighbouring_matrix') && size(Yr,1) > 1 && LIMO.design.bootstrap ~=0
+                clear Yr;
+                if exist('TFCE','dir')
+                    if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No');
+                        return
                     end
-                    
-                    fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-                    mkdir TFCE; PCT_test = ver('distcomp');
-                    
-                    % R2
-                    load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
-                    if size(R2,1) == 1
-                        tfce_score(1,:) = limo_tfce(1, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
-                    else
-                        tfce_score = limo_tfce(2, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
-                    end
-                    save('tfce_R2','tfce_score'); clear R2; cd ..;
-                    
-                    cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
-                    if size(H0_R2,1) == 1
-                        if ~isempty(PCT_test)
-                            tfce_H0_score = NaN(1,size(H0_R2,2),LIMO.design.bootstrap);
-                            parfor b=1:nboot
-                                tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_score(1,:,:) = limo_tfce(1, squeeze(H0_R2(:,2,:)),LIMO.data.neighbouring_matrix);
-                        end
-                    else
-                        if ~isempty(PCT_test)
-                            tfce_H0_score = NaN(size(H0_R2,1),size(H0_R2,2),LIMO.design.bootstrap);
-                            parfor b=1:nboot
-                                tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
-                            end
-                        else
-                            tfce_H0_score = limo_tfce(2, squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
-                        end
-                    end
-                    save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
-                    
-                    % conditions
-                    if prod(LIMO.design.nb_conditions) ~=0
-                        for i=1:length(LIMO.design.nb_conditions)
-                            name = sprintf('Condition_effect_%g.mat',i); load(name);
-                            cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
-                            if size(Condition_effect,1) == 1
-                                tfce_score(1,:) = limo_tfce(1, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                                tfce_score = limo_tfce(2, squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                            clear Condition_effect tfce_score; cd ..
-                        end
-                        
-                        cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
-                        for i=1:length(LIMO.design.nb_conditions)
-                            name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
-                            if size(H0_Condition_effect,1) == 1
-                                if exist('parfor','file')
-                                    tfce_H0_score = NaN(1,size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            else
-                                if exist('parfor','file')
-                                    tfce_H0_score = NaN(size(H0_Condition_effect,1),size(H0_Condition_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                            clear H0_Condition_effect tfce_H0_score;
-                        end
-                        cd ..
-                    end
-                    
-                    % interactions
-                    if LIMO.design.fullfactorial == 1
-                        for i=1:length(LIMO.design.fullfactorial)
-                            name = sprintf('Interaction_effect_%g.mat',i); load(name);
-                            cd('TFCE'); fprintf('Creating Interaction %g TFCE scores \n',i)
-                            if size(Interaction_effect,1) == 1
-                                tfce_score(1,:) = limo_tfce(1,squeeze(Interaction_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            else
-                                tfce_score = limo_tfce(2,squeeze(Interaction_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                            clear Interaction_effect tfce_score; cd ..
-                        end
-                        
-                        cd('H0'); fprintf('Creating H0 Interaction(s) TFCE scores \n');
-                        for i=1:length(LIMO.design.fullfactorial)
-                            name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
-                            if size(H0_Interaction_effect,1) == 1
-                                if exist('parfor','file')
-                                    tfce_H0_score = NaN(1,size(H0_Interaction_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            else
-                                if exist('parfor','file')
-                                    tfce_H0_score = NaN(size(H0_Interaction_effect,1),size(H0_Interaction_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                            clear H0_Interaction_effect tfce_H0_score;
-                        end
-                        cd ..
-                    end
-                    
-                    % covariates / continuous regressors
-                    if LIMO.design.nb_continuous ~=0
-                        for i=1:LIMO.design.nb_continuous
-                            name = sprintf('Covariate_effect_%g.mat',i); load(name);
-                            cd('TFCE'); fprintf('Creating Covariate %g TFCE scores \n',i);
-                            if size(Covariate_effect,1) == 1
-                                tfce_score(1,:) = limo_tfce(1,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            else
-                                tfce_score = limo_tfce(2,squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
-                            clear Covariate_effect tfce_score; cd ..
-                        end
-                        
-                        cd('H0'); fprintf('Creating H0 Covariate(s) TFCE scores \n');
-                        for i=1:LIMO.design.nb_continuous
-                            name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
-                            if size(H0_Covariate_effect,1) == 1
-                                if ~isempty(PCT_test)
-                                    tfce_H0_score = NaN(1,size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(1,:,b) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score(1,:,:) = limo_tfce(1,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            else
-                                if ~isempty(PCT_test)
-                                    tfce_H0_score = NaN(size(H0_Covariate_effect,1),size(H0_Covariate_effect,2),LIMO.design.bootstrap);
-                                    parfor b=1:nboot
-                                        tfce_H0_score(:,:,b) = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
-                                    end
-                                else
-                                    tfce_H0_score = limo_tfce(2,squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
-                                end
-                            end
-                            full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
-                            clear H0_Covariate_effect tfce_H0_score
-                        end
-                        cd ..
-                    end
-                elseif ~isfield(LIMO.data,'neighbouring_matrix')
-                    disp('No TFCE performed, neighbourhood matrix missing')
-                elseif  LIMO.design.bootstrap ==0
-                    disp('No TFCE performed, since there was no bootstraps computed')
                 end
+                
+                fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
+                mkdir TFCE;
+                
+                % R2
+                load R2.mat; fprintf('Creating R2 TFCE scores \n'); cd('TFCE');
+                tfce_score = limo_tfce(squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
+                save('tfce_R2','tfce_score'); clear R2; cd ..;
+                
+                cd('H0'); fprintf('Thresholding H0_R2 using TFCE \n'); load H0_R2;
+                tfce_H0_score = limo_tfce(squeeze(H0_R2(:,:,2,:)),LIMO.data.neighbouring_matrix);
+                save('tfce_H0_R2','tfce_H0_score'); clear H0_R2; cd ..;
+                
+                % conditions
+                if prod(LIMO.design.nb_conditions) ~=0
+                    for i=1:length(LIMO.design.nb_conditions)
+                        name = sprintf('Condition_effect_%g.mat',i); load(name);
+                        cd('TFCE'); fprintf('Creating Condition %g TFCE scores \n',i)
+                        tfce_score = limo_tfce(squeeze(Condition_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                        clear Condition_effect tfce_score; cd ..
+                    end
+                    
+                    cd('H0'); fprintf('Creating H0 Condition(s) TFCE scores \n');
+                    for i=1:length(LIMO.design.nb_conditions)
+                        name = sprintf('H0_Condition_effect_%g.mat',i); load(name);
+                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Condition_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                        clear H0_Condition_effect tfce_H0_score;
+                    end
+                    cd ..
+                end
+                
+                % interactions
+                if LIMO.design.fullfactorial == 1
+                    for i=1:length(LIMO.design.fullfactorial)
+                        name = sprintf('Interaction_effect_%g.mat',i); load(name);
+                        cd('TFCE'); fprintf('Creating Interaction %g TFCE scores \n',i)
+                        tfce_score = limo_tfce(squeeze(Interaction_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                        clear Interaction_effect tfce_score; cd ..
+                    end
+                    
+                    cd('H0'); fprintf('Creating H0 Interaction(s) TFCE scores \n');
+                    for i=1:length(LIMO.design.fullfactorial)
+                        name = sprintf('H0_Interaction_effect_%g.mat',i); load(name);
+                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Interaction_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                        clear H0_Interaction_effect tfce_H0_score;
+                    end
+                    cd ..
+                end
+                
+                % covariates / continuous regressors
+                if LIMO.design.nb_continuous ~=0
+                    for i=1:LIMO.design.nb_continuous
+                        name = sprintf('Covariate_effect_%g.mat',i); load(name);
+                        cd('TFCE'); fprintf('Creating Covariate %g TFCE scores \n',i);
+                        tfce_score = limo_tfce(squeeze(Covariate_effect(:,:,1)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_score');
+                        clear Covariate_effect tfce_score; cd ..
+                    end
+                    
+                    cd('H0'); fprintf('Creating H0 Covariate(s) TFCE scores \n');
+                    for i=1:LIMO.design.nb_continuous
+                        name = sprintf('H0_Covariate_effect_%g.mat',i); load(name);
+                        tfce_H0_score(:,:,:) = limo_tfce(squeeze(H0_Covariate_effect(:,:,1,:)),LIMO.data.neighbouring_matrix);
+                        full_name = sprintf('tfce_%s',name); save(full_name,'tfce_H0_score');
+                        clear H0_Covariate_effect tfce_H0_score
+                    end
+                    cd ..
+                end
+            elseif ~isfield(LIMO.data,'neighbouring_matrix')
+                disp('No TFCE performed, neighbourhood matrix missing')
+            elseif  size(Yr,1) == 1 
+                disp('No TFCE performed, only 1 electrode')
             end
             
-            
-          
-            % ----------------------------------------------------------
-            %% ---------------- multivariate analysis ------------------
+            % ---------------- multivariate analysis ------------------
             % --------------------------------------------------------
-       
-        
         elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
             update = 1;
             
@@ -1028,10 +718,10 @@ switch varargin{1}
                     LIMO.design.weights = W;
                 end
                 
-                % 2nd run the multivariate analysis over electrodes
+                % 2nd run the multivative analysis
                 for t = 1:size(Yr,2)
-                    fprintf('analysing time frame %g/%g \n',t,size(Yr,2));
-                    model = limo_mglm(squeeze(Yr(:,t,:))',LIMO); warning off;
+                    fprintf('analyzing time frame %g/%g \n',t,size(Yr,2));
+                    model = limo_glmm1(squeeze(Yr(:,t,:))',LIMO); warning off;
                     
                     % update the LIMO.mat
                     if update == 1
@@ -1179,6 +869,7 @@ switch varargin{1}
             
             % if bootsrrap
             if LIMO.design.bootstrap == 1
+                
             end
             
             % TFCE if requested
@@ -1198,14 +889,21 @@ switch varargin{1}
         % short cut to limo_results
         % check which files are there
         % -------------------------
-        try
-            load('LIMO.mat');
-        catch
-            [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
+        files = dir;
+        load_limo = 0;
+        for i=1:size(files,1)
+            if strcmp(files(i).name,'LIMO.mat')
+                load('LIMO.mat');
+                load_limo = 1;
+            end
+        end
+        
+        if load_limo == 0
+            [file,dir_path] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                cd (dir_path); load LIMO.mat;
             end
         end
         cd (LIMO.dir);
@@ -1214,7 +912,7 @@ switch varargin{1}
         % ---
         if LIMO.design.bootstrap == 1
             if LIMO.design.tfce == 1
-                limo_display_results(1,'R2.mat',pwd,0.05,3,LIMO,0);
+                limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
             else
                 limo_display_results(1,'R2.mat',pwd,0.05,2,LIMO,0);
             end
@@ -1230,7 +928,7 @@ switch varargin{1}
                 name = sprintf('Condition_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end
@@ -1248,7 +946,7 @@ switch varargin{1}
                 name = sprintf('Interaction_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end
@@ -1266,7 +964,7 @@ switch varargin{1}
                 name = sprintf('Covariate_effect_%g.mat',i);
                 if LIMO.design.bootstrap == 1
                     if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,5,LIMO,0);
                     else
                         limo_display_results(1,name,pwd,0.05,2,LIMO,0);
                     end
@@ -1296,24 +994,16 @@ switch varargin{1}
         % code of the contrast manager)
         
         % load LIMO and C
-        if ~exist(LIMO,'var')
-            load LIMO; cd (LIMO.dir);
-        else
+        try
+            cd (LIMO.dir);
+        catch
             [LIMO_file,LIMO_dir] = uigetfile('.mat','select a LIMO.mat file');
             cd (LIMO_dir); load LIMO.mat;
         end
         
-        if ~exist(C,'var')
-            [contrast_file,contrast_dir] = uigetfile({'*.mat';'*.txt'},'select your contrast file');
-            cd (contrast_dir); load(contrast_file);  % problm here it has to be named C
-            if strcmp(FileName(end-3:end),'.txt')
-                C = importdata(contrast_file);
-            elseif strcmp(FileName(end-3:end),'.mat')
-                contrast_file = load(contrast_file);
-                C = getfield(contrast_file,cell2mat(fieldnames(contrast_file)));
-            end
-            cd (LIMO.dir);
-        end
+        
+        [contrast_file,contrast_dir] = uigetfile('.txt','select your contrast file');
+        cd (contrast_dir); load(contrast_file); cd (LIMO.dir); % problm here it has to be named C
         
         % Check dimensions
         C = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
@@ -1356,6 +1046,7 @@ switch varargin{1}
                     LIMO.contrast{i}.multivariate{electrode} = result;
                 end
             end
+            
             save LIMO LIMO
         end
         

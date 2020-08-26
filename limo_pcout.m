@@ -1,4 +1,4 @@
-function [dist,out] = limo_pcout(x)
+function [dist out] = limo_pcout(x)
 
 % LIMO_pcout Limo Principal Components Projection
 % This method uses simple properties of Principal Components to identify
@@ -15,32 +15,25 @@ function [dist,out] = limo_pcout(x)
 %   out           = The out is a binary vector where False values are outliers
 %
 % References:
-% Filzmoser, R. Maronna, and M. Werner. 
-% Outlier identification in high dimensions. 
-% Computational Statistics and Data Analysis, 
-% Vol. 52, pp. 1694-1711, 2008.
+%   P. Filzmoser, R. Maronna, M. Werner (2007). Outlier identification in 
+%       high dimensions, Computational Statistics and Data Analysis. 
 %
 % Ignacio Suay Mas
 % -----------------------------
-% Copyright (C) LIMO Team 2015
+% Copyright (C) LIMO Team 2012
 
-% we have ommited dimensions with mad = 0, as this 
-% corresponds to a case with all trials having the same value ! 
-
+% we have ommited dimensions with mad = 0, 
+% this corresponds to a case with all trials having the same value ! 
 x = x(:,mad(x,1) > 1e-6); 
 if isempty(x)
-    error('WLS cannot be computed, for at least 1 frame, all trials have the same values')
+    error('WLS cannot be computed, for at least 1 condition, all trials have the same values')
 end
-
 [n,p] = size(x);
-if n<p
-    error('Principal Component Projection cannot be computed, more observations than variables are needed')
-end
 
-%% 1st Phase: Detect location outliers
+% 1st Phase: Detect location outliers
 
 %robustly rescale each component
-madx = mad(x,1) .* 1.4826; % median erp normally scaled
+madx = mad(x,1) .* 1.4826;
 x2 = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1);
 x3 = x2 - repmat(mean(x2),n,1);
  
@@ -59,8 +52,8 @@ madxpc = mad(xpc,1) * 1.4826;
 %rescale pc 
 xpcsc = (xpc - repmat(median(xpc),n,1)) ./ repmat(madxpc,n,1);
 
-% calculate the absolute value of robust kurtosis measure
-% kurtosis = 0 -> no outliers; kurtosis != 0 -> outliers
+%calculate the absolute value of robust kurtosis measure
+%kurtosis = 0 -> no outliers; kurtosis != 0 -> outliers
 wp = abs(mean(xpcsc.^4) - 3);
 % to scale wp between 0,1 -> wp/sum(wp)
 % calculate the pc scaled by weights
@@ -78,8 +71,8 @@ w1 = ( 1 - ((xdist1 - M1)./(const1 - M1)).^2).^2;
 w1(xdist1 < M1) = 1;
 w1(xdist1 > const1) = 0;
 
-%% 2nd Phase: Detect scatter outliers. 
-% Similar to the first phase but without the kurtosis weigthed function. 
+%2nd Phase: Detect scatter outliers. Similar to the first phase but
+% without the kurtosis weigthed function. 
 
 xpcnorm = sqrt(sum(xpcsc.^2,2));
 xdist2 = xpcnorm *  sqrt(chi2inv(0.5,p1)) ./ median(xpcnorm);

@@ -1,0 +1,16 @@
+% the cluster Fieldtrip functions necessary to perform the cluster analyses
+% were renamed with the prefix limo_ft_
+
+% LIMO_FT_
+
+warp_apply
+issubfield
+elproj
+senslabel
+
+prepare_layout
+
+channelposition
+
+rotate
+senstype

@@ -35,7 +35,7 @@ function result = limo_contrast(varargin)
 % See also limo_glm1, limo_results, limo_contrast_manager
 %
 % Cyril Pernet v4 26/09/2010
-% updated 21-16-2013
+% updated 21-16-3013
 % -----------------------------
 %  Copyright (C) LIMO Team 2010
 
@@ -74,12 +74,6 @@ switch type
         % compute Projection onto the error
         load Res; % rather than projecting Y onto error use Res because Res depends on how the GLM was done (OLS,WLS, IRLS)
 
-        if strcmp(LIMO.Analysis ,'Time-Frequency')
-            Y = limo_tf_4d_reshape(Y);
-            Betas = limo_tf_4d_reshape(Betas);
-            Res = limo_tf_4d_reshape(Res);
-        end
-                
         if strcmp(Method,'Mass-univariate')
             
             % create con or ess file
@@ -95,12 +89,8 @@ switch type
             array = find(~isnan(Y(:,1,1))); % skip empty electrodes
             for e = 1:length(array)
                 electrode = array(e); warning off;
-                if strcmp(LIMO.Type,'Channels')
-                    fprintf('analyzing channel %g/%g \n',e,size(array,1));
-                else
-                    fprintf('analyzing component %g/%g \n',e,size(array,1));
-                end
-                                
+                fprintf('analyzing electrode %g/%g \n',electrode,size(Y,1));
+                
                 % T contrast
                 % -----------
                 if Test == 0
@@ -119,7 +109,6 @@ switch type
                     % Update ess file [mean value, se, df, F, p]
                     ess(electrode,:,1:size(C,1)) = (C*squeeze(Betas(electrode,:,:))')' ; % contrast
                     
-                    R = eye(size(Y,3)) - (X*pinv(X));
                     E = (squeeze(Res(electrode,:,:))*squeeze(Res(electrode,:,:))');
                     c = zeros(length(C));
                     for n=1:length(C)
@@ -148,16 +137,9 @@ switch type
                 
             end
             result = [];
-            
             if Test == 0
-                if strcmp(LIMO.Analysis ,'Time-Frequency')
-                    con = limo_tf_4d_reshape(con);
-                end
                 save ([filename], 'con'); clear con
             else
-                if strcmp(LIMO.Analysis ,'Time-Frequency')
-                    ess = limo_tf_4d_reshape(ess);
-                end
                 save ([filename], 'ess'); clear ess
             end
             
@@ -430,9 +412,6 @@ switch type
         
         Yr = varargin{1};
         LIMO = varargin{2};
-        if LIMO.Level == 1
-            error('1st level Analysis detected - limo_contrast line 434 wrong case');
-        end
         gp_values = LIMO.design.nb_conditions;
         index = size(LIMO.contrast,2);
         C = LIMO.contrast{index}.C;
@@ -450,18 +429,25 @@ switch type
                 n = size(Y,2);
                 g=floor((20/100)*n); 
                 for time=1:size(Y,1)
-                    ess(electrode,time,1) = nanmean(C(1:size(Y,3))*squeeze(Y(time,:,:))',2);
-                    ess(electrode,time,2) = sqrt(C(1:size(Y,3))*cov(squeeze(Y(time,:,:)))*C(1:size(Y,3))');
+                    [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
+                    TD(time,:,:) = v((g+1):(n-g),:); % trimmed data 
+                    ess(electrode,time,1) = nanmean(C*squeeze(TD(time,:,:))',2);
+                    v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
+                    v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
+                    [~,reorder] = sort(indices);
+                    for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
+                    S(time,:,:) = cov(SD); % winsorized covariance
+                    ess(electrode,time,2) = sqrt(C*squeeze(S(time,:,:))*C');
                 end
                 df  = rank(C); dfe = n-df;
                 ess(electrode,:,3) = dfe;
                 % F and p
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
-                ess(electrode,:,4) = result.F;
-                ess(electrode,:,5) = result.p;
+                result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C);
+                ess(electrode,:,4) = result.repeated_measure.F;
+                ess(electrode,:,5) = result.repeated_measure.p;
             end
         else
-            ess = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
+            ess1 = zeros(size(Yr,1),size(Yr,2),5); % dim rep measures, F,p
             ess2 = zeros(size(Yr,1),size(Yr,2),5); % dim gp*interaction F,p
             % design matrix for gp effects
             k = LIMO.design.nb_conditions;
@@ -483,34 +469,31 @@ switch type
                 for time=1:size(Y,1)
                     [v,indices] = sort(squeeze(Y(time,:,:))); % sorted data
                     TD(time,:,:) = v((g+1):(n-g),:); % trimmed data 
-                    ess(electrode,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
-                    I = zeros(1,1,n); I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
+                    ess1(electrode,time,1) = nanmean(C*squeeze(TD(time,:,:))',2);
+                    I = zeros(1,1,n); I(1,1,:) = (C*squeeze(Y(time,:,:))')'; % interaction
                     ess2(electrode,time,1) = limo_trimmed_mean(I);
                     v(1:g+1,:)=repmat(v(g+1,:),g+1,1);
                     v(n-g:end,:)=repmat(v(n-g,:),g+1,1); % winsorized data
                     [~,reorder] = sort(indices);
                     for j = 1:size(Y,3), SD(:,j) = v(reorder(:,j),j); end % restore the order of original data
                     S(time,:,:) = cov(SD); % winsorized covariance
-                    ess(electrode,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
+                    ess1(electrode,time,2) = sqrt(C*squeeze(S(time,:,:))*C');
                     ess2(electrode,time,2) = NaN;
                 end
                 df  = rank(C); dfe = n-df;
-                ess(electrode,:,3) = dfe;
+                ess1(electrode,:,3) = dfe;
                 % F and p values
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
-                ess(electrode,:,1,4) = result.repeated_measure.F;
-                ess(electrode,:,1,5) = result.repeated_measure.p;
+                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C,XB);
+                ess1(electrode,:,1,4) = result.repeated_measure.F;
+                ess1(electrode,:,1,5) = result.repeated_measure.p;
                 ess2(electrode,:,2,4) = result.interaction.F;
                 ess2(electrode,:,2,5) = result.interaction.p;
             end
         end
-        
         filename = sprintf('ess_repeated_measure_%g.mat',index);
-        save ([filename], 'ess');
-        if exist('ess2','var')
-            ess = ess2; filename = sprintf('ess_interaction_gp_repeated_measure_%g.mat',index);
-            save ([filename], 'ess2');
-        end
+        save ([filename], 'ess1');
+        filename = sprintf('ess_interaction_gp_repeated_measure_%g.mat',index);
+        save ([filename], 'ess2');
 end
 
 

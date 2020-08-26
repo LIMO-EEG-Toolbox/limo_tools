@@ -5,8 +5,8 @@ function go = limo_contrast_checking(varargin)
 % also used to make sure contrasts have the right size
 %
 % FORMAT
-% go = limo_contrast_checking(C,X)
-% go = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
+% go = LIMO_contrast_checking(C,X)
+% go = LIMO_contrast_checking(LIMO.dir, LIMO.design.X, C);
 %
 % INPUT
 % C a vector or matrix of contrasts
@@ -14,7 +14,7 @@ function go = limo_contrast_checking(varargin)
 %
 % OUTPUT
 % if input C and X; go=1 if valid contrast or 0 if invalid
-% if input dir, X and C, go = C corrected with extra 0s
+% if input dir, X and C, go C corrected with extra 0s
 %
 % Cyril Pernet, v4. 25-04-2010
 % -----------------------------
@@ -25,11 +25,7 @@ function go = limo_contrast_checking(varargin)
 % ------------------------------
 if nargin == 3
 
-    try
-        cd (varargin{:,1});
-    catch
-            disp('can''t CD, using current directory')
-    end
+    cd (varargin{:,1}); 
     load Yr; Y = Yr; clear Yr;
     
     X = varargin{:,2};
@@ -70,22 +66,12 @@ elseif nargin == 2
     for s=1:size(varargin{1},1)
         C = varargin{1}(s,:);
         
-        if sum(C) == length(find(C))
+        if sum(C(find(C))) == sum(ones(1,length(find(C))))
             go = 1; % if contrast with ones only to add parameters
         else
-%             check = int16(C*single((pinv(X'*X))*(X'*X)));
-%             check = (check == C);
-%             if sum(check) ~= length(C)
-%                 go = 0; % if contrast not ones nor invariant
-%             else
-%                 go = 1;
-%             end
-            
-            P = X*pinv(X); % projection
-            lambda = X*C'; % contrast
-            check = int16(P*lambda); % contrast onto X
-            check = (check == int16(lambda)); % it is invariant
-            if sum(check) ~= size(X,1)
+            check = int16(C*single((pinv(X'*X))*(X'*X)));
+            check = (check == C);
+            if sum(check) ~= length(C)
                 go = 0; % if contrast not ones nor invariant
             else
                 go = 1;
