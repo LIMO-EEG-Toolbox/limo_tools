@@ -70,7 +70,14 @@ cmap = gray; cmap(1,:) = [0.25 0.25 0.25]; colormap(cmap)
 % interactive editing
 positive = 1;
 while positive == 1
-    [x, y, button]=ginput(1);
+    try
+        [x, y, button]=ginput(1);
+    catch ginputaborded
+        fprintf('Neighbouring %s\n',ginputaborded.message);
+        expected_chanlocs   = [];
+        channeighbstructmat = [];
+        return
+    end
     if any([x y]< 0) || any([x y]> length(channeighbstructmat)) || button ~= 1
         positive = 0;
     else
