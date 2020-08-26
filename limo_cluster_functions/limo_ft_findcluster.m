@@ -49,21 +49,25 @@ function [cluster, num] = limo_ft_findcluster(onoff, spatdimneighbstructmat, var
 
 
 spatdimlength = size(onoff, 1);
-nfreq = size(onoff, 2);
-ntime = size(onoff, 3);
+nfreq         = size(onoff, 2);
+ntime         = size(onoff, 3);
 
 if length(size(spatdimneighbstructmat))~=2 || ~all(size(spatdimneighbstructmat)==spatdimlength)
   error('invalid dimension of spatdimneighbstructmat');
 end
 
+% make sure spatdimneighbstructmat lower triangle is 0
+indices = find(tril(ones(size(spatdimneighbstructmat,1))-eye(size(spatdimneighbstructmat,1))));
+spatdimneighbstructmat(indices) = 0;
+
 minnbchan=0;
 if length(varargin)==1
     minnbchan=varargin{1};
-end;
+end
 if length(varargin)==2
     spatdimneighbselmat=varargin{1};
     minnbchan=varargin{2};
-end;
+end
 
 if minnbchan>0
     % For every (time,frequency)-element, it is calculated how many significant
@@ -72,31 +76,31 @@ if minnbchan>0
     
     if length(varargin)==1
         selectmat = single(spatdimneighbstructmat | spatdimneighbstructmat');
-    end;
+    end
     if length(varargin)==2
         selectmat = single(spatdimneighbselmat | spatdimneighbselmat');
-    end;
+    end
     nremoved=1;
     while nremoved>0
         nsigneighb=reshape(selectmat*reshape(single(onoff),[spatdimlength (nfreq*ntime)]),[spatdimlength nfreq ntime]);
         remove=(onoff.*nsigneighb)<minnbchan;
         nremoved=length(find(remove.*onoff));
         onoff(remove)=0;
-    end;
-end;
+    end
+end
 
 % for each channel (combination), find the connected time-frequency clusters
 labelmat = zeros(size(onoff));
 total = 0;
-ME = [];
 for spatdimlev=1:spatdimlength
     try
         [labelmat(spatdimlev, :, :), num] = bwlabeln(reshape(onoff(spatdimlev, :, :), nfreq, ntime), 4);
-    catch ME
+    catch bwlabel_err
+        fprintf('bwlabel issue %s \n trying spm_bwlabel',bwlabel_err.message)
         try
             [labelmat(spatdimlev, :, :), num] = spm_bwlabel(double(reshape(onoff(spatdimlev, :, :), nfreq, ntime)), 6);
-        catch ME
-            errordlg('You need either the Image Processing Toolbox or SPM in your path to do clustering');
+        catch spmbwlabel_err
+            errordlg('%s \n You need either the Image Processing Toolbox or SPM in your path to do clustering',spmbwlabel_err.message);
         end
     end
     labelmat(spatdimlev, :, :) = labelmat(spatdimlev, :, :) + (labelmat(spatdimlev, :, :)~=0)*total;
