@@ -12,6 +12,8 @@ function [expected_chanlocs, channeighbstructmat] = limo_edit_expected_chanlocs(
 if nargin == 0
     [gp_level_file,filepath,sts]=uigetfile('*.mat','select gp level channel file or LIMO.mat');
     if sts ==0
+        expected_chanlocs   = [];
+        channeighbstructmat = [];
         return
     end
 end

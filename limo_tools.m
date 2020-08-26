@@ -92,7 +92,7 @@ guidata(hObject, handles);
 % --- Executes on button press in Expected_chanlocs.
 function Expected_chanlocs_Callback(hObject, eventdata, handles)
 
-choice =  questdlg2('Do you want to Create or Edit a groupo level file?', ...
+choice =  questdlg2('Do you want to Create or Edit a group level file?', ...
     'Choice', 'Create', 'Edit', 'Edit');
 
 if strcmp(choice,'Create')
@@ -118,6 +118,9 @@ if strcmp(choice,'Create')
 elseif strcmp(choice,'Edit')
     
     [expected_chanlocs, channeighbstructmat] = limo_edit_expected_chanlocs;
+    if isempty(channeighbstructmat)
+        return
+    end
 end
 
 D = uigetdir(pwd,'Save file in directory');
