@@ -463,8 +463,8 @@ if LIMO.Level == 1
                 EEG.trials = 1;
                 EEG.chanlocs = LIMO.data.chanlocs;
                 if strcmp(LIMO.Analysis,'Time')
-                    EEG.xmin = LIMO.data.start / 1000;% in msec
-                    EEG.xmax = LIMO.data.end / 1000;  % in msec
+                    EEG.xmin  = LIMO.data.start / 1000;% in msec
+                    EEG.xmax  = LIMO.data.end / 1000;  % in msec
                     EEG.times = LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000; % in sec;
                     if length(EEG.times) > 2
                        EEG.times = [EEG.times(1) EEG.times(end)];
@@ -496,130 +496,35 @@ if LIMO.Level == 1
                         EEG.data    = squeeze(toplot(:,:,2));
                         EEG.setname = 'R2 - F values';
                     end
-                    EEG.pnts    = size(EEG.data,2);
-                    EEG.nbchan  = size(EEG.data,1);
-                    if strcmp(LIMO.Analysis,'Time')
-                        pop_topoplot(EEG);
-                    else
-                        N = size(EEG.freq,2); figure;
-                        for f=1:N
-                            if N<=6
-                                subplot(1,N,f)
-                            else
-                                subplot(ceil(N/6),6,f);
-                            end
-                            [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                            topoplot(EEG.data(:,ind),EEG.chanlocs);
-                            title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                        end
-                    end
-                    assignin('base',EEG.setname(1:2),EEG.data);
+                    call_topolot(EEG,FileName,LIMO.Analysis)
                 elseif contains(FileName,'Condition_effect','IgnoreCase',true) || ...
                         contains(FileName,'Covariate_effect','IgnoreCase',true) || ...
                         contains(FileName,'Interaction_effect','IgnoreCase',true)  || ...
-                        contains(FileName,'Condition_effect','IgnoreCase',true) 
+                        contains(FileName,'Condition_effect','IgnoreCase',true)
                     EEG.data    = squeeze(toplot(:,:,1));
-                    EEG.pnts    = size(EEG.data,2);
-                    EEG.nbchan  = size(EEG.data,1);
-                    EEG.setname = sprintf('%s %s - F values',FileName(1:min(strfind(FileName,'_'))-1),FileName(max(strfind(FileName,'_'))+1:end-4));
-                    if strcmp(LIMO.Analysis,'Time')
-                        pop_topoplot(EEG);
-                    else
-                        N = size(EEG.freq,2); figure;
-                        for f=1:N
-                            if N<=6
-                                subplot(1,N,f)
-                            else
-                                subplot(ceil(N/6),6,f);
-                            end
-                            [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                            topoplot(EEG.data(:,ind),EEG.chanlocs);
-                            title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                        end
-                    end
-                    assignin('base','F values',EEG.data);
-                elseif strcmp(FileName,'semi partial_coef.mat')
+                    call_topolot(EEG,FileName,LIMO.Analysis)
+                elseif contains(FileName,'con','IgnoreCase',true) || contains(FileName,'ess','IgnoreCase',true)
+                    EEG.data    = squeeze(toplot(:,:,end-1));
+                    call_topolot(EEG,FileName,LIMO.Analysis)
+                elseif contains(FileName,'semi partial_coef.mat','IgnoreCase',true)
                     regressor = str2double(cell2mat(inputdlg('which regressor(s) to plot (e.g. 1:3)','Plotting option')));
                     if max(regressor) > size(toplot,3); errordlg('error in regressor number'); return; end
                     for b = regressor
                         EEG.data     = squeeze(toplot(:,:,b,1));
-                        EEG.pnts     = size(EEG.data,2);
-                        EEG.nbchan   = size(EEG.data,1);
-                        EEG.setname  = sprintf('semi partial coef R2 values variable %g',b);
-                        EEG.pnts     = size(EEG.data,2);
-                        EEG.times    = LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000;
-                        EEG.trials   = 1;
-                        EEG.chanlocs = LIMO.data.chanlocs;
-                        EEG.nbchan   = size(EEG.data,1);
-                        if strcmp(LIMO.Analysis,'Time')
-                            EEG.xmin = LIMO.data.start/1000;
-                            EEG.xmax = LIMO.data.end/1000;
-                            pop_topoplot(EEG);
-                        else
-                            EEG.xmin = LIMO.data.freqlist(1);
-                            EEG.xmax = LIMO.data.freqlist(end);
-                            N = size(EEG.freq,2); figure;
-                            for f=1:N
-                                if N<=6
-                                    subplot(1,N,f)
-                                else
-                                    subplot(ceil(N/6),6,f);
-                                end
-                                [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                                topoplot(EEG.data(:,ind),EEG.chanlocs);
-                                title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                            end
-                        end
-                        tmp_name = sprintf('semi_partial_coef_%g',b);
-                        assignin('base',tmp_name,EEG.data);
+                        call_topolot(EEG,FileName,LIMO.Analysis)
                     end
-                elseif strcmp(FileName(1:4),'con_')
-                    EEG.data    = squeeze(toplot(:,:,4));
-                    EEG.pnts    = size(EEG.data,2);
-                    EEG.nbchan  = size(EEG.data,1);
-                    EEG.setname = ['Contrast ',FileName(5:end-4),' -- T values'];
-                    if strcmp(LIMO.Analysis,'Time')
-                        pop_topoplot(EEG);
-                    else
-                        N = size(EEG.freq,2); figure;
-                        for f=1:N
-                            if N<=6
-                                subplot(1,N,f)
-                            else
-                                subplot(ceil(N/6),6,f);
-                            end
-                            [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                            topoplot(EEG.data(:,ind),EEG.chanlocs);
-                            title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                        end
-                    end
-                    assignin('base',EEG.setname(1:8),EEG.data);
-                elseif strcmp(FileName(1:4),'ess_')
-                    EEG.data    = squeeze(toplot(:,:,end-1));
-                    EEG.pnts    = size(EEG.data,2);
-                    EEG.nbchan  = size(EEG.data,1);
-                    EEG.setname = ['Contrast ',FileName(5:end-4),' -- F values'];
-                    if strcmp(LIMO.Analysis,'Time')
-                        pop_topoplot(EEG);
-                    else
-                        N = size(EEG.freq,2); figure;
-                        for f=1:N
-                            if N<=6
-                                subplot(1,N,f)
-                            else
-                                subplot(ceil(N/6),6,f);
-                            end
-                            [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                            topoplot(EEG.data(:,ind),EEG.chanlocs);
-                            title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                        end
-                    end
-                    assignin('base',EEG.setname(1:8),EEG.data);
                 else
                     disp('file not supported');
+                    return
+                end
+                
+                if contains(FileName,'con','IgnoreCase',true)
+                    assignin('base','T_values',EEG.data);
+                else
+                    assignin('base','F_values',EEG.data);
                 end
             end
-            
+                        
         case{3}
             
             %--------------------------
@@ -1132,94 +1037,96 @@ if LIMO.Level == 1
     
 elseif LIMO.Level == 2
     
-    if ~contains(FileName,'LIMO') % in all cases but course plot
-        
-        % if previously plotted, recover from the cache
-        data_cached = 0;
-        if isfield(LIMO,'cache') 
-            try
-                if strcmp(LIMO.cache.fig.name, FileName) && ...
-                        LIMO.cache.fig.MCC == MCC && ...
-                        LIMO.cache.fig.threshold == p
-                    
-                    disp('using cached data');
-                    mask = LIMO.cache.fig.mask;
-                    if isempty(mask)
-                        data_cached = 0;
-                    elseif sum(mask(:)) == 0
-                        warndlg('  no values under threshold  ','no significant effect','modal');
-                        return
-                    else
-                        toplot      = LIMO.cache.fig.stats;
-                        M           = LIMO.cache.fig.pval;
-                        mask        = LIMO.cache.fig.mask;
-                        mytitle     = LIMO.cache.fig.title;
-                        data_cached = 1;
-                        assignin('base','stat_values',M)
-                        assignin('base','p_values',M)
-                        assignin('base','mask',mask)
-                    end
-                end
-            catch no_cache
-                data_cached = 0;
-            end
-        end
-        
-        % if there is no cached data, compute and plot
-        % -------------------------------------------
-        if data_cached == 0 
-            
-            [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
-            
-            if isempty(mask)
-                return
-            elseif sum(mask(:)) == 0
-                warndlg('  no values under threshold  ','no significant effect','modal');
-                return
-            else
-                assignin('base','p_values',squeeze(M))
-                assignin('base','mask',squeeze(mask))
-            end
-            
-            if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
-                if contains(FileName,'R2')
-                    toplot = squeeze(toplot(:,:,:,1));
-                elseif contains(FileName,'ttest','IgnoreCase',true)
-                    toplot = squeeze(toplot(:,:,:,4));
-                elseif strncmp(FileName,'con_',4)
-                    toplot = squeeze(toplot(:,:,:,4));
-                elseif strncmp(FileName,'ess_',4)
-                    if ~exist('ess','var')
-                        effect_nb = eval(FileName(5:end-4));
-                    end
-                    toplot = squeeze(toplot(:,:,:,end-1));
-                elseif contains(FileName,'Condition') || ...
-                        contains(FileName,'Covariate') || ...
-                        contains(FileName,'Rep_ANOVA')
-                    toplot = squeeze(toplot(:,:,:,1));
+    if contains(FileName,'LIMO') || contains(FileName,'Y')
+        disp('select a statitical result file - plot aborded')
+        return
+    end
+    
+    % if previously plotted, recover from the cache
+    data_cached = 0;
+    if isfield(LIMO,'cache')
+        try
+            if strcmp(LIMO.cache.fig.name, FileName) && ...
+                    LIMO.cache.fig.MCC == MCC && ...
+                    LIMO.cache.fig.threshold == p
+                
+                disp('using cached data');
+                mask = LIMO.cache.fig.mask;
+                if isempty(mask)
+                    data_cached = 0;
+                elseif sum(mask(:)) == 0
+                    warndlg('  no values under threshold  ','no significant effect','modal');
+                    return
                 else
-                    disp('file no supported'); return
-                end
-            else
-                if contains(FileName,'R2')
-                    toplot = squeeze(toplot(:,:,1));
-                elseif contains(FileName,'ttest','IgnoreCase',true)
-                    toplot = squeeze(toplot(:,:,4));
-                elseif strncmp(FileName,'con_',4)
-                    toplot = squeeze(toplot(:,:,4));
-                elseif strncmp(FileName,'ess_',4)
-                    toplot = squeeze(toplot(:,:,4));
-                elseif contains(FileName,'Condition') || ...
-                        contains(FileName,'Covariate') || ...
-                        contains(FileName,'Rep_ANOVA')
-                    toplot = squeeze(toplot(:,:,1));
-                else
-                    disp('file no supported'); return
+                    toplot      = LIMO.cache.fig.stats;
+                    M           = LIMO.cache.fig.pval;
+                    mask        = LIMO.cache.fig.mask;
+                    mytitle     = LIMO.cache.fig.title;
+                    data_cached = 1;
+                    assignin('base','stat_values',M)
+                    assignin('base','p_values',M)
+                    assignin('base','mask',mask)
                 end
             end
-            assignin('base','stat_values',toplot)
+        catch no_cache
             data_cached = 0;
         end
+    end
+    
+    % if there is no cached data, compute and plot
+    % -------------------------------------------
+    if data_cached == 0
+        
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        
+        if isempty(mask)
+            return
+        elseif sum(mask(:)) == 0
+            warndlg('  no values under threshold  ','no significant effect','modal');
+            return
+        else
+            assignin('base','p_values',squeeze(M))
+            assignin('base','mask',squeeze(mask))
+        end
+        
+        if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
+            if contains(FileName,'R2')
+                toplot = squeeze(toplot(:,:,:,1));
+            elseif contains(FileName,'ttest','IgnoreCase',true)
+                toplot = squeeze(toplot(:,:,:,4));
+            elseif strncmp(FileName,'con_',4)
+                toplot = squeeze(toplot(:,:,:,4));
+            elseif strncmp(FileName,'ess_',4)
+                if ~exist('ess','var')
+                    effect_nb = eval(FileName(5:end-4));
+                end
+                toplot = squeeze(toplot(:,:,:,end-1));
+            elseif contains(FileName,'Condition') || ...
+                    contains(FileName,'Covariate') || ...
+                    contains(FileName,'Rep_ANOVA')
+                toplot = squeeze(toplot(:,:,:,1));
+            else
+                disp('file no supported'); return
+            end
+        else
+            if contains(FileName,'R2')
+                toplot = squeeze(toplot(:,:,1));
+            elseif contains(FileName,'ttest','IgnoreCase',true)
+                toplot = squeeze(toplot(:,:,4));
+            elseif strncmp(FileName,'con_',4)
+                toplot = squeeze(toplot(:,:,4));
+            elseif strncmp(FileName,'ess_',4)
+                toplot = squeeze(toplot(:,:,4));
+            elseif contains(FileName,'Condition') || ...
+                    contains(FileName,'Covariate') || ...
+                    contains(FileName,'Rep_ANOVA')
+                toplot = squeeze(toplot(:,:,1));
+            else
+                disp('file no supported'); return
+            end
+        end
+        assignin('base','stat_values',toplot)
+        data_cached = 0;
     end
     
     % ------------------------------
@@ -1274,10 +1181,7 @@ elseif LIMO.Level == 2
             else
                 EEG.data     = toplot;
                 EEG.setname  = mytitle;
-                EEG.pnts     = size(EEG.data,2);
-                EEG.trials   = 1;
                 EEG.chanlocs = LIMO.data.chanlocs;
-                EEG.nbchan   = size(EEG.data,1);
                 
                 if size(toplot,2) == 1
                     opt = {'maplimits','maxmin','verbose','off'};
@@ -1294,7 +1198,8 @@ elseif LIMO.Level == 2
                         EEG.xmin  = LIMO.data.start/1000; % in sec
                         EEG.xmax  = LIMO.data.end/1000;   % in sec
                         EEG.times = (LIMO.data.start/1000:(LIMO.data.sampling_rate/1000):LIMO.data.end/1000); % in sec;
-                        pop_topoplot(EEG);
+                        call_topolot(EEG,FileName,LIMO.Analysis)
+                        % pop_topoplot(EEG);
                     elseif strcmp(LIMO.Analysis,'Frequency')
                         EEG.xmin  = LIMO.data.freqlist(1);
                         EEG.xmax  = LIMO.data.freqlist(end);
@@ -1312,26 +1217,13 @@ elseif LIMO.Level == 2
                                 errordlg('selected frequency out of bound'); return
                             end
                         end
-                        
-                        N=length(EEG.freq);
-                        figure;
-                        for f=1:N
-                            if N<=6
-                                subplot(1,N,f)
-                            else
-                                subplot(ceil(N/6),6,f);
-                            end
-                            [~,ind] = min(abs(LIMO.data.freqlist-EEG.freq(f)));
-                            topoplot(EEG.data(:,ind),EEG.chanlocs);
-                            title([num2str(LIMO.data.freqlist(ind)) ' Hz'],'FontSize',12)
-                        end
-                        EEG.times = LIMO.data.freqlist;
+                        call_topolot(EEG,FileName,LIMO.Analysis)
                     end
                     assignin('base','Plotted_data',EEG.data)
                 end
             end
         end
-        
+         
     elseif Type == 3
         
         %--------------------------
@@ -2258,4 +2150,46 @@ end
 set(gca,'YTickLabel', label_electrodes);
 end
 
+function call_topolot(EEG,FileName,Domain)
+
+EEG.pnts     = size(EEG.data,2);
+EEG.nbchan   = size(EEG.data,1);
+EEG.trials   = 1;
+
+if strcmp(FileName,'R2.mat') || strcmp(FileName,'R2')
+    newname = 'R^2';
+else
+    newname = [FileName(1:min(strfind(FileName,'_'))-1),FileName(max(strfind(FileName,'_'))+1:end-4)];
+end
+
+if strcmp(Domain,'Time')
+    if ~isfield(EEG,'setname')
+        if contains(FileName,'con','IgnoreCase',true)
+            EEG.setname = sprintf('%s - T values',newname);
+        else
+            EEG.setname = sprintf('%s - F values',newname);
+        end
+    end
+    pop_topoplot(EEG);
+    % set(gca,'Colormap',limo_color_images(EEG.data),'CLim',[min(EEG.data(:)),max(EEG.data(:))])
+else % freq
+    N = size(EEG.freq,2);
+    figure;
+    for f=1:N
+        if N<=6
+            subplot(1,N,f)
+        else
+            subplot(ceil(N/6),6,f);
+        end
+        [~,ind] = min(abs(EEG.freq-EEG.freq(f)));
+        opt = {'electrodes','on','maplimits','maxmin','verbose','off','colormap', limo_color_images(EEG.data(:,ind))};
+        topoplot(EEG.data(:,ind),EEG.chanlocs,opt{:});
+        if isfield(EEG,'setname')
+            title(sprintf('Frequency %g Hz from \n%s',round(EEG.freq(ind)),EEG.setname));
+        else
+            title(sprintf('Frequency %g Hz from %s - F values',round(EEG.freq(ind)),newname));
+        end
+    end
+end
+end
 
