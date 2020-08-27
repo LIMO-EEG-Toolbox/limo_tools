@@ -15,7 +15,7 @@ function limo_eeg(varargin)
 %                 1 - load the GUI
 %                 2,X - call limo_import (time X=1 or freuqency X=2), creating LIMO.mat file and call limo_egg(3)
 %                 3 - call limo_design_matrix and populate LIMO.design
-%                 4 - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
+%                 4,fullfile - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
 %                 5 - shortcut to limo_results, look at possible results and print a report
 %                 6,C - shortcut to limo_contrast for the current directory,
 %                 ask for a list of contrasts if not given as 2nd argument) and run them all
@@ -26,7 +26,7 @@ function limo_eeg(varargin)
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
 %
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 % make sure paths are ok
 root = fileparts(which('limo_eeg'));
@@ -437,17 +437,34 @@ switch varargin{1}
         % ------------------------------------------
         
         % get the LIMO.mat
-        try
-            load('LIMO.mat');
-        catch
+        if nargin == 2
+            if ischar(varargin{2})
+                LIMO = load(varargin{2});
+                if ~isfield(LIMO,'LIMO')
+                    error('input file not recognized as a LIMO.mat structure')
+                end
+            else
+                LIMO = varargin{2};
+            end
+        elseif exist(fullfile(pwd,'LIMO.mat'),'file')
+            % maybe just here in the current directory
+            LIMO = load('LIMO.mat'); 
+        else % ask user
             [file,dir_newpath,ind] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if ind ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                if strcmpi(file,'LIMO')
+                    LIMO = load(fullfile(dir_newpath,'LIMO.mat'));
+                else
+                    error('not a LIMO.mat file')
+                end
             end
         end
-              
+        
+        if isfield(LIMO,'LIMO')
+            LIMO = LIMO.LIMO;
+        end
         
         % ---------------- univariate analysis ------------------
         % --------------------------------------------------------
