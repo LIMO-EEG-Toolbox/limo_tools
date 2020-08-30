@@ -1,14 +1,17 @@
 function model = limo_glm_boot(varargin)
 
-% Boostrapped version for limo_glm
-% Importantly it runs per electrodes but do N bootstraps to obtain
-% the distributon of F (and associated p values) under H0.
-% H0 is obtained by either by resampling from centered data (categorical designs)
-% or sampling Y but leaving X intact, i.e. breaking the link between Y and X
+% Boostrap under the null for limo_glm
+% Importantly call this function for one channel - it will then run N bootstraps 
+% to obtain the distributon of F and associated p values under H0.
+%
+% H0 is obtained by centered data (categorical designs) and resampling them
+% but leaving X intact, i.e. breaking the link between Y and X (centering
+% is a little over-kill but that way we can make sure that even if random 
+% sampling end-up recreating conditions the null is true).
 %
 % FORMAT:
 % model = limo_glm_boot(Y,LIMO,boot_table)
-% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,method,analysis type,boot_table)
+% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,analysis type,boot_table)
 %
 % INPUTS
 %         Y = 2D matrix of EEG data with format trials x time frames
@@ -34,7 +37,7 @@ function model = limo_glm_boot(varargin)
 %
 % Cyril Pernet
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 %% varagin
 
@@ -50,7 +53,7 @@ if nargin == 2 || nargin == 3
     if nargin == 2
         nboot      = 800; 
         boot_table = randi(size(y,1),size(y,1),nboot);
-    elseif nargin == 3
+    elseif nargin ==3
         boot_table = varargin{3};
         nboot = size(boot_table,2);
     end
@@ -80,7 +83,6 @@ if isempty(nb_conditions);   nb_conditions = 0;   end
 if isempty(nb_interactions); nb_interactions = 0; end
 if isempty(nb_continuous);   nb_continuous = 0;   end
 
-clear varargin
 nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
     nb_factors = 0;
@@ -105,11 +107,13 @@ end
 %% Make null data
 % ---------------
 
-% if categorical design, center data 1st
-% ---------------------------------------
-if nb_continuous == 0
+% if categorical variables, center data 1st overwise nothing to do
+% -------------------------------------------------------------
+if nb_conditions ==0
+    centered_y = y(randperm(size(y,1),size(y,1))); % just shuffled
+else
     centered_y = NaN(size(y,1),size(y,2));
-    if ~isempty(nb_interactions)
+    if nb_interactions ~= 0
         % look up the last interaction to get unique groups
         if length(nb_interactions) == 1
             start_at = sum(nb_conditions);
@@ -122,7 +126,7 @@ if nb_continuous == 0
             centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),length(index),1);
         end
         
-    elseif size(nb_conditions,2) == 1
+    elseif size(nb_conditions,2) == 1 
         % no interactions because just 1 factor
         for cel=1:nb_conditions
             index = find(X(:,cel));
@@ -131,7 +135,7 @@ if nb_continuous == 0
         
     elseif size(nb_conditions,2) > 1
         % create fake interaction to get groups
-        [tmpX, interactions] = limo_make_interactions(X(:,1:(end-1)), nb_conditions);
+        [tmpX, interactions] = limo_make_interactions(X(:,1:sum(nb_conditions)), nb_conditions);
         if length(interactions) == 1
             start_at = sum(nb_conditions);
         else
@@ -143,12 +147,10 @@ if nb_continuous == 0
             centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),size(y(index,:),1),1);
         end
     end
-else 
-    centered_y = y; % actually not centered
 end
 
+clear varargin 
 clear y
-design = X;
 
 % compute for each bootstrap
 % ---------------------------
@@ -173,30 +175,24 @@ if nb_continuous ~=0
 end
 
 switch method
-    
+    % same results as calling iteratively 
+    % model = limo_glm(Y,varargin{2});
+
         % -----------------------------------------------------------------
     case {'OLS','WLS'}
+                
         parfor B = 1:nboot
-            
-            % create data under H0
-            Y = centered_y(boot_table(:,B),:); % resample Y
-            if nb_continuous == 0
-                % if just categorical variables, sample from the centered data and
-                % the design simultaneously
-                X = design(boot_table(:,B),:);     % resample X
-            else
-                % sample and break the link between Y and X (regression and AnCOVA designs)
-                X = design;                        % stays the same
-            end
             
             %% Compute model parameters
             % ------------------------------
             
+            % random sample Y only
+            Y  = centered_y(boot_table(:,B),:); %#ok<PFBNS> % resample Y
+            
             % compute Beta parameters
             if strcmp(method,'OLS')
-                W  = ones(size(Y,1),1);
+                W  = ones(size(centered_y,1),1);
                 WX = X;
-                
                 if nb_continuous ~=0 && nb_factors == 0
                     Betas = X\Y; % numerically more stable than pinv
                 else
@@ -204,9 +200,9 @@ switch method
                 end
                 
             elseif strcmp(method,'WLS')
-                [Betas,W,rf] = limo_WLS(X,Y);
-                 WX          = X.*repmat(W,1,size(X,2));
-             end
+                [Betas,W] = limo_WLS(X,Y);
+                WX        = X.*repmat(W,1,size(X,2));
+            end
             
             % Betas bootstap
             BETASB{B} = Betas';
@@ -226,7 +222,7 @@ switch method
                 dfe = size(Y,1)-rank(WX);
             else
                 HM  = WX*pinv(WX); % Hat matrix, projection onto X
-                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);
+                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); % - (rf-1); since under H0 assume iid
             end
             
             % model R^2
@@ -240,7 +236,7 @@ switch method
             H              = (Betas'*X'*M*X*Betas);          % SS Effects
             Rsquare        = diag(H)./diag(T);               % Variance explained
             F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
-            p_Rsquare  = 1 - fcdf(F_Rsquare, df, dfe);
+            p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
             
             % ----------------------------
             %% update the model structure
@@ -495,16 +491,7 @@ switch method
         parfor B = 1:nboot
             
             % create data under H0
-            Y = centered_y(boot_table(:,B),:); % resample Y
-            if nb_continuous == 0
-                % if just categorical variables, sample from the centered data and
-                % the design simultaneously
-                X = design(boot_table(:,B),:);     % resample X
-            else
-                % sample and break the link between Y and X (regression and AnCOVA designs)
-                X = design;                        % stays the same
-            end
-            
+            Y = centered_y(boot_table(:,B),:); % resample Y            
             tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis);
             BETASB{B}  = tmp.betas';
             MODELR2{B} = tmp.R2_univariate;
@@ -528,6 +515,7 @@ switch method
         end
 end
 
+% fprintf('channel type 1 error rate: %g\n',mean(mean(cell2mat(MODELp)<0.05,2)))
 model.R2_univariate  = MODELR2; clear MODELR2
 model.F              = MODELF;  clear MODELF
 model.p              = MODELp;  clear MODELp
