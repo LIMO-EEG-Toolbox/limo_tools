@@ -304,7 +304,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
-                parameters(i),LIMO,'zscore',zopt,'go',goopt);
+                parameters(i),LIMO); % ,'zscore',zopt,'go',skip_design_check);
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
