@@ -168,7 +168,7 @@ if LIMO.Level == 1
                         else
                             toplot = squeeze(toplot(:,:,1));
                         end
-                        assignin('base','R2_values',squeeze(toplot(:,:,2)))
+                        assignin('base','R2_values',toplot)
                         
                     elseif contains(FileName,'Condition_effect','IgnoreCase',true) || ...
                             contains(FileName,'Covariate_effect','IgnoreCase',true) || ...
