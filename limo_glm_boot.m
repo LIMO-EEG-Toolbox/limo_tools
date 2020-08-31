@@ -180,7 +180,11 @@ switch method
 
         % -----------------------------------------------------------------
     case {'OLS','WLS'}
-                
+ 
+        if strcmp(method,'WLS')
+            [~,~,rf] = limo_WLS(X,centered_y);
+        end
+        
         parfor B = 1:nboot
             
             %% Compute model parameters
@@ -222,7 +226,7 @@ switch method
                 dfe = size(Y,1)-rank(WX);
             else
                 HM  = WX*pinv(WX); % Hat matrix, projection onto X
-                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); % - (rf-1); since under H0 assume iid
+                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
             end
             
             % model R^2
@@ -430,7 +434,7 @@ switch method
                         eoni                       = 1:size(x,2);
                         eoni                       = find(eoni - eoi);
                         C                          = eye(size(x,2));
-                        C(:,eoni)                  = 0;
+                        C(:,eoni)                  = 0; %#ok<FNDSB>
                         C0                         = eye(size(x,2)) - C*pinv(C);
                         X0                         = wx*C0;
                         R0                         = eye(size(Y,1)) - (X0*pinv(X0));
@@ -491,7 +495,7 @@ switch method
         parfor B = 1:nboot
             
             % create data under H0
-            Y = centered_y(boot_table(:,B),:); % resample Y            
+            Y = centered_y(boot_table(:,B),:); %#ok<PFBNS> % resample Y            
             tmp        = limo_glm(Y, X, nb_conditions, nb_interactions, nb_continuous, method, Analysis);
             BETASB{B}  = tmp.betas';
             MODELR2{B} = tmp.R2_univariate;
