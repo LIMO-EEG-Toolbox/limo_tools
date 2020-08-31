@@ -442,9 +442,9 @@ if contains(FileName,'Rep_ANOVA')
         if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
             try
                 tfce_data    = load(tfce_data);     
-                tfce_data    = tfce_data.(cell2mat(filednames(tfce_data)));
+                tfce_data    = tfce_data.(cell2mat(fieldnames(tfce_data)));
                 H0_tfce_data = load(H0_tfce_data);
-                H0_tfce_data = H0_tfce_data.(cell2mat(filednames(H0_tfce_data)));
+                H0_tfce_data = H0_tfce_data.(cell2mat(fieldnames(H0_tfce_data)));
                 [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p);
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     mytitle = sprintf('Interaction correction using TFCE');
