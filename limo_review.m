@@ -37,12 +37,18 @@ else
     % display a scaled version of X
     add_subplots = 1;
     if ~isempty(LIMO.design.X)
-        X = LIMO.design.X;
-        Xdisplay = X;
+        W = LIMO.design.weights;
+        if ndims(W) == 2
+            W = squeeze(mean(W,1));
+        elseif ndims(W) == 3
+            W = squeeze(mean(mean(W,1),2));
+        end
+        X = LIMO.design.X.*repmat(W,1,size(LIMO.design.X,2));
+        Xdisplay = LIMO.design.X;
         N = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
         if isfield(LIMO.design, 'nb_continuous')
             if  prod(LIMO.design.nb_continuous) ~= 0
-                REGdisplay = X(:,N+1:size(X,2)-1);
+                REGdisplay = Xdisplay(:,N+1:size(X,2)-1);
                 REGdisplay = REGdisplay ./ max(abs(min(REGdisplay)));
                 Xdisplay(:,N+1:size(X,2)-1) = REGdisplay ./ max(max(REGdisplay));
             end
