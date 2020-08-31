@@ -60,6 +60,7 @@ if nargin == 4
 end
 
 go = 1; index = 1;
+Names = []; Paths = []; Files = [];
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
@@ -103,8 +104,4 @@ while go == 1
     else
         errordlg('format not supported'); go = 0;
     end
-end
-
-if index == 1
-    Names = []; Paths = []; Files = [];
 end
