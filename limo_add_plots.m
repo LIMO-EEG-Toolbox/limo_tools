@@ -9,39 +9,41 @@ function out = limo_add_plots(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-out       = 0;
-turn      = 1;
+out     = 0;
+turn    = 1;
 channel = [];
+infile  = [];
 
 if ~isempty(varargin)
-    [path,infile] = fileparts(varargin{1});
-    infile        = [infile '.mat'];
-    if isempty(path)
-        path = [pwd filesep]; 
+    for i=1:size(varargin,2)
+        if strcmpi(varargin{i},'channel')
+            channel = varargin{i+1};
+        elseif ischar(varargin{i})
+            infile{i} = varargin{i};
+        end
     end
-else
-    infile = [];
 end
 
 while out == 0
     subjects_plot = 0;
 
     %% Data selection
-    % 
+     
     if ~isempty(infile) % allows comand line plot
-        if length(infile) <=turn
+        if turn <= length(infile)
             file = infile{turn}; index = 1; 
         else
             out = 1; return
         end
     else
         [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
+        file = fullfile(path,file);
     end
     
     if index == 0
         out = 1; return
     else
-        data       = load(fullfile(path,file));
+        data       = load(file);
         data       = getfield(data,cell2mat(fieldnames(data)));
         datatype   = fieldnames(data);
         datatype   = datatype(cellfun(@(x) strcmp(x,'limo'), fieldnames(data))==0);
@@ -230,12 +232,8 @@ while out == 0
     if size(Data,1) == 1
         Data = squeeze(Data(1,:,:)); 
     else
-        if nargin == 3
-            channel = varargin{3};
-        else
-            if isempty(channel)
-                channel = inputdlg(['which channel to plot 1 to' num2str(size(Data,1))],'channel choice');
-            end
+        if isempty(channel)
+            channel = inputdlg(['which channel to plot 1 to' num2str(size(Data,1))],'channel choice');
         end
         
         if strcmp(channel,'') 
