@@ -677,36 +677,42 @@ switch varargin{1}
         % check which files are there
         % -------------------------
         try
-            load('LIMO.mat');
+            LIMO = load('LIMO.mat');
+            LIMO = LIMO.LIMO;
         catch
             [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                cd(dir_newpath); 
+                LIMO = load('LIMO.mat');
+                LIMO = LIMO.LIMO;
             end
         end
-        cd (LIMO.dir);
+        cd(LIMO.dir);
         
         % R2
         % ---
-        if LIMO.design.bootstrap == 1
-            if LIMO.design.tfce == 1
-                limo_display_results(1,'R2.mat',pwd,0.05,3,LIMO,0);
+        if exist('R2.mat','file')
+            if LIMO.design.bootstrap ~=0
+                if LIMO.design.tfce == 1
+                    limo_display_results(1,'R2.mat',pwd,0.05,3,LIMO,0);
+                else
+                    limo_display_results(1,'R2.mat',pwd,0.05,2,LIMO,0);
+                end
             else
-                limo_display_results(1,'R2.mat',pwd,0.05,2,LIMO,0);
+                limo_display_results(1,'R2.mat',pwd,0.05,1,LIMO,0);
             end
-        else
-            limo_display_results(1,'R2.mat',pwd,0.05,1,LIMO,0);
+            saveas(gcf, 'R2.fig','fig'); close(gcf)
+            clear R2.mat
         end
-        saveas(gcf, 'R2.fig','fig'); close(gcf)
-        clear R2.mat
         
         % conditions
+        if isfield(LIMO.design,'nb_conditions')
         if prod(LIMO.design.nb_conditions) ~=0
             for i=1:length(LIMO.design.nb_conditions)
                 name = sprintf('Condition_effect_%g.mat',i);
-                if LIMO.design.bootstrap == 1
+                if LIMO.design.bootstrap ~=0
                     if LIMO.design.tfce == 1
                         limo_display_results(1,name,pwd,0.05,3,LIMO,0);
                     else
@@ -719,30 +725,53 @@ switch varargin{1}
                 saveas(gcf, savename,'fig'); close(gcf)
             end
         end
+        end
         
         % interactions
-        if LIMO.design.fullfactorial == 1
-            for i=1:length(LIMO.design.nb_interactions)
-                name = sprintf('Interaction_effect_%g.mat',i);
-                if LIMO.design.bootstrap == 1
-                    if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+        if isfield(LIMO.design,'nb_interactions')
+            if LIMO.design.fullfactorial == 1
+                for i=1:length(LIMO.design.nb_interactions)
+                    name = sprintf('Interaction_effect_%g.mat',i);
+                    if LIMO.design.bootstrap ~=0
+                        if LIMO.design.tfce == 1
+                            limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        else
+                            limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        end
                     else
-                        limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
-                else
-                    limo_display_results(1,name,pwd,0.05,1,LIMO,0);
+                    savename = sprintf('Interaction_effect_%g.fig',i);
+                    saveas(gcf, savename,'fig'); close(gcf)
                 end
-                savename = sprintf('Interaction_effect_%g.fig',i);
-                saveas(gcf, savename,'fig'); close(gcf)
             end
         end
         
         % covariates / continuous regressors
-        if LIMO.design.nb_continuous ~=0
-            for i=1:LIMO.design.nb_continuous
-                name = sprintf('Covariate_effect_%g.mat',i);
-                if LIMO.design.bootstrap == 1
+        if isfield(LIMO.design,'nb_continuous')
+            if LIMO.design.nb_continuous ~=0
+                for i=1:LIMO.design.nb_continuous
+                    name = sprintf('Covariate_effect_%g.mat',i);
+                    if LIMO.design.bootstrap ~=0
+                        if LIMO.design.tfce == 1
+                            limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        else
+                            limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        end
+                    else
+                        limo_display_results(1,name,pwd,0.05,1,LIMO,0);
+                    end
+                    savename = sprintf('Covariate_effect_%g.fig',i);
+                    saveas(gcf, savename,'fig'); close(gcf)
+                end
+            end
+        end
+         
+        check_semi = dir('semi_partial_coef*.mat');
+        if ~isempty(check_semi)
+            for i=1:size(check_semi,2)
+                name = sprintf('semi_partial_coef_%g.mat',i);
+                if LIMO.design.bootstrap ~=0
                     if LIMO.design.tfce == 1
                         limo_display_results(1,name,pwd,0.05,3,LIMO,0);
                     else
@@ -751,12 +780,29 @@ switch varargin{1}
                 else
                     limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                 end
-                savename = sprintf('Covariate_effect_%g.fig',i);
+                savename = sprintf('semi_partial_coef_%g.fig',i);
                 saveas(gcf, savename,'fig'); close(gcf)
             end
         end
         
-        
+        other_names = {'*ttest*.mat','Rep_ANOVA*.mat','con*.mat','ess*.mat'};
+        for check = 1:length(other_names)
+            check_ttest = dir(cell2mat(other_names(check)));
+            if ~isempty(check_ttest)
+                name = check_ttest(1).name;
+                if LIMO.design.bootstrap ~=0
+                    if LIMO.design.tfce == 1
+                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                    else
+                        limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                    end
+                else
+                    limo_display_results(1,name,pwd,0.05,1,LIMO,0);
+                end
+                savename = sprintf('%s.fig',name(1:end-4));
+                saveas(gcf, savename,'fig'); close(gcf)
+            end
+        end
         
     case{6}
         
