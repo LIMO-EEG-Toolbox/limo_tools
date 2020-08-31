@@ -39,7 +39,7 @@ else
     if ~isempty(LIMO.design.X)
         W = LIMO.design.weights;
         if ndims(W) == 2
-            W = squeeze(mean(W,1));
+            W = mean(W,1)';
         elseif ndims(W) == 3
             W = squeeze(mean(mean(W,1),2));
         end
