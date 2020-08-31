@@ -163,9 +163,14 @@ if nargin == 3 || nargin == 4
 elseif nargin == 6 || nargin == 7
     % ---------------------------
     
-    Files = varargin{1};
+    if exist(varargin{1},'file')
+        Files = varargin{1};
+    else
+        error('input file not found')
+    end
     if size(Files,1) == 1
         Files = textread(Files,'%s','delimiter','');  % select a txt file listing all files
+        %[~,Paths,Files] = limo_get_files([],[],[],Files);
     end
     
     for i=length(Files):-1:1
