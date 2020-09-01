@@ -728,7 +728,9 @@ switch type
             
             %  compute
             array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
-            for b = 1:LIMO.design.bootstrap
+            sz_H0_ess_sub = size(H0_ess);
+            parfor b = 1:LIMO.design.bootstrap
+                H0_ess_sub = zeros(sz_H0_ess_sub(1:end-1));
                 fprintf('contrast bootstrap %g \n',b);
                 for c = 1:length(array)
                     channel = array(c);
@@ -738,9 +740,10 @@ switch type
                     gp  = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
                     % F and p
                     result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
-                    H0_ess(channel,:,1,b) = result.F;
-                    H0_ess(channel,:,2,b) = result.p;
+                    H0_ess_sub(channel,:,1) = result.F;
+                    H0_ess_sub(channel,:,2) = result.p;
                 end
+                H0_ess(:,:,:,b) = H0_ess_sub;
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')

@@ -1172,8 +1172,14 @@ switch type
             disp('making bootstrap files ...')
             if type ==1
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
+                H0_Rep_ANOVA_Gp_effect = ones(1,1,1,1,1); 
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = ones(1,1,1,1,1); 
+                X = [];
             elseif type == 2
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
+                H0_Rep_ANOVA_Gp_effect = ones(1,1,1,1,1); 
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = ones(1,1,1,1,1); 
+                X = [];
             elseif type == 3
                 tmp_boot_H0_Rep_ANOVA = NaN(size(data,1),size(data,2),1,2,LIMO.design.bootstrap);
                 H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
@@ -1183,6 +1189,9 @@ switch type
                 H0_Rep_ANOVA_Gp_effect = NaN(size(data,1),size(data,2),2,LIMO.design.bootstrap);
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = NaN(size(data,1),size(data,2),length(C),2,LIMO.design.bootstrap);
             end
+            sz_tmp_boot_H0_Rep_ANOVA = size(tmp_boot_H0_Rep_ANOVA);
+            sz_H0_Rep_ANOVA_Gp_effect = size(H0_Rep_ANOVA_Gp_effect);
+            sz_tmp_boot_H0_Rep_ANOVA_Interaction_with_gp = size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp);
             
             % the data have to be centered (H0) for each cell
             centered_data = NaN(size(data,1),size(data,2),size(data,3),size(data,4));
@@ -1212,9 +1221,15 @@ switch type
             save(fullfile(LIMO.dir,['H0', filesep, 'boot_table']), 'boot_table', '-v7.3');
             
             % compute bootstrap under H0 for F and p
-            for B=1:LIMO.design.bootstrap
+            parfor B=1:LIMO.design.bootstrap
                 fprintf('Repeated Measures ANOVA bootstrap %g \n ...', B);
                 array = find(~isnan(data(:,1,1,1)));
+                
+                % preallocation for parfor
+                tmp_boot_H0_Rep_ANOVA_sub = zeros(sz_tmp_boot_H0_Rep_ANOVA(1:end-1));
+                H0_Rep_ANOVA_Gp_effect_sub = zeros(sz_H0_Rep_ANOVA_Gp_effect(1:end-1));
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = zeros(sz_tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(1:end-1));
+                
                 for e = 1:length(array)
                     channel = array(e);
                     tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,B),:));
@@ -1229,6 +1244,8 @@ switch type
                     
                     if type == 3 || type == 4
                         XB = X(find(~isnan(tmp(1,:,1))));
+                    else
+                        XB = [];
                     end
                     
                     if type == 1
@@ -1237,44 +1254,55 @@ switch type
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C);
                         end
-                        tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.F;
-                        tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.p;
+                        %tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.F;
+                        %tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.p;
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,1) = result.F;
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,2) = result.p;
                     elseif type == 2
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C);
                         end
-                        tmp_boot_H0_Rep_ANOVA(channel,:,:,1,B) = result.F';
-                        tmp_boot_H0_Rep_ANOVA(channel,:,:,2,B) = result.p';
+%                         tmp_boot_H0_Rep_ANOVA(channel,:,:,1,B) = result.F';
+%                         tmp_boot_H0_Rep_ANOVA(channel,:,:,2,B) = result.p';
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,1) = result.F';
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,2) = result.p';
                     elseif type == 3
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C,XB);
                         end
-                        tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.repeated_measure.F;
-                        tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.repeated_measure.p;
-                        H0_Rep_ANOVA_Gp_effect(channel,:,1,B) = result.gp.F;
-                        H0_Rep_ANOVA_Gp_effect(channel,:,2,B) = result.gp.p;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,1,B) = result.interaction.F;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,2,B) = result.interaction.p;
+%                         tmp_boot_H0_Rep_ANOVA(channel,:,1,1,B) = result.repeated_measure.F;
+%                         tmp_boot_H0_Rep_ANOVA(channel,:,1,2,B) = result.repeated_measure.p;
+%                         H0_Rep_ANOVA_Gp_effect(channel,:,1,B) = result.gp.F;
+%                         H0_Rep_ANOVA_Gp_effect(channel,:,2,B) = result.gp.p;
+%                         tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,1,B) = result.interaction.F;
+%                         tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,1,2,B) = result.interaction.p;
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,1) = result.repeated_measure.F;
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,2) = result.repeated_measure.p;
+                        H0_Rep_ANOVA_Gp_effect_sub(channel,:,1) = result.gp.F;
+                        H0_Rep_ANOVA_Gp_effect_sub(channel,:,2) = result.gp.p;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub(channel,:,1,1) = result.interaction.F;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub(channel,:,1,2) = result.interaction.p;
                     elseif type == 4
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C,XB);
                         end
-                        tmp_boot_H0_Rep_ANOVA(channel,:,:,1,B) = result.repeated_measure.F';
-                        tmp_boot_H0_Rep_ANOVA(channel,:,:,2,B) = result.repeated_measure.p';
-                        H0_Rep_ANOVA_Gp_effect(channel,:,1,B) = result.gp.F;
-                        H0_Rep_ANOVA_Gp_effect(channel,:,2,B) = result.gp.p;
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,:,1,B) = result.interaction.F';
-                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(channel,:,:,2,B) = result.interaction.p';
-                        clear y result
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,:,1,B) = result.repeated_measure.F';
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,:,2,B) = result.repeated_measure.p';
+                        H0_Rep_ANOVA_Gp_effect_sub(channel,:,1,B) = result.gp.F;
+                        H0_Rep_ANOVA_Gp_effect_sub(channel,:,2,B) = result.gp.p;
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub(channel,:,:,1,B) = result.interaction.F';
+                        tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub(channel,:,:,2,B) = result.interaction.p';
                     end
-                    clear XB Y gp tmp
                 end
+                tmp_boot_H0_Rep_ANOVA(:,:,:,:,B)  = tmp_boot_H0_Rep_ANOVA_sub;
+                H0_Rep_ANOVA_Gp_effect(:,:,:,:,B) = H0_Rep_ANOVA_Gp_effect_sub;
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,:,:,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub;
             end
             
             % save
