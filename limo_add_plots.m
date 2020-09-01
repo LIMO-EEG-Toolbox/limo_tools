@@ -234,6 +234,10 @@ while out == 0
     else
         if isempty(channel)
             channel = inputdlg(['which channel to plot 1 to' num2str(size(Data,1))],'channel choice');
+            if isempty(channel) % user presed cancel
+                disp('plot aborded');
+                return
+            end
         end
         
         if strcmp(channel,'') 
