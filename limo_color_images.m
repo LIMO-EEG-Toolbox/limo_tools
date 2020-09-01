@@ -305,7 +305,7 @@ if all(size(in)==1)
         out = xrain(1:floor(256/in):256,:);
         out = out(1:in,:);
     end
-    
+
 else
     % defaults
     color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
@@ -323,6 +323,9 @@ else
     if sum(isnan(in(:))) ~= 0
         out(1,:)=[.9 .9 .9]; % set NaNs to gray
     end
+end
+
+if nargout == 0
     colormap(out);
 end
 
