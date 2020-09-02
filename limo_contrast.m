@@ -727,11 +727,10 @@ switch type
             end
             
             %  compute
-            array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
-            sz_H0_ess_sub = size(H0_ess);
+            array = find(nansum(squeeze((centered_data(:,1,:,1))),2));          
+            fprintf('bootstrapping contrast ...\n');
             parfor b = 1:LIMO.design.bootstrap
-                H0_ess_sub = zeros(sz_H0_ess_sub(1:end-1));
-                fprintf('contrast bootstrap %g \n',b);
+                H0_ess_sub = NaN(size(centered_data,1), size(centered_data,2),2);
                 for c = 1:length(array)
                     channel = array(c);
                     % Inputs
