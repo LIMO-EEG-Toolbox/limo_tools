@@ -277,12 +277,19 @@ function Pop_up_previous_contrasts_Callback(hObject, eventdata, handles)
 contents = get(hObject,'String');
 if ~strcmp(contents(1),'none') % not 'none'
     index = get(hObject,'Value');
-    contents = contents{index}(4:end); %$ remove the T: or F: then eval string
-    contrast=str2num(contents);
-    handles.C=contrast;
+    handles.C = str2num(contents{index}(4:end));%$ remove the T: or F: then eval string
     contrast_CreateFcn(hObject, eventdata, handles)
+    % if no associated bootstrap set handles.go to 1 allowing to evaluate
+    if strcmpi(contents{index}(1),'F')
+        if ~exist(fullfile(handles.dir,['H0' filesep 'H0_ess_' num2str(index) '.mat']),'file')
+            handles.go = 1;
+        end
+    elseif strcmpi(contents{index}(1),'T')
+        if ~exist(fullfile(handles.dir,['H0' filesep 'H0_con_' num2str(index) '.mat']),'file')
+            handles.go = 1;
+        end
+    end
 end
-
 handles.output = hObject;
 guidata(hObject,handles)
 
@@ -297,7 +304,7 @@ if ~isempty(handles.C)
     if handles.go == 1
         
         if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir')
-            choice = questdlg('an associated bootstrap should be present','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
+            choice = questdlg('(re)compute contrast bootstrap?','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
         else
             choice = 'don''t compute any bootstraps';
         end
@@ -410,7 +417,7 @@ if ~isempty(handles.C)
         end
         
     else
-        errordlg('no new contrast to evaluate')
+        warndlg2('no new contrast to evaluate')
     end
     
     uiresume
