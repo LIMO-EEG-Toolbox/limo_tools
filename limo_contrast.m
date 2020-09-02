@@ -590,15 +590,19 @@ switch type
             end
             clear Yr; Yr = tmp; clear tmp
         end
+        
         % [mean value, se, df, F, p])
         if gp_values == 1
             ess = zeros(size(Yr,1),size(Yr,2),5);
-            for channel = 1:size(Yr,1)
+            
+            array = find(nansum(squeeze((Yr(:,1,:,1))),2));    
+            for c = 1:length(array)
+                channel = array(c);
                 fprintf('channel %g \n',channel);
                 % Inputs
                 tmp = squeeze(Yr(channel,:,:,:));
                 Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                gp = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
+                gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:);
                 % mean, se, df
                 n = size(Y,2);
                 if strcmpi(LIMO.design.method,'Mean')
@@ -707,38 +711,48 @@ switch type
         %              bootstrap
         % ---------------------------------------------
         
-        cd(LIMO.dir)
         filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_' num2str(size(LIMO.contrast,2)) '.mat']);
+        % prepare the boostrap with centering the data
+        cd([LIMO.dir filesep 'H0']);
+        if ~exist('centered_data.mat','file') || ~exist('boot_table.mat','file')
+            error('H0 data and/or resampling table missing')
+        else
+            centered_data = load('centered_data'); centered_data = centered_data.(cell2mat(fieldnames(centered_data)));
+            boot_table    = load('boot_table');    boot_table = boot_table.(cell2mat(fieldnames(boot_table)));
+        end
+        
         if gp_values == 1
-           if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmp(LIMO.Analysis,'Time-Frequency')
                 H0_ess = NaN(size(Yr,1),size(Yr,2)*size(Yr,3),2,LIMO.design.bootstrap);
             else
                 H0_ess = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap);
             end
             clear Yr
             
-            % prepare the boostrap centering the data
-            cd([LIMO.dir filesep 'H0']);
-            if ~exist('centered_data.mat','file') || ~exist('boot_table.mat','file')
-                error('H0 data and/or resampling table missing')
-            else
-                centered_data = load('centered_data'); centered_data = centered_data.(cell2mat(fieldnames(centered_data)));
-                boot_table    = load('boot_table');    boot_table = boot_table.(cell2mat(fieldnames(boot_table)));
-            end
-            
             %  compute
             array = find(nansum(squeeze((centered_data(:,1,:,1))),2));          
             fprintf('bootstrapping contrast ...\n');
             parfor b = 1:LIMO.design.bootstrap
-                H0_ess_sub = NaN(size(centered_data,1), size(centered_data,2),2);
+                    H0_ess_sub = NaN(size(centered_data,1),size(centered_data,2),2);
                 for c = 1:length(array)
                     channel = array(c);
+                    if c == 1
+                        fprintf('parallel boot %g channel %g',b,channel);
+                    elseif c==length(array)
+                        fprintf(' %g\n',channel);
+                    else
+                        fprintf(' %g',channel);
+                    end
                     % Inputs
                     tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
                     Y   = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
                     gp  = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
                     % F and p
-                    result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                    if strcmpi(LIMO.design.method,'Mean')
+                        result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                    else
+                        result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                    end
                     H0_ess_sub(channel,:,1) = result.F;
                     H0_ess_sub(channel,:,2) = result.p;
                 end
@@ -750,17 +764,18 @@ switch type
             end
             save(filename, 'H0_ess', '-v7.3');
 
-        else
+        else %% group*repeated measures
+            
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                H0_ess = zeros(size(Yr,1),size(Yr,2)*size(Yr,3),5); % dim rep measures, F,p
-                H0_ess2 = zeros(size(Yr,1),size(Yr,2)*size(Yr,3),5); % dim gp*interaction F,p
+                H0_ess = NaN(size(Yr,1),size(Yr,2)*size(Yr,3),2,LIMO.design.bootstrap);  
+                H0_ess2 = NaN(size(Yr,1),size(Yr,2)*size(Yr,3),2,LIMO.design.bootstrap); 
             else
-                H0_ess  = zeros(size(Yr,1),size(Yr,2),5); 
-                H0_ess2 = zeros(size(Yr,1),size(Yr,2),5); 
+                H0_ess  = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap); 
+                H0_ess2 = NaN(size(Yr,1),size(Yr,2),2,LIMO.design.bootstrap); 
             end
             clear Yr
+            
             % design matrix for gp effects
-            k         = LIMO.design.nb_conditions;
             gp_vector = LIMO.data.Cat; 
             gp_values = unique(gp_vector); 
             k         = length(gp_values); 
@@ -768,47 +783,41 @@ switch type
             for g =1:k
                 X(:,g) = gp_vector == gp_values(g); 
             end 
-            X(:,end) = 1; % design matrix for gp effects
+            X(:,end) = 1; 
             
             % call rep anova
-            for channel = 1:size(Yr,1)
-                fprintf('channel %g \n',channel);
-                % Inputs
-                tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
-                Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
-                gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:); % adjust gp as Y
-                XB  = X(find(~isnan(tmp(1,:,1))),:); % adjust X as well 
-                % mean, se, df
-                n = size(Y,2);
-                g = floor((20/100)*n);
-                for time=1:size(Y,1)
-                    % main effect
-                    [v,indices]              = sort(squeeze(Y(time,:,:))); % sorted data
-                    TD(time,:,:)             = v((g+1):(n-g),:); % trimmed data
-                    H0_ess(channel,time,1) = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
-                    % gp interaction
-                    I = zeros(1,1,n); 
-                    I(1,1,:) = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; 
-                    H0_ess2(channel,time,1) = limo_trimmed_mean(I);
-                    
-                    v(1:g+1,:)   = repmat(v(g+1,:),g+1,1);
-                    v(n-g:end,:) = repmat(v(n-g,:),g+1,1); % winsorized data
-                    [~,reorder]  = sort(indices);
-                    for j = 1:size(Y,3)
-                        SD(:,j) = v(reorder(:,j),j); % restore the order of original data
-                    end 
-                    S(time,:,:) = cov(SD); % winsorized covariance
-                    H0_ess(channel,time,2) = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
-                    H0_ess2(channel,time,2) = NaN;
+            array = find(nansum(squeeze((centered_data(:,1,:,1))),2));
+            fprintf('bootstrapping contrast ...\n');
+            parfor b = 1:LIMO.design.bootstrap
+                H0_ess_sub  = NaN(size(centered_data,1), size(centered_data,2),2);
+                H0_ess2_sub = NaN(size(centered_data,1), size(centered_data,2),2);
+                for c = 1:length(array)
+                    channel = array(c);
+                    if c == 1
+                        fprintf('parallel boot %g channel %g',b,channel);
+                    elseif c==length(array)
+                        fprintf(' %g\n',channel);
+                    else
+                        fprintf(' %g',channel);
+                    end
+                    % Inputs
+                    tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
+                    Y   = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                    gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))),:); % adjust gp as Y
+                    XB  = X(find(~isnan(tmp(1,:,1))),:); % adjust X as well
+                    % F and p values
+                    if strcmpi(LIMO.design.method,'Mean')
+                        result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                    else
+                        result = limo_robust_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
+                    end
+                    H0_ess_sub(channel,:,1)  = result.repeated_measure.F;
+                    H0_ess_sub(channel,:,2)  = result.repeated_measure.p;
+                    H0_ess2_sub(channel,:,1) = result.interaction.F;
+                    H0_ess2_sub(channel,:,2) = result.interaction.p;
                 end
-                df  = rank(C); dfe = n-df;
-                H0_ess(channel,:,3) = dfe;
-                % F and p values
-                result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(TD,3)),XB);
-                H0_ess(channel,:,1,4)  = result.repeated_measure.F;
-                H0_ess(channel,:,1,5)  = result.repeated_measure.p;
-                H0_ess2(channel,:,2,4) = result.interaction.F;
-                H0_ess2(channel,:,2,5) = result.interaction.p;
+                H0_ess(:,:,:,b)  = H0_ess_sub;
+                H0_ess2(:,:,:,b) = H0_ess2_sub;
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -826,6 +835,7 @@ switch type
                 save(filename, 'H0_ess', '-v7.3');
             end
         end
+        cd(LIMO.dir); disp('done')
 end
 
 
