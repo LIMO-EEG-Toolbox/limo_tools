@@ -129,7 +129,7 @@ for in = 1:2:(nargin-2)
         skip_design_check = varargin{in+1};
     elseif strcmpi(varargin{in},'channel')
         LIMO.design.electrode = varargin{in+1};
-    elseif contains(varargin{in},'parameter','IgnoreCase',true)
+    elseif contains(varargin{in},'parameter','IgnoreCase',true) 
         LIMO.design.parameters = varargin{in+1};
     elseif strcmpi(varargin{in},'factor names')
         LIMO.design.factor_names = varargin{in+1};
@@ -174,10 +174,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if ~exist('parameters','var')
+    if ~isfield(LIMO.design,'parameters')
         parameters = check_files(Names,1);
     else
-        parameters = check_files(Names,1,parameters{1});
+        parameters = check_files(Names,1,LIMO.design.parameters);
     end
     
     if isempty(parameters)
@@ -222,18 +222,18 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         disp('Regressor(s) loaded');
         
         % check size and orientation
-        try
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                N = size(data,5);
-            else
-                N = size(data,4);
-            end
-            
-            if size(X,2) == N || size(X,2) == size(Paths,2)
-                disp('X has been transposed'); X = X';
-            end
-            
-            if size(X,1) > N
+        if strcmp(LIMO.Analysis,'Time-Frequency')
+            N = size(data,5);
+        else
+            N = size(data,4);
+        end
+        
+        if size(X,2) == N || size(X,2) == size(Paths,2)
+            disp('X has been transposed'); X = X';
+        end
+        
+        if size(X,1) > N
+            if sum(removed) ~=0
                 try
                     index = 0;
                     for i=1:size(Paths,2)
@@ -244,21 +244,18 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                     end
                     disp('covariate adjusted for delete subjects');
                 catch ME
-                    errordlg2('the number of regression value differs from the number of subjects','Covariate error');
+                    errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
                     fprintf('%s',ME.message); return
                 end
             end
-            
-            if size(X,2)==1 && LIMO.design.bootstrap < 599
-                if LIMO.design.bootstrap ~= 0
-                    LIMO.design.bootstrap = 599;
-                    disp('nb of bootstrap adjusted to 599 for a simple regression');
-                end
+            errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+        end
+        
+        if size(X,2)==1 && LIMO.design.bootstrap < 599
+            if LIMO.design.bootstrap ~= 0
+                LIMO.design.bootstrap = 599;
+                disp('nb of bootstrap adjusted to 599 for a simple regression');
             end
-            
-        catch ME
-            errordlg2('covariate error - make sure data are in lines or columns','Covariate error');
-            fprintf('%s',ME.message); return
         end
     end
 
