@@ -1122,7 +1122,7 @@ switch method
         model.F                 = F_Rsquare';
         model.p                 = p_Rsquare';
         model.betas             = Betas;
-        model.df                = mean(dof,2)'; % not the true dof but a summary
+        model.df                = dof'; 
         model.W                 = W;
         model.betas_se          = betas_se;
         
