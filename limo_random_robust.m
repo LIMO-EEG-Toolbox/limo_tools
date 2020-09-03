@@ -588,6 +588,8 @@ switch type
                     go = varargin{in+1};
                 end
             end
+        else
+            go = 'No';
         end
         clear varargin
         cd(LIMO.dir);
@@ -621,7 +623,7 @@ switch type
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
-        LIMO.design.method           = 'IRLS';
+        LIMO.design.method           = 'OLS' ; % 'IRLS' beter but H0 boot too conservative
         
         if ~exist('answer','var') 
             answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
@@ -647,11 +649,11 @@ switch type
         
         % ------------------------------------------------
         % do the analysis
-        if ~exist('go','var')
+        if strcmpi(go,'no')
             go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
             close('LIMO design')
         end
-        
+                
         if strcmpi(go,'Yes')
             save LIMO LIMO
             if nargout ~= 0, LIMOPath = fullfile(pwd,'LIMO.mat'); end
