@@ -10,18 +10,19 @@ function model = limo_glm_boot(varargin)
 % sampling end-up recreating conditions the null is true).
 %
 % FORMAT:
-% model = limo_glm_boot(Y,LIMO,boot_table)
-% model = limo_glm_boot(Y,X,nb_conditions,nb_interactions,nb_continuous,analysis type,boot_table)
+% model = limo_glm_boot(Y,LIMO,boot_table,channel)
+% model = limo_glm_boot(Y,X,Weights,nb_conditions,nb_interactions,nb_continuous,method,analysis,boot_table)
 %
 % INPUTS
 %         Y = 2D matrix of EEG data with format trials x time frames
 %         LIMO is a structure that contains information below
-%         X = 2 dimensional design matrix
-%         nb_conditions = a vector indicating the number of conditions per factor
-%         nb_interactions = a vector indicating number of columns per interactions
-%         nb_continuous = number of covariates
-%         method = 'OLS', 'WLS', 'IRLS' (bisquare)
-%         analysis type =  'Time', 'Frequency' or 'Time-Frequency'
+%         - LIMO.design.X               = 2 dimensional design matrix
+%         - LIMO.Weights                = a vector or matrix of Weights for X and Y (typically LIMO.design.weights(channel,:))
+%         - LIMO.design.nb_conditions   = a vector indicating the number of conditions per factor
+%         - LIMO.design.nb_interactions = a vector indicating number of columns per interactions
+%         - LIMO.design.nb_continuous   = number of covariates
+%         - LIMO.design.method          = 'OLS', 'WLS', 'IRLS' 
+%         - LIMO.Analysis               =  'Time', 'Frequency' or 'Time-Frequency'
 %         boot_table is an optional argument - this is the resampling table
 %                    if one calls limo_glm_boot to loop throughout channels,
 %                    this might a good idea to provide such table so that
@@ -30,7 +31,8 @@ function model = limo_glm_boot(varargin)
 % NOTE
 % Unlike limo_glm this function doesn't handle Time-Frequency data
 % meaning that a frequency loop should be created outside the function
-% to iterate - allowing the save directly 5D H0 data
+% to iterate - allowing the save directly 5D H0 data -- weights are also to
+% be passed so that resmapling is performed on WY fitting (non resmapled) WX 
 %
 % See also
 % LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
@@ -49,6 +51,7 @@ if nargin == 2 || nargin == 3
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
     Analysis        = varargin{2}.Analysis;
+    Weights         = varargin{2}.Weights;
     
     if nargin == 2
         nboot      = 800; 
@@ -58,20 +61,21 @@ if nargin == 2 || nargin == 3
         nboot = size(boot_table,2);
     end
     
-elseif nargin == 7 || nargin == 8
+elseif nargin == 8 || nargin == 9
     y               = varargin{1};
     X               = varargin{2};
-    nb_conditions   = varargin{3};
-    nb_interactions = varargin{4};
-    nb_continuous   = varargin{5};
-    method          = varargin{6};
-    Analysis        = varargin{7};
+    Weights         = varargin{3};
+    nb_conditions   = varargin{4};
+    nb_interactions = varargin{5};
+    nb_continuous   = varargin{6};
+    method          = varargin{7};
+    Analysis        = varargin{8};
     
-    if nargin == 7
+    if nargin == 8
         nboot       = 800; 
         boot_table  = randi(size(y,1),size(y,1),nboot);
-    elseif nargin == 8
-        boot_table  = varargin{8};
+    elseif nargin == 9
+        boot_table  = varargin{9};
         nboot       = size(boot_table,2);
     end
     
@@ -79,9 +83,9 @@ else
     error('varargin error in limo_glm_boot')
 end
 
-if isempty(nb_conditions);   nb_conditions = 0;   end
+if isempty(nb_conditions);   nb_conditions   = 0; end
 if isempty(nb_interactions); nb_interactions = 0; end
-if isempty(nb_continuous);   nb_continuous = 0;   end
+if isempty(nb_continuous);   nb_continuous   = 0; end
 
 nb_factors = numel(nb_conditions);
 if nb_factors == 1 && nb_conditions == 0
@@ -110,7 +114,7 @@ end
 % if categorical variables, center data 1st overwise nothing to do
 % -------------------------------------------------------------
 if nb_conditions ==0
-    centered_y = y(randperm(size(y,1),size(y,1))); % just shuffled
+    centered_y = y(randperm(size(y,1),size(y,1)),:); % just shuffled then resample
 else
     centered_y = NaN(size(y,1),size(y,2));
     if nb_interactions ~= 0
@@ -150,7 +154,6 @@ else
 end
 
 clear varargin 
-clear y
 
 % compute for each bootstrap
 % ---------------------------
@@ -180,10 +183,6 @@ switch method
 
         % -----------------------------------------------------------------
     case {'OLS','WLS'}
- 
-        if strcmp(method,'WLS')
-            [~,~,rf] = limo_WLS(X,centered_y);
-        end
         
         parfor B = 1:nboot
             
@@ -204,8 +203,10 @@ switch method
                 end
                 
             elseif strcmp(method,'WLS')
-                [Betas,W] = limo_WLS(X,Y);
-                WX        = X.*repmat(W,1,size(X,2));
+                W     = Weights(boot_table(:,B)); %#ok<PFBNS>
+                WY    = Y .* repmat(W,1,size(Y,2));
+                WX    = X .* repmat(W,1,size(X,2));
+                Betas = pinv(WX)*WY;
             end
             
             % Betas bootstap
@@ -226,9 +227,9 @@ switch method
                 dfe = size(Y,1)-rank(WX);
             else
                 HM  = WX*pinv(WX); % Hat matrix, projection onto X
-                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
+                dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); % in most cases same as OLS
             end
-            
+        
             % model R^2
             % -----------
             C              = eye(size(X,2));
