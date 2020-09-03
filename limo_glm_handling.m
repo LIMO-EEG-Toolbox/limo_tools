@@ -8,7 +8,7 @@ function limo_glm_handling(LIMO)
 %
 % Cyril Pernet
 % ------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 cd(LIMO.dir);
 
@@ -21,19 +21,23 @@ if strcmp(LIMO.design.status,'to do')
     R2    = load('R2');    R2    = R2.(cell2mat(fieldnames(R2)));
     Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
   
-    % check method
-    % --------------------------------------
-    if size(Yr,1) == 1
+    % check method and change parametyers accordingly
+    % -----------------------------------------------
+    if size(Yr,1) == 1 % in any cases, just one channel/component
         array = 1;
     else
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            array = find(~isnan(Yr(:,1,1,1))); % skip empty channels
-        else
-            array = find(~isnan(Yr(:,1,1))); 
+        if LIMO.Level == 2        % second level we can have missing data because of 
+            array = 1:size(Yr,1); % bad channels for some subjects - just adjust X
+        else % level 1 = skip empty channels
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                array = find(~isnan(Yr(:,1,1,1))); 
+            else
+                array = find(~isnan(Yr(:,1,1)));
+            end
         end
     end
     
-    if strcmpi(LIMO.design.method,'WLS')
+    if strcmpi(LIMO.design.method,'WLS') % only called 1st level - array(1) will work
         try
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 limo_pcout(squeeze(Yr(array(1),1,:,:))');
@@ -93,19 +97,19 @@ if strcmp(LIMO.design.status,'to do')
     end
     
     warning off;
-    for e = 1:size(array,1)
+    for e = 1:length(array)
         channel = array(e); 
         if LIMO.Level == 2
             fprintf('analyzing channel %g/%g \n',e,size(array,1));
             Y             = squeeze(Yr(channel,:,:));
-            index         = find(~isnan(Y(1,:)));
+            index         = find(~isnan(Y(1,:))); % which subjects to keep
             if isempty(index)
                 index     = 1:size(Y,2);
             end
             Y             = Y(:,index);
             LIMO.design.X = X(index,:);
             model         = limo_glm(Y',LIMO); warning on;
-        else % level 1 we should not have any NaNs
+        else % level 1 we should not have any NaNs because we use 'array'
             if strcmp(LIMO.Type,'Channels')
                 fprintf('analyzing channel %g/%g \n',e,size(array,1));
             else
@@ -351,10 +355,18 @@ if LIMO.design.bootstrap ~=0
             
             Yr = load('Yr');
             Yr = Yr.Yr; % reload in any cases - ensuring right dimensions
-            if size(Yr,1) == 1
+            if size(Yr,1) == 1 % in any cases, just one channel/component
                 array = 1;
             else
-                array = find(~isnan(Yr(:,1,1))); % skip empty channels
+                if LIMO.Level == 2        % second level we can have missing data because of
+                    array = 1:size(Yr,1); % bad channels for some subjects - just adjust X
+                else % level 1 = skip empty channels
+                    if strcmpi(LIMO.Analysis,'Time-Frequency')
+                        array = find(~isnan(Yr(:,1,1,1)));
+                    else
+                        array = find(~isnan(Yr(:,1,1)));
+                    end
+                end
             end
             
             if LIMO.design.bootstrap < 800
@@ -413,7 +425,13 @@ if LIMO.design.bootstrap ~=0
             warning off;
             X = LIMO.design.X;
             h = waitbar(0,'bootstraping data','name','% done');
-            for e = 1:size(array,1)
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                Weights = limo_tf_4d_reshape(LIMO.design.weights);
+            else
+                Weights = LIMO.design.weights;
+            end
+            
+            for e = 1:length(array)
                 channel = array(e);
                 waitbar(e/size(array,1))
                 fprintf('bootstrapping channel %g \n',channel);
@@ -422,23 +440,25 @@ if LIMO.design.bootstrap ~=0
                         Y = squeeze(Yr(channel,:,:,:));
                         index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
                         for f=1:size(Yr,2)
-                            model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:),...
+                            model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), squeeze(Weights(channel,f,:,index))',...
                                 LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
                                 LIMO.design.method,LIMO.Analysis,boot_table{channel});
                         end
                     else
                         Y = squeeze(Yr(channel,:,:));
                         index = find(~isnan(Y(1,:))); 
-                        model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),...
+                        model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),squeeze(Weights(channel,index))',...
                             LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
                             LIMO.design.method,LIMO.Analysis,boot_table{channel});
                     end
                 else
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         for f=1:size(Yr,2)
+                            LIMO.Weights = Weights(channel,f,:)';
                             model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
                         end
                     else
+                        LIMO.W = Weights(channel,:)';
                         model = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
                     end
                 end
