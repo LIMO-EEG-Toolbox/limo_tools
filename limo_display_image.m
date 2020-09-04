@@ -481,7 +481,9 @@ else
     else
         Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
     end
+    
     newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
+    newticks = unique(newticks);
     Ylabels  = Ylabels(newticks);
     if size(scale,1) == 1
         set(gca,'YTick',1);
