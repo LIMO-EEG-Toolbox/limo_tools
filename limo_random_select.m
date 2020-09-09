@@ -361,12 +361,18 @@ elseif strcmpi(stattest,'two-samples t-test')
     % -------------------------------------------------------
     if isfield(LIMO.design,'parameters')
         parameters = LIMO.design.parameters;
+    else
+        parameters = [];
     end
     
-    if ~exist('parameters','var')
-        parameters(1) = check_files(Names,1);
+    if isempty(parameters)
+        parameters = check_files(Names,1);
         if isempty(parameters)
             return
+        elseif length(parameters) > 1
+            warning on
+            warning('only 1 parameter at a time for two-samples analysis, restricting to the 1st indicated')
+            parameters = parameters(1);
         end
     else
         parameters(1) = check_files(Names,1,parameters(1));
@@ -501,11 +507,17 @@ elseif strcmpi(stattest,'paired t-test')
     if isempty(Names)
         return
     end
-    N = size(Names,2);
+    % N = size(Names,2);
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if ~exist('parameters','var')
+    if isfield(LIMO.design,'parameters')
+        parameters = LIMO.design.parameters;
+    else
+        parameters = [];
+    end
+    
+    if isempty(parameters)
         parameters = check_files(Names,1);
     else
         parameters = check_files(Names,1,parameters{1});
@@ -533,10 +545,16 @@ elseif strcmpi(stattest,'paired t-test')
             return
         else
             newparameters = check_files(Names{2},1);
-            parameters = str2num([num2str(parameters) num2str(newparameters)]);
+            if newparameters ~= 1
+                error('paired t-test second set must also be con files')
+            else
+                parameters = 1;
+            end
+            con_parameters    = [str2double(unique(cellfun(@(x) x(5:end-4),Names{1}))) ...
+                str2double(unique(cellfun(@(x) x(5:end-4),Names{2})))];
         end
         LIMO.data.data_dir{2} = Paths{2};
-        N = N + size(Names{2},2);
+        % N = N + size(Names{2},2);
         if size(Names{1},2) ~= size(Names{2},2)
             errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
         end
@@ -544,9 +562,9 @@ elseif strcmpi(stattest,'paired t-test')
         errordlg('2 parameters must be selected for beta files','Paired t-test error'); return
     else % leave it as is, but check this is valid
         for s = 1:size(Paths,2)
-            LIMO = load(fullfile(cell2mat(Paths(s)),'LIMO.mat'));
-            LIMO = LIMO.LIMO;
-            if max(parameters) > size(LIMO.design.X,2)
+            limo = load(fullfile(cell2mat(Paths(s)),'LIMO.mat'));
+            limo = limo.LIMO;
+            if max(parameters) > size(limo.design.X,2)
                 errordlg('invalid parameter(s)','Paired t-test error'); return
             end
         end
@@ -561,7 +579,11 @@ elseif strcmpi(stattest,'paired t-test')
     
     % get data for all parameters dim [channel, frame, param, nb, subjects]
     % -----------------------------------------------------------------
-    data = getdata(2,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
+    if all(size(LIMO.data.data) == [1 2])
+        data = getdata(2,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
+    else
+        data = getdata(1,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
+    end
     
     % compute
     % --------
@@ -624,10 +646,13 @@ elseif strcmpi(stattest,'paired t-test')
         LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
         LIMO.data.size4D = [size(tmp_data1,1) size(tmp_data1,2) size(tmp_data1,3) 5];
     end
-    save LIMO LIMO
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
+    if exist('con_parameters','var')
+        parameters = con_parameters; % substitute param of data by con values for consistent naming
+    end
     tmpname = limo_random_robust(3,squeeze(tmp_data1),squeeze(tmp_data2),parameters,LIMO);
     if nargout ~= 0
         LIMOPath = tmpname;
@@ -1664,7 +1689,10 @@ else % Full scalp
         end
     end
     
-    LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+    if isfield(LIMO.data,'expected_chanlocs')
+        LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+    end
+    
     if strcmpi(LIMO.Type,'Components')
         LIMO.design.component = [];
     else
