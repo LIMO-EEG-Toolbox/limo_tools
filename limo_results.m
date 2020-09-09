@@ -86,10 +86,11 @@ if FilterIndex ~= 0
     handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-uiresume
-guidata(hObject, handles);
-delete(handles.figure1)
-limo_results
+% reset selection - but annoying behaviour really
+% uiresume
+% guidata(hObject, handles);
+% delete(handles.figure1)
+% limo_results
 
 % Topoplot
 % ---------------------------------------------------------------
