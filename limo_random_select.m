@@ -616,8 +616,13 @@ elseif strcmpi(stattest,'paired t-test')
             end
         else
             if size(parameters,2) == 2 % beta files
-                tmp_data1 = squeeze(data(:,:,:,parameters(1),:));
-                tmp_data2 = squeeze(data(:,:,:,parameters(2),:));
+                if iscell(data)
+                    tmp_data1 = squeeze(data{1}(:,:,:,parameters(1),:));
+                    tmp_data2 = squeeze(data{2}(:,:,:,parameters(2),:));
+                else
+                    tmp_data1 = squeeze(data(:,:,:,parameters(1),:));
+                    tmp_data2 = squeeze(data(:,:,:,parameters(2),:));
+                end
             else % con files
                 tmp_data1(:,:,:,1,:) = squeeze(data{1}(:,:,:,:));
                 tmp_data2(:,:,:,1,:) = squeeze(data{2}(:,:,:,:));
@@ -643,8 +648,8 @@ elseif strcmpi(stattest,'paired t-test')
         else
             if size(parameters,2) == 2 % beta files
                 if iscell(data)
-                    tmp_data1(:,:,1,:) = squeeze(data{1}(:,:,parameters(1),:));
-                    tmp_data2(:,:,1,:) = squeeze(data{2}(:,:,parameters(2),:));
+                    tmp_data1 = squeeze(data{1}(:,:,parameters(1),:));
+                    tmp_data2 = squeeze(data{2}(:,:,parameters(2),:));
                 else
                     tmp_data1 = squeeze(data(:,:,parameters(1),:));
                     tmp_data2 = squeeze(data(:,:,parameters(2),:));
