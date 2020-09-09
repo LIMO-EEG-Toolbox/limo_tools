@@ -562,9 +562,8 @@ elseif strcmpi(stattest,'paired t-test')
         errordlg('2 parameters must be selected for beta files','Paired t-test error'); return
     else % leave it as is, but check this is valid
         for s = 1:size(Paths,2)
-            limo = load(fullfile(cell2mat(Paths(s)),'LIMO.mat'));
-            limo = limo.LIMO;
-            if max(parameters) > size(limo.design.X,2)
+            sub_LIMO = load(fullfile(cell2mat(Paths(s)),'LIMO.mat'));
+            if max(parameters) > size(sub_LIMO.LIMO.design.X,2)
                 errordlg('invalid parameter(s)','Paired t-test error'); return
             end
         end
