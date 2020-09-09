@@ -6,7 +6,7 @@ function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
 % FORMAT dist = limo_pcout(x)
-%        [dist,out,rd,w1,w2] = limo_pcout(x,'figure',option)
+%        [dist,out,rf,w1,w2] = limo_pcout(x,'figure',option)
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
