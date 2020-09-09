@@ -111,7 +111,7 @@ skip_design_check      = 'No';
 for in = 1:2:(nargin-2)
     if strcmpi(varargin{in},'LIMOfiles')
         if ~iscell(varargin{in+1})
-            LIMO.data.data = {varargin{in+1}};
+            LIMO.data.data = {varargin{in+1}}; %#ok<CCAT1>
         else
             LIMO.data.data = varargin{in+1};
         end
@@ -262,6 +262,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % load the right parameter and compute
     % ------------------------------------
     root = LIMO.dir;
+    LIMOPath = cell(1,length(parameters));
     for i=1:length(parameters)
         if length(parameters) ~= 1 % make subfolders
             mkdir(fullfile(root,['parameter_' num2str(parameters(i))]));
@@ -355,14 +356,15 @@ elseif strcmpi(stattest,'two-samples t-test')
     if isempty(Names)
         return
     end
-    N = size(Names,2);
+    % N = size(Names,2);
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if isfield(LIMO.design,'parameters')
         parameters = LIMO.design.parameters;
     else
-        parameters = [];
+        LIMO.design.parameters = [];
+        parameters             = [];
     end
     
     if isempty(parameters)
@@ -393,7 +395,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     if isempty(Names)
         return
     end
-    N = N+size(Names,2);
+    % N = N+size(Names,2);
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
@@ -483,7 +485,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         LIMOPath = tmpname;
     end
     if exist('data.mat','file')
-        try delete data.mat; end
+        try delete data.mat; end %#ok<TRYNC>
     end
     
     % ------------------------------
@@ -514,7 +516,8 @@ elseif strcmpi(stattest,'paired t-test')
     if isfield(LIMO.design,'parameters')
         parameters = LIMO.design.parameters;
     else
-        parameters = [];
+        LIMO.design.parameters = [];
+        parameters             = [];
     end
     
     if isempty(parameters)
@@ -523,15 +526,15 @@ elseif strcmpi(stattest,'paired t-test')
         parameters = check_files(Names,1,parameters{1});
     end
     
-    if size(parameters,2) == 1  % was not beta files, ie was con files
+    if size(parameters,2) == 1 % either con file, or command line beta with one parameter
         n = Names; clear Names; Names{1} = n; clear n;
         p = Paths; clear Paths; Paths{1} = p; clear p;
-        if size(LIMO.data.data,1) == 1
+        if ~iscell(LIMO.data.data{1}) % size(LIMO.data.data,2) == 1
             d = LIMO.data.data; LIMO.data = rmfield(LIMO.data,'data'); LIMO.data.data{1} = d; clear d;
             d = LIMO.data.data_dir; LIMO.data = rmfield(LIMO.data,'data_dir'); LIMO.data.data_dir{1} = d; clear d;
         end
         
-        if length(LIMO.data.data) == 1
+        if size(LIMO.data.data,2) == 1 % only 1st group of files in {1} 
             [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],'select paired file');
             % Case for path to the files
         elseif size(LIMO.data.data{2},1) == 1
@@ -544,14 +547,22 @@ elseif strcmpi(stattest,'paired t-test')
         if isempty(Names{2})
             return
         else
-            newparameters = check_files(Names{2},1);
-            if newparameters ~= 1
-                error('paired t-test second set must also be con files')
+            if ~isempty(LIMO.design.parameters)
+                % hack only availbale if beta files and command line argument // not allowed otherwise because it's a paired design
+                parameters(2) = check_files(Names{2},1,LIMO.design.parameters{length(LIMO.design.parameters)});
             else
-                parameters = 1;
+                newparameters = check_files(Names{2},1);
+                if newparameters ~= 1
+                    error('paired t-test second set must also be con files')
+                else
+                    parameters = 1;
+                end
             end
             con_parameters    = [str2double(unique(cellfun(@(x) x(5:end-4),Names{1}))) ...
                 str2double(unique(cellfun(@(x) x(5:end-4),Names{2})))];
+            if all(isnan(con_parameters))
+                clear con_parameters % was betas from command line
+            end
         end
         LIMO.data.data_dir{2} = Paths{2};
         % N = N + size(Names{2},2);
@@ -631,8 +642,13 @@ elseif strcmpi(stattest,'paired t-test')
             end
         else
             if size(parameters,2) == 2 % beta files
-                tmp_data1 = squeeze(data(:,:,parameters(1),:));
-                tmp_data2 = squeeze(data(:,:,parameters(2),:));
+                if iscell(data)
+                    tmp_data1(:,:,1,:) = squeeze(data{1}(:,:,parameters(1),:));
+                    tmp_data2(:,:,1,:) = squeeze(data{2}(:,:,parameters(2),:));
+                else
+                    tmp_data1 = squeeze(data(:,:,parameters(1),:));
+                    tmp_data2 = squeeze(data(:,:,parameters(2),:));
+                end
             else % con files
                 tmp_data1(:,:,1,:) = squeeze(data{1}(:,:,:));
                 tmp_data2(:,:,1,:) = squeeze(data{2}(:,:,:));
@@ -652,6 +668,7 @@ elseif strcmpi(stattest,'paired t-test')
     if exist('con_parameters','var')
         parameters = con_parameters; % substitute param of data by con values for consistent naming
     end
+    LIMO.design.parameters = parameters; % update in any cases
     tmpname = limo_random_robust(3,squeeze(tmp_data1),squeeze(tmp_data2),parameters,LIMO);
     if nargout ~= 0
         LIMOPath = tmpname;
@@ -1335,7 +1352,7 @@ if gp == 1
         if strfind(Names{i},'Betas')
             is_beta(i) = 1;
         elseif strfind(Names{i},'con')
-            is_con(i) = 1; con_val(i) = str2double(Names{i}(5:end-4));
+            is_con(i) = 1; 
         end
     end
     
@@ -1609,7 +1626,7 @@ if strcmpi(analysis_type,'1 channel/component only')
             % check the vector has the same length as the number of files
             channel_vector = load(fullfile(filepath,file));
             tmpname        = fieldnames(channel_vector);
-            channel_vector = getfield(channel_vector,tmpname{1});
+            channel_vector = getfield(channel_vector,tmpname{1}); %#ok<GFLD>
             clear tmpname
             if length(channel_vector) ~= length(Paths)
                 errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],'Error');
@@ -1805,7 +1822,7 @@ if stattest == 1 || stattest == 4
 elseif stattest == 2 % t-tests and gp ANOVA
     subject_nb = 1;
     for igp = 1:length(LIMO.data.data)
-        index = 1;
+        index = 1; 
         for i=1:size(LIMO.data.data{igp},2) % for each subject per group
             tmp = load(cell2mat(LIMO.data.data{igp}(i)));
             
