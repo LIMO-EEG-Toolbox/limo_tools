@@ -555,8 +555,8 @@ function plot_tfmap(handles,tf_map,channel_value)
 axes(handles.sub_display2); cla
 imagesc(handles.times_here,handles.freqs_here,tf_map);
 colormap(gca, limo_color_images(tf_map)); img_prop = get(gca);
-newticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick)));
-Ylabels  = fliplr(round(handles.freqs_here(newticks))); set(gca,'YTickLabel', split(string(Ylabels)))
+newyticks = round(linspace(1,length(handles.freqs_here),length(img_prop.YTick))); newyticks = unique(newyticks);
+Ylabels  = fliplr(round(handles.freqs_here(newyticks))); set(gca,'YTickLabel', split(string(Ylabels)))
 title(['Time-Frequency @ channel ' num2str(handles.LIMO.data.chanlocs(channel_value).labels)]);
 xlabel('Time (ms)','fontsize',10,'VerticalAlignment','top'); ylabel('Frequency','fontsize',10);
 
@@ -627,7 +627,7 @@ function set_Ylabels(handles,img_prop)
 
 if handles.LIMO.Level == 1
     Ylabels   = arrayfun(@(x)(x.labels), handles.LIMO.data.chanlocs, 'UniformOutput', false);
-    newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+    newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick))); newyticks = unique(newyticks);
     Ylabels   = Ylabels(newyticks);
 else
     if isempty(handles.LIMO.design.electrode)
@@ -636,7 +636,7 @@ else
         else
             Ylabels = arrayfun(@(x)(x.labels), handles.LIMO.data.expected_chanlocs, 'UniformOutput', false);
         end
-        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)));
+        newyticks = round(linspace(1,length(Ylabels),length(img_prop.YTick))); newyticks = unique(newyticks);
         Ylabels  = Ylabels(newyticks);
     else
         ylabel('optimized electrode','fontsize',10);
