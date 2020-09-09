@@ -458,8 +458,8 @@ if LIMO.design.bootstrap ~=0
                             model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
                         end
                     else
-                        LIMO.W = Weights(channel,:)';
-                        model = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
+                        LIMO.Weights = Weights(channel,:)';
+                        model        = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
                     end
                 end
                 
