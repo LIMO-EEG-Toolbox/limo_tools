@@ -225,7 +225,7 @@ switch method
         
         % model R^2
         % -----------
-        if nb_conditions == 0 && nb_continuous == 0         % just the mean
+        if all(nb_conditions==0) && nb_continuous == 0       % just the mean
             Yhat           = X*Betas;
             H              = (Yhat-repmat(mean(Yhat),size(Y,1),1))'*(Y-repmat(mean(Yhat),size(Y,1),1));
         else
