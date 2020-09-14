@@ -314,7 +314,7 @@ else
         out = load([color_path 'NIH_fire.mat']); out = out.lutmap2;
         out = out(floor(length(out)/2):end,:);
     elseif max(in(:)) <= 0
-        out = load([color_path 'NIH_cool.mat']); out = out.lutmap2;
+        out = load([color_path 'NIH_ice.mat']); out = out.lutmap2;
     else
         out = load([color_path 'diverging_bwr.mat']); out = out.dmap;
         % out = flipud(out(1:ceil(length(out)/2),:));
