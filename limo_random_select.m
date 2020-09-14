@@ -361,7 +361,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if isfield(LIMO.design,'parameters')
-        parameters = LIMO.design.parameters;
+        parameters =  cell2mat(LIMO.design.parameters);
     else
         LIMO.design.parameters = [];
         parameters             = [];
@@ -437,15 +437,15 @@ elseif strcmpi(stattest,'two-samples t-test')
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
         if strcmp(analysis_type,'1 channel/component only')
-            tmp                = squeeze(data{1}(:,:,:,1,:));
+            tmp                = squeeze(data{1}(:,:,:,parameters(1),:));
             tmp_data1          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
             tmp_data1(1,:,:,:) = tmp; clear tmp
-            tmp                = squeeze(data{2}(:,:,:,1,:));
+            tmp                = squeeze(data{2}(:,:,:,parameters(2),:));
             tmp_data2          = ones(1,size(tmp,1),size(tmp,2),size(tmp,3));
             tmp_data2(1,:,:,:) = tmp; clear tmp
         else
-            tmp_data1          = squeeze(data{1}(:,:,:,1,:));
-            tmp_data2          = squeeze(data{2}(:,:,:,1,:));
+            tmp_data1          = squeeze(data{1}(:,:,:,parameters(1),:));
+            tmp_data2          = squeeze(data{2}(:,:,:,parameters(2),:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
@@ -455,15 +455,15 @@ elseif strcmpi(stattest,'two-samples t-test')
         
     else
         if strcmp(analysis_type,'1 channel/component only')
-            tmp              = squeeze(data{1}(:,:,1,:));
+            tmp              = squeeze(data{1}(:,:,parameters(1),:));
             tmp_data1        = ones(1,size(tmp,1),size(tmp,2)); % add dim 1 = 1 channel
             tmp_data1(1,:,:) = tmp; clear tmp
-            tmp              = squeeze(data{2}(:,:,1,:));
+            tmp              = squeeze(data{2}(:,:,parameters(2),:));
             tmp_data2        = ones(1,size(tmp,1),size(tmp,2));
             tmp_data2(1,:,:) = tmp; clear tmp
         else
-            tmp_data1        = squeeze(data{1}(:,:,1,:));
-            tmp_data2        = squeeze(data{2}(:,:,1,:));
+            tmp_data1        = squeeze(data{1}(:,:,parameters(1),:));
+            tmp_data2        = squeeze(data{2}(:,:,parameters(2),:));
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
@@ -471,6 +471,7 @@ elseif strcmpi(stattest,'two-samples t-test')
             return
         end
     end
+    clear data
     
     if strcmp(LIMO.Analysis,'Time-Frequency')
         LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
@@ -514,7 +515,7 @@ elseif strcmpi(stattest,'paired t-test')
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if isfield(LIMO.design,'parameters')
-        parameters = LIMO.design.parameters;
+        parameters = cell2mat(LIMO.design.parameters);
     else
         LIMO.design.parameters = [];
         parameters             = [];
@@ -523,7 +524,7 @@ elseif strcmpi(stattest,'paired t-test')
     if isempty(parameters)
         parameters = check_files(Names,1);
     else
-        parameters = check_files(Names,1,parameters{1});
+        parameters = check_files(Names,1,parameters(1));
     end
     
     if size(parameters,2) == 1 % either con file, or command line beta with one parameter
@@ -549,7 +550,7 @@ elseif strcmpi(stattest,'paired t-test')
         else
             if ~isempty(LIMO.design.parameters)
                 % hack only availbale if beta files and command line argument // not allowed otherwise because it's a paired design
-                parameters(2) = check_files(Names{2},1,LIMO.design.parameters{length(LIMO.design.parameters)});
+                parameters(2) = check_files(Names{2},1,parameters(2));
             else
                 newparameters = check_files(Names{2},1);
                 if newparameters ~= 1
