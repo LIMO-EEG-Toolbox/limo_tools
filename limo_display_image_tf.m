@@ -69,8 +69,13 @@ for c=1:handles.n_cluster
     sigframes                         = squeeze(sum(tmp,1));
     handles.cluster_start(:,c)        = [find(sum(sigframes,2),1,'first') find(sum(sigframes,1),1,'first')];
     handles.cluster_end(:,c)          = [find(sum(sigframes,2),1,'last')  find(sum(sigframes,1),1,'last')];
-    V                                 = max(tmp(:));
-    handles.cluster_maxv(c)           = V(1);
+    [V,type]                          = max([abs(min(tmp(:))) max(tmp(:))]);
+    if type == 2
+        handles.cluster_maxv(c)       = V(1);
+    else
+        V = -V;
+        handles.cluster_maxv(c)      = V(1);
+    end
     [e,f,t]                           = ind2sub(size(tmp),find(tmp==V(1)));
     handles.cluster_maxe(c)           = e(1);
     handles.cluster_maxf(c)           = f(1);

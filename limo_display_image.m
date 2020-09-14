@@ -56,8 +56,13 @@ for c=1:n_cluster
     sigframes                         = sum(tmp,1);
     cluster_start(c)                  = find(sigframes,1,'first');
     cluster_end(c)                    = find(sigframes,1,'last');
-    V                                 = max(tmp(:));
-    cluster_maxv(c)                   = V(1);
+    [V,type]                          = max([abs(min(tmp(:))) max(tmp(:))]);
+    if type == 2
+        cluster_maxv(c)               = V(1);
+    else
+        V = -V;
+        cluster_maxv(c)               = V(1);
+    end
     [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
 
