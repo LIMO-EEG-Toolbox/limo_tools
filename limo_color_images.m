@@ -4,7 +4,7 @@ function out = limo_color_images(in)
 %
 % FORMAT out = limo_color_images(in)
 %
-% INPUT in - the 2D matrix to color (typically stat map masked by NaN)
+% INPUT in - the 2D matrix to color (if map masked by NaN, last value if gray)
 %          - a single value
 %
 % OUTPUT out is an RGB colormap
