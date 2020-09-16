@@ -167,25 +167,33 @@ while out == 0
             if nargin >= 2
                 v = varargin{2};
             elseif ~exist('v','var')
-                if subjects_plot == 0
-                    v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
-                    if isempty(v)
-                        out = 1; return
-                    elseif ischar(v)
-                        v = eval(v);
-                    end
+                v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                if isempty(v)
+                    out = 1; return
+                elseif ischar(v)
+                    v = eval(v);
                 end
             end
             
             if  subjects_plot == 0 && length(v)>1
                 errordlg2('only 1 parameter value expected'); return
             else
-                if size(tmp,1) == 1 && size(tmp,3) > 1
-                    D           = squeeze(tmp(:,:,v,:));
-                    Data        = nan(1,size(tmp,2),size(tmp,4));
-                    Data(1,:,:) = D; clear D;
+                if subjects_plot == 1
+                    if size(tmp,1) == 1 && size(tmp,3) > 1
+                        D           = squeeze(tmp(:,:,:,v));
+                        Data        = nan(1,size(tmp,2),size(tmp,4));
+                        Data(1,:,:) = D; clear D;
+                    else
+                        Data        = squeeze(tmp(:,:,:,v));
+                    end
                 else
-                    Data        = squeeze(tmp(:,:,v,:));
+                    if size(tmp,1) == 1 && size(tmp,3) > 1
+                        D           = squeeze(tmp(:,:,v,:));
+                        Data        = nan(1,size(tmp,2),size(tmp,4));
+                        Data(1,:,:) = D; clear D;
+                    else
+                        Data        = squeeze(tmp(:,:,v,:));
+                    end
                 end
             end
         end

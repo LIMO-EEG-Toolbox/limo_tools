@@ -63,8 +63,9 @@ for f=length(LIMO_files):-1:1
         error([LIMO_files{f} ' is not a LIMO.mat file'])
     end
     
-    load(LIMO_files{f});
-    if f==1
+    LIMO = load(LIMO_files{f});
+    LIMO = LIMO.LIMO;
+    if f==length(LIMO_files)
         limo.Analysis = LIMO.Analysis;
         limo.Type     = LIMO.Type;
     else
@@ -116,8 +117,11 @@ end
 
 for f=1:length(LIMO_files)
     fprintf('reading data subject %g\n',f)
-    load(LIMO_files{f}); W{f} = LIMO.design.weights;
-    load([LIMO.dir filesep 'Yr.mat']);
+    LIMO = load(LIMO_files{f}); 
+    LIMO = LIMO.LIMO; 
+    W{f} = LIMO.design.weights;
+    Yr   = load([LIMO.dir filesep 'Yr.mat']);
+    Yr   = Yr.Yr;
     
     if strcmp(limo.plotrank,'on')
         if strcmpi(limo.Analysis,'Time-Frequency')
@@ -197,9 +201,9 @@ for f=1:length(LIMO_files)
                 end
             end
             mkdir('H0'); save (['H0', filesep, 'H0_one_sample_ttest_outliers'],'H0_one_sample','-v7.3');
-            LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
+            LIMO = limo; LIMO.dir = pwd; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
             LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
-            cd ..; clear LIMO;  load(LIMO_files{f});
+            cd ..; clear LIMO; load(LIMO_files{f});
         end
     end % close test difference
     
@@ -247,21 +251,28 @@ for f=1:length(LIMO_files)
             % stats
             disp('Testing for bias across all conditions')
             LIMO = limo; mkdir('Bias testing'); 
-            cd('Bias testing'); LIMO.data_dir = pwd;
-            LIMO.data.data = LIMO_files; LIMO.data.start = 1;
-            LIMO.data.end = 1; LIMO.data.trim1 = 0; LIMO.data.trim2 = 0; 
-            % LIMO.design.electrode = chan.expected_chanlocs;
-            LIMO.design.electrode = []; LIMO.design.name = 'Rep_ANOVA';
+            cd('Bias testing'); 
+            LIMO.dir        = pwd;
+            LIMO.Level      = 2; 
+            LIMO.data_dir   = pwd;
+            LIMO.data.data  = LIMO_files; 
+            LIMO.data.start = 1;
+            LIMO.data.end   = 1; 
+            LIMO.data.trim1 = 0; 
+            LIMO.data.trim2 = 0; 
+            LIMO.design.electrode = []; 
+            LIMO.design.name      = 'Rep_ANOVA';
             LIMO.design.neighbouring_matrix = chan.channeighbstructmat;
-            LIMO.Level = 2; LIMO.design.bootstrap =1000; save LIMO LIMO; 
-            
+            LIMO.design.bootstrap =1000; 
+            LIMO.design.tfce = 0;
+            save LIMO LIMO; 
             factor_nb = size(Bias,2);
             Yr = NaN(size(Bias,1),1,size(Bias,3),factor_nb);
             for e=1:size(Bias,1)
                 Yr(e,1,:,:)=squeeze(Bias(e,:,:))';
             end
             save Yr Yr; clear Bias
-            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,LIMO,1000,0);
+            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,LIMO,'go','Yes');
             try close('Design matrix'); end
         end
     end % close bias
