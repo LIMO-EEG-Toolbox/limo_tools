@@ -216,8 +216,11 @@ switch type
                 % create a boot one_sample file to store data under H0 and H1
                 H0_one_sample = NaN(size(data,1), size(data,2),2,LIMO.design.bootstrap); % stores T and p values for each boot under H0
                 % create centered data to estimate H0
-                centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
-                % centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
+                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
+                elseif strcmpi(LIMO.design.method,'Mean')    
+                    centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
+                end
                 % get boot table
                 disp('making boot table ...')
                 boot_table = limo_create_boot_table(data,LIMO.design.bootstrap);
@@ -475,6 +478,10 @@ switch type
         end
         clear tmp tmp2
         
+        if ~isfield(LIMO.design,'method')
+            LIMO.design.method = 'Trimmed Mean';
+        end
+        
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
@@ -486,10 +493,15 @@ switch type
             fprintf('analyse parameter %s channel %g',num2str(parameter')', channel); disp(' ');
             tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            [paired_samples(channel,:,4),paired_samples(channel,:,1),paired_samples(channel,:,2),...
-                CI,paired_samples(channel,:,5),tcrit,paired_samples(channel,:,3)]=limo_yuend_ttest(Y1,Y2); clear Y1 Y2
-            % [paired_samples(channel,:,1),paired_samples(channel,:,3),ci,sd,n,paired_samples(channel,:,4),paired_samples(channel,:,5)]=limo_ttest(1,Y1,Y2,.05); clear Y1 Y2
-            % paired_samples(channel,:,2) = sd./sqrt(n);
+            if strcmpi(LIMO.design.method,'Trimmed Mean')
+                [paired_samples(channel,:,4),paired_samples(channel,:,1),paired_samples(channel,:,2),...
+                    ~,paired_samples(channel,:,5),~,paired_samples(channel,:,3)]=limo_yuend_ttest(Y1,Y2); 
+            elseif strcmpi(LIMO.design.method,'Mean')
+                [paired_samples(channel,:,1),paired_samples(channel,:,3),~,sd,n,paired_samples(channel,:,4),...
+                    paired_samples(channel,:,5)]=limo_ttest(1,Y1,Y2,.05);
+                paired_samples(channel,:,2) = sd./sqrt(n);
+            end
+            clear Y1 Y2
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -517,10 +529,13 @@ switch type
                 % create a boot one_sample file to store data under H0
                 H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
-                data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
-                data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
-                % data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
-                % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
+                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
+                    data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
+                elseif strcmpi(LIMO.design.method,'Mean')
+                    data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
+                    data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
+                end
                 % get boot table
                 disp('making boot table ...')
                 boot_table = limo_create_boot_table(data1,LIMO.design.bootstrap);
@@ -532,24 +547,21 @@ switch type
                     fprintf('bootstrapping channel %g/%g parameter %s \n',e,size(array,1),num2str(parameter')');
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    if exist('parfor','file') ~=0
+                    if strcmpi(LIMO.design.method,'Trimmed Mean')
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
                         end
-                        
-                        for b=1:LIMO.design.bootstrap
-                            H0_paired_samples(channel,:,1,b) = t{b};
-                            H0_paired_samples(channel,:,2,b) = p{b};
-                        end
-                        clear t p
-                        
-                    else
-                        for b=1:LIMO.design.bootstrap
-                            [H0_paired_samples(channel,:,1,b),diff,se,CI,H0_paired_samples(channel,:,2,b),tcrit,df]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
-                            % [m,dfe,ci,sd,n,H0_paired_samples(channel,:,1,b),H0_paired_samples(channel,:,2,b)]=limo_ttest(1,Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)),0.05);
+                    elseif strcmpi(LIMO.design.method,'Mean')
+                        parfor b=1:LIMO.design.bootstrap
+                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(1,Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
                         end
                     end
-                    clear Y1 Y2
+                    
+                    for b=1:LIMO.design.bootstrap
+                        H0_paired_samples(channel,:,1,b) = t{b};
+                        H0_paired_samples(channel,:,2,b) = p{b};
+                    end
+                    clear t p Y1 Y2
                 end
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
