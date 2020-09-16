@@ -96,7 +96,8 @@ xlabel('frames'); ylabel('channels')
 toplot(mask==0)=NaN;
 colormap(limo_color_images(toplot))
 title('Variance Homogeneity test')
-drawnow
+drawnow; saveas(gcf, 'BrownForsythe','fig'); close(gcf)
+
 
 
 
