@@ -410,12 +410,8 @@ if contains(FileName,'Rep_ANOVA')
                 else
                     bootT = squeeze(H0_data(:,:,1,:));
                     if size(M,1) == 1
-                        tmp = NaN(1,size(M,2),size(bootT,3));
+                        tmp = NaN(1,size(M,2),size(bootT,4));
                         tmp(1,:,:) = bootT; bootT = tmp;
-                        clear tmp
-                    elseif size(M,2) == 1 %% for Weight bias testing
-                        tmp = NaN(size(M,1),1,size(bootT,2));
-                        tmp(:,1,:) = bootT; bootT = tmp;
                         clear tmp
                     end
                 end

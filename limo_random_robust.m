@@ -316,10 +316,7 @@ switch type
         end
         clear tmp tmp2
         
-        if ~isfield(LIMO.design,'method')
-            LIMO.design.method = 'Trimmed Mean';
-        end
-       % ------------------------------------------------
+        % ------------------------------------------------
         % make a two_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         two_samples = NaN(size(data1,1), size(data1,2),5);
         name = sprintf('two_samples_ttest_parameter_%g_%g',parameter);
@@ -330,16 +327,11 @@ switch type
             fprintf('analyse parameter %g channel %g',parameter, channel); disp(' ');
             tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            if strcmpi(LIMO.design.method,'Trimmed Mean')
-                [two_samples(channel,:,4),two_samples(channel,:,1),two_samples(channel,:,2),...
-                    ~,two_samples(channel,:,5),~,two_samples(channel,:,3)]=limo_yuen_ttest(Y1,Y2);
-            elseif strcmpi(LIMO.design.method,'Mean')
-                [two_samples(channel,:,1),two_samples(channel,:,3),~,sd,~,two_samples(channel,:,4),...
-                    two_samples(channel,:,5)]=limo_ttest(2,Y1,Y2,.05);
-                sd = sd.^2; a = sd(1,:)./size(Y1,3); b = sd(1,:)./size(Y2,3);
-                two_samples(channel,:,2) = sqrt(a + b);
-            end
-            clear Y1 Y2
+            [two_samples(channel,:,4),two_samples(channel,:,1),two_samples(channel,:,2),...
+                CI,two_samples(channel,:,5),tcrit,two_samples(channel,:,3)]=limo_yuen_ttest(Y1,Y2); clear Y1 Y2
+            % [two_samples(channel,:,1),two_samples(channel,:,3),ci,sd,n,two_samples(channel,:,4),two_samples(channel,:,5)]=limo_ttest(2,Y1,Y2,.05);
+            % sd = sd.^2; a = sd(1,:)./size(Y1,3); b = sd(1,:)./size(Y2,3);
+            % two_samples(channel,:,2) = sqrt(a + b); clear Y1 Y2
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -368,13 +360,10 @@ switch type
                 % create a boot one_sample file to store data under H0
                 H0_two_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
-                if strcmpi(LIMO.design.method,'Trimmed Mean')
-                    data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
-                    data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
-                elseif strcmpi(LIMO.design.method,'Mean')
-                    data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
-                    data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
-                end
+                data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
+                data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
+                % data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
+                % data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 % get boot table
                 disp('making boot tables ...')
                 boot_table1 = limo_create_boot_table(data1,LIMO.design.bootstrap);
@@ -388,22 +377,26 @@ switch type
                     fprintf('bootstrapping channel %g/%g \n',e,size(array,1));
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    if exist('parfor','file') ~=0
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
                         end
-                    elseif strcmpi(LIMO.design.method,'Mean')
-                        parfor b=1:LIMO.design.bootstrap
-                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(2,Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
+                        
+                        for b=1:LIMO.design.bootstrap
+                            H0_two_samples(channel,:,1,b) = t{b};
+                            H0_two_samples(channel,:,2,b) = p{b};
+                        end
+                        clear t p
+                        
+                    else
+                        for b=1:LIMO.design.bootstrap
+                            [H0_two_samples(channel,:,1,b),diff,se,CI,H0_two_samples(channel,:,2,b),tcrit,df]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
+                            % [m,dfe,ci,sd,n,H0_two_samples(channel,:,1,b),H0_two_samples(channel,:,2,b)]=limo_ttest(2,Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)),0.05);
                         end
                     end
-                    
-                    for b=1:LIMO.design.bootstrap
-                        H0_two_samples(channel,:,1,b) = t{b};
-                        H0_two_samples(channel,:,2,b) = p{b};
-                    end
-                    clear t p Y1 Y2
+                    clear Y1 Y2
                 end
+                
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     H0_two_samples = limo_tf_5d_reshape(H0_two_samples);
@@ -1219,7 +1212,7 @@ switch type
             % (different per gp but identical across conditions)
             disp('making random table...')
             if LIMO.design.bootstrap == 1; LIMO.design.bootstrap = 1000; end
-            boot_table = limo_create_boot_table(data(:,:,:,1),LIMO.design.bootstrap);
+            boot_table = limo_create_boot_table(squeeze(data(:,:,:,1)),LIMO.design.bootstrap);
             save(fullfile(LIMO.dir,['H0', filesep, 'boot_table']), 'boot_table', '-v7.3');
             
             % compute bootstrap under H0 for F and p
