@@ -2,8 +2,6 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 
 % A heteroscedastic one-way ANOVA for trimmed means
 % using a generalization of Welch's method.
-% See Wilcox 2012: 
-% Introduction to Robust Estimation and Hypothesis testing p 293
 %
 % FORMAT: [F,p,YM] = limo_robust_1way_anova(Y,X)
 %
@@ -25,7 +23,7 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 % Cyril Pernet v1 11/06/2013
 % GAR 12/06/2013: edited help, fixed code and added percent input
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2020
 
 if nargin<3 || isempty(percent)
     percent = 20;
