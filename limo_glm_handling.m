@@ -81,7 +81,7 @@ if strcmp(LIMO.design.status,'to do')
     % ------------- prepare weight matrix  -------------------------------------
     if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
         if strcmpi(LIMO.Analysis,'Time-Frequency')
-            W = ones(size(Yr,1),n_freqs,size(Yr,3));
+            W = ones(size(Yr,1),n_freqs,size(Yr,4));
         else
             W = ones(size(Yr,1),size(Yr,3));
         end
@@ -250,7 +250,11 @@ if strcmp(LIMO.design.status,'to do')
     % save data on the disk and clean out
     disp('saving data to disk')
     LIMO.design.X       = X;
-    LIMO.design.weights = W;
+    if strcmp(LIMO.design.method,'IRLS')
+        LIMO.design.weights = limo_tf_4d_reshape(W);
+    else
+        LIMO.design.weights = W;
+    end
     LIMO.design.status  = 'done';
     if ~isfield(LIMO.design,'name')
         LIMO.design.name    = 'GLM';
@@ -358,9 +362,9 @@ if LIMO.design.bootstrap ~=0
             if size(Yr,1) == 1 % in any cases, just one channel/component
                 array = 1;
             else
-                if LIMO.Level == 2        % second level we can have missing data because of
+                if LIMO.Level == 2        % second level we can have missing subjects because of
                     array = 1:size(Yr,1); % bad channels for some subjects - just adjust X
-                else % level 1 = skip empty channels
+                else % level 1 = skip empty channels - can't be missing trials
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         array = find(~isnan(Yr(:,1,1,1)));
                     else
@@ -425,11 +429,6 @@ if LIMO.design.bootstrap ~=0
             warning off;
             X = LIMO.design.X;
             h = waitbar(0,'bootstraping data','name','% done');
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                Weights = limo_tf_4d_reshape(LIMO.design.weights);
-            else
-                Weights = LIMO.design.weights;
-            end
             
             for e = 1:length(array)
                 channel = array(e);
@@ -437,29 +436,63 @@ if LIMO.design.bootstrap ~=0
                 fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        Y = squeeze(Yr(channel,:,:,:));
-                        index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
-                        for f=1:size(Yr,2)
-                            model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), squeeze(Weights(channel,f,:,index))',...
+                        if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                            Y = squeeze(Yr(channel,:,:,:));
+                            index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
+                            for f=1:size(Yr,2)
+                                Weights = squeeze(LIMO.design.weights(channel,f,index));
+                                model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), Weights,...
+                                    LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                                    LIMO.design.method,LIMO.Analysis,boot_table{channel});
+                            end
+                        elseif strcmp(LIMO.design.method,'IRLS')
+                            Y = squeeze(Yr(channel,:,:,:));
+                            index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
+                            for f=1:size(Yr,2)
+                                Weights = squeeze(LIMO.design.weights(channel,f,:,index));
+                                model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), Weights,...
+                                    LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                                    LIMO.design.method,LIMO.Analysis,boot_table{channel});
+                            end
+                        end
+                    else
+                        if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                            Y = squeeze(Yr(channel,:,:));
+                            index = find(~isnan(Y(1,:)));
+                            Weights = squeeze(LIMO.design.weights(channel,index))';
+                            model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),Weights,...
+                                LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
+                                LIMO.design.method,LIMO.Analysis,boot_table{channel});
+                        elseif strcmp(LIMO.design.method,'IRLS')
+                            Y = squeeze(Yr(channel,:,:));
+                            index = find(~isnan(Y(1,:)));
+                            Weights = squeeze(LIMO.design.weights(channel,:,index));
+                            model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),Weights,...
                                 LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
                                 LIMO.design.method,LIMO.Analysis,boot_table{channel});
                         end
-                    else
-                        Y = squeeze(Yr(channel,:,:));
-                        index = find(~isnan(Y(1,:))); 
-                        model = limo_glm_boot(squeeze(Y(:,index))',X(index,:),squeeze(Weights(channel,index))',...
-                            LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
-                            LIMO.design.method,LIMO.Analysis,boot_table{channel});
                     end
-                else
+                else % LIMO.Level == 1
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        for f=1:size(Yr,2)
-                            LIMO.Weights = Weights(channel,f,:)';
-                            model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
+                        if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                            for f=1:size(Yr,2)
+                                LIMO.Weights = squeeze(LIMO.design.weights(channel,f,:));
+                                model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
+                            end
+                        elseif strcmp(LIMO.design.method,'IRLS')
+                            for f=1:size(Yr,2)
+                                LIMO.Weights = squeeze(LIMO.design.weights(channel,f,:,:));
+                                model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
+                            end
                         end
                     else
-                        LIMO.Weights = Weights(channel,:)';
-                        model        = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
+                        if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
+                            LIMO.Weights = squeeze(LIMO.design.weights(channel,:))';
+                            model        = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
+                        elseif strcmp(LIMO.design.method,'IRLS')
+                            LIMO.Weights = squeeze(LIMO.design.weights(channel,:,:));
+                            model        = limo_glm_boot(squeeze(Yr(channel,:,:))',LIMO,boot_table);
+                        end
                     end
                 end
                 
