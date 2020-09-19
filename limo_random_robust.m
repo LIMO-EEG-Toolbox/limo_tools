@@ -1294,8 +1294,8 @@ switch type
                         else
                             result = limo_rep_anova(Y,gp,factor_levels,C);
                         end
-                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,1) = result.F';
-                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,1,2) = result.p';
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,:,1) = result.F';
+                        tmp_boot_H0_Rep_ANOVA_sub(channel,:,:,2) = result.p';
                     elseif type == 3
                         if strcmp(LIMO.design.method,'Trimmed Mean')
                             result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB);
