@@ -708,27 +708,29 @@ switch varargin{1}
         end
         
         % conditions
-        if isfield(LIMO.design,'nb_conditions')
-        if prod(LIMO.design.nb_conditions) ~=0
-            for i=1:length(LIMO.design.nb_conditions)
-                name = sprintf('Condition_effect_%g.mat',i);
-                if LIMO.design.bootstrap ~=0
-                    if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+        if isfield(LIMO.design,'nb_conditions') ...
+                && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true)
+            if prod(LIMO.design.nb_conditions) ~=0
+                for i=1:length(LIMO.design.nb_conditions)
+                    name = sprintf('Condition_effect_%g.mat',i);
+                    if LIMO.design.bootstrap ~=0
+                        if LIMO.design.tfce == 1
+                            limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        else
+                            limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        end
                     else
-                        limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
-                else
-                    limo_display_results(1,name,pwd,0.05,1,LIMO,0);
+                    savename = sprintf('Condition_effect_%g.fig',i);
+                    saveas(gcf, savename,'fig'); close(gcf)
                 end
-                savename = sprintf('Condition_effect_%g.fig',i);
-                saveas(gcf, savename,'fig'); close(gcf)
             end
-        end
         end
         
         % interactions
-        if isfield(LIMO.design,'nb_interactions')
+        if isfield(LIMO.design,'nb_interactions') ...
+                && ~contains(LIMO.design.name,'Repeated','IgnoreCase',true)
             if LIMO.design.fullfactorial == 1
                 for i=1:length(LIMO.design.nb_interactions)
                     name = sprintf('Interaction_effect_%g.mat',i);
@@ -787,20 +789,22 @@ switch varargin{1}
         
         other_names = {'*ttest*.mat','Rep_ANOVA*.mat','con*.mat','ess*.mat'};
         for check = 1:length(other_names)
-            check_ttest = dir(cell2mat(other_names(check)));
-            if ~isempty(check_ttest)
-                name = check_ttest(1).name;
-                if LIMO.design.bootstrap ~=0
-                    if LIMO.design.tfce == 1
-                        limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+            check_test = dir(cell2mat(other_names(check)));
+            if ~isempty(check_test)
+                for file = 1:size(check_test,1)
+                    name = check_test(file).name;
+                    if LIMO.design.bootstrap ~=0
+                        if LIMO.design.tfce == 1
+                            limo_display_results(1,name,pwd,0.05,3,LIMO,0);
+                        else
+                            limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        end
                     else
-                        limo_display_results(1,name,pwd,0.05,2,LIMO,0);
+                        limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
-                else
-                    limo_display_results(1,name,pwd,0.05,1,LIMO,0);
+                    savename = sprintf('%s.fig',name(1:end-4));
+                    saveas(gcf, savename,'fig'); close(gcf)
                 end
-                savename = sprintf('%s.fig',name(1:end-4));
-                saveas(gcf, savename,'fig'); close(gcf)
             end
         end
         
