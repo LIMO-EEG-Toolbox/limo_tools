@@ -202,11 +202,9 @@ switch type
             
             bootex = 1;
             boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
-            if exist(['H0', filesep, boot_name, '.mat'], 'file')
+            if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
-                if strcmp(answer,'Yes')
-                    bootex = 1;
-                else
+                if ~strcmp(answer,'Yes')
                     bootex = 0;
                 end
             end
@@ -357,11 +355,9 @@ switch type
             
             bootex = 1;
             boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
-            if exist(['H0', filesep, boot_name, '.mat'], 'file')
+            if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
-                if strcmp(answer,'Yes')
-                    bootex = 1;
-                else
+                if ~strcmp(answer,'Yes')
                     bootex = 0;
                 end
             end
@@ -515,11 +511,9 @@ switch type
             
             bootex = 1;
             boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
-            if exist(['H0', filesep, boot_name, '.mat'], 'file')
+            if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
-                if strcmp(answer,'Yes')
-                    bootex = 1;
-                else
+                if ~strcmp(answer,'Yes')
                     bootex = 0;
                 end
             end
@@ -1181,7 +1175,7 @@ switch type
         % ---------------------
         if LIMO.design.bootstrap > 0
             boot_files = dir(fullfile(LIMO.dir,'H0'));
-            if ~isempty(boot_files)
+            if ~isempty(boot_files) && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if strcmp(answer,'No')
                     return
