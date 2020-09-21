@@ -1,47 +1,57 @@
 function go = limo_contrast_checking(varargin)
 
-% quick routine to check contrasts are ok
-% used to check the validity of C
-% also used to make sure contrasts have the right size
+% Routine to check contrasts are valid
 %
 % FORMAT
-% go = limo_contrast_checking(C,X)
+% go = limo_contrast_checking(C,X); % <-- check the statistical validity of C
+% go = limo_contrast_checking(LIMO.dir); % <-- add zeros to the last coded contrast
 % go = limo_contrast_checking(LIMO.dir, LIMO.design.X, C);
 %
 % INPUT
 % C a vector or matrix of contrasts
-% X the design matrix
+% X the design matrix (also LIMO.design.X)
+% LIMO.dir the directory where LIMO.mat is
 %
 % OUTPUT
 % if input C and X; go=1 if valid contrast or 0 if invalid
 % if input dir, X and C, go = C corrected with extra 0s
 %
-% Cyril Pernet, v4. 25-04-2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% Cyril Pernet, v5. 2019
+% Valid constrasts are a sum (ones), a weighted sum (ones/N) 
+% or projection invariant (orthogonal usually).
+% -----------------------------------------------------------
+%  Copyright (C) LIMO Team 2019
 
+if nargin == 0
+    help limo_contrast_checking
+    return
+end
 
-% 3 inputs = update the contrast 
-% ------------------------------
-if nargin == 3
+%% update the contrast with 0s
+% ----------------------------------------
+if nargin == 1 || nargin == 3
 
-    try
-        cd (varargin{:,1});
-    catch
-            disp('can''t CD, using current directory')
+    limo_path = varargin{:,1};
+    if ~exist(limo_path,'dir') 
+        error('%s doesn''t exist',limo_path)
     end
-    load Yr; Y = Yr; clear Yr;
     
-    X = varargin{:,2};
-    C = varargin{:,3};
+    if nargin == 1
+        LIMO = load(fullfile(limo_path,'LIMO.mat'));
+        X = LIMO.LIMO.design.X; 
+        C = LIMO.LIMO.contrast{end}.C;
+    else
+        X = varargin{:,2};
+        C = varargin{:,3};
+    end
+        
     [l,w]=size(C);
-
     if w ~= size(X,2)
         % could be that need transpose
         if l == size(X,2)
             C = C';
             disp('C has been transposed')
-            [l,w]=size(C);
+            [~,w]=size(C);
         end
 
         % could be that cst term not coded
@@ -50,28 +60,36 @@ if nargin == 3
             tmp(:,1:(size(C,2))) = C;
             C = tmp; clear tmp;
             disp('zeros added for the constant term')
-            [l,w]=size(C);
+            [~,w]=size(C);
         end
 
         if w ~= size(X,2)
-            disp('c must have the same numner of columns as X')
+            disp('c must have the same number of columns as X')
             error('dimensions must agree')
         end
     end
     
     go = C;
+    if nargin == 1
+        LIMO = LIMO.LIMO;
+        LIMO.LIMO.contrast{end}.C = C;
+        save(fullfile(limo_path,'LIMO.mat'),'LIMO');
+    end
    
     
-% 2 inputs = check if contrast is valid
+%% check if contrast is valid
 % --------------------------------------    
 elseif nargin == 2
     
     X = varargin{2};
     for s=1:size(varargin{1},1)
         C = varargin{1}(s,:);
-        
-        if sum(C) == length(find(C))
+        N = sum(X(:,C~=0)); % N per condition 
+
+        if sum(C) == length(find(C)) 
             go = 1; % if contrast with ones only to add parameters
+        elseif ~all(int16(C(C~=0) - N/sum(N))) 
+            go =1; % also a sum but equal 0 weighted by total number of observations
         else
 %             check = int16(C*single((pinv(X'*X))*(X'*X)));
 %             check = (check == C);
@@ -86,7 +104,7 @@ elseif nargin == 2
             check = int16(P*lambda); % contrast onto X
             check = (check == int16(lambda)); % it is invariant
             if sum(check) ~= size(X,1)
-                go = 0; % if contrast not ones nor invariant
+                go = 0; % if contrast invariant
             else
                 go = 1;
             end

@@ -9,8 +9,8 @@ function limo_create_files(varargin)
 %                    type should be 'raw' or 'modeled'
 %
 % Cyril Pernet v1 26-May-2010
-% ---------------------------
-% Copyright (C) LIMO Team
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% simple checking

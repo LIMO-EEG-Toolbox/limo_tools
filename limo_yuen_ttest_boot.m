@@ -54,8 +54,8 @@ function [Ty,diff,CI,p,tcrit,df,ori_mask,boot_mask,cluster_mask]=limo_yuen_ttest
 % Debugging of various output variables: Luisa Frei, University of Glasgow, October 2011
 % Updated calls to limo_yuen_ttest: GAR, Sept 2015 
 %
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 %
 % See also LIMO_YUEN_TTEST LIMO_GETCLUSTERSUM LIMO_CLUSTER_TEST
 

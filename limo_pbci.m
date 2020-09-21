@@ -19,9 +19,8 @@ function [EST,CI,p] = limo_pbci(x,nboot,alpha,mu,est,q)
 %           p   = associated p value
 %
 % See also LIMO_ROBUST_CI
-
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % first version: GAR - University of Glasgow - Dec 2007
 % added EST output: GAR - Nov 2008

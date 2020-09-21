@@ -8,7 +8,7 @@ function result = limo_rep_anova(varargin)
 % have to account for sphericity and thus it saves a lot of computational time.
 % In short we simply either run a T2 on the repeated measures or a MANOVA 
 % (generalized T2 on transformed data). The code implements equations described 
-% in:bRencher (2002) Methods of multivariate analysis John Wiley.
+% in Rencher (2002) Methods of multivariate analysis John Wiley.
 %
 % INPUT
 %
@@ -16,7 +16,7 @@ function result = limo_rep_anova(varargin)
 %   result = limo_rep_anova(data,gp,factors,C,S)
 %   result = limo_rep_anova(data,gp,factors,C,X)
 %
-% - data is a 3D matrix (f time frames * n subjects * p measures) of repeated measures
+% - data is a 3D matrix (time frames * n subjects * p measures) of repeated measures
 % - gp is a vector (n*1) indicating to which group subjects belong.
 %       For instance enter [1 1 1 2 2 2 3 3 3] to indicate that subjects
 %       1-3 belonged to group 1, subjects 4-6 belonged to group 2...
@@ -93,8 +93,8 @@ function result = limo_rep_anova(varargin)
 % Cyril Pernet May 2011 - update to run locally the mutlivariate 
 %            analysis + added the time dimension to speed things up
 % GAR April 2013: updated help & comments; added name output
-% -----------------------------------------------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2020
 
 
 %% input stuff
@@ -210,7 +210,7 @@ switch type
                 df(effect)           = rank(c);
                 dfe(effect)          = n-df(effect);
                 for time = 1:size(Data,1)
-                    Tsquare(time)    =  n*(c*y(time,:)')'*inv(c*squeeze(S(time,:,:))*c')*(c*y(time,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
+                    Tsquare(time)    =  n*(c*y(time,:)')'*pinv(c*squeeze(S(time,:,:))*c')*(c*y(time,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
                 end
                 result.F(effect,:)   = ( dfe(effect) / ((n-1)*(df(effect))) ) * Tsquare;
                 result.p(effect,:)   =  1 - fcdf(result.F(effect,:), df(effect), dfe(effect));
@@ -219,7 +219,7 @@ switch type
             df           = rank(C);
             dfe          = n-df;
             for time = 1:size(Data,1)
-                Tsquare(time)    =  n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');
+                Tsquare(time)    =  n*(C*y(time,:)')'*pinv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');
             end
             result.F   = ( dfe / ((n-1)*(df)) ) * Tsquare;
             result.p   =  1 - fcdf(result.F, df, dfe);
@@ -330,7 +330,7 @@ switch type
                 dfe = n-df-(k-1);
                 Spl = E/ve;
                 for time = 1:f
-                    Tsquare(time) = n*(c*y(:,time))'*inv(c*squeeze(Spl(time,:,:))*c')*(c*y(:,time));
+                    Tsquare(time) = n*(c*y(:,time))'*pinv(c*squeeze(Spl(time,:,:))*c')*(c*y(:,time));
                 end
                 result.repeated_measure.F(effect,:) = ( dfe / (ve*df) ) .* Tsquare;
                 result.repeated_measure.p(effect,:) = 1 - fcdf(result.repeated_measure.F(effect,:), df, dfe);
@@ -340,7 +340,7 @@ switch type
             dfe = n-df-(k-1);
             Spl = E/ve;
             for time = 1:f
-                Tsquare(time) = n*(C*y(:,time))'*inv(C*squeeze(Spl(time,:,:))*C')*(C*y(:,time));
+                Tsquare(time) = n*(C*y(:,time))'*pinv(C*squeeze(Spl(time,:,:))*C')*(C*y(:,time));
             end
             result.repeated_measure.F = ( dfe / (ve*df) ) .* Tsquare;
             result.repeated_measure.p = 1 - fcdf(result.repeated_measure.F, df, dfe);
@@ -376,23 +376,23 @@ end % closes the function
 % --------------
 function [F,p] = local_glm(Y,X,nb_gp,nb_subjects,flag)
 
-T        = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
-R        = eye(size(Y,1)) - (X*pinv(X));  % Residual matrix
-E        = (Y'*R*Y);   % SS Error
-Betas    = pinv(X)*Y;    
-C = eye(size(X,2));
+T              = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
+R              = eye(size(Y,1)) - (X*pinv(X));  % Residual matrix
+E              = (Y'*R*Y);   % SS Error
+Betas          = pinv(X)*Y;    
+C              = eye(size(X,2));
 C(:,size(X,2)) = 0;
-C0   = eye(size(X,2)) - C*pinv(C);
-X0   = X*C0;                                                              
-R0   = eye(size(Y,1)) - (X0*pinv(X0));
-M    = R0 - R;    % M is the projection matrix onto Xc
-H    = (Betas'*X'*M*X*Betas);    % SS Hypothesis (Effect)
+C0             = eye(size(X,2)) - C*pinv(C);
+X0             = X*C0;                                                              
+R0             = eye(size(Y,1)) - (X0*pinv(X0));
+M              = R0 - R;    % M is the projection matrix onto Xc
+H              = (Betas'*X'*M*X*Betas);    % SS Hypothesis (Effect)
 
 if flag == 2
-    [Eigen_vector, Eigen_values] = limo_decomp(E,H);
-    p = size(Y,2); % = number of variables (dimension)
+    [~, Eigen_values] = limo_decomp(E,H);
+    p  = size(Y,2); % = number of variables (dimension)
     vh = nb_gp - 1; % df = q above
-    s = min(vh,p); % subspace in which mean Ys are located
+    s  = min(vh,p); % subspace in which mean Ys are located
     if sum(nb_subjects == nb_subjects(1)) == length(nb_subjects)
         ve = nb_gp*(nb_subjects(1)-1);     % dfe equal sample sizes
     else

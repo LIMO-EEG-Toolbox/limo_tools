@@ -5,8 +5,8 @@ function varargout = limo_itc_gui(varargin)
 % Based on limo_batch_gui
 %
 % Andrew Stewart, May 2014
-% -----------------------------
-% Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% GUI stuffs

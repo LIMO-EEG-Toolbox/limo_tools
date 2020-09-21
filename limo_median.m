@@ -14,8 +14,8 @@ function M = limo_median(varargin)
 % GA Rousselet, University of Glasgow, Dec 2007
 % C. Pernet Rewritten for 3D matrice in integration of variance etc .. 
 % see also limo_bootse - Version 1 June 2010
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% checking
 data = varargin{1};

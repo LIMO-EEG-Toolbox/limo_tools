@@ -25,8 +25,8 @@ function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 %        results in it
 %
 % Cyril Pernet 21-08-2015
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% if no input do it all
 limo = struct('plotrank','on','testdifference','on','checkbias','on');
@@ -53,20 +53,21 @@ elseif ischar(LIMO_files)
 end
 
 % those files are there?
-for f=1:length(LIMO_files)
-    if ~exist(LIMO_files{f},'file');
+for f=length(LIMO_files):-1:1
+    if ~exist(LIMO_files{f},'file')
         error([LIMO_files{f} ' doesn''t exist'])
     end
     
     [limo_paths{f},name,ext]=fileparts(LIMO_files{f});
-    if ~strcmp([name ext],'LIMO.mat');
+    if ~strcmp([name ext],'LIMO.mat')
         error([LIMO_files{f} ' is not a LIMO.mat file'])
     end
     
-    load(LIMO_files{f});
-    if f==1
+    LIMO = load(LIMO_files{f});
+    LIMO = LIMO.LIMO;
+    if f==length(LIMO_files)
         limo.Analysis = LIMO.Analysis;
-        limo.Type = LIMO.Type;
+        limo.Type     = LIMO.Type;
     else
         if limo.Analysis ~= LIMO.Analysis
             error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
@@ -79,9 +80,10 @@ for f=1:length(LIMO_files)
 end
 
 if ~isfield(limo,'data')
-    [to_load,path] = uigetfile2('*mat','load chanlocs'); chan = load([path to_load]);
-    limo.data.chanlocs = chan.expected_chanlocs;
-    limo.data.neighbouring_matrix =  channeighbstructmat;
+    [to_load,path]                = uigetfile2('*mat','load chanlocs'); 
+    chan                          = load([path to_load]);
+    limo.data.chanlocs            = chan.expected_chanlocs;
+    limo.data.neighbouring_matrix = channeighbstructmat;
 end
 
 if ~isempty(varargin)
@@ -101,22 +103,25 @@ if ~isempty(varargin)
 end
    
 %% compute
-mkdir('Weights_checking'); cd('Weights_checking');
-[first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
+mkdir('Weights_checking'); cd('Weights_checking'); LIMO.dir = pwd;
+[~,~,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
 if strcmp(limo.plotrank,'on')
     if strcmpi(limo.Analysis,'Time-Frequency')
-        data = NaN(size(chan.expected_chanlocs,2),(limo.data.highf-limo.data.lowf+1),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
+        data       = NaN(size(chan.expected_chanlocs,2),(limo.data.highf-limo.data.lowf+1),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3),size(data,4));
     else
-        data = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
+        data       = NaN(size(chan.expected_chanlocs,2),(limo.data.trim2-limo.data.trim1+1),length(LIMO_files),10);
         difference = NaN(size(data,1),size(data,2),size(data,3));
     end
 end
 
 for f=1:length(LIMO_files)
     fprintf('reading data subject %g\n',f)
-    load(LIMO_files{f}); W{f} = LIMO.design.weights;
-    load([LIMO.dir filesep 'Yr.mat']);
+    LIMO = load(LIMO_files{f}); 
+    LIMO = LIMO.LIMO; 
+    W{f} = LIMO.design.weights;
+    Yr   = load([LIMO.dir filesep 'Yr.mat']);
+    Yr   = Yr.Yr;
     
     if strcmp(limo.plotrank,'on')
         if strcmpi(limo.Analysis,'Time-Frequency')
@@ -196,9 +201,9 @@ for f=1:length(LIMO_files)
                 end
             end
             mkdir('H0'); save (['H0', filesep, 'H0_one_sample_ttest_outliers'],'H0_one_sample','-v7.3');
-            LIMO = limo; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
+            LIMO = limo; LIMO.dir = pwd; LIMO.Level = 2; LIMO.design.bootstrap = 1000;
             LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; save LIMO LIMO
-            cd ..; clear LIMO;  load(LIMO_files{f});
+            cd ..; clear LIMO; load(LIMO_files{f});
         end
     end % close test difference
     
@@ -246,21 +251,28 @@ for f=1:length(LIMO_files)
             % stats
             disp('Testing for bias across all conditions')
             LIMO = limo; mkdir('Bias testing'); 
-            cd('Bias testing'); LIMO.data_dir = pwd;
-            LIMO.data.data = LIMO_files; LIMO.data.start = 1;
-            LIMO.data.end = 1; LIMO.data.trim1 = 0; LIMO.data.trim2 = 0; 
-            % LIMO.design.electrode = chan.expected_chanlocs;
-            LIMO.design.electrode = []; LIMO.design.name = 'Rep_ANOVA';
+            cd('Bias testing'); 
+            LIMO.dir        = pwd;
+            LIMO.Level      = 2; 
+            LIMO.data_dir   = pwd;
+            LIMO.data.data  = LIMO_files; 
+            LIMO.data.start = 1;
+            LIMO.data.end   = 1; 
+            LIMO.data.trim1 = 0; 
+            LIMO.data.trim2 = 0; 
+            LIMO.design.electrode = []; 
+            LIMO.design.name      = 'Rep_ANOVA';
             LIMO.design.neighbouring_matrix = chan.channeighbstructmat;
-            LIMO.Level = 2; LIMO.design.bootstrap =1000; save LIMO LIMO; 
-            
+            LIMO.design.bootstrap =1000; 
+            LIMO.design.tfce = 0;
+            save LIMO LIMO; 
             factor_nb = size(Bias,2);
             Yr = NaN(size(Bias,1),1,size(Bias,3),factor_nb);
             for e=1:size(Bias,1)
                 Yr(e,1,:,:)=squeeze(Bias(e,:,:))';
             end
             save Yr Yr; clear Bias
-            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,LIMO,1000,0);
+            limo_random_robust(6,Yr,ones(size(Yr,3),1),factor_nb,LIMO,'go','Yes');
             try close('Design matrix'); end
         end
     end % close bias
@@ -269,5 +281,5 @@ cd ..
 disp('analysis done')
 disp('Plot central tendency to check weights per subject and decile')
 disp('view results ''all'' for outliers and bias')
-
+limo_results
 

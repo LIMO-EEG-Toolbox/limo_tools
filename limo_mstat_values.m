@@ -28,8 +28,8 @@ function [M, mask, mytitle] = limo_mstat_values(varargin)
 % see limo_display_results limo_stat_values
 %
 % Cyril Pernet v1 13-06-2013
-% --------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 Type      = varargin{1}; % type of plot

@@ -35,8 +35,8 @@ function [th,boot_values] = limo_ecluster_make(bootf,bootp,alphav)
 % Cyril Pernet - removed some useless computations to speed things up, June 2014
 % GAR - commented out last line which crashed the function - September 2015
 % CP added boot_values to then compute the p values
-% ----------------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 %
 % See also LIMO_TFCLUSTER_MAKE LIMO_ECLUSTER_TEST
 
@@ -56,7 +56,7 @@ if ndims(bootf)==3 % electrode*time/freq*boot
 
             % get cluster along 1st dim
             if exist('spm_bwlabel','file')~=0
-                [L,NUM] = spm_bwlabel(squeeze(bootp(E,:,kk))<=alphav,6);
+                [L,NUM] = spm_bwlabel(double(squeeze(bootp(E,:,kk))<=alphav),6);
             else
                 if exist('bwlabeln','file')~=0
                     [L,NUM] = bwlabeln(squeeze(bootp(E,:,kk))<=alphav);

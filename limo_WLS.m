@@ -1,4 +1,4 @@
-function [b,W] = limo_WLS(X,Y)
+function [b,W,rf] = limo_WLS(X,Y)
 
 % LIMO_WLS Limo Weighted Least Squares (WLS)
 % WLS is used to find the maximum likelihood estimates of a generalized
@@ -8,15 +8,16 @@ function [b,W] = limo_WLS(X,Y)
 %
 % Weights are obtained using a Principal Components Projection
 %
-% FORMAT: [b w] = limo_WLS(X,Y,method)
+% FORMAT: [b,W,rf] = limo_WLS(X,Y)
 %
 % INPUTS:
 %   X             = the design matrix 
 %   Y             = 2D matrix of EEG data (dim trials x frames)
 %
 % OUTPUTS:
-%   b             = betas (dim parameters * time frames)
-%   w             = weights (dim trials)
+%   b             = betas (dim parameters * time frames) the parameters of the GLM
+%   W             = weights (dim trials) to apply for each trial
+%   rf            = the number of dimensions (compoments) removed to get W
 %
 % References:
 %   P. Filzmoser, R. Maronna, M. Werner (2007). Outlier identification in 
@@ -25,22 +26,13 @@ function [b,W] = limo_WLS(X,Y)
 % see also LIMO_PCOUT LIMO_IRLS
 %
 % Cyril Pernet v2 January 2014
-% v3 July 2015 incliude an iterative framework (not validated)
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% input check
 if  nargin < 2      
     error(message('Too Few Inputs'));      
 end 
-
-method = 'simple';
-if nargin == 3;
-    method = cell2mat(varargin{1});
-    if sum([strcmpi(method,'simple') strcmpi(method,'iterative')]) == 0
-        error('imput method must be either ''simple'' or ''iterative''')
-    end
-end
 
 [rows,cols] = size(X);
 if (rows <= cols)
@@ -67,23 +59,19 @@ b = pinv(X)*Y;
 tune = 4.685; 
 
 % Get residuals from previous fit
-res = Y - X*b;
+res                 = Y - X*b;
+resadj              = res .* repmat(adjfactor, 1, size(Y,2));
 
-resadj = res .* repmat(adjfactor, 1, size(Y,2));
-
-% re - Robust Estimator (makes the estimate unbiased)
-% 0.6745 is the 0.75 quantile of the standard normal distribution
-re = median(abs(resadj)) ./ 0.6745;
+% re - Robust Estimator
+% 0.6745 is the 0.75- quantile of the standard normal distribution
+% (makes the estimate unbiased)
+re                  = median(abs(resadj)) ./ 0.6745;
 re(find(re < 1e-5)) = 1e-5;
-r= resadj ./ repmat(tune.*re, size(Y,1),1);
+r                   = resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
-[W,out] = limo_pcout(r, 'resample', 'on'); % get weights from residuals
-WY = Y .* repmat(W,1,size(Y,2));
-WX = [X(:,1:end-1).*repmat(W,1,size(X,2)-1) X(:,end)];
-b = pinv(WX)*WY; % b = inv(X'*W*X)*X'W*Y
-
-%% check this is a valid result
-% b is a generalized least square if X*inv(X'*W*X)*X'*W*Y == Xb
-% WY = WXB+We with e ~N(0,s^2V) 
+[W,~,rf]            = limo_pcout(r);
+WY                  = Y .* repmat(W,1,size(Y,2));
+WX                  = X .* repmat(W,1,size(X,2));
+b                   = pinv(WX)*WY;
 

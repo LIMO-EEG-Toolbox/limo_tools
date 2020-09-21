@@ -1,11 +1,10 @@
 function varargout = limo_batch_gui(varargin)
 
 % BATCH INTERFACE
-% created using GUIDE 
+% created using GUIDE
 % Based on limo_import_tf
-% Cyril Pernet v1. May 2014
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 %% GUI stuffs
@@ -43,7 +42,7 @@ function limo_batch_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % define handles used for the save callback
-handles.FileName = [];
+handles.FileName            = [];
 handles.CatName             = [];
 handles.fullfactorial       = 0;
 handles.ContName            = [];
@@ -55,7 +54,7 @@ handles.highf               = [];
 handles.Analysis            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
-handles.method              = 'OLS';
+handles.method              = 'WLS';
 handles.bootstrap           = 0;
 handles.tfce                = 0;
 handles.quit                = 0;
@@ -65,7 +64,7 @@ uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = limo_batch_gui_OutputFcn(hObject, eventdata, handles) 
+function varargout = limo_batch_gui_OutputFcn(hObject, eventdata, handles)
 
 if handles.quit == 1
     varargout{1} = [] ;
@@ -87,8 +86,11 @@ delete(handles.figure1); return
 %         IMPORT_DATA
 %------------------------
 
-% load a data set -- EEG 
+% load a data set -- EEG
 % ---------------------------------------------------------------
+% --- Executes during object creation, after setting all properties.
+function Import_data_CreateFcn(hObject, eventdata, handles)
+
 function Import_data_Callback(hObject, eventdata, handles)
 [FileName,PathName,FilterIndex]=uigetfile({'*.txt; *.mat; *.set'}, 'Pick sets or list', 'MultiSelect', 'on');
 
@@ -100,32 +102,32 @@ if FilterIndex ~= 0
                 return
             end
         end
-        
+
     elseif ischar(FileName) && strcmp(FileName(end-3:end),'.set') % single subject
         tmp = FileName; clear FileName;
         FileName{1} = [PathName tmp]; clear tmp; % a single subject
-        
+
     elseif strcmp(FileName(end-3:end),'.txt') ||  strcmp(FileName(end-3:end),'.mat') % use .mat or .txt
-        
+
         if strcmp(FileName(end-3:end),'.txt')
             FileName = importdata(FileName);
         elseif strcmp(FileName(end-3:end),'.mat')
             FileName = load([PathName FileName]);
             FileName = getfield(FileName,cell2mat(fieldnames(FileName)));
         end
-    
+
         disp('checking files .. ')
         for f=1:size(FileName,1)
             if ~exist(FileName{f},'file')
                 errordlg(sprintf('%s \n file not found',FileName{f}));
                 return
             else
-                fprintf('%s found \n',FileName{f}); 
+                fprintf('%s found \n',FileName{f});
             end
         end
     end
     handles.FileName = FileName;
-    
+
 end
 guidata(hObject, handles);
 
@@ -140,19 +142,19 @@ end
 function analysis_type_Callback(hObject, eventdata, handles)
 
 content = get(hObject,'Value');
-if content == 1
+if content == 2
     handles.Analysis = 'Time';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
     set(handles.low_freq,'Enable','off')
     set(handles.high_freq,'Enable','off')
-elseif content == 2
+elseif content == 3
     handles.Analysis = 'Frequency';
     set(handles.Starting_point,'Enable','off')
     set(handles.ending_point,'Enable','off')
     set(handles.low_freq,'Enable','on')
     set(handles.high_freq,'Enable','on')
-elseif content == 3
+elseif content == 4
     handles.Analysis = 'Time-Frequency';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
@@ -259,8 +261,8 @@ end
 
 function type_of_analysis_Callback(hObject, eventdata, handles)
 
-contents{1} = 'Mass-univariate';  
-contents{2} = 'Multivariate'; 
+contents{1} = 'Mass-univariate';
+contents{2} = 'Multivariate';
 handles.type_of_analysis = contents{get(hObject,'Value')};
 if isempty(handles.type_of_analysis)
     handles.type_of_analysis = 'Mass-univariate';
@@ -277,10 +279,10 @@ end
 
 function method_Callback(hObject, eventdata, handles)
 
-contents{1} = 'OLS'; contents{2} = 'WLS'; contents{3} = 'IRLS';
+contents{1} = 'WLS'; contents{2} = 'OLS'; contents{3} = 'IRLS';
 handles.method = contents{get(hObject,'Value')};
 if isempty(handles.method)
-    handles.method = 'OLS';
+    handles.method = 'WLS';
 end
 fprintf('method selected %s \n',handles.method);
 guidata(hObject, handles);
@@ -341,7 +343,7 @@ if FilterIndex == 1
             CatName = load([PathName CatName]);
             CatName = getfield(CatName,cell2mat(fieldnames(CatName)));
         end
-        
+
         for f=1:size(CatName,1)
             if ~exist(CatName{f},'file')
                 errordlg(sprintf('%s \n file not found',CatName{f}));
@@ -390,7 +392,7 @@ if FilterIndex == 1
             ContName = load([PathName ContName]);
             ContName = getfield(ContName,cell2mat(fieldnames(ContName)));
         end
-        
+
         for f=1:size(ContName,1)
             if ~exist(ContName{f},'file')
                 errordlg(sprintf('%s \n file not found',ContName{f}));
@@ -428,13 +430,13 @@ guidata(hObject, handles);
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
-  
+
 if isempty(handles.Analysis)
         errordlg('choose a type of analysis to perfom','error')
     return
 end
 
-defaults.analysis          = handles.Analysis;  
+defaults.analysis          = handles.Analysis;
 defaults.fullfactorial     = handles.fullfactorial;
 defaults.zscore            = handles.zscore;
 defaults.start             = handles.start;
@@ -442,23 +444,29 @@ defaults.end               = handles.end ;
 defaults.lowf              = handles.lowf;
 defaults.highf             = handles.highf;
 defaults.method            = handles.method;
-defaults.type_of_analysis  = handles.type_of_analysis;  
-defaults.bootstrap         = handles.bootstrap;  
-defaults.tfce              = handles.tfce;  
-defaults.type              = handles.type; 
-
+defaults.type_of_analysis  = handles.type_of_analysis;
+defaults.bootstrap         = handles.bootstrap;
+defaults.tfce              = handles.tfce;
+defaults.type              = handles.type;
 
 % -----------------------------------------
 % load the expected channel locations
 % -----------------------------------------
-if handles.bootstrap == 1 && ~strcmp(handles.type,'Components') 
+if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
     [chan_file,chan_path,whatsup]=uigetfile('expected_chanlocs.mat','Select channel location file');
     if whatsup == 1
-        load (sprintf('%s%s',chan_path,chan_file))
-        test = eval(chan_file(1:end-4));
+        try
+            channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
+            fn = fieldnames(channeighbstructmat);
+            index = find(ismember(fn,'expected_chanlocs'));
+            test = getfield(channeighbstructmat,fn{index});
+        catch
+            test = eval(chan_file(1:end-4));
+        end
+
         if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
                 && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
-                && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
+                && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius)
             defaults.chanloc = test; disp('channel location loaded');
         else
             warndlg('this file is not recognize as a channel location file or informations are missing','file error')
@@ -469,13 +477,12 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
 end
 handles.defaults = defaults;
 
-if isempty(handles.CatName) && isempty(handles.ContName);
-    errordlg('no regressors were loaded','error')
-    return
-else
-    uiresume
-    guidata(hObject, handles);
+if isempty(handles.CatName) && isempty(handles.ContName)
+    warndlg2('no regressors loaded, only the mean will be created','no regressors')
 end
+uiresume
+guidata(hObject, handles);
+limo_gui
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
@@ -487,15 +494,3 @@ uiresume
 handles.quit = 1;
 guidata(hObject, handles);
 limo_gui
-
-
-
-
-
-% --- Executes on button press in checkbox13.
-function checkbox13_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox13 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox13

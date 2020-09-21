@@ -12,9 +12,8 @@ function HD = limo_harrell_davis(varargin)
 %
 % OUTPUT
 % HD is a 2D or 3D matrix with the lower CI, the median and the high CI
-
-% -------------------------------------------
-% Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % See Wilcox, 2005, pages 71, 130-134, 139
 % GA Rousselet, University of Glasgow, Sept 2009

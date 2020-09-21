@@ -30,8 +30,8 @@ function limo_lateralization(varargin)
 % this is used when looking for significant lateralization effects
 %
 % Cyril Pernet v1 25-05-2012
-% -----------------------------
-%  Copyright (C) LIMO Team 2010
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% check inputs
 data = varargin{1};

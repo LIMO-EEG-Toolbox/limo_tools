@@ -1,5 +1,4 @@
-function [first_frame,last_frame,subj_chanlocs,limo] = match_frames(Paths,limo)
-
+function [first_frame,last_frame,subj_chanlocs,limo] = limo_match_frames(Paths,limo)
 
 % once we have a series of files to assemble, we need to collect information 
 % to match the frames across subjects
@@ -17,8 +16,8 @@ function [first_frame,last_frame,subj_chanlocs,limo] = match_frames(Paths,limo)
 % smallest interval(s) across subjects, which is used for the second leve analysis
 %
 % Cyril Pernet v2 August 2015
-% ---------------------------------------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 current = pwd; ME = [];
 
@@ -65,8 +64,8 @@ for i=1:size(Paths,2)
         start(i,1)                  = LIMO.data.start;
         stop(i,1)                   = LIMO.data.end;
         
-        first_frame(i,2)            = LIMO.data.trim_low_f;
-        last_frame(i,2)             = LIMO.data.trim_high_f;
+        first_frame(i,2)            = LIMO.data.trim_lowf;
+        last_frame(i,2)             = LIMO.data.trim_highf;
         start(i,2)                  = LIMO.data.tf_freqs(1);
         stop(i,2)                   = LIMO.data.tf_freqs(end);
         

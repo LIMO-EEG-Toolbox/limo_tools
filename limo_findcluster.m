@@ -40,8 +40,8 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 % calls to ismember rearranged and replaced with ismembc
 %
 % Andrew Stewart, August 2014
-% --------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 spatdimlength = size(onoff, 1);

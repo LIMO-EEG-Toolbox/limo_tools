@@ -7,8 +7,8 @@ function limo_clustering_testing
 % mask of 'significant' values corresponds to the data
 % 
 % Cyril Pernet 16 May 2014
-% -----------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 NullData = zeros(10,4,6);
 Neighbour = zeros(10,10);

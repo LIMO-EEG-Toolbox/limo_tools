@@ -5,7 +5,7 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 %
 % FORMAT [est,HDI,bb] = limo_central_estimator(Y,'estimator',prob_coverage);
 %
-% INPUTS Y is a 2D matrix, e.g. time frames x participants
+% INPUTS Y is a 2D matrix, e.g. frames x participants
 %        estimator is 'Mean', 'Trimmed mean', (default) 'HD' (Mid-decile Harell-Davis) or 'Median'
 %        prob_coverage is the probability coverage- default 0.95%
 %
@@ -21,8 +21,8 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage)
 % see also mean, median, limo_trimmed_mean, limo_harrell_davis
 %
 % Guillaume Rousselet & Cyril Pernet February 2016
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 Nb = 1000; % number of bootstrap samples 
 
@@ -46,11 +46,11 @@ end
 
 % sample with replcaement from Dirichlet
 % sampling = number of observations, e.g. participants
-n=size(Y,2); 
+n = size(Y,2); 
 bb = zeros(size(Y,1),Nb);
 parfor boot=1:Nb % bootstrap loop
-    theta = exprnd(1,[n,1]);
-    weigths = theta ./ repmat(sum(theta,1),n,1);
+    theta    = exprnd(1,[n,1]);
+    weigths  = theta ./ repmat(sum(theta,1),n,1);
     resample = (datasample(Y',n,'Replace',true,'Weights',weigths))';
     
     % compute the estimator
@@ -65,10 +65,10 @@ parfor boot=1:Nb % bootstrap loop
     end
 end
 
-sorted_data = sort(bb,2); % sort bootstrap estimates
+sorted_data   = sort(bb,2); % sort bootstrap estimates
 upper_centile = floor(prob_coverage*size(sorted_data,2)); % upper bound
-nCIs = size(sorted_data,2) - upper_centile;
-HDI = zeros(2,size(Y,1));
+nCIs          = size(sorted_data,2) - upper_centile;
+HDI           = zeros(2,size(Y,1));
 
 % for frame = 1:size(Y,1)
 %     tmp = sorted_data(frame,:);
@@ -80,14 +80,14 @@ HDI = zeros(2,size(Y,1));
 % end
 
 % vectorized version of the loop above
-ci = 1:nCIs;
-ciWidth = sorted_data(:,ci+upper_centile) - sorted_data(:,ci); % all centile distances
-[~,J] = min(ciWidth,[],2);
-r = size(sorted_data,1);
-I = (1:r)';
-index = I+r.*(J-1); % linear index
+ci       = 1:nCIs;
+ciWidth  = sorted_data(:,ci+upper_centile) - sorted_data(:,ci); % all centile distances
+[~,J]    = min(ciWidth,[],2);
+r        = size(sorted_data,1);
+I        = (1:r)';
+index    = I+r.*(J-1); % linear index
 HDI(1,:) = sorted_data(index);
-index = I+r.*(J+upper_centile-1); % linear index
+index    = I+r.*(J+upper_centile-1); % linear index
 HDI(2,:) = sorted_data(index);
 
 

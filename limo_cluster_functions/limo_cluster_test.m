@@ -6,9 +6,9 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %
 % FORMAT: [mask, pval, L, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 %
-% INPUTS: ori_f: 3D or 2D matrix of observed F values 
-%         ori_p: 3D or 2D matrix of observed P values 
-%         boot_maxclustersum = distribution of cluster maxima observed under H0 
+% INPUTS: ori_f: 3D or 2D matrix of observed F values
+%         ori_p: 3D or 2D matrix of observed P values
+%         boot_maxclustersum = distribution of cluster maxima observed under H0
 %         channeighbstructmat = output of limo_ft_neighbourselection
 %         minnbchan = minimum number of channels, default = 2
 %         alpha level, default 0.05
@@ -20,14 +20,10 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %          maxclustersum_th = max cluster sum (1-alpha) bootstrap threshold
 %
 % See also limo~_getcluster_test limo_getclustersum
-% 
-% Guillaume Rousselet, University of Glasgow, June 2010
-% optional L & NUM outputs: GAR, Feb 2012
-% optional pval & maxclustersum_th outputs: GAR, Feb 2012
-% Cyril Pernet changed pval to be a map with NaN or the cluster p value May 2013
-% added a warping of NaN Mars 2014 
-% -------------------------------------------------
-%  Copyright (C) LIMO Team 2016
+%
+% Guillaume Rousselet & Cyril Pernet
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 
 if nargin<5; alphav=.05;  end
@@ -36,43 +32,45 @@ if nargin<4; minnbchan=2; end
 [posclusterslabelmat,nposclusters] = limo_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan);
 nboot           = length(boot_maxclustersum);
 sort_clustermax = sort(boot_maxclustersum);
-n               = sum(isnan(sort_clustermax)); 
+n               = sum(isnan(sort_clustermax));
 
 % NaN present if there was no clusters under H0 - just warp around
 % should not happen if using limo_getclustersum as it returns 0 in that case
-if n~=0 
+if n~=0
     sort_clustermax(isnan(sort_clustermax))=[];
     sort_clustermax = [NaN(n,1); sort_clustermax];
 end
 maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
 
 mask = zeros(size(ori_f));
+cluster_label = 1;
 if nposclusters~=0
     for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(ori_f(posclusterslabelmat==C));
-        if  maxval(C)>= maxclustersum_th;
-            mask(posclusterslabelmat==C)=1; % flag clusters above threshold
+        if  maxval(C)>= maxclustersum_th
+            mask(posclusterslabelmat==C)= cluster_label; % flag clusters above threshold
+            cluster_label = cluster_label+1;
         end
     end
 end
-maxval = max(maxval);
-mask = logical(mask); 
 
-if sum(mask(:))>0
-    L=posclusterslabelmat.*mask;  % figure; imagesc(L)
-    CL_list=setdiff(unique(L),0);
-    pval = NaN(size(L));
+if exist('maxval','var')
+     maxval = max(maxval);   % biggest cluster
+else
+     maxval = 0;
+end
+mask2  = logical(mask); % logical - faster for masking
+
+% compute corrected p-values: number of times observed mass > bootstrap
+pval = NaN(size(mask));
+if sum(mask2(:))>0
+    L       = posclusterslabelmat.*mask2; % remove non significant clusters
+    CL_list = setdiff(unique(L),0);
     for CL=1:length(CL_list)
-        L(L==CL_list(CL))=CL;
-        p=1-(sum(sum(ori_f(L==CL))>=boot_maxclustersum)./nboot);
+        p = 1-(sum(sum(ori_f(L==CL_list(CL)))>=boot_maxclustersum)./nboot);
         if p ==0
             p = 1/nboot;
         end
         pval(L==CL_list(CL)) = p;
     end
-else
-    pval=NaN;
 end
-
-
-

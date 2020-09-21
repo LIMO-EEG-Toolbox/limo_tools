@@ -20,8 +20,8 @@ function [single_col,final_matrix] = limo_combine_catvalues(varargin)
 % new_values = limo_combine_catvalues('./mydocs/myfile.txt', 'format', 'var')
 %
 % Cyril Pernet 27 June 2016
-% ------------------------------------------
-% Copyright (C) LIMO Team 2016
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% Check data input
 

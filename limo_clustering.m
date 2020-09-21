@@ -17,15 +17,15 @@ function [mask,cluster_pval,max_th] = limo_clustering(varargin)
 %         significant values)
 %
 % OUTPUT
-% mask is a binary matrix of the same size as M corresponding to a threshold
+% mask is a labelled matrix of the same size as M corresponding to a threshold
 %      p corrected for multiple comparisons
 % cluster_p are the p-values obtained via the matrix bootM (corrected)
 % max_th is the cluster mass threshold controlling the type 1 FWER
 %
 % Cyril Pernet 
 % outsourced from limo_stat_values
-% --------------------------------
-% Copyright (C) LIMO Team 2018
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 % check inputs 
 M       = varargin{1};
@@ -60,7 +60,6 @@ max_th       = [];
 
 if MCC == 2 && size(bootM,1)>1
     minnbchan           = 2;
-    expected_chanlocs   = LIMO.data.chanlocs;
     channeighbstructmat = LIMO.data.neighbouring_matrix;
     boot_maxclustersum  = zeros(nboot,1);     % maximum cluster mass at each bootstrap
     
@@ -83,7 +82,7 @@ if MCC == 2 && size(bootM,1)>1
     end
     
     % 3rd threshold observed cluster mass by the distribution of cluster
-    % max conputed in step 2
+    % max computed in step 2
     [mask, cluster_pval, maxval, max_th] = limo_cluster_test(M,P,...
         boot_maxclustersum,channeighbstructmat,minnbchan,p);
 end
@@ -101,8 +100,8 @@ end
 
 %% plot
 % when nothing is significant, always show why
-if sum(mask(:)) == 0
-    fig = 1 ; 
+if sum(mask(:)) == 0 && isempty(fig)
+    fig = 1 ;
 end
 
 if fig == 1 
@@ -117,7 +116,7 @@ if fig == 1
     [val,loc]=min(abs(mass-maxval)); 
     plot(loc,maxval,'r*','LineWidth',5)
     txt = ['biggest observed cluster mass: ' num2str(maxval) '\rightarrow'];
-    text(loc,maxval,txt,'FontSize',10,'HorizontalAlignment','right');
+    text(loc,double(maxval),txt,'FontSize',10,'HorizontalAlignment','right');
     
     title('Cluster-mass Maxima under H0','FontSize',12)
     xlabel('sorted bootstrap iterations','FontSize',12); 

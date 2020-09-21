@@ -2,11 +2,12 @@ function limo_batch_contrast(limo_file,C)
 
 % routine to compute T contrasts from the batch mode
 % -----------------------------
-% Copyright (C) LIMO Team 2014
+%  Copyright (C) LIMO Team 2019
 
 % Cyril Pernet June 2014
 
-load(limo_file);
+LIMO = load(limo_file);
+LIMO = LIMO.(cell2mat(fieldnames(LIMO)));  
 cd(LIMO.dir)
 
 %% 1st check the contrasts 
@@ -15,7 +16,7 @@ for j=1:size(C,1)
     out(j,:) = limo_contrast_checking(LIMO.dir, LIMO.design.X, C(j,:));
     go = limo_contrast_checking(out(j,:),LIMO.design.X);
     if go == 0
-        error(sprintf('contrast %g is invalid',j));
+        error('contrast %g is invalid',j);
     end
 end
 
@@ -23,7 +24,8 @@ end
 
 fprintf('loading data - and computing contrast(s) in %s \n',pwd)
 
-load Yr; load Betas;
+Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
+Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
 if isfield(LIMO,'contrast')
     previous_con = size(LIMO.contrast,2);
 else
@@ -32,7 +34,8 @@ end
 
 for i=1:size(C,1)  % for each new contrast
     LIMO.contrast{previous_con+i}.V = 'T';
-    LIMO.contrast{previous_con+i}.C = out(i,:); save LIMO LIMO
+    LIMO.contrast{previous_con+i}.C = out(i,:); 
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     limo_contrast(Yr, Betas, LIMO, 0,1);
 end
 

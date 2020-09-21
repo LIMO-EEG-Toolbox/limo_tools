@@ -3,8 +3,8 @@ function varargout = limo_random_effect(varargin)
 % Result GUI for the LIMO_eeg toolbox
 % Created using GUIDE 
 % Cyril Pernet 25-08-2009 v1
-% -----------------------------
-%  Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 %% GUI stuffs
 % -------------------------
@@ -37,14 +37,15 @@ end
 % --------------------------------------------------
 %   Executes just before the menu is made visible
 % --------------------------------------------------
-function limo_random_effect_OpeningFcn(hObject, eventdata, handles, varargin)
+function limo_random_effect_OpeningFcn(hObject, ~, handles, varargin)
 handles.output = hObject;
 guidata(hObject, handles);
 
 % define handles used for the save callback
-handles.b = 1000;
+handles.b    = 1000;
 handles.tfce = 0;
 handles.ica  = 0;
+handles.dir  = [];
 try S=evalin('base','STUDY');
     handles.chan_file = S.design.limo.chanloc; clear S
     fprintf('using study channel location file \n%s\n',handles.chan_file);
@@ -60,30 +61,37 @@ guidata(hObject, handles);
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
-function varargout = limo_random_effect_OutputFcn(hObject, eventdata, handles) 
+function varargout = limo_random_effect_OutputFcn(~, ~, ~) 
 varargout{1} = 'LIMO random effect terminated';
 
 
 %% Callbacks
 
-%-------------------------
-%         BASIC_STATS_PANEL
-%------------------------
+%---------------------------
+%   BASIC_STATS_PANEL
+%---------------------------
 
 % Robust estimates and CI
 % ---------------------------------------------------------------
-function Central_tendency_and_CI_Callback(hObject, eventdata, handles)
+function Central_tendency_and_CI_Callback(hObject, ~, handles)
 
 if handles.ica == 1
     disp('IC not supported yet')
 elseif test_chan_loc(handles)
+    if isempty(handles.dir)
+        savedir = uigetdir('pwd','where to save data?');
+        if savedir == 0
+            return
+        else
+            cd(savedir)
+        end
+    end
     limo_central_tendency_and_ci(handles.chan_file);
     guidata(hObject, handles);
 end
 
-
 % --- Executes on button press in data_plot.
-function data_plot_Callback(hObject, eventdata, handles)
+function data_plot_Callback(hObject, ~, handles)
 
 if handles.ica == 1
     disp('IC not supported yet')
@@ -94,7 +102,7 @@ end
 
 
 % --- Executes on button press in differences.
-function differences_Callback(hObject, eventdata, handles)
+function differences_Callback(hObject, ~, handles)
 
 if handles.ica == 1
     disp('IC not supported yet')
@@ -105,7 +113,7 @@ end
 
 % Parameters_box_plot
 % ---------------------------------------------------------------
-function Parameters_box_plot_Callback(hObject, eventdata, handles)
+function Parameters_box_plot_Callback(hObject, ~, handles)
 
 if handles.ica == 1
     disp('IC not supported yet')
@@ -117,12 +125,12 @@ end
  
 
 %-------------------------------
-%         Parameters parameter
+%    Parameters 
 %------------------------------
 
-% get the number of bootstraaps
+% get the number of bootstraps
 % ---------------------------------------------------------------
-function bootstrap_Callback(hObject, eventdata, handles)
+function bootstrap_Callback(hObject, ~, handles)
 
 handles.b = str2double(get(hObject,'String'));
 if isempty(handles.b)
@@ -138,14 +146,14 @@ else
 end
 guidata(hObject, handles);
 
-function bootstrap_CreateFcn(hObject, eventdata, handles)
+function bootstrap_CreateFcn(hObject, ~, ~)
  
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
 
 % --- Executes on button press in TFCE.
-function TFCE_Callback(hObject, eventdata, handles)
+function TFCE_Callback(hObject, ~, handles)
 M = get(hObject,'Value');
 if M == 1
     handles.tfce = 1;
@@ -158,7 +166,7 @@ guidata(hObject, handles);
 
 
 % --- Executes on button press in IC_analysis.
-function IC_analysis_Callback(hObject, eventdata, handles)
+function IC_analysis_Callback(hObject, ~, handles)
 M = get(hObject,'Value');
 if M == 1
     handles.ica = 1;
@@ -177,70 +185,94 @@ guidata(hObject, handles);
 
 % One_Sample_t_test
 % ---------------------------------------------------------------
-function One_Sample_t_test_Callback(hObject, eventdata, handles)
+function One_Sample_t_test_Callback(~, ~, handles)
 
-if handles.ica == 1
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(1,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+go = update_dir(handles,'one_sample_ttest');
+if go == 0
+    return
+else
+    if handles.ica == 1
+        limo_random_select('one sample t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    elseif test_chan_loc(handles)
+        limo_random_select('one sample t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    end
 end
-
 
 % Two_Samples_t_test
 % ---------------------------------------------------------------
-function Two_Samples_t_test_Callback(hObject, eventdata, handles)
+function Two_Samples_t_test_Callback(~, ~, handles)
 
+go = update_dir(handles,'two_samples_ttest');
+if go == 0
+    return
+else
 if handles.ica == 1
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(2,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 
 % Paired_t_test
 % ---------------------------------------------------------------
 % --- Executes on button press in Paired_t_test.
-function Paired_t_test_Callback(hObject, eventdata, handles)
+function Paired_t_test_Callback(~, ~, handles)
 
+go = update_dir(handles,'paired_ttest');
+if go == 0
+    return
+else
 if handles.ica == 1
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(3,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 % Regression
 % ---------------------------------------------------------------
 % --- Executes on button press in Regression.
-function Regression_Callback(hObject, eventdata, handles)
+function Regression_Callback(~, ~, handles)
 
+go = update_dir(handles,'regression');
+if go == 0
+    return
+else
 if handles.ica == 1
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+    limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
 elseif test_chan_loc(handles)
-    limo_random_select(4,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+    limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
 end
-
+end
 
 % ANOVA/ANCOVA
 % ---------------------------------------------------------------
 
 % --- Executes on button press in ANOVA.
-function ANOVA_Callback(hObject, eventdata, handles)
+function ANOVA_Callback(~, ~, handles)
 
-if handles.ica == 1
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
-elseif test_chan_loc(handles)
-    limo_random_select(5,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+go = update_dir(handles,'AN(C)OVA');
+if go == 0
+    return
+else
+    answer = questdlg('What ANOVA model do you want to run?', 'Model selection', 'Repeated Measures ANOVA', ...
+        'N-Ways ANOVA','ANCOVA','Repeated Measures ANOVA');
+    if ~isempty(answer)
+        if handles.ica == 1
+            limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
+        elseif test_chan_loc(handles)
+            limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Channels');
+        end
+    end
 end
-
 
 %------------------------
 %         OTHERS
 %------------------------
 
  % --- Executes on button press in CD.
-function CD_Callback(hObject, eventdata, handles)
+function CD_Callback(hObject, ~, handles)
 
 PathName=uigetdir(pwd,'select LIMO working directory');
 if PathName ~= 0
@@ -265,21 +297,18 @@ guidata(hObject, handles);
 
 
 % --- Executes on button press in chan_cluster_neighbours.
-function chan_cluster_neighbours_Callback(hObject, eventdata, handles)
+function chan_cluster_neighbours_Callback(hObject, ~, handles)
 
 [chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
 if sts == 1
-    load ([chan_path chan_file])
-    if exist('expected_chanlocs','var') == 1
-        test = expected_chanlocs;
-    else
-        test = eval(chan_file(1:end-4));
+    test = load([chan_path chan_file]);
+    if isfield(test,'expected_chanlocs')
+        test = test.expected_chanlocs;
     end
     
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
-             && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) && sum(channeighbstructmat(:)) ~= 0
-             % && ~isempty(test(1).urchan) % urchan should not be needed
+             && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
             
         handles.chan_file = [chan_path chan_file];
         disp('channel location loaded');
@@ -294,16 +323,14 @@ guidata(hObject, handles);
 
 % --- Executes on button press in Help.
 % ---------------------------------------------------------------
-function Help_Callback(hObject, eventdata, handles)
+function Help_Callback(~, ~, ~)
 
-origin = which('limo_eeg'); origin = origin(1:end-10); 
-origin = sprintf('%shelp',origin); cd(origin)
 web(['file://' which('limo_random_effect.html')]);
 
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
-function Quit_Callback(hObject, eventdata, handles)
+function Quit_Callback(hObject, ~, handles)
 
 clc
 uiresume
@@ -319,6 +346,20 @@ function go = test_chan_loc(handles)
 if isempty(handles.chan_file)
     go = 0;
     warndlg('chanloc not specified, please load one','missing file')
+else
+    go = 1;
+end
+
+function go = update_dir(handles,test)
+
+go = 0;
+if isempty(handles.dir)
+    if ~exist(test,'dir')
+        disp('directory not specified, creating one')
+        mkdir(test); cd(test); handles.dir = pwd; go = 1;
+    else
+        warndlg2(sprintf('directory not specified, %s already exists \n please create and select a directory',test),'directory issue')
+    end
 else
     go = 1;
 end

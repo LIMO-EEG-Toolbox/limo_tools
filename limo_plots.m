@@ -5,8 +5,8 @@ function limo_plots(expected_chanlocs)
 % robust estimates
 %
 % Cyril Pernet 
-% -----------------------------
-% Copyright (C) LIMO Team 2015
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 
 current_dir = pwd;
 if nargin == 0

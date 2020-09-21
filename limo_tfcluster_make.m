@@ -29,8 +29,8 @@ function [th,boot_values] = limo_tfcluster_make(bootf,bootp,alphav)
 %          boot_values are all the cluster sums conmputed under H0
 %
 % Cyril Pernet - adaptation of limo_ecluster_make for time*freqency data - June 2014
-% ----------------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2014
+% ------------------------------
+%  Copyright (C) LIMO Team 2019
 %
 % See also LIMO_ECLUSTER_MAKE LIMO_ECLUSTER_TEST
 
