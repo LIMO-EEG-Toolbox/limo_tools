@@ -118,8 +118,9 @@ if strcmpi(fig,'new') || strcmpi(fig,'on')
     if strcmpi(fig,'new')
         figure('Name','limo_pcout projection')
     end
+    vect = 1:size(x,2);
     % show trials
-    subplot(3,5,[1 2 3]); plot(1:size(x,2),x); title('Single trials');
+    subplot(3,5,[1 2 3]); plot(vect,x); title('Single trials');
     axis tight; grid on; box on
     subplot(3,5,[4 5]); plot(1:size(xpc,2),xpc); title('Projected trials onto PC space')
     scale = range(xpc(:))*0.01; grid on; box on
@@ -136,7 +137,6 @@ if strcmpi(fig,'new') || strcmpi(fig,'on')
     hold on; histogram(dist(out==0),BinEdges,'FaceColor',[0.25 0.25 0.25]);
     ylabel('frequency'); axis tight; grid on; box on; title('final weights')
     % show averages
-    vect = 1:size(x,2);
     [good_mean,good_ci] = limo_central_estimator(x(out==1,:)','Mean',95/100);
     [bad_mean, bad_ci]  = limo_central_estimator(x(out==0,:)','Mean',95/100);
     [weighted_mean,weighted_ci] = limo_central_estimator((x.*repmat(dist,[1 size(x,2)]))','Mean',95/100);
