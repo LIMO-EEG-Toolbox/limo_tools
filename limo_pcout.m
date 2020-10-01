@@ -51,7 +51,9 @@ end
 
 [n,p] = size(x);
 if n<p
-    error('Principal Component Projection cannot be computed, more observations than variables are needed')
+    error([ 'Principal Component Projection cannot be computed, more observations than variables are needed.' 10 ...
+        'When using WLS (weighted least square), you must have more trials than time samples. This is not the' 10 ...
+        'case for this dataset. Try reducing the number of time samples or use OLS (ordinary least square) instead.' ])
 end
 
 %% 1st Phase: Detect location outliers
