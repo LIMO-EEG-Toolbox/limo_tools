@@ -216,7 +216,17 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     for subject = 1:size(model.set_files,1)
         
         % build LIMO.mat files from import
-        command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
+        check_type = load('-mat',model.set_files{subject});
+        check_type = struct2cell(check_type);
+                
+        if isfield(check_type{1},'etc')
+            command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
+        elseif isfield(check_type{1},'hdr')
+            command = 'limo_batch_import_ft_data(files_in,opt.cat,opt.cont,opt.defaults)';
+        else
+            disp('ERROR in limo_batch.m: wrong data type')
+        end
+        
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;

@@ -11,6 +11,8 @@ function limo_batch_design_matrix(LIMOfile)
 %  Copyright (C) LIMO Team 2019
 
 global EEGLIMO
+EEGLIMO
+pause(5)
 LIMO = load(LIMOfile);
 LIMO = LIMO.LIMO;
 if exist('EEGLIMO','var') && ~isempty(EEGLIMO)

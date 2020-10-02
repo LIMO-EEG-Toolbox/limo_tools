@@ -1,4 +1,4 @@
-function limo_batch_import_data(eeg_data,event,cat,cont,defaults)
+function limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 
 % routine to import 
 %
@@ -22,16 +22,34 @@ function limo_batch_import_data(eeg_data,event,cat,cont,defaults)
 global EEGLIMO
 global EEG_FILE
 
-EEGLIMO                      = eeg_data;
+disp('in import')
+%format adaptation
+EEGLIMO                      = load('-mat',EEG_DATA);
+EEGLIMO                      = struct2cell(EEGLIMO);
+EEGLIMO                      = EEGLIMO{1};
 % EEGLIMO                      = load('-mat',setfile);
 % EEGLIMO                      = EEGLIMO.EEG;
-[root,name,ext]              = fileparts(EEG_FILE);
+[root,name,ext]              = fileparts(EEG_DATA);
+EEGLIMO.filepath             = root;
+EEGLIMO.filename             = [name ext];
+EEGLIMO.srate                = EEGLIMO.fsample;
+EEGLIMO.etc.timeerp          = EEGLIMO.sampleinfo(:,1)/EEGLIMO.srate * 1000; %convert sample number to ms;
+
+daterp = zeros(size(EEGLIMO.trial{1},1),size(EEGLIMO.trial{1},2),length(EEGLIMO.trial));
+for i = 1:length(EEGLIMO.trial)
+    daterp(:,:,i) = EEGLIMO.trial{i};
+end
+save(fullfile(root,'daterp.mat'),'daterp')
+EEGLIMO.etc.datafiles.daterp = fullfile(root,'daterp.mat');
+
+clc;
+EEGLIMO
+pause(5)
 
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
-% LIMO.data.sampling_rate      = EEGLIMO.srate;
-LIMO.data.sampling_rate      = EEGLIMO.fsample;
+LIMO.data.sampling_rate      = EEGLIMO.srate;
 LIMO.Analysis                = defaults.analysis;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
@@ -62,6 +80,7 @@ if isfield(defaults,'studyinfo')
     LIMO.data.studyinfo = defaults.studyinfo; % same as STUDY.design(design_index).variable;
 end
 
+
 % update according to the type of data
 if strcmp(defaults.analysis,'Time') 
     
@@ -72,12 +91,15 @@ if strcmp(defaults.analysis,'Time')
 %     else
 %         timevect = EEGLIMO.etc.timeerp;
 %     end
-    if ~isfield(event,'sample')
-        disp('the fied event.sample is missing - reloading single trials');
-        data    = ft_read_event(EEG_FILE);
-        timevect = [data.sample]; clear data;
+    if ~isfield(EEGLIMO.etc,'timeerp')
+        disp('the fied EEGLIMO.event.sample is missing - reloading single trials');
+        event    = ft_read_event(EEG_FILE);
+        % select only the trigger codes, not the battery and CMS status
+        sel = find(strcmp({event.type}, 'STATUS'));
+        event = event(sel);
+        timevect = [event.sample]/EEGLIMO.srate * 1000; clear data;
     else
-        timevect = [event.sample];
+        timevect = EEGLIMO.etc.timeerp; %convert sample number to ms
     end    
     % start
     if isempty(defaults.start) || defaults.start < min(timevect)
@@ -192,6 +214,7 @@ if strcmp(defaults.analysis,'Time')
 else
     disp('ERROR! Wrong analysis selection')
 end
+
 
 % deal with categorical and continuous regressors
 if isnumeric(cat)
