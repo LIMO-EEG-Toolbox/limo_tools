@@ -51,7 +51,9 @@ end
 
 [n,p] = size(x);
 if n<p
-    error('Principal Component Projection cannot be computed, more observations than variables are needed')
+    error([ 'Principal Component Projection cannot be computed, more observations than variables are needed.' 10 ...
+        'When using WLS (weighted least square), you must have more trials than time samples. This is not the' 10 ...
+        'case for this dataset. Try reducing the number of time samples or use OLS (ordinary least square) instead.' ])
 end
 
 %% 1st Phase: Detect location outliers
@@ -118,10 +120,42 @@ if strcmpi(fig,'new') || strcmpi(fig,'on')
     if strcmpi(fig,'new')
         figure('Name','limo_pcout projection')
     end
-    plot(xpc'); 
+    vect = 1:size(x,2);
+    % show trials
+    subplot(3,5,[1 2 3]); plot(vect,x); title('Single trials');
+    axis tight; grid on; box on
+    subplot(3,5,[4 5]); plot(1:size(xpc,2),xpc); title('Projected trials onto PC space')
     scale = range(xpc(:))*0.01; grid on; box on
     axis([-0.5 size(xpc,2) min(xpc(:))-scale max(xpc(:))+scale]); ylabel('A.U.');
-    xlabel(sprintf('%g time comp / %g time frames)',size(xpc,2),size(x,2)));
-    title('Trials projected onto the PC space')
+    xlabel(sprintf('%g components / %g frames',size(xpc,2),size(x,2)));
+    % show weights
+    k = round(1 + log2(size(x,1))); % sturges binning
+    subplot(3,5,[6 7]); histogram(w1,k,'FaceColor',[0.1 0.4 0.7])
+    ylabel('frequency'); axis tight; grid on; box on; title('location weights')
+    subplot(3,5,[11 12]); histogram(w2,k,'FaceColor',[0.7 0.8 0.5]); xlabel('weight values')
+    ylabel('frequency'); axis tight; grid on; box on; title('scatter weights')
+    subplot(3,5,[8 13]); h = histogram(dist,k); BinEdges = h.BinEdges;
+    histogram(dist(out==1),BinEdges,'FaceColor',[0.9 0.6 0.6]); set(gca,'view',[90 -90])
+    hold on; histogram(dist(out==0),BinEdges,'FaceColor',[0.25 0.25 0.25]);
+    ylabel('frequency'); axis tight; grid on; box on; title('final weights')
+    % show averages
+    [good_mean,good_ci] = limo_central_estimator(x(out==1,:)','Mean',95/100);
+    [bad_mean, bad_ci]  = limo_central_estimator(x(out==0,:)','Mean',95/100);
+    [weighted_mean,weighted_ci] = limo_central_estimator((x.*repmat(dist,[1 size(x,2)]))','Mean',95/100);
+    subplot(3,5,[9 10]); plot(vect,bad_mean,'LineWidth',2,'color',[0.25 0.25 0.25])
+    fillhandle = patch([vect fliplr(vect)], [bad_ci(1,:),fliplr(bad_ci(2,:))], [0.25 0.25 0.25]);
+    set(fillhandle,'EdgeColor',[0.25 0.25 0.25],'FaceAlpha',0.2,'EdgeAlpha',0.8);
+    hold on; plot(vect,good_mean,'LineWidth',2,'color',[0.9 0.6 0.6])
+    fillhandle = patch([vect fliplr(vect)], [good_ci(1,:),fliplr(good_ci(2,:))], [0.9 0.6 0.6]);
+    set(fillhandle,'EdgeColor',[0.9 0.6 0.6],'FaceAlpha',0.2,'EdgeAlpha',0.8);
+    axis tight; grid on; box on; title('Mean of good trials vs. Mean of outliers')
+    subplot(3,5,[14 15]); plot(vect,good_mean,'LineWidth',2,'color',[0.9 0.6 0.6])
+    fillhandle = patch([vect fliplr(vect)], [good_ci(1,:),fliplr(good_ci(2,:))], [0.9 0.6 0.6]);
+    set(fillhandle,'EdgeColor',[0.9 0.6 0.6],'FaceAlpha',0.2,'EdgeAlpha',0.8);
+    hold on; plot(vect,weighted_mean,'LineWidth',2,'color',[0.2 0.6 0.2]);
+    fillhandle = patch([vect fliplr(vect)], [weighted_ci(1,:),fliplr(weighted_ci(2,:))], [0.2 0.6 0.2]);
+    set(fillhandle,'EdgeColor',[0.2 0.6 0.2],'FaceAlpha',0.2,'EdgeAlpha',0.8);
+    axis tight; grid on; box on; title('Mean of good trials vs. Weighted Mean')
+    drawnow
 end
 
