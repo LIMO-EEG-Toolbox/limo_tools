@@ -17,9 +17,13 @@ LIMO = load(LIMOfile);
 LIMO = LIMO.LIMO;
 if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
-        cd (LIMO.data.data_dir);
-        disp('reloading data ..');
-        EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
+        cd (LIMO.data.data_dir); disp('reloading data ..');
+        [~,~,ext]=fileparts(LIMO.data.data);
+        if strcmpi(ext,'.set')
+            EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]); % eeglab
+        elseif strcmpi(ext,'.mat')
+            EEGLIMO = load([LIMO.data.data_dir filesep LIMO.data.data]); % fieldtrip
+        end
     end
 else
     disp('reloading data ..');
@@ -83,6 +87,9 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
+        if ~exist(erp,'file')  
+            % load from field
+        else
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.daterp);
@@ -118,6 +125,7 @@ if strcmp(LIMO.Analysis,'Time')
             else
                 error('could not locate ERP data, import failed')
             end
+        end
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
         clear EEGLIMO

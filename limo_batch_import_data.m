@@ -186,8 +186,7 @@ if isnumeric(cat)
 else
     if strcmp(cat(end-3:end),'.txt')
         LIMO.data.Cat = load(cat);
-    else
-        strcmp(cat(end-3:end),'.mat')
+    elseif strcmp(cat(end-3:end),'.mat')
         name = load(cat); f = fieldnames(name);
         LIMO.data.Cat = getfield(name,f{1});
     end
