@@ -30,6 +30,11 @@ function [b,W,rf] = limo_WLS(X,Y)
 %  Copyright (C) LIMO Team 2019
 
 %% input check
+disp('check x')
+X
+disp('check y')
+Y
+input('ok?')
 if  nargin < 2      
     error(message('Too Few Inputs'));      
 end 

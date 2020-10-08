@@ -1,0 +1,596 @@
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 10:20:37
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 10:20:37 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 10:20:45 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 10:20:46 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 10:20:58 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 10:20:58 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 10:21:01 glm    completed (0 run / 0 fail / 3 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 10:21:01
+*********************************************
+All jobs have been successfully completed.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 10:31:44
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 10:31:44 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 10:31:53 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 10:31:53 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 10:32:05 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 10:32:05 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 15:56:09
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 15:56:09 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 15:56:18 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 15:56:18 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 15:56:31 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 15:56:31 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 17:42:32
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 17:42:32 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 17:42:41 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 17:42:41 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 17:42:54 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 17:42:54 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 17:43:28 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 17:43:28
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 17:47:43
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 17:47:44 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 17:47:53 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 17:47:53 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 17:48:06 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 17:48:06 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 17:48:38 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 17:48:39
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 17:54:17
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 17:54:18 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 17:54:27 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 17:54:27 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 17:54:40 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 17:54:40 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 17:55:14 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 17:55:14
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:12:35
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:12:35 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:12:45 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:12:45 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:12:57 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:12:57 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:13:30 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:13:30
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:23:36
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:23:36 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:23:46 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:23:46 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:23:59 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:23:59 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:24:31 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:24:31
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:28:11
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:28:11 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:28:20 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:28:20 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:28:33 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:28:33 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:29:06 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:29:06
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:33:31
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:33:32 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:33:41 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:33:41 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:33:54 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:33:54 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:34:26 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:34:27
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:36:51
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:36:51 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:37:00 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:37:00 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:37:13 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:37:13 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:37:45 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:37:46
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 18:38:55
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 18:38:55 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 18:39:04 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 18:39:04 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 18:39:17 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 18:39:17 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+707-Oct-2020 18:39:50 glm    failed    (0 run / 1 fail / 2 done / 0 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+07-Oct-2020 18:39:50
+*********************************************
+The execution of the following job has failed :
+
+    glm ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 19:06:21
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 19:06:22 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 07-Oct-2020 19:07:49
+user: luca-, host: unknown, system: windows
+*******************************************
+07-Oct-2020 19:07:50 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:07-Oct-2020 19:08:00 import completed (0 run / 0 fail / 1 done / 2 left)
+07-Oct-2020 19:08:00 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:07-Oct-2020 19:08:13 design completed (0 run / 0 fail / 2 done / 1 left)
+07-Oct-2020 19:08:13 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 08-Oct-2020 18:23:38
+user: luca-, host: unknown, system: windows
+*******************************************
+08-Oct-2020 18:23:38 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:08-Oct-2020 18:23:43 import failed    (0 run / 1 fail / 0 done / 2 left)
+
+*********************************************
+The processing of the pipeline is terminated.
+See report below for job completion status.
+08-Oct-2020 18:23:43
+*********************************************
+The execution of the following job has failed :
+
+    import ; 
+
+More infos can be found in the individual log files. Use the following command to display these logs :
+
+    psom_pipeline_visu('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\','log',JOB_NAME)
+
+The following jobs have not been processed due to a dependence on a failed job or the interruption of the pipeline manager :
+
+    design ; glm ; 
+
+All jobs have been processed, but some jobs have failed.
+You may want to restart the pipeline latter if you managed to fix the problems.
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 08-Oct-2020 18:29:07
+user: luca-, host: unknown, system: windows
+*******************************************
+08-Oct-2020 18:29:08 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:08-Oct-2020 18:29:12 import completed (0 run / 0 fail / 1 done / 2 left)
+08-Oct-2020 18:29:12 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:08-Oct-2020 18:29:17 design completed (0 run / 0 fail / 2 done / 1 left)
+08-Oct-2020 18:29:17 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+
+
+*******************************************
+The pipeline PIPE is now being processed.
+Started on 08-Oct-2020 18:33:40
+user: luca-, host: unknown, system: windows
+*******************************************
+08-Oct-2020 18:33:41 import submitted (1 run / 0 fail / 0 done / 2 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\import.mat')
+
+:08-Oct-2020 18:33:45 import completed (0 run / 0 fail / 1 done / 2 left)
+08-Oct-2020 18:33:45 design submitted (1 run / 0 fail / 1 done / 1 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\design.mat')
+
+:08-Oct-2020 18:33:50 design completed (0 run / 0 fail / 2 done / 1 left)
+08-Oct-2020 18:33:50 glm    submitted (1 run / 0 fail / 2 done / 0 left)
+
+    The execution mode is session
+    The following command is going to be executed :
+psom_run_job('C:\Users\luca-\OneDrive - UMONS\_PhD\_Matlab\3-Dynamic-Analysis\limo_tools\limo_batch_report\GLM_OLS_Time_Channels\subject1\\glm.mat')
+

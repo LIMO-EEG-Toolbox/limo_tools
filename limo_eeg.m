@@ -493,7 +493,7 @@ switch varargin{1}
             end
             
             % -------------- loop the analysis time frames per time frames
-            
+
             if strcmp(LIMO.design.status,'to do')
                 
                 % 1st get weights based on time

@@ -1,0 +1,1 @@
+subject 1 failed: All jobs have been processed, but some jobs have failed. You may want to restart the pipeline latter if you managed to fix the problems.
