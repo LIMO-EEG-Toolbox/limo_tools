@@ -43,7 +43,7 @@ for gp = 1:J
     data = Y(:,X(:,gp)==1);
     na   = size(data,2); % how many subjects
     ga   = floor((percent/100)*na);% number of items to trim / winsorize
-    if ga == 0
+    if ga == 0 && percent > 0 
         ga = 1; % with low count still remove 2 subjects (highest / lowest values)
     end
     asort           = sort(data,2);
