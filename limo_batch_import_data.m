@@ -21,7 +21,6 @@ function limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 
 global EEGLIMO
 
-disp('in import')
 %format adaptation
 EEGLIMO                      = load('-mat',EEG_DATA);
 EEGLIMO                      = struct2cell(EEGLIMO);
