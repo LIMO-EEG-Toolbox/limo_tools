@@ -26,22 +26,11 @@ disp('in import')
 EEGLIMO                      = load('-mat',EEG_DATA);
 EEGLIMO                      = struct2cell(EEGLIMO);
 EEGLIMO                      = EEGLIMO{1};
-[root,name,ext]              = fileparts(EEG_DATA);
-EEGLIMO.filepath             = root;
-EEGLIMO.filename             = [name ext];
-% EEGLIMO.srate                = EEGLIMO.fsample;
-% EEGLIMO.etc.timeerp          = EEGLIMO.sampleinfo(:,1)/EEGLIMO.srate * 1000; %convert sample number to ms;
-% EEGLIMO.etc.timeerp          = EEGLIMO.time{1}  ; %convert sample number to ms;
-
-% daterp = zeros(size(EEGLIMO.trial{1},1),size(EEGLIMO.trial{1},2),length(EEGLIMO.trial));
-% for i = 1:length(EEGLIMO.trial)
-%     daterp(:,:,i) = EEGLIMO.trial{i};
-% end
-% save(fullfile(root,'daterp.mat'),'daterp')
-% EEGLIMO.etc.datafiles.daterp = fullfile(root,'daterp.mat');
-
-clc;
-
+if ~isfield(EEGLIMO,'filepath')
+    [root,name,ext]              = fileparts(EEG_DATA);
+    EEGLIMO.filepath             = root;
+    EEGLIMO.filename             = [name ext];
+end
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
