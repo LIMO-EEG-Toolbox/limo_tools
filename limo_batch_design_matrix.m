@@ -17,6 +17,7 @@ if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
         cd (LIMO.data.data_dir);
         disp('reloading data ..');
+        cd (LIMO.data.data_dir); disp('reloading data ..');
         [~,~,ext]=fileparts(LIMO.data.data);
         if strcmpi(ext,'.set')
             EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]); % eeglab
