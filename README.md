@@ -9,12 +9,12 @@ This repo is the stable version of LIMO MEEG (v3) to be used with EEGLAB (https:
 Have EEGLAB installed (because we call some functions) and LIMO in the plug-in directory.
 
 ## Documentation
-The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides ducumentation on the various tools available and files created.
+The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
 We also have a full [tutorial](https://github.com/LIMO-EEG-Toolbox/limo_meeg/wiki) taking you through an analysis.
 
 ## LIMO tutorial dataset
-
-With the software we released a dataset that can now be cited and downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189. The tutorial uses data prepared using [EEG-BIDS](https://www.nature.com/articles/s41597-019-0104-8) avaialble here: https://openneuro.org/datasets/ds002718/versions/1.0.2
+The tutorial uses data prepared using [EEG-BIDS](https://www.nature.com/articles/s41597-019-0104-8) avaialble here: https://openneuro.org/datasets/ds002718/versions/1.0.2.
+There is also an older dataset that can be downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189. 
 
 ## Contribute
 
