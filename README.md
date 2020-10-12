@@ -7,6 +7,7 @@ This repo is the stable version of LIMO MEEG (v3) to be used with EEGLAB (https:
 ## Installation
 
 Have EEGLAB installed (because we call some functions) and LIMO in the plug-in directory.
+Data of each subject must be in subject specific folders -- ideally follow the [Brain Imaging Data Structure](https://bids.neuroimaging.io/) making working with EEGLAB/FieldTrip/LIMO easier.
 
 ## Documentation
 The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
