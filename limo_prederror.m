@@ -24,4 +24,34 @@ function prediction_error = limo_prederror(LIMO,k)
 % ------------------------------
 %  Copyright (C) LIMO Team 2020
 
+% check LIMO file
+if ischar(LIMO)
+    LIMO = load(LIMO);
+    LIMO = LIMO.LIMO;
+end
+
+% load the data
+cd(LIMO.dir)
+Yr = load(fullfile(LIMO.dir,'Yr.mat'));
+Yr = Yr.Yr;
+
+% check fold - default is 5 folds
+if vargin == 1
+    N = size(Yr,ndims(Yr));
+    k = floor(N/5);
+end
+Nfold = round(N/k);
+
+% create place holder variables
+if strcmpi(LIMO.Analysis,'Time-Frequency')
+    Yr = limo_tf_4d_reshape(Yr,LIMO.data.size3D);    
+end
+prediction_error = NaN(size(Yr,1),size(Yr,2),3);
+
+% compute
+for fold = Nfold:-1:1
+
+end
+
+
 
