@@ -158,12 +158,12 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % ---------
     if isempty(LIMO.data.data)
         [Names,Paths,LIMO.data.data] = limo_get_files;
-        % Case for path to the files
-    elseif size(LIMO.data.data{1},1) == 1
-        [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
-        % Case when all paths are provided
-    elseif size(LIMO.data.data{1},1) > 1
-        [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data{1});
+    else
+        if ischar(LIMO.data.data{1}) % Case for path to the files
+            [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
+        else % Case when all paths are provided
+            [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data);
+        end
     end
     LIMO.data.data_dir = Paths;
     
@@ -344,14 +344,14 @@ elseif strcmpi(stattest,'two-samples t-test')
     if isempty(LIMO.data.data)
         [Names,Paths,LIMO.data.data{1}] = limo_get_files(1);
         LIMO.data.data_dir{1}           = Paths;
-        % Case for path to the files
-    elseif size(LIMO.data.data{1},1) == 1
-        [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
-        LIMO.data.data_dir{1}           = Paths;
-        % Case when all paths are provided
-    elseif size(LIMO.data.data{1},1) > 1
-        [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
-        LIMO.data.data_dir{1} = Paths;
+    else
+        if ischar(LIMO.data.data{1}) % Case for path to the files
+            [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
+            LIMO.data.data_dir{1}           = Paths;
+        else % Case when all paths are provided
+            [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
+            LIMO.data.data_dir{1} = Paths;
+        end
     end
     if isempty(Names)
         return
@@ -383,14 +383,14 @@ elseif strcmpi(stattest,'two-samples t-test')
     if length(LIMO.data.data) == 1
         [Names,Paths,LIMO.data.data{2}] = limo_get_files(2);
         LIMO.data.data_dir{2}           = Paths;
-        % Case for path to the files
-    elseif size(LIMO.data.data{2},1) == 1
-        [Names,Paths,LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
-        LIMO.data.data_dir{2}           = Paths;
-        % Case when all paths are provided
-    elseif size(LIMO.data.data{2},1) > 1
-        [Names,Paths]         = breaklimofiles(LIMO.data.data{2});
-        LIMO.data.data_dir{2} = Paths;
+    else
+        if ischar(LIMO.data.data{2}) % Case for path to the files
+            [Names,Paths,LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
+            LIMO.data.data_dir{2}           = Paths;
+        else % Case when all paths are provided
+            [Names,Paths]         = breaklimofiles(LIMO.data.data{2});
+            LIMO.data.data_dir{2} = Paths;
+        end
     end
     if isempty(Names)
         return
@@ -498,14 +498,14 @@ elseif strcmpi(stattest,'paired t-test')
     if isempty(LIMO.data.data)
         [Names,Paths,LIMO.data.data] = limo_get_files;
         LIMO.data.data_dir           = Paths;
-        % Case for path to the files
-    elseif size(LIMO.data.data{1},1) == 1
-        [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
-        LIMO.data.data_dir{1}           = Paths;
-        % Case when all paths are provided
-    elseif size(LIMO.data.data{1},1) > 1
-        [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
-        LIMO.data.data_dir{1} = Paths;
+    else
+        if ischar(LIMO.data.data{1}) % Case for path to the files
+            [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
+            LIMO.data.data_dir{1}           = Paths;
+        else % Case when all paths are provided
+            [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
+            LIMO.data.data_dir{1} = Paths;
+        end
     end
     if isempty(Names)
         return
@@ -535,14 +535,14 @@ elseif strcmpi(stattest,'paired t-test')
             d = LIMO.data.data_dir; LIMO.data = rmfield(LIMO.data,'data_dir'); LIMO.data.data_dir{1} = d; clear d;
         end
         
-        if size(LIMO.data.data,2) == 1 % only 1st group of files in {1} 
+        if size(LIMO.data.data,1) == 1 % only 1st group of files in {1}
             [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],'select paired file');
-            % Case for path to the files
-        elseif size(LIMO.data.data{2},1) == 1
-            [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
-            % Case when all paths are provided
-        elseif size(LIMO.data.data{2},1) > 1
-            [Names{2},Paths{2},LIMO.data.data{2}] = breaklimofiles(LIMO.data.data{2});
+        else
+            if ischar(LIMO.data.data{2})% Case for path to the files
+                [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],[],LIMO.data.data{2});
+            else % Case when all paths are provided
+                [Names{2},Paths{2}] = breaklimofiles(LIMO.data.data{2});
+            end
         end
         
         if isempty(Names{2})
@@ -590,7 +590,7 @@ elseif strcmpi(stattest,'paired t-test')
     
     % get data for all parameters dim [channel, frame, param, nb, subjects]
     % -----------------------------------------------------------------
-    if all(size(LIMO.data.data) == [1 2])
+    if any(size(LIMO.data.data) == 2)
         data = getdata(2,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
     else
         data = getdata(1,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
@@ -721,14 +721,13 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             else
                 [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' con file gp ',num2str(i)]);
             end
-            % Case for path to the files
-        elseif size(LIMO.data.data{i},1) == 1
-            [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([],[],[],LIMO.data.data{i});
-            % Case when all paths are provided
-        elseif size(LIMO.data.data{i},1) > 1
-            [Names{i},Paths{i},LIMO.data.data{i}] = breaklimofiles(LIMO.data.data{i});
-        end
-        
+        else
+            if ischar(LIMO.data.data{i}) % Case for path to the files
+                [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([],[],[],LIMO.data.data{i});
+            else % Case when all paths are provided
+                [Names{i},Paths{i},LIMO.data.data{i}] = breaklimofiles(LIMO.data.data{i});
+            end
+        end        
         if isempty(Names{i}); return; end
     end
     
@@ -999,8 +998,16 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % 2nd select data per gp / conditions
     % ---------------------------------------------------------------
     if ~isempty(LIMO.data.data)
-        isbeta = cellfun(@(x) contains(x,'Beta'),LIMO.data.data);
-        iscon  = cellfun(@(x) contains(x,'con'),LIMO.data.data);
+        if ischar(LIMO.data.data{1}) && ischar(LIMO.data.data{2})
+            isbeta = cellfun(@(x) contains(x,'Beta'),LIMO.data.data);
+            iscon  = cellfun(@(x) contains(x,'con'),LIMO.data.data);
+        else
+            for gp = 1:gp_nb
+                isbeta = mean(cellfun(@(x) contains(x,'Beta'),LIMO.data.data{gp}));
+                iscon  = mean(cellfun(@(x) contains(x,'con'),LIMO.data.data{gp}));
+            end
+        end
+        
         if any(isbeta) && any(iscon)
             error('input data mix Beta and con files - not supported')
         elseif sum(isbeta) == 0 && sum(iscon) == 0
@@ -1035,12 +1042,12 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         for i=1:gp_nb 
             if length(LIMO.data.data) < i
                 [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
-                % Case for path to the files
-            elseif size(LIMO.data.data{i},1) == 1
-                [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],LIMO.data.data{i});
-                % Case when all paths are provided
-            elseif size(LIMO.data.data{i},1) > 1
-                [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
+            else
+                if ischar(LIMO.data.data{i}) % Case for path to the files
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],LIMO.data.data{i});
+                else % Case when all paths are provided
+                    [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
+                end
             end
             
             if isempty(Names{cell_nb})
@@ -1324,9 +1331,9 @@ end % closes the function
 %                                   ROUTINES
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
-%% fileparts for multiple cell entries
+%% fileparts for multiple cell entries in row (ie per group)
 function [Names,Paths,Files] = breaklimofiles(cellfiles)
-N     = size(cellfiles,1);
+N     = size(cellfiles,2);
 Paths = cell(1,N);
 Names = cell(1,N);
 Files = cell(1,N);
