@@ -1075,6 +1075,12 @@ switch type
                     if strcmp(LIMO.design.method,'Trimmed Mean')
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB); % trimmed means
                     else
+                        disp('check robust param')
+                        C
+%                         C{2}
+%                         C{3}                        
+                        XB
+                        input('ok')
                         result = limo_rep_anova(Y,gp,factor_levels,C,XB); % usual means
                     end
                     tmp_Rep_ANOVA(channel,:,1,1)                   = result.repeated_measure.F;

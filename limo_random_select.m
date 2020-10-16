@@ -995,7 +995,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         disp('no factor entered, Rep. ANOVA aborded');
         return
     end
-    
+        
     % 2nd select data per gp / conditions
     % ---------------------------------------------------------------
     if ~isempty(LIMO.data.data)
@@ -1144,13 +1144,13 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             
             % data are of dim size(expected_chanlocs,2), latter start/earlier stop across subjects, parameters, nb of subjects
             if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
-                
+
                 if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
                     matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
                 elseif  strcmpi(LIMO.Type,'Components')
                     matched_data = tmp(:,begins_at:ends_at,:);
                 end
-                
+
                 if matrix_index == 1
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         data(:,:,:,:,matrix_index) = matched_data;
@@ -1307,6 +1307,9 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     Yr = tmp_data; save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
     clear tmp_data
+    
+    clc;
+    disp('loading completed')
     
     % compute
     % --------

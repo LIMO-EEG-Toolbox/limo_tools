@@ -213,8 +213,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     end
     
     % build the pipelines
-    for subject = 1:size(model.set_files,1)
-        
+    for subject = 1:size(model.set_files,1)        
         % build LIMO.mat files from import
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';   
         pipeline(subject).import.command = command;
@@ -263,11 +262,6 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
-        
-        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
-                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
-            batch_contrast.LIMO_files = batch_contrast.LIMO_files';
-        end
 
         if ~isempty(model.cat_files)
             pipeline(subject).import.opt.cat = model.cat_files{subject};
@@ -279,6 +273,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         else
             pipeline(subject).import.opt.cont = [];
         end
+        
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
         LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
@@ -299,6 +294,14 @@ if strcmp(option,'model specification') || strcmp(option,'both')
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
+    if ~isfield(batch_contrast,'LIMO_files')
+        glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type]; 
+        for subject = 1:length(model.set_files)
+            [root,~,~] = fileparts(model.set_files{subject});
+            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+        end
+        batch_contrast.LIMO_files = batch_contrast.LIMO_files';
+    end
     
     for subject = 1:length(batch_contrast.LIMO_files)
         command = 'limo_batch_contrast(files_in,opt.C)';
