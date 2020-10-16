@@ -1036,11 +1036,12 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             if length(LIMO.data.data) < i
                 [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([' beta file gp ',num2str(i)]);
                 % Case for path to the files
-            elseif size(LIMO.data.data{i},1) == 1
+            elseif all(size(LIMO.data.data) == [gp_nb 1]) % size(LIMO.data.data{i},1) == 1
                 [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = limo_get_files([],[],[],LIMO.data.data{i});
                 % Case when all paths are provided
-            elseif size(LIMO.data.data{i},1) > 1
-                [Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
+            else % if size(LIMO.data.data{i},1) > 1
+                %[Names{cell_nb},Paths{cell_nb},LIMO.data.data{cell_nb}] = breaklimofiles(LIMO.data.data{i});
+                [Names{cell_nb},Paths{cell_nb},~] = breaklimofiles(cellfun(@(x)x,LIMO.data.data,'UniformOutput',false)');
             end
             
             if isempty(Names{cell_nb})
