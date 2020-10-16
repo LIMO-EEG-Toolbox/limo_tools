@@ -105,6 +105,7 @@ function LIMOPath = limo_random_robust(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2020
 
+warning off
 %% inputs checks
 LIMOPath = [];
 if nargin == 0
@@ -1365,5 +1366,6 @@ switch type
         end
         disp('Repeated Measures ANOVA done')
 end
+warning on
 
 
