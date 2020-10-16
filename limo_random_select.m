@@ -59,6 +59,8 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 % ----------------------------------------
 %  Copyright (C) LIMO Team 2020
 
+LIMOPath = [];
+ 
 %% check inputs
 
 if nargin == 0
