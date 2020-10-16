@@ -31,6 +31,13 @@ for cluster = 1:length(labels)-1
     change_prob                     = (sum(state_change==1,1)+sum(state_change==-1,1)) ./ (2*Nstates);
     change_prob(isnan(change_prob)) = 0;
     newlabels                       = bwlabeln(change_prob>=th);
+    all_labels                      = unique(newlabels);
+    all_labels(all_labels==0)       = [];
+    for fill = 1:length(all_labels)-1
+            start = min(find(newlabels == all_labels(fill)));
+            stop  = min(find(newlabels == all_labels(fill+1)))-1;
+            newlabels(start:stop) = all_labels(fill);
+    end
     tmpmask                         = zeros(size(mask));
     for p=find(Nstates)
         if newlabels(p) ~= 0
