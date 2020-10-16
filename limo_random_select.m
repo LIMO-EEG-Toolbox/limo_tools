@@ -1308,9 +1308,6 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     Yr = tmp_data; save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
     clear tmp_data
     
-    clc;
-    disp('loading completed')
-    
     % compute
     % --------
     tmpname = limo_random_robust(6,Yr,gp,factor_nb,LIMO,'go',skip_design_check);
