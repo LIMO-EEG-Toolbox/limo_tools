@@ -47,6 +47,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                                    skip this step
 %
 % OUTPUT filepath is the Path to the LIMO structure.
+%        all files are created where the function is called (ie no directory as argument)
 %
 % Example for a repeated measure ANOVA with command line
 % LIMOPath = limo_random_select('Repeated Measures ANOVA',chanlocs,'LIMOfiles',...
