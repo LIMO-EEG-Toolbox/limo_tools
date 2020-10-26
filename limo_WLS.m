@@ -70,7 +70,7 @@ re(find(re < 1e-5)) = 1e-5;
 r                   = resadj ./ repmat(tune.*re, size(Y,1),1);
 
 %% do the computation
-[W,~,rf]            = limo_pcout(r);
+[W,~,rf]            = limo_pcout(r,'figure','off'); % 'new'
 WY                  = Y .* repmat(W,1,size(Y,2));
 WX                  = X .* repmat(W,1,size(X,2));
 b                   = pinv(WX)*WY;

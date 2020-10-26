@@ -12,7 +12,7 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 %        percent [0 100] is the amount of trimming - default 20
 %        Warning: do not use this function to compare medians (percent=50)
 %
-% OUTPUT: F and p values for trimmed mean differences 
+% OUTPUT: F and p values for trimmed mean differences
 %         YM is the matrix of averaged trmmed data (ie the modelled data)
 %
 % EXAMPLE: 200 time frames x 5 groups of 20 subjects
@@ -32,16 +32,16 @@ end
 J = size(X,2);
 Nf = size(Y,1);
 h = zeros(1,J); % same for all frames
-w = zeros(Nf,J); % inverse of the adjusted variance 
+w = zeros(Nf,J); % inverse of the adjusted variance
 xbar = cell(J,1); % trimmed means
 
 % for each group, trim the data, get the sample size and winsorized variance
 % compute w the inverse of the adjusted variance d
 for gp = 1:J
     data = Y(:,X(:,gp)==1);
-    na = size(data,2); % how many subjects
-    ga=floor((percent/100)*na);% number of items to trim / winsorize
-    if ga == 0
+    na   = size(data,2); % how many subjects
+    ga   = floor((percent/100)*na);% number of items to trim / winsorize
+    if ga == 0 && percent > 0
         ga = 1; % with low count still remove 2 subjects (highest / lowest values)
     end
     asort=sort(data,2);
@@ -49,15 +49,15 @@ for gp = 1:J
     YM{gp} = trimdata;
     h(gp) = size(trimdata,2); % effective sample size
     xbar{gp} = nanmean(trimdata,2);
-    wa=asort; 
+    wa=asort;
     wa(:,1:ga+1)=repmat(asort(:,ga+1),1, ga+1);
     wa(:,na-ga:end)=repmat(asort(:,na-ga),1, ga+1);
     wva=nanvar(wa,0,2); % windsorized variances
-    
+
     d = ((na-1).*wva) ./ (h(gp)*(h(gp)-1));
     w(:,gp) = 1./d;
 end
-    
+
 U = sum(w,2);
 tmp = nan(size(Y));
 for gp = 1:J
@@ -93,7 +93,3 @@ F = A./ (1+B);
 df = J-1;
 dfe = ((3/(J^2-1)) .* (sum(((1 - (w./repmat(U,1,J))).^2) ./ repmat((h-1),size(Y,1),1),2))).^-1;
 p = 1 - fcdf(F, df, dfe);
-
-
-
-
