@@ -1019,7 +1019,7 @@ switch type
        end
         
         if isempty(dir('Rep_ANOVA_Factor*.mat'))
-            
+
             % check the design with user
             % --------------------------
             if ~strcmpi(go,'Yes')
@@ -1034,7 +1034,7 @@ switch type
                 end
             end
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-            
+
             % do the analysis
             % ---------------
             array = find(~isnan(data(:,1,1,1)));
@@ -1050,11 +1050,11 @@ switch type
                     Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
                     gp = gp_vector(find(~isnan(tmp(1,:,1))),:);
                 end
-                
+
                 if type == 3 || type == 4
                     XB = X(find(~isnan(tmp(1,:,1))),:);
                 end
-                
+
                 if type == 1
                     if strcmp(LIMO.design.method,'Trimmed Mean')
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C); % trimmed means
@@ -1099,7 +1099,7 @@ switch type
                 nb_effects = size(tmp_Rep_ANOVA,3);
                 clear tmp Y gp result
             end
-            
+
             % save stuff
             % ---------
             Rep_filenames = cell(1,nb_effects);
@@ -1115,7 +1115,7 @@ switch type
                     Interaction(isspace(Interaction)) = [];
                     Rep_filenames{i} = sprintf('Rep_ANOVA_Interaction_Factors_%s.mat',Interaction);
                 end
-                
+
                 % save each factor effect as F/p values
                 % use reshape instead of squeeze in case there is only 1 channel
                 Rep_ANOVA = reshape(tmp_Rep_ANOVA(:,:,i,:),...

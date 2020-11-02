@@ -931,7 +931,6 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             LIMO.design.name = 'Repeated measures ANOVA one channel';
         end
     end
-    
     % Ask for Gp
     % -------------
     if ~isempty(LIMO.data.data)

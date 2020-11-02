@@ -41,30 +41,8 @@ else
     disp('ERROR in limo_batch_import_data: wrong file extension')
 end
 
-if ~isfield(EEGLIMO,'chanlocs') && ~isfield(EEGLIMO,'chanpos')
-    disp('ERROR in limo_batch_import_data: Channel positions not defined in EEG_DATA.chanpos')
-    clc;
-    default_elec = input('Do you want to use the default electrode set-up? Yes(1), No(0)');
-    if default_elec
-        EEGLIMO.chanpos = defaults.template_elec.chanpos;
-    else
-        return
-    end
-elseif ~isfield(EEGLIMO,'chanlocs') && ~isfield(EEGLIMO,'chanpos')
-    disp('ERROR in limo_batch_import_data: Channel labels not defined in EEG_DATA.label')
-    default_elec = input('Do you want to use the default electrode set-up? Yes(1), No(0)');
-    if default_elec
-        EEGLIMO.label = defaults.template_elec.label;
-    else
-        return
-    end
-elseif ~isfield(EEGLIMO,'chanlocs')
-    for i = 1:length(EEGLIMO.chanpos)
-        EEGLIMO.chanlocs(i).labels = EEGLIMO.label(i);
-        EEGLIMO.chanlocs(i).X = EEGLIMO.chanpos(i,1);
-        EEGLIMO.chanlocs(i).Y = EEGLIMO.chanpos(i,2);
-        EEGLIMO.chanlocs(i).Z = EEGLIMO.chanpos(i,3);
-    end
+if ~isfield(EEGLIMO,'chanlocs')
+    EEGLIMO = limo_ft_get_chanlocs(EEGLIMO, defaults);
 end
 
 LIMO.Analysis                = defaults.analysis;
