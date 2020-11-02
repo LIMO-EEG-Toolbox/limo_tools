@@ -42,7 +42,7 @@ else
 end
 
 if ~isfield(EEGLIMO,'chanlocs')
-    EEGLIMO = limo_ft_get_chanlocs(EEGLIMO, defaults);
+    EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
 end
 
 LIMO.Analysis                = defaults.analysis;

@@ -1,4 +1,4 @@
-function [eeg_limo] = ft2limo_get_chanlocs(eeg_limo, defaults)
+function [eeg_limo] = limo_get_ft_chanlocs(eeg_limo, defaults)
 
 % This function is used to create the chanlocs structure required by LIMO
 % from FieldTrip data.

@@ -22,7 +22,7 @@ expected_chanlocs.chanpos(:,1) = mean(X,2);
 expected_chanlocs.chanpos(:,2) = mean(Y,2);
 expected_chanlocs.chanpos(:,3) = mean(Z,2);
 
-expected_chanlocs = limo_ft_get_chanlocs(expected_chanlocs, defaults);
+expected_chanlocs = limo_get_ft_chanlocs(expected_chanlocs, defaults);
 expected_chanlocs.expected_chanlocs = expected_chanlocs.chanlocs';
 expected_chanlocs.pnt = expected_chanlocs.chanpos;
 data_neighb = tmp.LIMO.data; %use the last subject to get the data structure
