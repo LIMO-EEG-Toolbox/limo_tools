@@ -7,13 +7,13 @@ default_label = defaults.template_elec.label;
 default_chanpos = defaults.template_elec.chanpos;
 
 
-if isfield(eeg_limo,'elec')
+if isfield(eeg_limo,'elec') && ~isfield(eeg_limo,'chanpos')
     eeg_limo.chanpos = eeg_limo.elec.chanpos;
     eeg_limo.label = eeg_limo.elec.label;
 end
     
 if ~isfield(eeg_limo,'chanpos')
-    disp('ERROR in limo_batch_import_data: Channel positions not defined in EEG_DATA.chanpos')
+    disp('Channel positions not defined in EEG_DATA.chanpos')
     disp('Lets use the default electrode set-up');
     eeg_labels = ft_channelselection('eeg', default_label);
     eeg_limo.chanpos = zeros(length(eeg_labels),3);
@@ -23,7 +23,7 @@ if ~isfield(eeg_limo,'chanpos')
     end
 end
 if ~isfield(eeg_limo,'label')
-    disp('ERROR in limo_batch_import_data: Channel labels not defined in EEG_DATA.label')
+    disp('Channel labels not defined in EEG_DATA.label')
     disp('Lets use the default electrode set-up');
     if ~exist(eeg_labels,'var')
         eeg_limo.label = ft_channelselection('eeg', default_label);

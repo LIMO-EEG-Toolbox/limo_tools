@@ -81,8 +81,8 @@ if strcmp(defaults.analysis,'Time')
 
     if isfield(EEGLIMO,'etc') && isfield(EEGLIMO.etc,'timeerp') %EEGLAB
         timevect = EEGLIMO.etc.timeerp;
-    elseif isfield(EEGLIMO,'time') % FiledTrip
-        timevect = EEGLIMO.time{1};
+    elseif isfield(EEGLIMO,'time') % FieldTrip
+        timevect = EEGLIMO.time{1}*1000; %convert in ms
     else
         disp('the fied EEG.etc.timeerp is missing - reloading single trials');
         data     = load('-mat',EEGLIMO.etc.timeerp);
