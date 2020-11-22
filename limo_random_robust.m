@@ -1332,6 +1332,12 @@ switch type
             end
             
             % save
+            if ~exist(Rep_filenames,'var')
+                all = dir('Rep_ANOVA_Factor*.mat');
+                for i = size(all,1):-1:1
+                    Rep_filenames{i} = all(i).name;
+                end                
+            end
             for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
                 name = sprintf('H0_%s',Rep_filenames{i});
                 H0_Rep_ANOVA = NaN(size(tmp_boot_H0_Rep_ANOVA,1), size(tmp_boot_H0_Rep_ANOVA, 2), size(tmp_boot_H0_Rep_ANOVA, 4), size(tmp_boot_H0_Rep_ANOVA, 5));
@@ -1342,6 +1348,12 @@ switch type
                 save(['H0', filesep, name],'H0_Rep_ANOVA', '-v7.3');
             end
             
+            if ~exist(IRep_filenames,'var')
+                all = dir('Rep_ANOVA_Interaction*.mat');
+                for i = size(all,1):-1:1
+                    Rep_filenames{i} = all(i).name;
+                end
+            end
             if type == 3 || type ==4
                 for i=1:size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,3)
                     name = sprintf('H0_%s',IRep_filenames{i});
