@@ -1332,7 +1332,7 @@ switch type
             end
             
             % save
-            if ~exist(Rep_filenames,'var')
+            if ~exist('Rep_filenames','var')
                 all = dir('Rep_ANOVA_Factor*.mat');
                 for i = size(all,1):-1:1
                     Rep_filenames{i} = all(i).name;
@@ -1348,7 +1348,7 @@ switch type
                 save(['H0', filesep, name],'H0_Rep_ANOVA', '-v7.3');
             end
             
-            if ~exist(IRep_filenames,'var')
+            if ~exist('IRep_filenames','var')
                 all = dir('Rep_ANOVA_Interaction*.mat');
                 for i = size(all,1):-1:1
                     Rep_filenames{i} = all(i).name;
