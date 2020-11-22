@@ -733,7 +733,7 @@ switch type
             array = find(nansum(squeeze((centered_data(:,1,:,1))),2));          
             fprintf('bootstrapping contrast ...\n');
             parfor b = 1:LIMO.design.bootstrap
-                    H0_ess_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                H0_ess_sub = NaN(size(centered_data,1),size(centered_data,2),2);
                 for c = 1:length(array)
                     channel = array(c);
                     if c == 1
@@ -745,8 +745,8 @@ switch type
                     end
                     % Inputs
                     tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
-                    Y   = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
-                    gp  = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
+                    Y   = tmp(:,find(~isnan(tmp(1,:,1))),:); % resampling should not have NaN, JIC
+                    gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))));
                     % F and p
                     if strcmpi(LIMO.design.method,'Mean')
                         result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
