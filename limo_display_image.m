@@ -157,6 +157,13 @@ else
     error('LIMO.Analysis unspecfied')
 end
 
+if isempty(mytitle)
+    if isfield(LIMO.design,'name')
+        mytitle = LIMO.design.name;
+    else
+        mytitle = ' ';
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
