@@ -80,9 +80,14 @@ for i=size(Paths,2):-1:1
             else
                 file_found(i) = 0;
             end
-            save LIMO LIMO
+        elseif LIMO.Level == 2
+            if exist(fullfile(LIMO.dir,'Yr.mat'),'file') || exist(fullfile(LIMO.dir,'Yr1.mat'),'file')
+                file_found(i) = 1;
+                fprintf('2nd level LIMO file %g successfully updated\n',i);
+            end
         end
-        
+        save LIMO LIMO
+
     % different directory
     elseif LIMO.Level == 1 && length(LIMO.dir) > length(LIMO.data.data_dir)
         test = LIMO.dir(1:length(LIMO.data.data_dir)) == LIMO.data.data_dir;
