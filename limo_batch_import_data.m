@@ -35,14 +35,13 @@ LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
 if strcmp(ext,'.set') %EEGLAB
     LIMO.data.sampling_rate      = EEGLIMO.srate;
-elseif strcmp(ext,'.mat') %FieldTrip
+elseif strcmp(ft_datatype(EEGLIMO),'raw') %FieldTrip
     LIMO.data.sampling_rate      = EEGLIMO.fsample;
+    if ~isfield(EEGLIMO,'elec') || (isfield(EEGLIMO,'elec') && isfield(EEGLIMO.elec,'chanlocs'))
+        EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+    end
 else
-    disp('ERROR in limo_batch_import_data: wrong file extension')
-end
-
-if ~isfield(EEGLIMO,'chanlocs')
-    EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+    error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
 end
 
 LIMO.Analysis                = defaults.analysis;
@@ -199,7 +198,7 @@ if strcmp(defaults.analysis,'Time')
 %     LIMO.data.tf_freqs = freqvect(LIMO.data.trim_lowf:LIMO.data.trim_highf);
 
 else
-    disp('ERROR! Wrong analysis selection')
+    error('ERROR! Wrong analysis selection')
 end
 
 
@@ -213,7 +212,7 @@ else
         name = load(cat); f = fieldnames(name);
         LIMO.data.Cat = getfield(name,f{1});
     else
-        disp('ERROR cat')
+        error('ERROR cat')
     end
 end
 
@@ -226,7 +225,7 @@ else
         [~,name,~] = fileparts(cont);
         load(cont); LIMO.data.Cont = eval(name);
     else
-        disp('ERROR cont')
+        error('ERROR cont')
     end
 end
 

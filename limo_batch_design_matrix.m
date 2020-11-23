@@ -25,6 +25,9 @@ if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
             EEGLIMO = load([LIMO.data.data_dir filesep LIMO.data.data]); % fieldtrip
             EEGLIMO = struct2cell(EEGLIMO);
             EEGLIMO = EEGLIMO{1};
+            if ~strcmp(ft_datatype(EEGLIMO),'raw')
+                error('ERROR: neither EEGLAB nor FieldTrip input file!')
+            end
         end
     end
 else
