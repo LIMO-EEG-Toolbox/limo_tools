@@ -37,9 +37,19 @@ if strcmp(ext,'.set') %EEGLAB
     LIMO.data.sampling_rate      = EEGLIMO.srate;
 elseif strcmp(ft_datatype(EEGLIMO),'raw') %FieldTrip
     LIMO.data.sampling_rate      = EEGLIMO.fsample;
-    if ~isfield(EEGLIMO,'elec') || (isfield(EEGLIMO,'elec') && isfield(EEGLIMO.elec,'chanlocs'))
+    if ~isfield(EEGLIMO,'elec') || (isfield(EEGLIMO,'elec') && ~isfield(EEGLIMO,'chanlocs'))
         EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
     end
+elseif strcmp(ft_datatype(EEGLIMO),'source') %FieldTrip source
+    if ~isfield(EEGLIMO,'chanlocs')
+        EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+    end
+    LIMO.data.sampling_rate = length(EEGLIMO.time)/(EEGLIMO.time(end)-EEGLIMO.time(1));
+    % adapt the time field
+    tmp = EEGLIMO.time;
+    clear EEGLIMO.time
+    EEGLIMO.time = {};
+    EEGLIMO.time{1} = tmp;
 else
     error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
 end
