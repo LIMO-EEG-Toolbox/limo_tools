@@ -72,10 +72,9 @@ switch varargin{1}
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
         disp(' ');
-        disp('LIMO EEG Ref:')
-        disp('Pernet, C.R., Chauveau, N., Gaspar, C., Rousselet, G.A. (2011).')
-        disp('LIMO EEGLIMO: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic data.')
-        disp('Computational Intelligence and Neuroscience, Volume 2011')
+        disp('Please use our boilerplate Citation and Reporting:')
+        disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki/Reporting-methods-and-results')
+        disp('References are in the citations.nbid file')
         disp(' ')
         limo_gui
         
