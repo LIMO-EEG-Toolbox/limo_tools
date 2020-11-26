@@ -13,6 +13,9 @@ Data of each subject must be in subject specific folders -- ideally follow the [
 The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
 We also have a full [tutorial](https://github.com/LIMO-EEG-Toolbox/limo_meeg/wiki) taking you through an analysis.
 
+## Citation and method reporting
+Published papers related to the method(s) used here are listed in the [citations.nbib file](https://github.com/LIMO-EEG-Toolbox/limo_tools/blob/master/citations.nbib). More generally, we recommended using [boilerplate texts from the wiki](https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki/Reporting-results-differs-with-the-method-used).
+
 ## LIMO tutorial dataset
 The tutorial uses data prepared using [EEG-BIDS](https://www.nature.com/articles/s41597-019-0104-8) avaialble here: https://openneuro.org/datasets/ds002718/versions/1.0.2.
 There is also an older dataset that can be downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189. 
