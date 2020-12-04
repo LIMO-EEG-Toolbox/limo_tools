@@ -21,6 +21,7 @@ expected_chanlocs.chanpos = [];
 expected_chanlocs.chanpos(:,1) = mean(X,2);
 expected_chanlocs.chanpos(:,2) = mean(Y,2);
 expected_chanlocs.chanpos(:,3) = mean(Z,2);
+expected_chanlocs.elecpos = expected_chanlocs.chanpos;
 
 expected_chanlocs = limo_get_ft_chanlocs(expected_chanlocs, defaults);
 expected_chanlocs.expected_chanlocs = expected_chanlocs.chanlocs';
