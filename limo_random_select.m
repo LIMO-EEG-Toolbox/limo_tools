@@ -1001,7 +1001,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % 2nd select data per gp / conditions
     % ---------------------------------------------------------------
     if ~isempty(LIMO.data.data)
-        if ischar(LIMO.data.data{1}) && ischar(LIMO.data.data{2})
+        if ischar(LIMO.data.data{1}) 
             isbeta = cellfun(@(x) contains(x,'Beta'),LIMO.data.data);
             iscon  = cellfun(@(x) contains(x,'con'),LIMO.data.data);
         else
