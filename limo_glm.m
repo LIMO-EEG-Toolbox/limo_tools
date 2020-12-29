@@ -423,7 +423,7 @@ switch method
             % ---------------------------
             
             if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-                HI                 = diag(T)' - H(1,:) - H(2,:) - E4';
+                HI                 = diag(T)' - H(1,:) - H(2,:) - E';
                 df_interactions    = prod(df_conditions);
                 F_interactions     = (HI./df_interactions) ./ (E/dfe)';
                 pval_interactions  = 1 - fcdf(F_interactions, df_interactions, dfe);
