@@ -131,7 +131,7 @@ if sum(isnan(electrode_vector)) == 0
     % make the figure
     imagesc(freqmap,[0 max(freqmap(:))])
     axis tight;axis square;axis off
-    cc=colormap(jet);cc(1,:)=[.9 .9 .9];cc(end,:)=[1 1 1];colormap(cc);
+    colormap(limo_color_images(freqmap));
     cd(current_dir)
 end
 
