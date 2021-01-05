@@ -1338,8 +1338,12 @@ elseif LIMO.Level == 2
             
             % load the effect
             % --------------
-            name = sprintf('Covariate_effect_%g.mat',regressor);
-            data = load(name); data = data.(cell2mat(fieldnames(data)));
+             data = load(FileName); data = data.(cell2mat(fieldnames(data)));
+             if numel(size(data)) == 3 && size(data,2) == 1
+                 errordlg2('single time point detected, plot aborded'); return
+             elseif numel(size(data)) == 4 && size(data,3) == 1
+                 errordlg2('single time point detected, plot aborded'); return
+             end
             
             % which ERP to make
             % ------------------
