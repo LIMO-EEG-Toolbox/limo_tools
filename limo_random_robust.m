@@ -169,7 +169,7 @@ switch type
             fprintf('analyse parameter %g channel %g \n',parameter, channel);
             tmp = data(channel,:,:);
             if nansum(tmp(1,:)) == 0
-                error('there is at least one empty channel using your expected chanlocs')
+                error('there is at least one empty channel using the specified expected chanlocs')
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
             end
