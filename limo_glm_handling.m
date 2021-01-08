@@ -250,11 +250,7 @@ if strcmp(LIMO.design.status,'to do')
     % save data on the disk and clean out
     disp('saving data to disk')
     LIMO.design.X       = X;
-    if strcmp(LIMO.design.method,'IRLS')
-        LIMO.design.weights = limo_tf_4d_reshape(W);
-    else
-        LIMO.design.weights = W;
-    end
+    LIMO.design.weights = W;
     LIMO.design.status  = 'done';
     if ~isfield(LIMO.design,'name')
         LIMO.design.name    = 'GLM';
