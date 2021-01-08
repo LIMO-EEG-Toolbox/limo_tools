@@ -1,4 +1,4 @@
-function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
+function limo_checkweight(LIMO_files, expected_chanlocs, varargin)
 
 % general function designed to look at the weights computed for each trial
 % at the each channel for each subject
@@ -276,33 +276,33 @@ for f=1:length(LIMO_files)
             Y1r = Yr(:,:,index1); save Y1r Y1r; clear Y1r
             Y2r = Yr(:,:,index2); save Y2r Y2r; clear Y2r
             % some trial metrics
-            [DT1,TP1,AC1,DA] = limo_trialmetric(Yr(:,:,index1),'std_time','on','delta_amplitude','on','power','on',...
-                'autocorrelation','on','reference',mean(Yr(:,:,index2),3),'sampling_frequency',LIMO_sub.data.sampling_rate);
-            [DT2,TP2,AC2] = limo_trialmetric(Yr(:,:,index2),'std_time','on','delta_amplitude','off','power','on',...
+            [DT1,TP1,AC1] = limo_trialmetric(Yr(:,:,index1),'std_time','on','power','on',...
+                'autocorrelation','on','sampling_frequency',LIMO_sub.data.sampling_rate);
+            [DT2,TP2,AC2] = limo_trialmetric(Yr(:,:,index2),'std_time','on','power','on',...
                 'autocorrelation','on','sampling_frequency',LIMO_sub.data.sampling_rate);
                         
             % finally pick the channel with the most variance
             [~,maxchannels(f)]=max(mean(squeeze(two_samples(:,:,2)),2)); 
-            N = max(length(index1),length(index2)); X = NaN(N,9);
-            X(1:length(index1),1:5) = [index1' DT1(maxchannels(f),:)',TP1(maxchannels(f),:)',AC1(maxchannels(f),:)',DA(maxchannels(f),:)'];
-            X(1:length(index2),6:9) = [index2' DT2(maxchannels(f),:)',TP2(maxchannels(f),:)',AC2(maxchannels(f),:)'];
-            t = table(X(:,1),X(:,2),X(:,3),X(:,4),X(:,5),X(:,6),X(:,7),X(:,8),X(:,9),'VariableNames',...
-                {'low_weight_trials', 'time_var_lt', 'power_lt', 'autocorr_lt', 'amplitude_var',...
+            N = max(length(index1),length(index2)); X = NaN(N,8);
+            X(1:length(index1),1:4) = [index1' DT1(maxchannels(f),:)',TP1(maxchannels(f),:)',AC1(maxchannels(f),:)'];
+            X(1:length(index2),5:8) = [index2' DT2(maxchannels(f),:)',TP2(maxchannels(f),:)',AC2(maxchannels(f),:)'];
+            t = table(X(:,1),X(:,2),X(:,3),X(:,4),X(:,5),X(:,6),X(:,7),X(:,8),'VariableNames',...
+                {'low_weight_trials', 'time_var_lt', 'power_lt', 'autocorr_lt', ...
                 'high_weight_trials','time_var_ht', 'power_ht', 'autocorr_ht'});
             writetable(t,['metrics_maxchannel' num2str(maxchannels(f)) '.csv']);
-            SM(f,:) = nanmedian(X(:,[2 3 4 5 7 8 9]));
-            SMT(f,:) = [median(DT1(:)) median(TP1(:)) median(AC1(:)) median(DA(:)) median(DT2(:)) median(TP2(:)) median(AC2(:))];
+            SM(f,:) = nanmedian(X(:,[2 3 4 6 7 8]));
+            SMT(f,:) = [median(DT1(:)) median(TP1(:)) median(AC1(:)) median(DT2(:)) median(TP2(:)) median(AC2(:))];
             cd .. ;
             
             % where are those channels
             if f==length(LIMO_files)
-                t = table(SM(:,1),SM(:,2),SM(:,3),SM(:,4),SM(:,5),SM(:,6),SM(:,7),'VariableNames',...
-                    {'time_var_lt', 'power_lt', 'autocorr_lt', 'amplitude_var',...
+                t = table(SM(:,1),SM(:,2),SM(:,3),SM(:,4),SM(:,5),SM(:,6),'VariableNames',...
+                    {'time_var_lt', 'power_lt', 'autocorr_lt', ...
                     'time_var_ht', 'power_ht', 'autocorr_ht'});
                 writetable(t,'mean_metrics_maxchannels.csv');
                 
-                t = table(SMT(:,1),SMT(:,2),SMT(:,3),SMT(:,4),SMT(:,5),SMT(:,6),SMT(:,7),'VariableNames',...
-                    {'time_var_lt', 'power_lt', 'autocorr_lt', 'amplitude_var',...
+                t = table(SMT(:,1),SMT(:,2),SMT(:,3),SMT(:,4),SMT(:,5),SMT(:,6),'VariableNames',...
+                    {'time_var_lt', 'power_lt', 'autocorr_lt', ...
                     'time_var_ht', 'power_ht', 'autocorr_ht'});
                 writetable(t,'mean_metrics_allchannels.csv');
 
