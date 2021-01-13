@@ -237,12 +237,14 @@ switch method
         
         % degrees of freedom
         % -------------------
-        df = rank(WX)-1;
-        if strcmp(method,'OLS')
+       df  = rank(WX)-1;
+       if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
-        else
+       else
             % Satterthwaite approximation minus the number of dimensions removed by pcout to get W
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);   
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); 
+            % df = trace(HM'*HM).^2/trace(HM'*HM*HM'*HM); 
+            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
         end
         
         % model R^2
@@ -561,7 +563,8 @@ switch method
             % -------------------
             df  = rank(WX{freq})-1;
             HM  = WX{freq}*pinv(WX{freq}); % Hat matrix, projection onto X
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
 
             % model R^2
             % -----------
