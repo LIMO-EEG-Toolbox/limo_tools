@@ -49,7 +49,6 @@ end
 
 % boostrap parameters
 nboot = size(bootM,3);      % nb of boostrap performed
-U     = round((1-p)*nboot); % bootstrap threshold
     
 % set outputs empty as default
 cluster_pval = [];
