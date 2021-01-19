@@ -330,7 +330,13 @@ end
 
 
 %% Bootstrap under H0
-% -------------------------------
+% ----------------------------------------------------------
+% being pretty time consuming, let users have one core free
+if isempty(gcp('nocreate'))
+    parpool(feature('numCores')-1);
+end
+% ----------------------------------------------------------
+
 if LIMO.design.bootstrap ~=0
     % avoid overwriting / recomputing H0 if done
     % (limo_eeg(4) called via the results interface)
