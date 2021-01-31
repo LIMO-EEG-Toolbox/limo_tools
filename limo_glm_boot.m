@@ -29,10 +29,11 @@ function model = limo_glm_boot(varargin)
 %                    the same resampling applies to each channel
 %
 % NOTE
-% Unlike limo_glm this function doesn't handle Time-Frequency data
+% - Unlike limo_glm this function doesn't handle Time-Frequency data
 % meaning that a frequency loop should be created outside the function
-% to iterate - allowing the save directly 5D H0 data -- weights are also to
-% be passed so that resmapling is performed on WY fitting (non resmapled) WX 
+% to iterate - allowing the save directly 5D H0 data.
+% - For WLS, weights are also passed so that resmapling is performed on WY
+% fitting the non resampled WX; oherwise use a matrix on ones. 
 %
 % See also
 % LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
@@ -586,16 +587,18 @@ T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
 for frame = 1:size(Y,2)
     % model stats
     % -------------------------------------------------------------
-    WX                     = X.*repmat(W(:,frame),1,size(X,2));
+    % get df and dfe from the original model, then use standard GLM
     HM                     = WX*pinv(WX);
+    df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
+    dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+   
+    WX                     = X.*repmat(W(:,frame),1,size(X,2));
     R                      = eye(size(Y,1)) - WX*pinv(WX);
     E                      = Y(:,frame)'*R*Y(:,frame);
     % The number of degrees of freedom can be defined as the minimum number of
     % independent coordinates that can specify the position of the system completely.
     % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
     % use the Satterthwaite approximation
-    df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
-    dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
     R_ols                  = eye(size(Y,1)) - X*pinv(X);
     E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
     % MSE adjustment, E cannot be smaller than OLS since the
@@ -606,7 +609,7 @@ for frame = 1:size(Y,2)
         MSE = (n*sigmar + p^2*sigmals) / (n+p^2);
         E = MSE * dfe(frame);
     end
-    WY                = Y(:,frame) .*repmat(W(:,frame),1,1);
+    WY                = Y(:,frame); % under the null do not .*repmat(W(:,frame),1,1) 
     Betas(:,frame)    = pinv(WX)*WY;
     C                 = eye(size(X,2));
     C(:,size(X,2))    = 0;
