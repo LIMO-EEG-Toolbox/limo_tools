@@ -637,7 +637,6 @@ switch type
         LIMO.design.type_of_analysis = 'Mass-univariate';
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
-        LIMO.design.method           = 'OLS' ; % 'IRLS' beter but H0 boot too conservative
         
         if ~exist('answer','var') 
             answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
@@ -661,6 +660,12 @@ switch type
                 LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
         end
         
+        if size(LIMO.design.X,1) <= 50
+            disp('Using OLS');  LIMO.design.method = 'OLS'; 
+        else
+            disp('Using IRLS');  LIMO.design.method = 'IRLS'; 
+        end
+
         % ------------------------------------------------
         % do the analysis
         if strcmpi(go,'no')
@@ -781,7 +786,11 @@ switch type
                 LIMO.design.method = 'Generalized Welch''s method';
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             else
-                LIMO.design.method = 'IRLS';
+                if size(LIMO.design.X,1) <= 50
+                    disp('Using OLS');  LIMO.design.method = 'OLS';
+                else
+                    disp('Using IRLS');  LIMO.design.method = 'IRLS';
+                end
                 LIMO.design.status = 'to do';
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
                 clear data LIMO
