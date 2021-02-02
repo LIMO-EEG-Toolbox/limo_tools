@@ -735,7 +735,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     end
     
     if isempty(LIMO.design.parameters)
-        param = cell2mat(inputdlg('which parameters to test e.g [1 3 3]','parameters option'));
+        param = cell2mat(inputdlg('which parameters to test e.g [2]','parameters option'));
         if isempty(param)
             disp('selection aborded'); return
         else
@@ -744,6 +744,11 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             else
                 parameters = eval(['[' param ']']);
             end
+        end
+        
+        if contains(stattest,'ANCOVA','IgnoreCase',true) && ...
+            length(parameters) > 1 % this is only group * cov without repeated measures
+            error('This ANCOVA model doesn''t deal with repeated measures, use contrasts per subject to create an effect to covary on')
         end
         
         if length(parameters) == 1
