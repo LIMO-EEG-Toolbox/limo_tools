@@ -22,7 +22,6 @@ function model = limo_glm_boot(varargin)
 %         - LIMO.design.nb_interactions = a vector indicating number of columns per interactions
 %         - LIMO.design.nb_continuous   = number of covariates
 %         - LIMO.design.method          = 'OLS', 'WLS', 'IRLS' 
-%         - LIMO.Analysis               =  'Time', 'Frequency' or 'Time-Frequency'
 %         boot_table is an optional argument - this is the resampling table
 %                    if one calls limo_glm_boot to loop throughout channels,
 %                    this might a good idea to provide such table so that
@@ -32,8 +31,8 @@ function model = limo_glm_boot(varargin)
 % - Unlike limo_glm this function doesn't handle Time-Frequency data
 % meaning that a frequency loop should be created outside the function
 % to iterate - allowing the save directly 5D H0 data.
-% - For WLS, weights are also passed so that resmapling is performed on WY
-% fitting the non resampled WX; oherwise use a matrix on ones. 
+% - For IRLS/WLS, weights are also passed so that resmapling is performed 
+%   fitting resampled data to the non resampled WX; otherwise use a matrix of ones. 
 %
 % See also
 % LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
@@ -51,7 +50,6 @@ if nargin == 2 || nargin == 3
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
-    Analysis        = varargin{2}.Analysis;
     Weights         = varargin{2}.Weights;
     
     if nargin == 2
@@ -70,7 +68,6 @@ elseif nargin == 8 || nargin == 9
     nb_interactions = varargin{5};
     nb_continuous   = varargin{6};
     method          = varargin{7};
-    Analysis        = varargin{8};
     
     if nargin == 8
         nboot       = 800; 
@@ -153,7 +150,6 @@ else
         end
     end
 end
-
 clear varargin 
 
 % compute for each bootstrap
@@ -584,7 +580,7 @@ end
 
 % start computing
 T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-for frame = 1:size(Y,2)
+for frame = size(Y,2):-1:1
     % model stats
     % -------------------------------------------------------------
     % get df and dfe from the original model, then use standard GLM
@@ -706,7 +702,7 @@ for frame = 1:size(Y,2)
         % run same model as above with re-defined model x and
         % using the weights from the full model
         wx                       = x.*repmat(W(:,frame),1,size(x,2));
-        betas                    = pinv(wx)*(Y(:,frame).*W(:,frame));
+        betas                    = pinv(wx)*Y(:,frame); % .*W(:,frame));
         R                        = eye(size(Y,1)) - wx*pinv(wx);
         eoi                      = zeros(1,size(x,2));
         eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
@@ -768,14 +764,14 @@ for frame = 1:size(Y,2)
                 
                 % run same model as above
                 wx                     = x.*repmat(W(:,frame),1,size(x,2));
-                betas                  = pinv(wx)*(Y(:,frame).*W(:,frame));
+                betas                  = pinv(wx)*Y(:,frame); % .*W(:,frame));
                 R                      = eye(size(Y,1)) - (wx*pinv(wx));
                 eoi                    = zeros(1,size(x,2));
                 eoi(eoibound+1:(eoibound+nb_interactions(f))) = eoibound+1:(eoibound+nb_interactions(f));
                 eoni                   = 1:size(x,2);
                 eoni                   = find(eoni - eoi);
                 C                      = eye(size(x,2));
-                C(:,eoni)              = 0;
+                C(:,eoni)              = 0; %#ok<FNDSB>
                 C0                     = eye(size(x,2)) - C*pinv(C);
                 X0                     = wx*C0;
                 R0                     = eye(size(Y,1)) - (X0*pinv(X0));
