@@ -52,6 +52,12 @@ if strcmp(LIMO.design.status,'to do')
                 error('%s\n',pcout_error.message)
             end
         end
+    elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
+        N = size(Yr,numel(size(Yr)));
+        if N < 50
+            LIMO.design.method,'OLS';
+            warning('with %g observations detected, IRLS won''t converge, switching to OLS',N)
+        end        
     end
     
     % check dimensions (3D vs 4D)

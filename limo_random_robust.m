@@ -786,11 +786,7 @@ switch type
                 LIMO.design.method = 'Generalized Welch''s method';
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             else
-                if size(LIMO.design.X,1) <= 50
-                    disp('Using OLS');  LIMO.design.method = 'OLS';
-                else
-                    disp('Using IRLS');  LIMO.design.method = 'IRLS';
-                end
+                LIMO.design.method = 'IRLS'; % will switch to OLS if N<50
                 LIMO.design.status = 'to do';
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
                 clear data LIMO
