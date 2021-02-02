@@ -748,7 +748,8 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         
         if contains(stattest,'ANCOVA','IgnoreCase',true) && ...
             length(parameters) > 1 % this is only group * cov without repeated measures
-            error('This ANCOVA model doesn''t deal with repeated measures, use contrasts per subject to create an effect to covary on')
+            errordlg2(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
+            return
         end
         
         if length(parameters) == 1
@@ -781,7 +782,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % organize the data in such a way that we can easily compute stuff
     % ---------------------------------------------------------------------
     % match frames, update LIMO
-    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(Paths,LIMO);
+    [first_frame,last_frame,subj_chanlocs,~,LIMO] = match_frames(limo_concatcells(Paths,'char'),LIMO);
     
     % match channels, update LIMO
     LIMO = match_channels(5,analysis_type,LIMO);
@@ -1439,8 +1440,7 @@ end
 %% frame matching
 function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match_frames(Paths,LIMO)
 
-% once we have all the files, we need to collect information to match the
-% frames across subjects
+% once we have all the files, we need to collect information to match the frames across subjects
 % OUTPUT: first_frame and last _frame returns the beginning and end in terms of indices
 %                                     for time-frequency these are vectors with time then frequency
 %         subj_chanlocs the chanlocs per subjects
