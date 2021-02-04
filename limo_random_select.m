@@ -1215,7 +1215,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                             all(size(squeeze(matched_data)) == size(squeeze(data(:,:,:,:,1))))
                         data(1,:,:,:,matrix_index) = matched_data;
                     elseif ~strcmp(LIMO.Analysis,'Time-Frequency') && ...
-                            all(size(squeeze(matched_data)) == size(squeeze(data(:,:,:,:,1))))
+                            all(size(squeeze(matched_data)) == size(squeeze(data(:,:,:,1))))
                         data(1,:,:,matrix_index) = matched_data;
                     else
                         error('The data from subject %g have a different size than previous subjects?',i)
