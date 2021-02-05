@@ -1800,15 +1800,23 @@ if stattest == 1 || stattest == 4
             if  length(LIMO.design.electrode) == 1
                 if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        if contains(LIMO.data.data{1},'Betas')
+                            data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        else
+                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        end
                     else
-                        data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        if contains(LIMO.data.data{1},'Betas')
+                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        else
+                            data(1,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                        end
                     end
                 elseif strcmpi(LIMO.Type,'Components')
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        data(:,:,:,:,index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
+                        data(1,:,:,:,index) = tmp(LIMO.design.component,begins_at(1):ends_at(1),begins_at(2):ends_at(2),:);
                     else
-                        data(:,:,:,index) = tmp(LIMO.design.component,begins_at:ends_at,:);
+                        data(1,:,:,index) = tmp(LIMO.design.component,begins_at:ends_at,:);
                     end
                 end
                 index = index + 1;
@@ -1817,7 +1825,7 @@ if stattest == 1 || stattest == 4
                 % Use multiple single channels
             else
                 if strcmpi(LIMO.Type,'Channels')
-                    out = LIMO_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                    out = LIMO_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         data(1,:,:,:,index) = out(i,:,:,:);
                     else
