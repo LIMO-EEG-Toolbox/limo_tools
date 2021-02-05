@@ -211,7 +211,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             error('the number of set and cat files disagree')
         end
     end
-    
+        
     % build the pipelines
     for subject = 1:size(model.set_files,1)
         
@@ -299,6 +299,11 @@ if strcmp(option,'model specification') || strcmp(option,'both')
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
+  
+    if ~exist('model','var')
+        model.defaults.bootstrap = 0;
+        model.defaults.tfce      = 0;
+    end
     
     for subject = 1:length(batch_contrast.LIMO_files)
         command = 'limo_batch_contrast(files_in,opt.C)';
