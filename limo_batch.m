@@ -315,13 +315,18 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
         end
         
-        if strcmp(option,'both') % we can only be sure of the number if it's a new model
-            for c=1:size(batch_contrast.mat,1)
-                name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
-            end
-            pipeline(subject).n_contrast.files_out = name; % name{1};
-            LIMO_files.con{subject} = name;
+        sub_LIMO = load(batch_contrast.LIMO_files{subject});
+        if ~isfield(sub_LIMO.LIMO,'contrast')
+            start = 0;
+        else
+            start = length(sub_LIMO.LIMO.contrast);
         end
+        
+        for c=1:size(batch_contrast.mat,1)
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c+start) '.mat'];
+        end
+        pipeline(subject).n_contrast.files_out = name; % name{1};
+        LIMO_files.con{subject} = name;
     end
 end
 
@@ -434,7 +439,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 LIMO = load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
                 if isfield(LIMO,'contrast')
-                    con_num = find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast));
+                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); % if several identical contrasts, take max
                 else
                     con_num = c;
                 end
