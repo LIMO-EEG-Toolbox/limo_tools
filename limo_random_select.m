@@ -162,9 +162,12 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     if isempty(LIMO.data.data)
         [Names,Paths,LIMO.data.data] = limo_get_files;
     else
-        if ischar(LIMO.data.data{1}) % Case for path to the files
+        if ischar(LIMO.data.data{1}) && length(LIMO.data.data) == 1 % Case for path to the files
             [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
         else % Case when all paths are provided
+            if size(LIMO.data.data,2) == 1
+                LIMO.data.data = LIMO.data.data';
+            end
             [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data);
         end
     end
@@ -1636,7 +1639,7 @@ if strcmpi(analysis_type,'1 channel/component only')
     elseif isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Components')
         channel = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of channels (channel optimized analysis)
     else
-        channel = {num2str(LIMO.design.electrode)};
+        channel = {num2str(LIMO.design.electrode)}; % reformat temporarilly as if from inputdlg
     end
     
     if isempty(cell2mat(channel))
@@ -1680,7 +1683,10 @@ if strcmpi(analysis_type,'1 channel/component only')
             end
         end
         
-    elseif size(eval(cell2mat(channel)),2) == 1 || size(eval(cell2mat(channel)),2) == size(Names,2)
+    elseif max(size(cell2mat(channel))) == 1 || ...
+            max(size(cell2mat(channel))) == numel(LIMO.data.data) || ...
+            max(size(cell2mat(channel))) == sum(cellfun(@numel,LIMO.data.data))
+        
         if ~isfield(LIMO.design,'name')
             if stattest == 1
                 LIMO.design.name = ['one sample t-test one ' LIMO.Type(1:end-1)];
@@ -1696,7 +1702,7 @@ if strcmpi(analysis_type,'1 channel/component only')
         end
         
         if strcmp(LIMO.Type,'Channels')
-            LIMO.design.electrode       = eval(cell2mat(channel));
+            LIMO.design.electrode       = str2num(cell2mat(channel));
             LIMO.data.chanlocs          = LIMO.data.expected_chanlocs;
             LIMO.data.expected_chanlocs = LIMO.data.expected_chanlocs(LIMO.design.electrode);
         else
@@ -1704,7 +1710,7 @@ if strcmpi(analysis_type,'1 channel/component only')
             LIMO.data.chanlocs    = [];
         end
     else
-        errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],[LIMO.Type(1:end-1) ' error']);
+        errordlg2(['the nb of ' LIMO.Type ' does not match the number of subjects'],[LIMO.Type(1:end-1) ' error']);
         return
     end
     
@@ -1825,11 +1831,19 @@ if stattest == 1 || stattest == 4
                 % Use multiple single channels
             else
                 if strcmpi(LIMO.Type,'Channels')
-                    out = LIMO_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
+                    out = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                        data(1,:,:,:,index) = out(i,:,:,:);
+                        if contains(LIMO.data.data{1},'Betas')
+                            data(1,:,:,:,index) = out(i,:,:,:);
+                        else
+                            data(1,:,:,index) = out(i,:,:,:);
+                        end
                     else
-                        data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                        if contains(LIMO.data.data{1},'Betas')
+                            data(1,:,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                        else
+                            data(1,:,index) = out(i,:,:); % matches the expected chanloc of the subject
+                        end
                     end
                 elseif strcmpi(LIMO.Type,'Components')
                     if strcmp(LIMO.Analysis,'Time-Frequency')
