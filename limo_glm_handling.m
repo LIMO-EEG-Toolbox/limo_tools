@@ -610,12 +610,23 @@ if LIMO.design.bootstrap ~=0
                 for i=1:length(LIMO.design.nb_conditions)
                     name = sprintf('H0_Condition_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Condition_effect = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
                     else
-                        H0_Condition_effect = squeeze(tmp_H0_Conditions(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Conditions(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Condition_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Condition_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Condition_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Condition_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Condition_effect','-v7.3');
-                    clear H0_Condition_effect
+                    clear tmp H0_Condition_effect
                 end
                 clear tmp_H0_Conditions
             end
@@ -624,9 +635,20 @@ if LIMO.design.bootstrap ~=0
                 for i=1:length(LIMO.design.nb_interactions)
                     name = sprintf('H0_Interaction_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Interaction_effect = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
                     else
-                        H0_Interaction_effect = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Interaction_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Interaction_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Interaction_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Interaction_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Interaction_effect','-v7.3');
                     clear H0_Interaction_effect
@@ -638,12 +660,23 @@ if LIMO.design.bootstrap ~=0
                 for i=1:LIMO.design.nb_continuous
                     name = sprintf('H0_Covariate_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
                     else
-                        H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Covariates(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Covariate_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Covariate_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Covariate_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Covariate_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Covariate_effect','-v7.3');
-                    clear H0_Covariate_effect
+                    clear tmp H0_Covariate_effect
                 end
                 clear tmp_H0_Covariates
             end
