@@ -196,7 +196,11 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     
     % match channels, update LIMO
     % -----------------------------
-    LIMO = match_channels(1,analysis_type,LIMO);
+    if strcmpi(stattest,'one sample t-test')
+        LIMO = match_channels(1,analysis_type,LIMO);
+    else
+        LIMO = match_channels(4,analysis_type,LIMO);
+    end
     
     % get data for all parameters
     % -----------------------------
@@ -219,21 +223,19 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             error('LIMO_random_select error: Provide a valid regressor file');
         end
         
-        if strcmp(FileName(end-3:end),'.txt')
-            X = load(fullfile(PathName,FileName));
-        elseif strcmp(FileName(end-3:end),'.mat')
-            X = load(fullfile(PathName,FileName));
-            X = X.(cell2mat(fieldnames(X)));
+        if ~exist('X','var')
+            if strcmp(FileName(end-3:end),'.txt')
+                X = load(fullfile(PathName,FileName));
+            elseif strcmp(FileName(end-3:end),'.mat')
+                X = load(fullfile(PathName,FileName));
+                X = X.(cell2mat(fieldnames(X)));
+            end
         end
         disp('Regressor(s) loaded');
         
         % check size and orientation
-        if strcmp(LIMO.Analysis,'Time-Frequency')
-            N = size(data,5);
-        else
-            N = size(data,4);
-        end
-        
+        N = size(data);
+        N = N(end);
         if size(X,2) == N || size(X,2) == size(Paths,2)
             disp('X has been transposed'); X = X';
         end
@@ -256,13 +258,6 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             end
             errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
         end
-        
-        if size(X,2)==1 && LIMO.design.bootstrap < 599
-            if LIMO.design.bootstrap ~= 0
-                LIMO.design.bootstrap = 599;
-                disp('nb of bootstrap adjusted to 599 for a simple regression');
-            end
-        end
     end
 
     % load the right parameter and compute
@@ -276,14 +271,18 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         end
         
         if strcmp(analysis_type,'1 channel/component only') && size(data,1) == 1
-            if strcmp(LIMO.Analysis,'Time-Frequency')
-                tmp               = squeeze(data(:,:,:,parameters(i),:));
-                tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
-                tmp_data(1,:,:,:) = tmp; clear tmp;
+            if all(contains(Names,'con'))
+                tmp_data = data;
             else
-                tmp               = squeeze(data(:,:,parameters(i),:));
-                tmp_data          = NaN(1,size(tmp,1),size(tmp,2));
-                tmp_data(1,:,:)   = tmp; clear tmp;
+                if strcmp(LIMO.Analysis,'Time-Frequency')
+                    tmp               = squeeze(data(:,:,:,parameters(i),:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2),size(tmp,3)); % add dim 1 = 1 channel
+                    tmp_data(1,:,:,:) = tmp; clear tmp;
+                else
+                    tmp               = squeeze(data(:,:,parameters(i),:));
+                    tmp_data          = NaN(1,size(tmp,1),size(tmp,2));
+                    tmp_data(1,:,:)   = tmp; clear tmp;
+                end
             end
         else
             if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -308,7 +307,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
-                parameters(i),LIMO); % ,'zscore',zopt,'go',skip_design_check);
+                parameters(i),LIMO); 
             if nargout ~= 0
                 LIMOPath{i} = tmpname;
             end
@@ -324,7 +323,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 Yr = tmp_data(:,:,~isnan(sum(X,2)));
             end
             clear tmp_data
-            LIMO.design.name = 'Robust regression';
+            LIMO.design.name = 'Regression';
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             if isempty(zopt)
@@ -355,6 +354,9 @@ elseif strcmpi(stattest,'two-samples t-test')
             [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
             LIMO.data.data_dir{1}           = Paths;
         else % Case when all paths are provided
+            if size(LIMO.data.data,2) == 2
+                LIMO.data.data = LIMO.data.data';
+            end
             [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
             LIMO.data.data_dir{1} = Paths;
         end
@@ -509,6 +511,9 @@ elseif strcmpi(stattest,'paired t-test')
             [Names,Paths,LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
             LIMO.data.data_dir{1}           = Paths;
         else % Case when all paths are provided
+            if size(LIMO.data.data,2) == 2
+                LIMO.data.data = LIMO.data.data';
+            end
             [Names,Paths]         = breaklimofiles(LIMO.data.data{1});
             LIMO.data.data_dir{1} = Paths;
         end
@@ -516,7 +521,6 @@ elseif strcmpi(stattest,'paired t-test')
     if isempty(Names)
         return
     end
-    % N = size(Names,2);
     
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
@@ -731,6 +735,9 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             if ischar(LIMO.data.data{i}) % Case for path to the files
                 [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([],[],[],LIMO.data.data{i});
             else % Case when all paths are provided
+                if i ==1 && size(LIMO.data.data,2) == gp_nb
+                    LIMO.data.data = LIMO.data.data';
+                end
                 [Names{i},Paths{i},LIMO.data.data{i}] = breaklimofiles(LIMO.data.data{i});
             end
         end        
@@ -1639,6 +1646,10 @@ if strcmpi(analysis_type,'1 channel/component only')
     elseif isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Components')
         channel = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of channels (channel optimized analysis)
     else
+        if ischar(LIMO.design.electrode)
+            LIMO.design.electrode = load(LIMO.design.electrode);
+            LIMO.design.electrode = LIMO.design.electrode.(cell2mat(fieldnames(LIMO.design.electrode)));
+        end
         channel = {num2str(LIMO.design.electrode)}; % reformat temporarilly as if from inputdlg
     end
     
@@ -1683,7 +1694,7 @@ if strcmpi(analysis_type,'1 channel/component only')
             end
         end
         
-    elseif max(size(cell2mat(channel))) == 1 || ...
+    elseif numel(channel) == 1 || ...
             max(size(cell2mat(channel))) == numel(LIMO.data.data) || ...
             max(size(cell2mat(channel))) == sum(cellfun(@numel,LIMO.data.data))
         
@@ -1710,8 +1721,7 @@ if strcmpi(analysis_type,'1 channel/component only')
             LIMO.data.chanlocs    = [];
         end
     else
-        errordlg2(['the nb of ' LIMO.Type ' does not match the number of subjects'],[LIMO.Type(1:end-1) ' error']);
-        return
+        error(['the nb of ' LIMO.Type ' does not match the number of subjects'],[LIMO.Type(1:end-1) ' error']);
     end
     
     % ---------------
@@ -1748,7 +1758,7 @@ end
 function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO)
 
 disp('gathering data ...');
-if stattest == 1 || stattest == 4
+if stattest == 1 % one sample
     index = 1;
     for i=size(LIMO.data.data,2):-1:1 % for each subject
         tmp = load(LIMO.data.data{i});
@@ -1807,15 +1817,15 @@ if stattest == 1 || stattest == 4
                 if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         if contains(LIMO.data.data{1},'Betas')
-                            data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta
                         else
-                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); 
                         end
                     else
                         if contains(LIMO.data.data{1},'Betas')
-                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); 
                         else
-                            data(1,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % all param for beta, if con, adjust dim
+                            data(1,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); 
                         end
                     end
                 elseif strcmpi(LIMO.Type,'Components')
@@ -1828,8 +1838,7 @@ if stattest == 1 || stattest == 4
                 index = index + 1;
                 removed(i) = 0;
                 
-                % Use multiple single channels
-            else
+            else  % Use multiple single channels
                 if strcmpi(LIMO.Type,'Channels')
                     out = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp); % out is for all expected chanlocs, ie across subjects
                     if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -1862,7 +1871,7 @@ if stattest == 1 || stattest == 4
         clear tmp
     end
     
-elseif stattest == 2 % t-tests and gp ANOVA
+elseif stattest == 2 % several samples
     subject_nb = 1;
     for igp = 1:length(LIMO.data.data)
         index = 1; 
