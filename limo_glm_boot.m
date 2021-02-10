@@ -500,7 +500,7 @@ switch method
         end
 end
 
-fprintf('channel type 1 error rate: %g\n',mean(mean(cell2mat(MODELp)<0.05,2)))
+% fprintf('channel type 1 error rate: %g\n',mean(mean(cell2mat(MODELp)<0.05,2)))
 model.R2_univariate  = MODELR2; clear MODELR2
 model.F              = MODELF;  clear MODELF
 model.p              = MODELp;  clear MODELp
