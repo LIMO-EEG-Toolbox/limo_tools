@@ -6,7 +6,7 @@ function limo_tfce_handling(varargin)
 %
 % INPUTS filename is the stat file that need to be tfced (if H0 exist it is done too)
 %        'checkfiles' is 'yes' by default - if 'no' anf tfce files already exist,
-%                     it overwrites without asking overwise user is prompted
+%                     it overwrites without asking otherwise user is prompted
 %
 % OUTPUTS tfce_* files are saved on the drive in a tfce folder 
 %         H0_tfce_* files are saved on the drive in the H0 folder
