@@ -1,8 +1,8 @@
 # LInear MOdeling of MEEG data
 
-The LInear MOdelling of MEEG data (LIMO MEEG) toolbox is a Matlab toolbox dedicated to the statistical analysis of MEEG data. It has some  interfacing with EEGLAB (in particular the STUDY in the EEGLAB develop version) to act as a plug in. However, once data are imported all is performed within LIMO MEEG and the toolbox can thus work for any data sets.
+The LInear MOdelling of MEEG data (LIMO MEEG) toolbox is a Matlab toolbox dedicated to the statistical analysis of MEEG data. Once data are imported, all computations are performed within the toolbox, and can thus work for any data sets from any software (e.g. [EEGLAB](https://sccn.ucsd.edu/eeglab/), [FieldTrip](http://www.fieldtriptoolbox.org/), [BrainStorm](https://neuroimage.usc.edu/brainstorm/)). It is interfaced with [EEGLAB](https://sccn.ucsd.edu/eeglab/) (via [STUDY](https://eeglab.org/tutorials/10_Group_analysis/working_with_study_designs.html)) acting as a plug in ; it also uses topolot from EEGLAB for result visualization. In the [LIMO_FT_integration branch](https://github.com/LIMO-EEG-Toolbox/limo_tools/tree/LIMO_FT_integration), ERP data from FieldTrip (scalp and source) can also be imported and processed.
 
-This repo is the stable version of LIMO MEEG (v3) to be used with EEGLAB (https://sccn.ucsd.edu/eeglab/) but can be used with in other applications like FieldTrip (http://www.fieldtriptoolbox.org/) or BrainStorm (https://neuroimage.usc.edu/brainstorm/) for your research applications. A quick overview on how this can help you achieve a fully reproducbile workflow can see in the NeuroMatch YouTube video:  
+This repository (master) is the stable version of LIMO MEEG (v3). A quick overview on how this can help you achieve a fully reproducbile workflow can see in the NeuroMatch YouTube video:  
 
 [![BIDS-EEGLAB-LIMO-Workflow](https://github.com/LIMO-EEG-Toolbox/limo_meeg/blob/master/resources/images/nm.jpg)](https://youtu.be/fx6KIOh-jk0 "BIDS-EEGLAB-LIMO-Workflow")  
 
