@@ -11,6 +11,7 @@ function limo_glm_handling(LIMO)
 %  Copyright (C) LIMO Team 2020
 
 cd(LIMO.dir);
+warning on;
 
 %% Compute GLM and save stats files
 
@@ -27,7 +28,7 @@ if strcmp(LIMO.design.status,'to do')
         array = 1;
     else
         if LIMO.Level == 2        % second level we can have missing data because of 
-            array = 1:size(Yr,1); % bad channels for some subjects - just adjust X
+            array = [1:size(Yr,1)]'; %#ok<NBRAK> % bad channels for some subjects - adjust X
         else % level 1 = skip empty channels
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 array = find(~isnan(Yr(:,1,1,1))); 
@@ -55,7 +56,7 @@ if strcmp(LIMO.design.status,'to do')
     elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
         N = size(Yr,numel(size(Yr)));
         if N < 50
-            LIMO.design.method,'OLS';
+            LIMO.design.method = 'OLS';
             warning('with %g observations detected, IRLS won''t converge, switching to OLS',N)
         end        
     end
@@ -99,7 +100,7 @@ if strcmp(LIMO.design.status,'to do')
     update = 1;
     X      = LIMO.design.X;
     if isfield(LIMO,'model')
-        LIMO = removefields(LIMO,'model');
+        LIMO = rmfield(LIMO,'model');
     end
     
     warning off;
@@ -138,8 +139,8 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
-        elseif update == 1 % each channel can have different weighting and thus different df 
-            LIMO.model.model_df{channel} = model.df;
+        elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
+            LIMO.model.model_df{channel} = model.df;          
             if LIMO.design.nb_conditions ~=0
                 LIMO.model.conditions_df{channel}  = model.conditions.df;
             end
@@ -153,21 +154,26 @@ if strcmp(LIMO.design.status,'to do')
             % remove cell as sizes are identical for a given method
             if e == size(array,1)
                 tmp = cell2mat(LIMO.model.model_df)';
-                df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                df  = tmp(1:2:end,1); % a single value over time
+                dfe = tmp(2:2:end,:); % could be different over time
+                LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
                 if LIMO.design.nb_conditions ~=0
                     tmp = cell2mat(LIMO.model.conditions_df)';
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
                 end
                 if LIMO.design.nb_interactions ~=0
                     tmp =  cell2mat(LIMO.model.interactions_df);
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp
                 end
                 if LIMO.design.nb_continuous ~=0
                     tmp = cell2mat(LIMO.model.continuous_df);
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'continuous_df');
                     LIMO.model.continuous_df = [df dfe]; clear tmp
                 end
             end
