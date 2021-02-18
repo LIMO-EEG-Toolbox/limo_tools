@@ -438,6 +438,9 @@ switch varargin{1}
         % get the LIMO.mat
         if nargin == 2
             if ischar(varargin{2})
+                if isfolder(varargin{2})
+                    varargin{2} = [varargin{2} filesep 'LIMO.mat'];
+                end
                 LIMO = load(varargin{2});
                 if ~isfield(LIMO,'LIMO')
                     error('input file not recognized as a LIMO.mat structure')
