@@ -635,6 +635,7 @@ switch type
         LIMO.data.Cont               = regressors;
         LIMO.data.data_dir           = pwd;
         LIMO.design.type_of_analysis = 'Mass-univariate';
+        LIMO.design.method           = 'IRLS'; 
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
         
@@ -649,7 +650,7 @@ switch type
         else
             LIMO.design.zscore = 0;
         end
-        save LIMO LIMO
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         
         % make design matrix and files
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
@@ -660,19 +661,13 @@ switch type
                 LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
         end
         
-        if size(LIMO.design.X,1) <= 50
-            disp('Using OLS');  LIMO.design.method = 'OLS'; 
-        else
-            disp('Using IRLS');  LIMO.design.method = 'IRLS'; 
-        end
-
         % ------------------------------------------------
         % do the analysis
         if strcmpi(go,'no')
             go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
-            close('LIMO design')
         end
-                
+        close('LIMO design');        
+
         if strcmpi(go,'Yes')
             save LIMO LIMO
             if nargout ~= 0, LIMOPath = fullfile(pwd,'LIMO.mat'); end
@@ -703,7 +698,7 @@ switch type
         
         if nargin ==7
             if strcmpi(varargin{6},'go')
-                go = varargin{7};
+                design_check = varargin{7};
             end
         end
         clear varargin
@@ -749,10 +744,16 @@ switch type
         
         % ------------------------------------------------
         % do the analysis
-        if ~exist('go','var')
+        if ~exist('design_check','var')
             go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
-            close('LIMO design')
+        else
+            if strcmpi(design_check,'yes')
+                go = 'yes';
+            else
+                go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+            end
         end
+        close('LIMO design');
         
         if strcmpi(go,'Yes')
             if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
@@ -789,8 +790,8 @@ switch type
                 LIMO.design.method = 'IRLS'; % will switch to OLS if N<50
                 LIMO.design.status = 'to do';
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-                clear data LIMO
                 LIMOPath = LIMO.dir; 
+                clear data LIMO
                 limo_eeg(4); return
             end
         else
@@ -1116,7 +1117,7 @@ switch type
                     else
                         Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g.mat',i);
                     end
-                else
+                elseif contains(LIMO.design.effects{i},'Interaction')
                     Interaction = LIMO.design.effects{i}(length('Interaction')+1:end);
                     Interaction(isspace(Interaction)) = [];
                     Rep_filenames{i} = sprintf('Rep_ANOVA_Interaction_Factors_%s.mat',Interaction);
@@ -1130,7 +1131,7 @@ switch type
                     Rep_ANOVA = limo_tf_4d_reshape(Rep_ANOVA);
                 end
                 save(Rep_filenames{i},'Rep_ANOVA', '-v7.3');
-                if nargout ~= 0, LIMOPath = [fullfile(pwd,Rep_filenames{i}),'.mat']; end
+                if nargout ~= 0, LIMOPath{i} = [fullfile(pwd,Rep_filenames{i}),'.mat']; end
             end
             
             if type == 3 || type ==4
@@ -1264,7 +1265,11 @@ switch type
                 for e = 1:length(array)
                     channel = array(e);
                     if e == 1
-                        fprintf('parallel boot %g channel %g',B,channel);
+                        if e==length(array) % single channel
+                            fprintf('parallel boot %g channel %g\n',B,channel);
+                        else
+                            fprintf('parallel boot %g channel %g',B,channel);
+                        end
                     elseif e==length(array)
                         fprintf(' %g\n',channel);
                     else
@@ -1336,13 +1341,7 @@ switch type
                 end
             end
             
-            % save
-            if ~exist('Rep_filenames','var')
-                all = dir('Rep_ANOVA_Factor*.mat');
-                for i = size(all,1):-1:1
-                    Rep_filenames{i} = all(i).name;
-                end                
-            end
+            % save          
             for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
                 name = sprintf('H0_%s',Rep_filenames{i});
                 H0_Rep_ANOVA = NaN(size(tmp_boot_H0_Rep_ANOVA,1), size(tmp_boot_H0_Rep_ANOVA, 2), size(tmp_boot_H0_Rep_ANOVA, 4), size(tmp_boot_H0_Rep_ANOVA, 5));
@@ -1353,12 +1352,6 @@ switch type
                 save(['H0', filesep, name],'H0_Rep_ANOVA', '-v7.3');
             end
             
-            if ~exist('IRep_filenames','var')
-                all = dir('Rep_ANOVA_Interaction*.mat');
-                for i = size(all,1):-1:1
-                    Rep_filenames{i} = all(i).name;
-                end
-            end
             if type == 3 || type ==4
                 for i=1:size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,3)
                     name = sprintf('H0_%s',IRep_filenames{i});
@@ -1384,6 +1377,12 @@ switch type
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');
             for i=1:nb_effects
                 limo_tfce_handling(fullfile(LIMO.dir,Rep_filenames{i}));
+                if exist('IRep_filenames','var')
+                    if i == 1
+                        limo_tfce_handling(fullfile(LIMO.dir,'Rep_ANOVA_Gp_effect.mat'));
+                    end
+                    limo_tfce_handling(fullfile(LIMO.dir,IRep_filenames{i}));
+                end
             end
             LIMO.design.tfce = 1;
             save(fullfile(LIMO.dir,'LIMO.mat'));
