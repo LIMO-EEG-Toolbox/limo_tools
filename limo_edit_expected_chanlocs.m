@@ -28,13 +28,6 @@ if isfield(tmp,'LIMO')
         elseif isfield(tmp.LIMO.data,'expected_chanlocs')
             expected_chanlocs   = tmp.LIMO.data.expected_chanlocs;
         end
-    elseif isfield(tmp.LIMO.data,'neighbouring_matrix')
-        channeighbstructmat = tmp.LIMO.data.neighbouring_matrix;
-        if isfield(tmp.LIMO.data,'chanlocs')
-            expected_chanlocs   = tmp.LIMO.data.chanlocs;
-        elseif isfield(tmp.LIMO.data,'expected_chanlocs')
-            expected_chanlocs   = tmp.LIMO.data.expected_chanlocs;
-        end
     else
         errordg2('This LIMO fle does not have any neighbourging matrix, compute first then edit');
         return

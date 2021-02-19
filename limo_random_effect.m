@@ -302,7 +302,6 @@ function chan_cluster_neighbours_Callback(hObject, ~, handles)
 [chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
 if sts == 1
     test = load([chan_path chan_file]);
-    test = test.(cell2mat(fieldnames(test)));
     if isfield(test,'expected_chanlocs')
         test = test.expected_chanlocs;
     end

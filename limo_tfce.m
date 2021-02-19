@@ -84,7 +84,7 @@ switch type
         
         switch subtype
             
-            case{1}
+            case{1}                
                 % ------- tfce real data -----------
                 
                 % define increment size forced by dh
@@ -184,7 +184,7 @@ switch type
             case{2}
                 % ------- tfce bootstrapped data under H0 --------------
                 tfce_score = NaN(1,x,b);
-
+                
                 % check negative values if so do negate and add scores
                 if min(data(:)) > 0
                     

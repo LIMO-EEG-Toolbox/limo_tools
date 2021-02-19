@@ -86,6 +86,7 @@ if FilterIndex ~= 0
     handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
+
 % reset selection - but annoying behaviour really
 % uiresume
 % guidata(hObject, handles);
@@ -120,18 +121,16 @@ function ERP_Callback(hObject, eventdata, handles)
 
 [FileName,PathName,FilterIndex]=uigetfile('*.mat','Select LIMO file or summary stat file');
 if FilterIndex == 1
-    cd(PathName);
-    if contains(FileName,'tfce')
-        if exist(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)),'file')
-            [PathName,FileName] = fileparts(fullfile(fileparts(PathName(1:end-1)),FileName(6:end)));
-            FileName = [FileName '.mat'];
-        else
-           error('parent file %s not found',fullfile(fileparts(PathName(1:end-1)),FileName(6:end))) 
+    if ~strcmpi(FileName,'LIMO.mat')
+        if contains(FileName,'tfce')
+            FileName = FileName(6:end);
+            PathName = fileparts(fileparts(PathName)); % trailing \
         end
+        cd(PathName);
     end
-    tmp          = load([PathName filesep 'LIMO.mat']);
+    tmp = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
-    check_boot_and_tfce(handles,fullfile(PathName,FileName))
+    check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);

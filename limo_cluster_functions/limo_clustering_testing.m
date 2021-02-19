@@ -30,7 +30,7 @@ one_d = squeeze(Data(2,2,:))';
 expected_cluster_mass = sum(one_d(:));
 th.elec = expected_cluster_mass; % threshold for the cluster
 sigcluster = limo_ecluster_test(one_d,(1-one_d),th,0.5);
-if sum(sigcluster.elec == one_d) == numel(one_d)
+if sum(sigcluster.elec_mask == one_d) == numel(one_d)
     fprintf('Clustering of 1D data is ok \n')
 else
     fprintf('ERROR Clustering of 1D data failed\n')

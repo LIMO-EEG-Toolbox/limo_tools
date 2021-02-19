@@ -97,7 +97,7 @@ elseif isfield(data, 'elec')
 end
 if ~isstruct(sens)
   error('Did not find gradiometer or electrode information.');
-end
+end;
 
 [neighbours,channeighbstructmat] = compneighbstructfromgradelec(sens, cfg.neighbourdist);
 

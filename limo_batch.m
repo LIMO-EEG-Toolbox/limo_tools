@@ -211,11 +211,12 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             error('the number of set and cat files disagree')
         end
     end
-    
+        
     % build the pipelines
-    for subject = 1:size(model.set_files,1)        
+    for subject = 1:size(model.set_files,1)
+        
         % build LIMO.mat files from import
-        command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';   
+        command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
         pipeline(subject).import.command = command;
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
@@ -262,6 +263,11 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
+        
+        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
+                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+            batch_contrast.LIMO_files = batch_contrast.LIMO_files';
+        end
 
         if ~isempty(model.cat_files)
             pipeline(subject).import.opt.cat = model.cat_files{subject};
@@ -273,7 +279,6 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         else
             pipeline(subject).import.opt.cont = [];
         end
-        
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
         LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
@@ -294,13 +299,10 @@ if strcmp(option,'model specification') || strcmp(option,'both')
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
-    if ~isfield(batch_contrast,'LIMO_files')
-        glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type]; 
-        for subject = 1:length(model.set_files)
-            [root,~,~] = fileparts(model.set_files{subject});
-            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
-        end
-        batch_contrast.LIMO_files = batch_contrast.LIMO_files';
+  
+    if ~exist('model','var')
+        model.defaults.bootstrap = 0;
+        model.defaults.tfce      = 0;
     end
     
     for subject = 1:length(batch_contrast.LIMO_files)
@@ -313,13 +315,18 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
         end
         
-        if strcmp(option,'both') % we can only be sure of the number if it's a new model
-            for c=1:size(batch_contrast.mat,1)
-                name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c) '.mat'];
-            end
-            pipeline(subject).n_contrast.files_out = name; % name{1};
-            LIMO_files.con{subject} = name;
+        sub_LIMO = load(batch_contrast.LIMO_files{subject});
+        if ~isfield(sub_LIMO.LIMO,'contrast')
+            start = 0;
+        else
+            start = length(sub_LIMO.LIMO.contrast);
         end
+        
+        for c=1:size(batch_contrast.mat,1)
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c+start) '.mat'];
+        end
+        pipeline(subject).n_contrast.files_out = name; % name{1};
+        LIMO_files.con{subject} = name;
     end
 end
 
@@ -366,8 +373,8 @@ for subject = 1:N
 end
 
 limo_settings_script;
-if ~limo_settings.psom % debugging mode, serial analysis
-    for subject = 1:N
+if model.defaults.bootstrap == 1 || ~limo_settings.psom % debugging mode, serial analysis
+    for subject = 1:N % if bootstrap, it will use parallel mode for that
         disp('--------------------------------')
         fprintf('processing subject %g/%g \n',subject,N)
         disp('--------------------------------')
@@ -432,7 +439,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 LIMO = load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
                 if isfield(LIMO,'contrast')
-                    con_num = find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast));
+                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); % if several identical contrasts, take max
                 else
                     con_num = c;
                 end

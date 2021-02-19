@@ -22,17 +22,17 @@ function model = limo_glm_boot(varargin)
 %         - LIMO.design.nb_interactions = a vector indicating number of columns per interactions
 %         - LIMO.design.nb_continuous   = number of covariates
 %         - LIMO.design.method          = 'OLS', 'WLS', 'IRLS' 
-%         - LIMO.Analysis               =  'Time', 'Frequency' or 'Time-Frequency'
 %         boot_table is an optional argument - this is the resampling table
 %                    if one calls limo_glm_boot to loop throughout channels,
 %                    this might a good idea to provide such table so that
 %                    the same resampling applies to each channel
 %
 % NOTE
-% Unlike limo_glm this function doesn't handle Time-Frequency data
+% - Unlike limo_glm this function doesn't handle Time-Frequency data
 % meaning that a frequency loop should be created outside the function
-% to iterate - allowing the save directly 5D H0 data -- weights are also to
-% be passed so that resmapling is performed on WY fitting (non resmapled) WX 
+% to iterate - allowing the save directly 5D H0 data.
+% - For IRLS/WLS, weights are also passed so that resmapling is performed 
+%   fitting resampled data to the non resampled WX; otherwise use a matrix of ones. 
 %
 % See also
 % LIMO_GLM_HANDLING, LIMO_GLM, LIMO_WLS, LIMO_IRLS
@@ -50,7 +50,6 @@ if nargin == 2 || nargin == 3
     nb_interactions = varargin{2}.design.nb_interactions;
     nb_continuous   = varargin{2}.design.nb_continuous;
     method          = varargin{2}.design.method;
-    Analysis        = varargin{2}.Analysis;
     Weights         = varargin{2}.Weights;
     
     if nargin == 2
@@ -69,7 +68,6 @@ elseif nargin == 8 || nargin == 9
     nb_interactions = varargin{5};
     nb_continuous   = varargin{6};
     method          = varargin{7};
-    Analysis        = varargin{8};
     
     if nargin == 8
         nboot       = 800; 
@@ -106,54 +104,12 @@ end
 if nb_interactions == 0
     nb_interactions = [];
 end
-
-% ---------------
-%% Make null data
-% ---------------
-
-% if categorical variables, center data 1st overwise nothing to do
-% -------------------------------------------------------------
-if nb_conditions ==0
-    centered_y = y(randperm(size(y,1),size(y,1)),:); % just shuffled then resample
-else
-    centered_y = NaN(size(y,1),size(y,2));
-    if nb_interactions ~= 0
-        % look up the last interaction to get unique groups
-        if length(nb_interactions) == 1
-            start_at = sum(nb_conditions);
-        else
-            start_at = sum(nb_conditions)+sum(nb_interactions(1:end-1));
-        end
-        
-        for cel=(start_at+1):(start_at+nb_interactions(end))
-            index = find(X(:,cel));
-            centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),length(index),1);
-        end
-        
-    elseif size(nb_conditions,2) == 1 
-        % no interactions because just 1 factor
-        for cel=1:nb_conditions
-            index = find(X(:,cel));
-            centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),length(index),1);
-        end
-        
-    elseif size(nb_conditions,2) > 1
-        % create fake interaction to get groups
-        [tmpX, interactions] = limo_make_interactions(X(:,1:sum(nb_conditions)), nb_conditions);
-        if length(interactions) == 1
-            start_at = sum(nb_conditions);
-        else
-            start_at = sum(nb_conditions)+sum(interactions(1:end-1));
-        end
-        
-        for cel=(start_at+1):(start_at+interactions(end))
-            index = find(tmpX(:,cel));
-            centered_y(index,:) = y(index,:) - repmat(mean(y(index,:),1),size(y(index,:),1),1);
-        end
-    end
-end
-
 clear varargin 
+
+% ---------------
+%% Get null data
+% ---------------
+centered_y = limo_glm_null(y,X,nb_conditions,nb_interactions);
 
 % compute for each bootstrap
 % ---------------------------
@@ -495,7 +451,7 @@ switch method
     case 'IRLS'
 
         parfor B = 1:nboot
-            % compute passing resampled crntered_y and W
+            % compute passing resampled centered_y and W
             [BETASB{B},MODELR2{B}, MODELF{B},MODELp{B},...
                 F_CONDVALUES{B}, p_CONDVALUES{B}, F_INTERVALUES{B}, p_INTERVALUES{B}, ...
                 F_CONTVALUES{B},p_CONTVALUES{B}]=glm_iterate(centered_y(boot_table(:,B),:),X,...
@@ -503,7 +459,7 @@ switch method
         end
 end
 
-fprintf('channel type 1 error rate: %g\n',mean(mean(cell2mat(MODELp)<0.05,2)))
+% fprintf('channel type 1 error rate: %g\n',mean(mean(cell2mat(MODELp)<0.05,2)))
 model.R2_univariate  = MODELR2; clear MODELR2
 model.F              = MODELF;  clear MODELF
 model.p              = MODELp;  clear MODELp
@@ -583,19 +539,21 @@ end
 
 % start computing
 T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));
-for frame = 1:size(Y,2)
+for frame = size(Y,2):-1:1
     % model stats
     % -------------------------------------------------------------
-    WX                     = X.*repmat(W(:,frame),1,size(X,2));
+    % get df and dfe from the original model, then use standard GLM
     HM                     = WX*pinv(WX);
+    df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
+    dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+   
+    WX                     = X.*repmat(W(:,frame),1,size(X,2));
     R                      = eye(size(Y,1)) - WX*pinv(WX);
     E                      = Y(:,frame)'*R*Y(:,frame);
     % The number of degrees of freedom can be defined as the minimum number of
     % independent coordinates that can specify the position of the system completely.
     % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
     % use the Satterthwaite approximation
-    df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
-    dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
     R_ols                  = eye(size(Y,1)) - X*pinv(X);
     E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
     % MSE adjustment, E cannot be smaller than OLS since the
@@ -606,7 +564,7 @@ for frame = 1:size(Y,2)
         MSE = (n*sigmar + p^2*sigmals) / (n+p^2);
         E = MSE * dfe(frame);
     end
-    WY                = Y(:,frame) .*repmat(W(:,frame),1,1);
+    WY                = Y(:,frame); % under the null do not .*repmat(W(:,frame),1,1) 
     Betas(:,frame)    = pinv(WX)*WY;
     C                 = eye(size(X,2));
     C(:,size(X,2))    = 0;
@@ -703,7 +661,7 @@ for frame = 1:size(Y,2)
         % run same model as above with re-defined model x and
         % using the weights from the full model
         wx                       = x.*repmat(W(:,frame),1,size(x,2));
-        betas                    = pinv(wx)*(Y(:,frame).*W(:,frame));
+        betas                    = pinv(wx)*Y(:,frame); % .*W(:,frame));
         R                        = eye(size(Y,1)) - wx*pinv(wx);
         eoi                      = zeros(1,size(x,2));
         eoi(1:nb_conditions(1))  = 1:nb_conditions(1);
@@ -765,14 +723,14 @@ for frame = 1:size(Y,2)
                 
                 % run same model as above
                 wx                     = x.*repmat(W(:,frame),1,size(x,2));
-                betas                  = pinv(wx)*(Y(:,frame).*W(:,frame));
+                betas                  = pinv(wx)*Y(:,frame); % .*W(:,frame));
                 R                      = eye(size(Y,1)) - (wx*pinv(wx));
                 eoi                    = zeros(1,size(x,2));
                 eoi(eoibound+1:(eoibound+nb_interactions(f))) = eoibound+1:(eoibound+nb_interactions(f));
                 eoni                   = 1:size(x,2);
                 eoni                   = find(eoni - eoi);
                 C                      = eye(size(x,2));
-                C(:,eoni)              = 0;
+                C(:,eoni)              = 0; %#ok<FNDSB>
                 C0                     = eye(size(x,2)) - C*pinv(C);
                 X0                     = wx*C0;
                 R0                     = eye(size(Y,1)) - (X0*pinv(X0));
