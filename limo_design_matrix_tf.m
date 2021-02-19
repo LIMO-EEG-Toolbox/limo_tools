@@ -114,7 +114,7 @@ if isempty(Cat) && ~isempty(Cont)
         error('The number of trials and the covariate(s) length are of different')
     end
 elseif isempty(Cont) && ~isempty(Cat)
-    if size(Y,3) ~= size(Cat,1) && size(Y,3) ~= sum(~isnan(Cat))
+    if size(Y,3) ~= size(Cat,1)
         error('The number of trials and the number of events are different size')
     end
 elseif ~isempty(Cat) && ~isempty(Cont)
@@ -225,13 +225,12 @@ end % closes if Cont~=0
 
 if ~isempty(Cat)
     
-    if size(Cat,1)~=size(Y,3) && sum(~isnan(Cat)) ~= size(Y,3)
+    if size(Cat,1)~=size(Y,3)
         errordlg('the categorical regressor must be the same length as your dependant variables')
         disp('please retry changing the 2nd argument');error('error line 228 in limo_design_matrix');
     end
 
     % sort Cat column wise - apply to Cont and Y
-    Cat = Cat(~isnan(Cat));
     [Cat,index] = sortrows(Cat,[1:size(Cat,2)]);
     
     if add_cont == 1
@@ -377,7 +376,7 @@ try
     end
     
     % note - overwritten in limo_eeg_tf
-    disp('saving 4D matrices to disk, be patient ...')
+    disp('saving 4D files to disk, be patient ...')
     Yr=limo_tf_4d_reshape(Yr);
     save Yr Yr -v7.3; clear Yr
     save Yhat Yhat -v7.3; clear Yhat

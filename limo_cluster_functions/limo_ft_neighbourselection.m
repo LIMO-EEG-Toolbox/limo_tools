@@ -1,6 +1,6 @@
 function [neighbours,channeighbstructmat] = limo_ft_neighbourselection(cfg,data)
 
-% FT_NEIGHBOURSELECTION finds the neighbours of the channels on the basis of a
+% limo_ft_neighbourselection finds the neighbours of the channels on the basis of a
 % minimum neighbourhood distance (in cfg.neighbourdist). The positions of
 % the channel are specified in a gradiometer or electrode configuration or 
 % from a layout.

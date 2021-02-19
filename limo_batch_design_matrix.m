@@ -1,9 +1,9 @@
 function limo_batch_design_matrix(LIMOfile)
 
-% this function wrap aound the LIMOfile structure from the batch and
+% this function wraps around the LIMO.mat file structure from the batch and
 % calls limo_design_matrix - of special interest is the ability to
 % rearrange data per components based on the study structure clustering
-% output - this allowing group statistics at the 2nd level.
+% output - this allows easier group statistics at the 2nd level.
 %
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLIMOLAB STUDY
 % see also limo_batch
@@ -26,6 +26,7 @@ end
 
 if strcmp(LIMO.Analysis,'Time')
     if strcmp(LIMO.Type,'Components')
+        % 1st load ICA data
         if isfield(EEGLIMO.etc.datafiles,'icaerp')
             if ~iscell(EEGLIMO.etc.datafiles.icaerp) && strcmp(EEGLIMO.etc.datafiles.icaerp(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.icaerp);
@@ -48,6 +49,8 @@ if strcmp(LIMO.Analysis,'Time')
             signal = eeg_getdatact(EEGLIMO,'component',1:size(EEGLIMO.icawinv,2));
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
+        
+        % 2nd if cluster present, reorder
         if isfield(LIMO.data,'cluster')
             try
                 STUDY = evalin('base','STUDY');
@@ -106,7 +109,7 @@ if strcmp(LIMO.Analysis,'Time')
                 for d=length(erp):-1:1
                     signal{d} = load('-mat',fullfile(erp(d).folder,erp(d).name));
                     if isstruct(signal{d})
-                        signal{d}  = limo_struct2mat(signal{d});
+                        signal{d}  = limo_struct2mat(signal{d}); 
                     end
                 end
                 signal = limo_concatcells(signal);
@@ -117,9 +120,9 @@ if strcmp(LIMO.Analysis,'Time')
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
         clear EEGLIMO
     end
-
+    
 elseif strcmp(LIMO.Analysis,'Frequency')
-
+    
     if strcmp(LIMO.Type,'Components')
         if isfield(EEGLIMO.etc.datafiles,'icaspec')
             if ~iscell(EEGLIMO.etc.datafiles.icaspec) && strcmp(EEGLIMO.etc.datafiles.icaspec(end-3:end),'.mat')
@@ -201,7 +204,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
                 for d=length(spec):-1:1
                     signal{d} = load('-mat',fullfile(spec(d).folder,spec(d).name));
                     if isstruct(signal{d})
-                        signal{d} = limo_struct2mat(signal{d});
+                        signal{d} = limo_struct2mat(signal{d}); 
                     end
                 end
                 signal = limo_concatcells(signal);
@@ -211,10 +214,10 @@ elseif strcmp(LIMO.Analysis,'Frequency')
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:);
     end
-
+    
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
     disp('Time-Frequency implementation - checking tf data, be patient ...');
-
+    
     if strcmp(LIMO.Type,'Components')
         if ~iscell(EEGLIMO.etc.datafiles.datspec) && isfield(EEGLIMO.etc.datafiles,'icatimef')
              signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.icatimef)).^2;
@@ -289,7 +292,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                 for d=length(ersp):-1:1
                     signal{d} = load('-mat',fullfile(ersp(d).folder,ersp(d).name));
                     if isstruct(signal{d})
-                        signal{d}  = limo_struct2mat(signal{d});
+                        signal{d}  = limo_struct2mat(signal{d}); 
                     end
                 end
                 signal = limo_concatcells(signal);
@@ -299,11 +302,9 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         end
         Y = abs(signal(:,LIMO.data.trim_lowf:LIMO.data.trim_highf,LIMO.data.trim1:LIMO.data.trim2,:)).^2; clear signal
     end
-    tmpY = Y;
-    tmpY(:,:,:,isnan(LIMO.data.Cat)) = [];
-    LIMO.data.size4D= size(tmpY);
+    clear EEGLIMO
+    LIMO.data.size4D= size(Y);
     LIMO.data.size3D= [LIMO.data.size4D(1) LIMO.data.size4D(2)*LIMO.data.size4D(3) LIMO.data.size4D(4)];
-    clear EEGLIMO tmpY
 end
 
 clear ALLEEGLIMO
@@ -336,14 +337,14 @@ if prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous == 0
     else
         LIMO.design.name  = sprintf('Categorical: N way ANOVA with %g factors',length(LIMO.design.nb_conditions));
     end
-
+    
 elseif prod(LIMO.design.nb_conditions) == 0 && LIMO.design.nb_continuous > 0
     if LIMO.design.nb_continuous == 1
         LIMO.design.name  = sprintf('Continuous: Simple Regression');
     else
         LIMO.design.name  = sprintf('Continuous: Multiple Regression with %g continuous variables',LIMO.design.nb_continuous);
     end
-
+    
 elseif prod(LIMO.design.nb_conditions) > 0 && LIMO.design.nb_continuous > 0
     if length(LIMO.design.nb_conditions) == 1
         LIMO.design.name  = sprintf('AnCOVA with %g conditions and %g continuous variable(s)',LIMO.design.nb_conditions,LIMO.design.nb_continuous);
@@ -363,22 +364,22 @@ function file_fullpath = rel2fullpath(studypath,filepath)
 % fit the one of 'filepath'. That means that if 'filepath' is a cell array,
 % then the output will a cell array too, and the same if is a string.
 
-nit = 1;
+nit = 1; 
 if iscell(filepath)
     nit = length(filepath);
 end
 
 for i = nit:-1:1
     if iscell(filepath)
-        pathtmp = filepath{i};
+        pathtmp = filepath{i}; 
     else
-        pathtmp = filepath;
+        pathtmp = filepath; 
     end
-
+    
     if strfind(pathtmp(end),filesep)
-        pathtmp = pathtmp(1:end-1);
+        pathtmp = pathtmp(1:end-1); 
     end % Getting rid of filesep at the end
-
+    
     if strfind(pathtmp(1:2),['.' filesep])
         if iscell(filepath)
             file_fullpath{i} = fullfile(studypath,pathtmp(3:end));
