@@ -170,19 +170,21 @@ switch type
             C = [eye(p-1) ones(p-1,1).*-1];  % contrast matrix
         end
         
-        df           = p-1;
-        dfe          = n-p+1;
-        y            = squeeze(nanmean(Data,2)); % these are the means to compare
-        Tsquare      = NaN(1,size(Data,1));
-
         if isempty(S)
+            S = NaN(size(Data,1),size(Data,3),size(Data,3));
             for time = 1:size(Data,1)
-                S = cov(squeeze(Data(time,:,:))); % covariance to account for spericity
-                Tsquare(time) = n*(C*y(time,:)')'*inv(C*S*C')*(C*y(time,:)');   % Hotelling Tsquare
+                S(time,:,:) = cov(squeeze(Data(time,:,:))); % covariance to account for spericity
             end
+        end
+
+        df           = p-1; 
+        dfe          = n-p+1; 
+        y            = squeeze(nanmean(Data,2)); % these are the means to compare
+        if size(Data,1) == 1 %% no time or freq dim
+            Tsquare = n*(C*y)'*inv(C*squeeze(S(1,:,:))*C')*(C*y);   % Hotelling Tsquare
         else
             for time = 1:size(Data,1)
-                Tsquare(time) = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
+                Tsquare(time)      = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
             end
         end
         

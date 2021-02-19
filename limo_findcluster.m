@@ -36,7 +36,7 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 % reused as limo_ft_findluster for integration in LIMO toolbox: GAR, University of Glasgow, June 2010 
 % Edit Marianne Latinus adding spm_bwlabel, June 2013
 % limo_findcluster is a refactoring of limo_ft_findcluster with the same functionality
-% and some optimisations for speed. spm_bwlabel is now used preferentially if availiable
+% and some optimisations for speed. spm_bwlabel is now used preferentially if available
 % calls to ismember rearranged and replaced with ismembc
 %
 % Andrew Stewart, August 2014
