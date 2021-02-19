@@ -70,7 +70,14 @@ cat_index(isnan(cat_index)) = [];
 N = length(cat_index);
 new_cont = zeros(length(CAT),N);
 for n=1:N
-    tmp = zscore(CONT(CAT==cat_index(n)));
+    tmp = CONT(CAT==cat_index(n));
+    if ~any(isnan(tmp)) %if no NaN in the vector
+        tmp = zscore(tmp);
+    else
+        mu = nanmean(tmp);
+        sigma = nanstd(tmp);
+        tmp = (tmp-mu)./sigma;
+    end
     new_cont(CAT==cat_index(n),n) = tmp;
 end
 new_cont(find(isnan(CAT)),:) = NaN;
