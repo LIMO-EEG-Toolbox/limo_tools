@@ -1308,15 +1308,21 @@ elseif LIMO.Level == 2
             % which variable(s) to plot
             % ----------------------
             if size(LIMO.design.X,2) > 2
-                input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2)-1);
-                regressor = inputdlg(input_title,'Plotting option');
+                if contains(FileName,'Condition_effect_') || ...
+                        contains(FileName,'Covariate_effect_')
+                    regressor = eval(FileName(18:end-4));
+                else
+                    input_title = sprintf('which regressor to plot?: 1 to %g ',size(LIMO.design.X,2)-1);
+                    regressor = inputdlg(input_title,'Plotting option');
+                end
+                
                 if isempty(regressor); return; end
                 try regressor = sort(eval(cell2mat(regressor)));
                     if max(regressor) > size(LIMO.design.X,2)
                         errordlg('invalid regressor number');
                     end
                 catch reginput_error
-                    fprinf('error: %s',reginput_error.message)
+                    fprintf('error: %s',reginput_error.message)
                     return
                 end
             else
@@ -1338,8 +1344,13 @@ elseif LIMO.Level == 2
             
             % load the effect
             % --------------
-            name = sprintf('Covariate_effect_%g.mat',regressor);
-            data = load(name); data = data.(cell2mat(fieldnames(data)));
+             data = load(FileName); 
+             data = data.(cell2mat(fieldnames(data)));
+             if numel(size(data)) == 3 && size(data,2) == 1
+                 errordlg2('single time point detected, plot aborded'); return
+             elseif numel(size(data)) == 4 && size(data,3) == 1
+                 errordlg2('single time point detected, plot aborded'); return
+             end
             
             % which ERP to make
             % ------------------
@@ -1418,9 +1429,9 @@ elseif LIMO.Level == 2
             % down to business
             % ----------------------
             probs = [p/2; 1-p/2];
-            z = norminv(probs);
-            Yr = load(fullfile(LIMO.dir,'Yr.mat'));
-            Yr = Yr.Yr;
+            z     = norminv(probs);
+            Yr    = load(fullfile(LIMO.dir,'Yr.mat'));
+            Yr    = Yr.Yr;
             
             if strcmp(extra,'Original')
                 if sum(regressor <= categorical) == length(regressor) % for categorical variables

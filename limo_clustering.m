@@ -49,7 +49,6 @@ end
 
 % boostrap parameters
 nboot = size(bootM,3);      % nb of boostrap performed
-U     = round((1-p)*nboot); % bootstrap threshold
     
 % set outputs empty as default
 cluster_pval = [];
@@ -60,7 +59,11 @@ max_th       = [];
 
 if MCC == 2 && size(bootM,1)>1
     minnbchan           = 2;
-    channeighbstructmat = LIMO.data.neighbouring_matrix;
+    if isfield(LIMO,'data')
+        channeighbstructmat = LIMO.data.neighbouring_matrix;
+    else
+        channeighbstructmat = LIMO.channeighbstructmat;
+    end
     boot_maxclustersum  = zeros(nboot,1);     % maximum cluster mass at each bootstrap
     
     disp('getting clusters under H0 boot ...');

@@ -6,25 +6,23 @@ function result = limo_contrast(varargin)
 % design matrix and compute the contrast and statistical test associated to
 % it.
 %
-% FORMAT:
-% result = limo_contrast(Y, Betas, LIMO, contrast type, analysis type)
+% FORMATS:
+% result = limo_contrast(Y, Betas, LIMO, contrast type, analysis type ,contrast)
+% result = limo_contrast(Yr,LIMO, analysis type ,contrast);
 %
 % INPUT:
-% Y              = 3D data
-% Betas          = betas computed in limo_glm
-% LIMO           = the LIMO.mat with the design matrix and contrast
+% Y              = the data as matrix or file name
+% Betas          = the model parameters as matrix or file name 
+%                  Betas.mat for analysis_type = 1 or H0_Betas.mat for analysis type = 2
+% LIMO           = the LIMO structure or LIMO file name
 % contrast type  = 0 or 'T' for T test, 1 or 'F' for F test
 % analysis type  = 1 Contrast for 1st level analyses and 2nd level regression/ANOVA/ANCOVA
-%                  2 for 1/2nd level bootrapped ANOVA/ANCOVA
-%
-% FORMAT:
-% result = limo_contrast(Yr,LIMO,3);
-%
-% INPUT:
-% Y              = 3D data
-% LIMO           = the LIMO.mat with the design matrix and contrast
+%                  2 for 1st level analyses and 2nd level bootstrap regression/ANOVA/ANCOVA
 % analysis type  = 3 for 2nd level repeated measures ANOVA
 %                  4 for 2nd level bootrapped repeated measures ANOVA
+% contrast       = optional a contrast to test ; if not specified the
+%                  contrast should be in LIMO.contrast and last one is
+%                  evaluated
 %
 % OUTPUT
 % con/ess maps saved on disk
@@ -35,74 +33,167 @@ function result = limo_contrast(varargin)
 %
 % Cyril Pernet
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2021
 
 
 %% nargin stuff
-type = varargin{end};
+if nargin == 4 || nargin == 6
+    type = varargin{end-1};
+else
+    type = varargin{end};
+end
 
 %% default
 result = [];
+warning on
 
 %% Analyses
 
 if type == 1 || type == 2
-    Y           = varargin{1};
+    % ---------------------------------------------------------------------
+    %         1st level / 2nd level regressions and ANOVA/ANCOVA
+    % ---------------------------------------------------------------------
+    Y     = varargin{1};
     if ischar(Y)
         Y = load(varargin{1});
         Y = Y.(cell2mat(fieldnames(Y)));
     end
-    Betas       = varargin{2};
+    
+    Betas     = varargin{2};
     if ischar(Betas)
         Betas = load(varargin{2});
         Betas = Betas.(cell2mat(fieldnames(Betas)));
+        if type == 2 && size(Betas,numel(size(Betas))) < 101
+            warning('input Betas file is not a H0 one, no boostraps detected')
+            return
+        end
     end
-    LIMO        = varargin{3};
+    
+    LIMO     = varargin{3};
     if ischar(LIMO)
         LIMO = load(varargin{3});
         LIMO = LIMO.LIMO;
     end
-    if LIMO.Level == 2
-        error('2nd level Analysis detected - limo_contrast wrong case');
+    if contains(LIMO.design.name,'Repeated','IgnoreCase',true)
+        error('2nd level Repeated measure Analysis detected ; switch analysis type');
     end
-    X           = LIMO.design.X;
-    nb_beta     = size(LIMO.design.X,2);
-    contrast_nb = size(LIMO.contrast,2);
-    C           = LIMO.contrast{size(LIMO.contrast,2)}.C;
-    Method      = LIMO.design.type_of_analysis;
+    
+    X       = LIMO.design.X;
+    nb_beta = size(LIMO.design.X,2);
     if isfield(LIMO.model,'model_df')
         dfe = LIMO.model.model_df(:,2:end);
     else
-        dfe     = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
+        dfe = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
     end
-    Test        = varargin{4};
-    if strcmpi(Test,'T')
+    if length(dfe) == 1
+        dfe = repmat(dfe,1,size(Y,1)); % dfe per channel
+    end
+    
+    if nargin == 6 && type == 1 % <------ nargin = 6, user input a contrast
+        if isfield(LIMO,'contrast')
+            contrast_nb = size(LIMO.contrast,2)+1;
+        else
+            contrast_nb = 1;
+        end
+        out = limo_contrast_checking(LIMO.dir,LIMO.design.X,varargin{6}); % add zeros if needed
+        
+        if limo_contrast_checking(LIMO.design.X,varargin{6}) % if contrast if valid
+            if varargin{4} == 1 || strcmpi(varargin{4},'T')
+                if size(out,1) == 1
+                    LIMO.contrast{contrast_nb}.V = 'T';
+                else
+                    warning('the sepcificed contrast is on multiples rows, using F constrast')
+                    LIMO.contrast{contrast_nb}.V = 'F';
+                end
+            else
+                if size(out,1) == 1
+                    warning('the sepcificed contrast is on one row, using T constrast')
+                    LIMO.contrast{contrast_nb}.V = 'T';
+                else
+                    LIMO.contrast{contrast_nb}.V = 'F';
+                end
+            end
+            LIMO.contrast{contrast_nb}.C = out;
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+        else
+           error('invalid contrast ass input') 
+        end
+    elseif nargin == 6 && type == 2 % <---- find the index of the contrast to bootstrap
+            allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
+            contrast_nb = max(cellfun(@(x) all(x==varargin{6}), allC));
+            if contrast_nb == 0
+               warning('analysis type = 2; no constrast to boostrap found like the one as input')
+               return
+            end
+    elseif nargin == 5 %<--- nothing specifed = bootstrap the last one
+        contrast_nb = size(LIMO.contrast,2);     
+    end
+    C       = LIMO.contrast{contrast_nb}.C;
+    Method  = LIMO.design.type_of_analysis;
+    
+    % legacy naming convention
+    if strcmpi(varargin{4},'T')
         Test = 0;
-    elseif strcmpi(Test,'F')
+    elseif strcmpi(varargin{4},'F')
         Test = 1;
+    else
+        Test = varargin{4};
     end
+    
 elseif type == 3 || type == 4
+    % ---------------------------------------------------------------------
+    %                  2nd level repreated measures ANOVA
+    % ---------------------------------------------------------------------
     Yr         = varargin{1};
     if ischar(Yr)
         Yr = load(varargin{1});
         Yr = Yr.(cell2mat(fieldnames(Yr)));
     end
+    
     LIMO       = varargin{2};
     if ischar(LIMO)
-        LIMO = load(varargin{3});
+        LIMO = load(LIMO);
         LIMO = LIMO.LIMO;
     end
     if LIMO.Level == 1
-        error('1st level Analysis detected - limo_contrast wrong case');
+        error('1st level Analysis detected - limo_contrast wrong case ; switch analysis type');
+    elseif ~contains(LIMO.design.name,'Repeated','IgnoreCase',true)
+        error('2nd level Analysis but not a Repeated measure Analysis ; switch analysis type');
     end
     gp_values  = LIMO.design.nb_conditions;
-    index      = size(LIMO.contrast,2);
-    C          = LIMO.contrast{index}.C;
-    Test       = 2; % always a F-test
+    
+    if nargin == 4 && type == 3
+        if isfield(LIMO,'contrast')
+            LIMO.contrast{end+1}.V = 'F';
+            LIMO.contrast{end}.C = varargin{4};
+        else
+            LIMO.contrast{1}.V = 'F';
+            LIMO.contrast{1}.C = varargin{4};
+        end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+    end
+    
+    if ~isfield(LIMO,'contrast')
+        error('no contrast found to evaluate')
+    else
+        if nargin == 4 && type == 4
+            allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
+            index = max(cellfun(@(x) all(x==varargin{4}), allC));
+            if index == 0
+               warning('analysis type = 2; no constrast to boostrap found like the one as input')
+               return
+            end
+        else
+            index      = size(LIMO.contrast,2);
+        end
+        C          = LIMO.contrast{index}.C;
+        Test       = 2; % always a F-test
+    end
 end
 clear varargin
 
 
+%% start the analysis
 switch type
     
     case{1}
@@ -151,7 +242,7 @@ switch type
                             var                    = (squeeze(Res(channel,freq,:,:))*squeeze(Res(channel,freq,:,:))') / dfe(channel,freq);
                             con(channel,freq,:,1)  = C*squeeze(Betas(channel,freq,:,:))';
                             con(channel,freq,:,3)  = dfe(channel,freq);
-                            WX                       = X.*repmat(squeeze(LIMO.design.weights(channel,freq,:)),1,size(X,2));
+                            WX                     = X.*repmat(squeeze(LIMO.design.weights(channel,freq,:)),1,size(X,2));
                             con(channel,freq,:,2)  = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already
                             con(channel,freq,:,4)  = (C*squeeze(Betas(channel,freq,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                             con(channel,freq,:,5)  = (1-tcdf(squeeze(abs(con(channel,freq,:,4))), dfe(channel,freq))).*2;
@@ -207,14 +298,7 @@ switch type
                     if Test == 0 % T contrast
                         
                         % Update con file [mean value, se, df, t, p]
-                        if strcmpi(LIMO.design.method,'OLS')
-                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe;
-                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
-                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                            con(channel,:,3)         = dfe;
-                            con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C'));
-                            con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe)).*2; % times 2 because it's directional
-                        elseif strcmpi(LIMO.design.method,'WLS')
+                        if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
                             var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel);
                             con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
                             WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2));
@@ -223,14 +307,14 @@ switch type
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                             con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
                         elseif strcmpi(LIMO.design.method,'IRLS')
-                            var                      = diag((squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel));
+                            var                      = diag((squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') ./ dfe(channel,:));
                             for frame = 1:size(Betas,2)
                                 con(channel,frame,1) = C*squeeze(Betas(channel,frame,:));
                                 WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
                                 con(channel,frame,2) = sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,3) = dfe(channel);
+                                con(channel,frame,3) = dfe(channel,frame);
                                 con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))) ./ sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(channel))).*2;
+                                con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(channel,frame))).*2;
                             end
                         end
                     else % F contrast
@@ -257,10 +341,10 @@ switch type
                             R0 = eye(size(Y,3)) - (X0*pinv(X0));
                             M  = R0 - R;
                             H  = (squeeze(Betas(channel,:,:))*X'*M*X*squeeze(Betas(channel,:,:))');
-                            ess(channel,:,end-3) = E/dfe;
-                            ess(channel,:,end-1) = (diag(H)/df)./(E/dfe);  % F value
-                            ess(channel,:,end)   = 1 - fcdf(ess(channel,:,end-1), df, dfe); % p value
-                        else
+                            ess(channel,:,end-3) = E/dfe(channel);
+                            ess(channel,:,end-1) = (diag(H)/df)./(E/dfe(channel));  % F value
+                            ess(channel,:,end)   = 1 - fcdf(ess(channel,:,end-1), df, dfe(channel)); % p value
+                        else % IRLS
                             for frame = 1:size(Betas,2)
                                 WX = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
                                 R  = eye(size(Y,3)) - (WX*pinv(WX));
@@ -284,7 +368,6 @@ switch type
                         ess = limo_tf_4d_reshape(ess);
                     end
                 end
-                
             end
             
             % save files
@@ -297,6 +380,12 @@ switch type
                     save(fullfile(LIMO.dir,filename),'con'); clear con
                 else
                     save (fullfile(LIMO.dir,filename),'ess'); clear ess
+                end
+            end
+            
+            if LIMO.design.tfce == 1
+                if ~exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]),'file')
+                    limo_tfce_handling(fullfile(LIMO.dir,filename));
                 end
             end
             
@@ -328,8 +417,8 @@ switch type
                 multivariate.V     = sum(multivariate.EV ./ (1+multivariate.EV));
                 multivariate.df    = size(Y,2);
                 multivariate.dfe   = abs(size(Y,1) - (nb_beta-1) - (multivariate.df-1));
-                multivariate.T_contrast    = sqrt((dfe*max(multivariate.EV))/multivariate.df);
-                multivariate.pval_contrast = 1-fcdf(multivariate.T_contrast, multivariate.df, abs(dfe));
+                multivariate.T_contrast    = sqrt((mean(dfe)*max(multivariate.EV))/multivariate.df);
+                multivariate.pval_contrast = 1-fcdf(multivariate.T_contrast, multivariate.df, mean(abs(dfe)));
                 % to do save into LIMO + con file
             end
         end
@@ -343,7 +432,12 @@ switch type
             nboot = 800;
         end
         
-        % make data files
+        if strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'OLS') || ...
+                strcmp(LIMO.Analysis ,'Time-Frequency') && strcmpi(LIMO.design.method,'IRLS')
+            Y  = limo_tf_4d_reshape(Y);
+        end
+         
+         % make data files
         % ----------------
         if Test == 0
             H0_con   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = t/p
@@ -354,48 +448,11 @@ switch type
         end
         
         
-        % prepare data for bootstrap
-        % --------------------------
-        % if categorical design, center data 1st
-        % ---------------------------------------
-        if LIMO.design.nb_continuous == 0
-            for e=1:size(Y,1)
-                centered_data = NaN(size(Y,1),size(Y,2),size(Y,3));
-                if LIMO.design.nb_interactions ~=0
-                    % look up the last interaction to get unique groups
-                    if length(LIMO.design.nb_interactions) == 1
-                        start_at = sum(LIMO.design.nb_conditions);
-                    else
-                        start_at = sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions(1:end-1));
-                    end
-                    
-                    for cel=(start_at+1):(start_at+LIMO.design.nb_interactions(end))
-                        index = find(X(:,cel));
-                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(mean(squeeze(Y(e,:,index)),2),1,length(index));
-                    end
-                    
-                elseif size(LIMO.design.nb_conditions,2) == 1
-                    % no interactions because just 1 factor
-                    for cel=1:LIMO.design.nb_conditions
-                        index = find(X(:,cel));
-                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(nanmean(squeeze(Y(e,:,index)),2),1,length(index));
-                    end
-                    
-                else
-                    % create fake interaction to get groups
-                    [XI,interactions] = limo_make_interactions(X(:,1:sum(LIMO.design.nb_conditions)), LIMO.design.nb_conditions);
-                    if length(interactions) == 1
-                        start_at = sum(LIMO.design.nb_conditions);
-                    else
-                        start_at = sum(LIMO.design.nb_conditions)+sum(LIMO.design.interactions(1:end-1));
-                    end
-                    
-                    for cel=(start_at+1):(start_at+interactions(end))
-                        index = find(XI(:,cel));
-                        centered_data(e,:,index) = squeeze(Y(e,:,index)) - repmat(mean(squeeze(Y(e,:,index)),2),1,length(index));
-                    end
-                end
-            end
+        % prepare data for bootstrap as in limo_glm_boot
+        % ---------------------------------------------
+        for channel=size(Y,1):-1:1
+            centered_data(channel,:,:) = limo_glm_null(squeeze(Y(channel,:,:))',...
+                X,LIMO.design.nb_conditions,LIMO.design.nb_interactions)';
         end
         
         % start the analysis
@@ -412,45 +469,38 @@ switch type
                 fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     if ~iscell(boot_table)
-                        resampling_index = boot_table(:,B); % 1st level boot_table all the same ever
+                        resampling_index = boot_table(:,B); % 1st level boot_table all the same 
                     else
                         resampling_index = boot_table{channel}(:,B);
                     end
                     
                     % create data under H0
-                    if LIMO.design.nb_continuous == 0
-                        % sample from the centered data in categorical designs
-                        Y = squeeze(centered_data(channel,:,resampling_index))';
-                        X = design(resampling_index,:); % resample X as Y
-                    else
-                        % sample and break the link between Y and (regression and AnCOVA designs)
-                        Y = squeeze(Y(channel,:,resampling_index))';
-                        X = design(find(~isnan(Y(channel,1,:))),:);
-                        if LIMO.design.zscore == 1 % rezscore the covariates
-                            N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
-                            if N==0
-                                if sum(mean(X(:,1:end-1),1)) > 10e-15
-                                    X(:,1:end-1) = zscore(X(:,1:end-1));
-                                end
-                            else
-                                if sum(mean(X(:,N+1:end-1),1)) > 10e-15
-                                    X(:,N+1:end-1) = zscore(X(:,N+1:end-1));
-                                end
-                            end
-                        end
-                    end
+                    Y = squeeze(centered_data(channel,:,resampling_index))';
                     
                     if strcmp(LIMO.design.method,'OLS') || strcmp(LIMO.design.method,'WLS')
+                        trials_to_keep = ~isnan(Y(:,1));
+                        Y              = Y(trials_to_keep,:);
+                        X              = design(trials_to_keep,:); % do not resample X
+                        W              = LIMO.design.weights(channel,trials_to_keep)';
+                        if any(isnan(Y(:,1))) && ...
+                                LIMO.design.nb_continuous ~= 0 && ...
+                                LIMO.design.zscore == 1 % rezscore the covariates
+                            N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
+                            if any(mean(X(:,N+1:end-1),1) > 10e-15)
+                                X(:,N+1:end-1) = zscore(X(:,N+1:end-1));
+                            end
+                        end
+                        
                         % compute Projection onto the error
-                        WX = [X(:,1:end-1).*repmat(LIMO.design.weights(channel,:)',1,size(X,2)-1) X(:,end)];
+                        WX = X .* repmat(W,1,size(X,2));
                         R  = eye(size(Y,1)) - WX*pinv(WX);
                         
                         % T contrast
                         % -----------
                         if Test == 0
-                            var   = ((R*Y)'*(R*Y)) / dfe; % error of H0 data
-                            H0_con(channel,:,1,B) = (C*squeeze(Betas(channel,:,:,B))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % T value
-                            H0_con(channel,:,2,B) = 1-tcdf(squeeze(H0_con(channel,:,2,B)), dfe); % p value
+                            var   = ((R*Y)'*(R*Y)) / dfe(channel); % error of H0 data
+                            H0_con(channel,:,1,B) = (C*squeeze(Betas(channel,:,:,B))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % T value
+                            H0_con(channel,:,2,B) = 1-tcdf(squeeze(H0_con(channel,:,1,B)), dfe(channel)); % p value
                             
                             % F contrast
                             % ----------
@@ -461,7 +511,7 @@ switch type
                                 c(n,n) = C(n);
                             end
                             C0 = eye(size(c,2)) - c*pinv(c);
-                            X0 = X*C0;
+                            X0 = WX*C0;
                             R0 = eye(size(Y,1)) - (X0*pinv(X0));
                             M = R0 - R;
                             H = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
@@ -469,12 +519,33 @@ switch type
                             if df == 0
                                 df = 1;
                             end
-                            H0_ess(channel,:,1,B) = (diag(H)/df)./(diag(E)/dfe);  % F value
-                            H0_ess(channel,:,2,B) = 1 - fcdf(H0_ess(channel,:,end-1,B), rank(c)-1, dfe);   % p value
+                            H0_ess(channel,:,1,B) = (diag(H)/df)./(diag(E)/dfe(channel));  % F value
+                            H0_ess(channel,:,2,B) = 1 - fcdf(H0_ess(channel,:,1,B), rank(c)-1, dfe(channel));   % p value
                         end
+                        
+                        
                     else % -------- IRLS ------------
                         for frame = 1:size(Y,2)
-                            WX  = [X(:,1:end-1).*repmat(LIMO.design.weights(channel,frame,:),1,size(X,2)-1) X(:,end)];
+                            X = design; % do not resample X
+                            W = LIMO.design.weights(channel,frame,~isnan(Y(:,1)))';
+                            if isnan(Y(:,1))
+                                Y = Y(~isnan(Y(:,1)),:);
+                                X = X(~isnan(Y(:,1)),:);
+                                if LIMO.design.nb_continuous ~= 0 && LIMO.design.zscore == 1 % rezscore the covariates
+                                    N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
+                                    if N==0
+                                        if sum(mean(X(:,1:end-1),1)) > 10e-15
+                                            X(:,1:end-1) = zscore(X(:,1:end-1));
+                                        end
+                                    else
+                                        if sum(mean(X(:,N+1:end-1),1)) > 10e-15
+                                            X(:,N+1:end-1) = zscore(X(:,N+1:end-1));
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            WX  = X .* repmat(W,1,size(X,2));
                             HM  = WX*pinv(WX);
                             R   = eye(size(Y,1)) - HM;
                             dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
@@ -495,7 +566,7 @@ switch type
                                     c(n,n) = C(n);
                                 end
                                 C0 = eye(size(c,2)) - c*pinv(c);
-                                X0 = X*C0;
+                                X0 = WX*C0;
                                 R0 = eye(size(Y,1)) - (X0*pinv(X0));
                                 M = R0 - R;
                                 H = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
@@ -512,12 +583,18 @@ switch type
             end
             
             if Test == 0
-                save (filename, 'H0_con'); clear H0_con; 
+                save (fullfile(LIMO.dir,['H0' filesep filename]), 'H0_con'); clear H0_con; 
             else
-                save (filename, 'H0_ess'); clear H0_ess; 
+                save (fullfile(LIMO.dir,['H0' filesep filename]), 'H0_ess'); clear H0_ess; 
             end
         end
         
+        if LIMO.design.tfce == 1
+            if ~exist(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' filename]),'file')
+                limo_tfce_handling(fullfile(LIMO.dir,filename(4:end)),'checkfile','no');
+            end
+        end
+            
         % ----------------------------------------
         if strcmp(Method,'Multivariate')
             % ----------------------------------------
@@ -566,8 +643,8 @@ switch type
                     multivariate.V     = sum(multivariate.EV ./ (1+multivariate.EV));
                     multivariate.df    = size(Y,2);
                     multivariate.dfe   = abs(size(Y,1) - (nb_beta-1) - (multivariate.df-1));
-                    multivariate.T_contrast    = sqrt((dfe*max(multivariate.EV))/multivariate.df);
-                    multivariate.pval_contrast = 1-fcdf(multivariate.T_contrast, multivariate.df, abs(dfe));
+                    multivariate.T_contrast    = sqrt((mean(dfe)*max(multivariate.EV))/multivariate.df);
+                    multivariate.pval_contrast = 1-fcdf(multivariate.T_contrast, multivariate.df, mean(abs(dfe)));
                     result = multivariate;
                 end
             end
@@ -594,7 +671,6 @@ switch type
         % [mean value, se, df, F, p])
         if gp_values == 1
             ess = zeros(size(Yr,1),size(Yr,2),5);
-            
             array = find(nansum(squeeze((Yr(:,1,:,1))),2));    
             for c = 1:length(array)
                 channel = array(c);
@@ -652,7 +728,8 @@ switch type
                 % mean, se, df
                 n = size(Y,2);
                 if strcmpi(LIMO.design.method,'Mean')
-                    g = 0; 
+                    g = 0; % < ----------- bellow the code is trimmed mean and winsorized variance
+                           %               but with g = 0 this is regular mean and varance
                 else
                     g = floor((20/100)*n);
                 end
@@ -702,8 +779,19 @@ switch type
             else
                 ess = ess2;
             end
-            filename = sprintf('ess_gp_interaction_%g.mat',index);
-            save(filename, 'ess', '-v7.3');
+            filename2 = sprintf('ess_gp_interaction_%g.mat',index);
+            save(filename2, 'ess', '-v7.3');
+        end
+        
+        % tfce if needed
+        if LIMO.design.tfce ~= 0
+            if ~exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]),'file')
+                limo_tfce_handling(fullfile(LIMO.dir,filename));               
+            end
+            
+            if exist('ess2','var') && ~exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename2]),'file')
+                limo_tfce_handling(fullfile(LIMO.dir,filename2));               
+            end
         end
         
     case(4)
@@ -711,7 +799,7 @@ switch type
         %              bootstrap
         % ---------------------------------------------
         
-        filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_' num2str(size(LIMO.contrast,2)) '.mat']);
+        filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_' num2str(index) '.mat']);
         % prepare the boostrap with centering the data
         cd([LIMO.dir filesep 'H0']);
         if ~exist('centered_data.mat','file') || ~exist('boot_table.mat','file')
@@ -733,7 +821,7 @@ switch type
             array = find(nansum(squeeze((centered_data(:,1,:,1))),2));          
             fprintf('bootstrapping contrast ...\n');
             parfor b = 1:LIMO.design.bootstrap
-                    H0_ess_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                H0_ess_sub = NaN(size(centered_data,1),size(centered_data,2),2);
                 for c = 1:length(array)
                     channel = array(c);
                     if c == 1
@@ -745,8 +833,8 @@ switch type
                     end
                     % Inputs
                     tmp = squeeze(centered_data(channel,:,boot_table{channel}(:,b),:));
-                    Y   = tmp(:,:,find(~isnan(tmp(1,1,:))),:); % resampling should not have NaN, JIC
-                    gp  = LIMO.data.Cat(find(~isnan(squeeze(tmp(1,:,1)))));
+                    Y   = tmp(:,find(~isnan(tmp(1,:,1))),:); % resampling should not have NaN, JIC
+                    gp  = LIMO.data.Cat(find(~isnan(tmp(1,:,1))));
                     % F and p
                     if strcmpi(LIMO.design.method,'Mean')
                         result = limo_rep_anova(Y, gp, LIMO.design.repeated_measure, C(1:size(Y,3)));
@@ -831,11 +919,23 @@ switch type
                 else
                     H0_ess = H0_ess2;
                 end
-                filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_gp_interaction_' num2str(index) '.mat']);
-                save(filename, 'H0_ess', '-v7.3');
+                filename2 = fullfile(LIMO.dir,['H0' filesep 'H0_ess_gp_interaction_' num2str(index) '.mat']);
+                save(filename2, 'H0_ess', '-v7.3');
             end
         end
-        cd(LIMO.dir); disp('done')
+        cd(LIMO.dir); 
+        
+        % tfce if needed
+        if LIMO.design.tfce ~= 0
+            if ~exist(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_ess_' num2str(index) '.mat']),'file')
+                limo_tfce_handling(fullfile(LIMO.dir,['ess_' num2str(index) '.mat']),'checkfile','no');
+            end
+            
+            if exist('ess2','var') && ~exist(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_ess_gp_interaction_' num2str(index) '.mat']),'file')
+                limo_tfce_handling(fullfile(LIMO.dir,['ess_gp_interaction_' num2str(index) '.mat']),'checkfile','no');
+            end
+        end
+        disp('contrast bootstrap done')
 end
 
 
