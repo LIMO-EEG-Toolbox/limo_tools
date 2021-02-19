@@ -26,6 +26,8 @@ There is also an older dataset that can be downloaded here: http://datashare.is.
 
 ## Contribute
 
+No brainer --> comment on anything you want (usage/doc/design) in free format on this [google doc](https://docs.google.com/document/d/1g6C4axnrJq5sItnXFbTQ0aR-3iJ_SHMXxfN55006eQ0/edit?usp=sharing)
+
 Push any changes, submit pull request against the [HotFixes branch](https://github.com/LIMO-EEG-Toolbox/limo_tools/tree/HotFixes).
 
 Anyone is welcome to contribute ! check here [how you can get involved](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/contributing.md), the [code of conduct](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/code_of_conduct.md). Contributors are listed [here](https://github.com/LIMO-EEG-Toolbox/limo_eeg/blob/master/contributors.md)
