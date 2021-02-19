@@ -15,15 +15,21 @@ function result = limo_robust_rep_anova(varargin)
 %
 % INPUT
 %
-%   result = limo_rep_anova(data,factors)
-%   result = limo_rep_anova(data,factors,C)
-%   result = limo_rep_anova(data,factors,C,S)
+%   result = limo_rep_anova(data,gp,factors,percent)
+%   result = limo_rep_anova(data,gp,factors,percent,C)
+%   result = limo_rep_anova(data,gp,factors,percent,C,S)
 %
 % - data is a 3D matrix (f time frames * n subjects * p measures) of repeated measures
+% - gp is a vector (n*1) indicating to which group subjects belong.
+%       For instance enter [1 1 1 2 2 2 3 3 3] to indicate that subjects
+%       1-3 belonged to group 1, subjects 4-6 belonged to group 2...
+%       Enter [] if all subjects belonged to the same group.
+%       There must be the same number of subjects in each group.
 % - factors is a vector indicating the levels of each factor
 %       (prod(factors)=p), e.g. [2 2] for a 2 by 2 factorial
 % - C is optional and represent the contrast vector to compute (see limo_OrthogContrasts)
-% - S is optional and is the covariance of the data 
+% - S is optional and is the covariance of the data (only for within factors)
+% - X is optional and is the design matrix (only for within by between factors)
 %
 % OUTPUT
 %
@@ -46,37 +52,72 @@ function result = limo_robust_rep_anova(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
+%% hard coded amount of trimming
 
 %% input stuff
 % -------------
-C = []; S = []; 
+C = []; S = []; X = []; 
           
-if nargin == 2
-    Data = varargin{1};
-    factors = varargin{2};
-elseif nargin == 3 || nargin == 4
-    Data = varargin{1};
-    factors = varargin{2};
-    C = varargin{3};
+if nargin >= 3
+    Data    = varargin{1};
+    gp      = varargin{2};
+    factors = varargin{3};
     if nargin == 4
-        S = varargin{4}; % sample cov
+        percent = varargin{4};
+    else
+        percent = 20/100;
     end
 else
     error('wrong number of arguments')
+end
+
+if nargin == 5 || nargin == 6
+    C  = varargin{5};
+    if nargin == 6
+        if size(varargin{2},1) == size(varargin{6},1)
+            X = varargin{6}; % design matrix for groups
+        else
+            S = varargin{6}; % sample cov if no groups
+        end
+    end
+end
+
+if isempty(gp)
+    gp = ones(size(Data,1), 1);
 end
 
 clear varargin
 
 %% basic info about the design
 % -----------------------------
-[f,n,p]       = size(Data);
+[~,n,p]       = size(Data);
 nb_factors    = size(factors,2);
 nb_effects    = (2^nb_factors - 1);
 nb_conditions = prod(factors);
+nb_gp         = size(gp,2);
+if nb_gp > 1
+    errordlg('Designs with more than 1 between factor are not supported')
+    return
+end
 
 %% analyze
 % ---------
-type = nb_factors;
+if unique(gp) == 1
+    % one sample
+    if nb_factors ==1
+        type = 1;
+    elseif nb_factors >1
+        type = 2;
+    end
+else
+    % k samples
+    if nb_factors ==1
+        type = 3;
+    elseif nb_factors >1
+        type = 4;
+    end
+end
+
 
 %% 
 switch type
@@ -91,20 +132,24 @@ switch type
             C = [eye(p-1) ones(p-1,1).*-1];  % contrast matrix
         end
         
+        df           = p; 
+        h            = n-2*floor(percent*n); % number of items to trim
+        dfe          = h-p;                
+        y            = squeeze(limo_trimmed_mean(permute(Data,[1 3 2]),percent)); % these are the means to compare
+        Tsquare      = NaN(1,size(Data,1));
+
         if isempty(S)
-            S = NaN(size(Data,1),size(Data,3),size(Data,3));
             for time = 1:size(Data,1)
-                S(time,:,:) = limo_robust_cov(squeeze(Data(time,:,:))); % covariance to account for spericity
+                S = limo_robust_cov(squeeze(Data(time,:,:)),percent); % covariance to account for spericity
+                Tsquare(time)  = h*(C*y(time,:)')'*inv(C*S*C')*(C*y(time,:)');   % Hotelling Tsquare
+           end
+        else
+            for time = 1:size(Data,1)
+                Tsquare(time)  = h*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
             end
         end
-
-        df           = p-1; 
-        dfe          = n-p+1; 
-        y            = squeeze(limo_trimmed_mean(Data,2)); % these are the means to compare
-        for time = 1:size(Data,1)
-            Tsquare(time)      = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
-        end
-        result.F     = ( dfe / ((n-1)*df) ) * Tsquare; 
+        
+        result.F     = (dfe/((n-1)*df)) * Tsquare;  
         result.p     = 1 - fcdf(result.F, df, dfe);
 
         % -----------------------------------------------------------------

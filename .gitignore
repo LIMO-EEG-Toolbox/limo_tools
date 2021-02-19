@@ -1,10 +1,8 @@
 #################
-## Matlab
+## matlab
 
-+*.asv
-*.m~
+*.~m
 
-## Eclipse
 #################
 
 *.pydevproject

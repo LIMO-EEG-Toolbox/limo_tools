@@ -36,18 +36,12 @@ end
 
 % now loop loading the LIMO.mat for each subject to collect information
 for i=1:size(Paths,2)
-    if iscell(Paths{i}); cd (cell2mat(Paths{i})); else; cd (Paths{i}); end
-    
-    if exist('LIMO','file')
-        load('LIMO.mat');
-    else
-        limofile = dir('LIMO*.mat');
-        if size(limofile,1) == 1
-            load(limofile.name)
-        else
-            error('LIMO.mat could not be located starting at subject %g',i)
-        end
+    try
+        cd (Paths{i});
+    catch
+        cd (cell2mat(Paths{i}))
     end
+    load LIMO;
     
     if i==1
         Analysis = LIMO.Analysis;

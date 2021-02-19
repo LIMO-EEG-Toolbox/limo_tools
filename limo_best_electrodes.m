@@ -118,7 +118,7 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
         sum(isnan(channel_vector)) == 0 && nargin ==2
     
     if nargin == 0
-        [p,f,filt]=uigetfile('*.mat','load expected chanlocs to check channel positions');
+        [p,f,filt]=uigetfile('load expected chanlocs');
         if filt == 0
             return
         else
