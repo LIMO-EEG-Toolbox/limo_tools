@@ -17,18 +17,7 @@ if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
         cd (LIMO.data.data_dir);
         disp('reloading data ..');
-        cd (LIMO.data.data_dir); disp('reloading data ..');
-        [~,~,ext]=fileparts(LIMO.data.data);
-        if strcmpi(ext,'.set')
-            EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]); % eeglab
-        elseif strcmpi(ext,'.mat')
-            EEGLIMO = load([LIMO.data.data_dir filesep LIMO.data.data]); % fieldtrip
-            EEGLIMO = struct2cell(EEGLIMO);
-            EEGLIMO = EEGLIMO{1};
-            if ~strcmp(ft_datatype(EEGLIMO),'raw')
-                error('ERROR: neither EEGLAB nor FieldTrip input file!')
-            end
-        end
+        EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
     end
 else
     disp('reloading data ..');
@@ -92,10 +81,7 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
-        if ~exist(erp,'file')  
-            % load from field
-            signal = cell2mat(permute(EEGLIMO.trial,[1,3,2]));
-        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.daterp);
                 if isstruct(signal)
