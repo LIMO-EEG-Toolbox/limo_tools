@@ -224,9 +224,10 @@ switch type
                     filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
                 end
                 
+                warning off;
                 array = find(~isnan(Y(:,1,1))); % skip empty channels
                 for e = 1:length(array)
-                    channel = array(e); warning off;
+                    channel = array(e); 
                     if strcmp(LIMO.Type,'Channels')
                         fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                     else
@@ -271,6 +272,7 @@ switch type
                         end
                     end
                 end
+                warning on;
                 
             else % all other data/methods
                 
@@ -284,9 +286,10 @@ switch type
                 end
                 
                 % update con/ess file
+                warning off;
                 array = find(~isnan(Y(:,1,1))); % skip empty channels
                 for e = 1:length(array)
-                    channel = array(e); warning off;
+                    channel = array(e);
                     if strcmp(LIMO.Type,'Channels')
                         fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                     else
@@ -359,7 +362,8 @@ switch type
                         end
                     end
                 end
-                
+                warning on;
+               
                 % reshape Time-Frequency files
                 if strcmp(LIMO.Analysis ,'Time-Frequency')
                     if Test == 0
@@ -464,12 +468,13 @@ switch type
         
         if strcmp(Method,'Mass-univariate')
             % ---------------------------------
+            warning off;
             for e = 1:length(array)
-                channel = array(e); warning off;
+                channel = array(e);
                 fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     if ~iscell(boot_table)
-                        resampling_index = boot_table(:,B); % 1st level boot_table all the same 
+                        resampling_index = boot_table(:,B); % 1st level boot_table all the same
                     else
                         resampling_index = boot_table{channel}(:,B);
                     end
@@ -581,6 +586,7 @@ switch type
                     end
                 end
             end
+            warning on;
             
             if Test == 0
                 save (fullfile(LIMO.dir,['H0' filesep filename]), 'H0_con'); clear H0_con; 
@@ -599,8 +605,9 @@ switch type
         if strcmp(Method,'Multivariate')
             % ----------------------------------------
             
+            warning off;
             for e = 1:size(Y,1)
-                channel = array(e); warning off;
+                channel = array(e);
                 fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     % create data under H0
@@ -648,7 +655,8 @@ switch type
                     result = multivariate;
                 end
             end
-        end
+            warning on;
+       end
         
     case(3)
         % --------------------------------------------
