@@ -302,10 +302,10 @@ switch type
                         
                         % Update con file [mean value, se, df, t, p]
                         if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel);
-                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
-                            WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2));
-                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already 
+                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel); % sum of (xi-mean)^2 since res are xi-mean take res^2, dived by dfe ie n-dimensions of the mean
+                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))'; % how do we scale axes of WX
+                            WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2)); 
+                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var = avg distance to model projected into the contrast space
                             con(channel,:,3)         = dfe(channel);
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                             con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
