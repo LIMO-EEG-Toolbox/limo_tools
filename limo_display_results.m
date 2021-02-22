@@ -1446,6 +1446,7 @@ elseif LIMO.Level == 2
                         se = (nanstd(data') ./ sqrt(numel(index{i})));
                         ci(i,:,:) = repmat(average(i,:),2,1) + repmat(se,2,1).*repmat(z,1,size(Yr,2));
                     end
+                    clear mytitle
                     if isempty(LIMO.design.electrode)
                         mytitle = sprintf('Original subjects'' parameters at channel %s (%g)', LIMO.data.chanlocs(channel).labels, channel);
                     else
@@ -1461,6 +1462,7 @@ elseif LIMO.Level == 2
                         else
                             continuous(i,:,:) = Yr(channel,:,sorting_values);
                         end
+                        clear mytitle
                         if isempty(LIMO.design.electrode)
                             mytitle{i} = sprintf('Original subjects'' parameters \n sorted by regressor %g channel %s (%g)', regressor(i), LIMO.data.chanlocs(channel).labels, channel);
                         else
@@ -1488,6 +1490,7 @@ elseif LIMO.Level == 2
                         CI = sqrt(var/size(index{i},1))*z';
                         ci(i,:,:) = (repmat(nanmean(data,2),1,2)+CI)';
                     end
+                    clear mytitle
                     if isempty(LIMO.design.electrode)
                         mytitle = sprintf('Modelled subjects'' parameters at channel %s (%g)', LIMO.data.chanlocs(channel).labels, channel);
                     else
@@ -1500,6 +1503,7 @@ elseif LIMO.Level == 2
                         [~,sorting_values]=sort(LIMO.design.X(index{i},regressor(i)));  % continuous variable 3D plot
                         reg_values(i,:) = LIMO.data.Cont(sorting_values);
                         continuous(i,:,:) = Yh(:,sorting_values);
+                        clear mytitle
                         if isempty(LIMO.design.electrode)
                             mytitle = sprintf('Modelled subjects'' parameters \n sorted by regressor %g channel %s (%g)', ...
                                 regressor(i), LIMO.data.chanlocs(channel).labels, channel);
@@ -1529,6 +1533,7 @@ elseif LIMO.Level == 2
                         se = nanstd(data') ./ sqrt(numel(index{i}));
                         ci(i,:,:) = repmat(average(i,:),2,1) + repmat(se,2,1).*repmat(z,1,size(Ya,1));
                     end
+                    clear mytitle
                     if isempty(LIMO.design.electrode)
                         mytitle = sprintf('Adjusted subjects'' parameters at channel %s (%g)', LIMO.data.chanlocs(channel).labels, channel);
                     else
@@ -1541,6 +1546,7 @@ elseif LIMO.Level == 2
                         [~,sorting_values]=sort(LIMO.design.X(index{i},regressor(i)));  % continuous variable 3D plot
                         reg_values(i,:) = LIMO.data.Cont(sorting_values);
                         continuous(i,:,:) = Ya(:,sorting_values);
+                        clear mytitle
                         if isempty(LIMO.design.electrode)
                             mytitle = sprintf('Adjusted subjects'' parameters \n sorted by regressor %g channel %s (%g)', regressor(i), LIMO.data.chanlocs(channel).labels, channel);
                         else
