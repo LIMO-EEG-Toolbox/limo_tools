@@ -1648,7 +1648,7 @@ elseif LIMO.Level == 2
                     xlabel('Frequency in Hz','FontSize',16)
                 end
                 
-            else
+            else % 3D plots
                 for i=1:size(continuous,1)
                     if i > 1; figure;set(gcf,'Color','w'); end
                     index = find(~isnan(squeeze(continuous(i,1,:))));
@@ -1671,6 +1671,8 @@ elseif LIMO.Level == 2
                     xlabel('Sorted variable','FontSize',14)
                     try
                         set(gca,'XTick',index, 'XTickLabels', reg_values(index));
+                    catch label_err
+                        warning on; warning('could not set X-labels:\n%s',label_err)
                     end
                 end
             end
