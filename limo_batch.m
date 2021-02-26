@@ -373,7 +373,7 @@ for subject = 1:N
 end
 
 limo_settings_script;
-if model.defaults.bootstrap == 1 || ~limo_settings.psom % debugging mode, serial analysis
+if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial analysis
     for subject = 1:N % if bootstrap, it will use parallel mode for that
         disp('--------------------------------')
         fprintf('processing subject %g/%g \n',subject,N)
