@@ -178,14 +178,24 @@ if nargin == 4
     end
     cd(STUDY.filepath); % go to study
     current = pwd; 
-    if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
-        mkdir(['LIMO_' STUDY.filename(1:end-6)]); 
+    if isempty(strfind(STUDY.filepath,'derivatives'))
+        % derivatives would have been created by std_limo if not in the path
+        if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
+            mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]);
+        end
+        if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report'],'dir') ~= 7
+            mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report']);
+        end
+        LIMO_files.LIMO = [current filesep ['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]];
+    else
+        if exist(['LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
+            mkdir(['LIMO_' STUDY.filename(1:end-6)]);
+        end
+        if exist(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report'],'dir') ~= 7
+            mkdir(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report']);
+        end
+        LIMO_files.LIMO = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     end
-    if exist(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report'],'dir') ~= 7
-        mkdir(['LIMO_' STUDY.filename(1:end-6) filesep 'limo_batch_report']);
-    end
-    study_root = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
-    LIMO_files.LIMO = study_root;
 else
     current = pwd;
     mkdir('limo_batch_report')
@@ -241,8 +251,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         
         if nargin == 4
-            if isempty(findstr(STUDY.datasetinfo(subject).subject,'sub')) % not bids
-                root = [STUDY.datasetinfo(subject).filepath filesep 'sub-' STUDY.datasetinfo(subject).subject];
+            if ~contains(STUDY.datasetinfo(subject).subject,{'sub-'}) && ...
+                    ~contains(STUDY.datasetinfo(subject).subject,{'_task-'}) % not bids
+                root = [LIMO_files.LIMO filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
                 root = STUDY.datasetinfo(subject).filepath;
             end
@@ -290,7 +301,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
         
         % run GLM
-        command = 'cd(fileparts(files_in)), limo_eeg(4)';
+        command = 'limo_eeg(4,files_in)';
         pipeline(subject).glm.command = command;
         pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
         pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
