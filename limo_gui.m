@@ -99,20 +99,17 @@ delete(handles.figure1)
 if strcmp(opt,'one')
     limo_contrast_manager
 else
+% to do
+% -----
+%     if evalin( 'base', 'exist(''STUDY'',''var'')' )
+%         pop_limo() % call std contrast GUI
+%     else
+%         limo_batch('contrast only');
+%     end
+    
     limo_batch('contrast only');
 end
 
-
-% [file,dir_path] = uigetfile('*.mat','select a LIMO.mat file');
-% if file ==0
-%     return
-%     guidata(hObject, handles);
-% else
-%     cd(dir_path); handles.LIMO = load('LIMO.mat');
-%     uiresume
-%     delete(handles.figure1)
-%     limo_contrast_manager(handles.LIMO.LIMO);
-% end
 
 % --- Executes on button press in Rdx.
 function Rdx_Callback(hObject, eventdata, handles)
