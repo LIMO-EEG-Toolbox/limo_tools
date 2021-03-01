@@ -171,8 +171,17 @@ elseif nargin > 1
     end
 end
 
+% check EEGLAB STUDY
 if nargin == 4
     STUDY = varargin{4}; clear varargin{4};
+end
+
+% not passed but in base workspace (case of batching contrast from GUI)
+if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
+    STUDY = evalin('base', 'STUDY');
+end
+
+if exist('STUDY','var')
     if isempty(STUDY.filepath)
         STUDY.filepath =pwd;
     end
@@ -431,12 +440,7 @@ end
 %% Save txt files
 % save as txt file the list of .set, Betas, LIMO and con
 % these lists can then be used in second level analyses
-
-if exist('STUDY','var')
-    cell2csv([LIMO_files.LIMO filesep 'EEGLAB_set_' glm_name '.txt'],model.set_files)
-else
-    cd(LIMO_files.LIMO)
-end
+cd(LIMO_files.LIMO)
 
 if strcmp(option,'model specification') || strcmp(option,'both')
     cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
@@ -464,15 +468,43 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         name = name';
         
         if sum(remove_con) ~= 0
-            cell2csv([LIMO_files.LIMO filesep 'con' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
+            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         else
-            cell2csv([LIMO_files.LIMO filesep 'con' num2str(con_num) '_files_'  glm_name '.txt'], name);
+            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_'  glm_name '.txt'], name);
         end
     end
 end
 
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
+
+% if EEGLAB STUDY
+if exist('STUDY','var')
+    
+    if isfield(model, 'set_files')
+        cell2csv([LIMO_files.LIMO filesep 'EEGLAB_set_' glm_name '.txt'],model.set_files)
+    end
+    
+    % split txt files if more than 1 group
+    if length(STUDY.group) > 1
+        for g= 1:length(STUDY.group)
+            subset = arrayfun(@(x)(strcmpi(x.group,STUDY.group{g})), STUDY.datasetinfo);
+            
+            if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
+                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
+                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
+            end
+            
+            if isfield(LIMO_files,'con')
+                tmpcell = LIMO_files.con(subset);
+                for c=1:length(tmpcell{1})
+                    [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
+                    cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_Gp' STUDY.group{g} '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
+                end
+            end
+        end
+    end
+end
 
 cd(current); 
 failed = 0;
