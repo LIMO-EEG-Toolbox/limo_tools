@@ -464,6 +464,9 @@ if LIMO.design.bootstrap ~=0
                         elseif strcmp(LIMO.design.method,'IRLS')
                             Y = squeeze(Yr(channel,:,:,:));
                             index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
+                            if numel(size(LIMO.design.weights)) == 3
+                                LIMO.design.weights = limo_tf_4d_reshape(LIMO.design.weights,LIMO.data.size4D);
+                            end
                             for f=1:size(Yr,2)
                                 Weights = squeeze(LIMO.design.weights(channel,f,:,index));
                                 model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), Weights,...
@@ -496,6 +499,9 @@ if LIMO.design.bootstrap ~=0
                                 model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
                             end
                         elseif strcmp(LIMO.design.method,'IRLS')
+                            if numel(size(LIMO.design.weights)) == 3
+                                LIMO.design.weights = limo_tf_4d_reshape(LIMO.design.weights,LIMO.data.size4D);
+                            end
                             for f=1:size(Yr,2)
                                 LIMO.Weights = squeeze(LIMO.design.weights(channel,f,:,:));
                                 model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
