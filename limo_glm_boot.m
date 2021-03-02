@@ -545,6 +545,7 @@ for frame = size(Y,2):-1:1
     % get df and dfe from the original model, then use standard GLM   
     WX                     = X.*repmat(W(:,frame),1,size(X,2));
     HM                     = WX*pinv(WX);
+    R                      = eye(size(Y,1)) - WX*pinv(WX);
     E                      = Y(:,frame)'*R*Y(:,frame);
     % The number of degrees of freedom can be defined as the minimum number of
     % independent coordinates that can specify the position of the system completely.
@@ -552,7 +553,6 @@ for frame = size(Y,2):-1:1
     % use the Satterthwaite approximation
     df(frame)              = trace(HM'*HM)^2/trace((HM'*HM)*(HM'*HM))-1;
     dfe(frame)             = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-    R                      = eye(size(Y,1)) - WX*pinv(WX);
     R_ols                  = eye(size(Y,1)) - X*pinv(X);
     E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
     % MSE adjustment, E should not be smaller than OLS since the
