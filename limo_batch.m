@@ -507,17 +507,30 @@ if exist('STUDY','var')
 end
 
 cd(current); 
-failed = 0;
+WLS_error = 0;
+failed = zeros(1,N);
 for subject=1:N
     if strfind(report{subject},'failed')
-        failed = 1;
+        failed(subject) = 1;
+        test = psom_pipeline_visu([LIMO_files.LIMO filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject) filesep],'log','glm');
+        if contains(test,'Principal Component Projection cannot be computed')
+            WLS_error = WLS_error+1;
+        end
     end
 end
 
-if failed == 0
+if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
-    disp('LIMO batch done, some errors where detected see report')
+    if sum(failed) == N % all subjects
+        if WLS_error == N
+            error('%s\n%s','LIMO batch done, all subjects failed when using WLS estimation','either downsampling the data or using OLS usually solves this issue')
+        else
+            warning('LIMO batch done but all subjects failed')
+        end
+    else
+        warning('LIMO batch done, some errors where detected\nsee limo batch report subjects %s',num2str(find(failed)))
+    end
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
 disp('The Pipeline System for Octave and Matlab. Front. Neuroinform. 6:7')
