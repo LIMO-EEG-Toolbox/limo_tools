@@ -236,7 +236,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         % build LIMO.mat files from import
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
-        pipeline(subject).import.command = command;
+        pipeline(subject).import.command = command; %#ok<*AGROW>
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
 
@@ -265,6 +265,15 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                 root = [LIMO_files.LIMO filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
                 root = STUDY.datasetinfo(subject).filepath;
+            end
+            
+            % if session - make subdir
+            if ~isempty(STUDY.datasetinfo(subject).session)
+                if ischar(STUDY.datasetinfo(subject).session)
+                    root = fullfile(root,['sess-' STUDY.datasetinfo(subject).session]);
+                else
+                    root = fullfile(root,['sess-' num2str(STUDY.datasetinfo(subject).session)]);
+                end
             end
             
             if exist(root,'dir') ~= 7
