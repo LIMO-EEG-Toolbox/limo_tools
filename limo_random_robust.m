@@ -160,6 +160,9 @@ switch type
         end
         clear tmp
         
+        if ~isfield(LIMO.design,'method')
+            LIMO.design.method = 'Trimmed Mean';
+        end
         % ------------------------------------------------
         % make a one_sample file per parameter (channels, frames, [mean value, se, df, t, p])
         one_sample = NaN(size(data,1), size(data,2), 5);
@@ -168,27 +171,23 @@ switch type
         for channel = 1:size(data,1) % run per channel because we have to remove NaNs
             fprintf('analyse parameter %g channel %g \n',parameter, channel);
             tmp = data(channel,:,:);
-            if nansum(tmp(1,:)) == 0
-                error('there is at least one empty channel using the specified expected chanlocs')
+            if nansum(tmp(1,1,:)) == 0
+                warning('empty channel - filling with NaNs')
+                one_sample(channel,:,:) = NaN;
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
+                        one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
+                elseif strcmpi(LIMO.design.method,'Mean')
+                    [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
+                        one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
+                    one_sample(channel,:,2) = sd./sqrt(n);
+                else
+                    error('unrecognized LIMO.design.method: %s',LIMO.design.method)
+                end
+                clear tmp Y
             end
-            
-            if ~isfield(LIMO.design,'method')
-                LIMO.design.method = 'Trimmed Mean';
-            end
-            
-            if strcmpi(LIMO.design.method,'Trimmed Mean')
-                [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
-                    one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
-            elseif strcmpi(LIMO.design.method,'Mean')
-                [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
-                    one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
-                one_sample(channel,:,2) = sd./sqrt(n);
-            else
-                error('unrecognized LIMO.design.method: %s',LIMO.design.method)
-            end
-            clear tmp Y
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
