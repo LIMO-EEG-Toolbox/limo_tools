@@ -1,10 +1,10 @@
-function limo_lateralization(varargin)
+function [LI_Map, electrodes] = limo_lateralization(varargin)
 
 % computes a lateralization index and then it run a one_sample ttest on the
 % LI_map to know if it is significanlty different from 0
 %
-% FORMAT LI_map = limo_lateralization(data,LIMO)
-%        LI_map = limo_lateralization(data,chanlocs,start,end,sampling_rate,electrodes)
+% FORMAT [LI_Map, electrodepairs] = limo_lateralization(data,LIMO)
+%        LI_Map = limo_lateralization(data,chanlocs,start,end,sampling_rate,electrodes)
 %
 % INPUT
 % data is a 3D matrix [electrodes, time frames, subjects]
@@ -35,41 +35,46 @@ function limo_lateralization(varargin)
 
 %% check inputs
 data = varargin{1};
+if ischar(data)
+    data = load(data);
+    data = data.(cell2mat(fieldnames(data)));
+end
 [e,t,s]= size(data);
 
 if nargin == 2
     tmp_LIMO = varargin{2};
+    mkdir('lateralization'); 
+    cd('lateralization');
+    tmp_LIMO.dir = pwd;
     % check LIMO.data.chanlocs ; get theta and radius to be certain of position 
-    for electrode=1:size(varargin{2}.data.chanlocs,2)
-       radius(electrode) = varargin{2}.data.chanlocs(electrode).radius;
-       theta(electrode) = varargin{2}.data.chanlocs(electrode).theta;
-    end
+    radius = arrayfun(@(x) x.radius, varargin{2}.data.chanlocs);
+    theta  = arrayfun(@(x) x.theta, varargin{2}.data.chanlocs);
     % remove midline electrodes
     remove = [find(theta==0) find(theta ==180)]; 
     radius(remove) = NaN;
-    theta(remove) = NaN;
+    theta(remove)  = NaN;
     % create the matrix electrode
-    Rtheta = round(theta(theta>0));
-    Rradius = radius(find(theta>0));
-    Lradius = radius(find(theta<0));
-    N = size(Rtheta,2);
+    Rtheta     = round(theta(theta>0));
+    Rradius    = radius(find(theta>0));
+    Lradius    = radius(find(theta<0));
+    N          = size(Rtheta,2);
     electrodes = NaN(N,2);
     for n=1:N
         v = Rtheta(n);
         index = find(Rtheta == v); % always n and some other value(s)
         if length(index) > 1 % few electrodes at same angle
-            position = find(index == n);
-            index2 = index(position);
-            R_value = find(round(theta) == v);
+            position             = find(index == n);
+            index2               = index(position);
+            R_value              = find(round(theta) == v);
             electrodes(index2,2) = R_value(position);
-            R_value = Rradius(index);
-            R_value = R_value(position);
-            position = find(rem(Lradius(index),R_value) < 0.001); % get electrode at same radius in left side
-            L_value = find(round(theta) == -v);
+            R_value              = Rradius(index);
+            R_value              = R_value(position);
+            [~,position]         = min(rem(Lradius(index),R_value)); % get electrode at 'same' radius in left side
+            L_value              = find(round(theta) == -v);
             electrodes(index2,1) = L_value(position);
         else
-            electrodes(index,2) = find(round(theta) == v);
-            electrodes(index,1) = find(round(theta) == -v);
+            electrodes(index,2)  = find(round(theta) == v);
+            electrodes(index,1)  = find(round(theta) == -v);
         end
     end
 elseif nargin == 6
@@ -86,6 +91,7 @@ end
   
 
 %% compute LI maps per subject
+
 Maps = zeros(e,t,s);
 for subject = 1:s
     tmp = data(:,:,subject);
@@ -96,41 +102,45 @@ for subject = 1:s
 end
 
 %% compute the statistic
-limo_random_robust(1,Maps,1,1000)
-load('one_sample_parameter_1.mat')
-LI_Map(:,:,1) = one_sample(:,:,1);
-LI_Map(:,:,2) = one_sample(:,:,2);
-LI_Map(:,:,3) = one_sample(:,:,3);
-LI_Map(:,:,4) = one_sample(:,:,4);
-LI_Map(:,:,5) = one_sample(:,:,5);
-delete('one_sample_parameter_1.mat')
-save LI_Map.mat LI_Map
-clear one_sample
 
-% rename the bootstrap file
-load('boot_one_sample_parameter_1.mat')
-boot_LI_Map = boot_one_sample;
-delete('boot_one_sample_parameter_1.mat')
-save boot_LI_Map.mat boot_LI_Map
-clear boot_one_sample
+% rename and copy the t-test file
+if tmp_LIMO.design.tfce ~= 0
+    LIMO = tmp_LIMO;
+    LIMO.dir = pwd;
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+end
+limo_random_robust(1,Maps,1,tmp_LIMO);
+LI_Map = load('one_sample_ttest_parameter_1.mat');
+LI_Map = LI_Map.(cell2mat(fieldnames(LI_Map)));
+save(fullfile(fileparts(tmp_LIMO.dir),'LI_Map.mat'),'LI_Map','-v7.3')
+LI_Map = fullfile(fileparts(tmp_LIMO.dir),'LI_Map.mat');
+
+% rename and copy the bootstrap file
+if tmp_LIMO.design.bootstrap ~= 0
+    H0_LI_Map = load(['H0' filesep 'H0_one_sample_ttest_parameter_1.mat']);
+    H0_LI_Map = H0_LI_Map.(cell2mat(fieldnames(H0_LI_Map)));
+    save(fullfile(fileparts(tmp_LIMO.dir),'H0','H0_LI_Map'),'H0_LI_Map','-v7.3')
+end
+
+% rename and copy the tfce files
+if tmp_LIMO.design.tfce ~= 0
+    tfce_LI_Map    = load(['tfce' filesep 'tfce_one_sample_ttest_parameter_1.mat']);
+    tfce_LI_Map    = tfce_LI_Map.(cell2mat(fieldnames(tfce_LI_Map)));
+    save(fullfile(fileparts(tmp_LIMO.dir),'tfce','tfce_LI_Map.mat'),'tfce_LI_Map','-v7.3')
+    tfce_H0_LI_Map = load(['H0' filesep 'tfce_H0_one_sample_ttest_parameter_1.mat']);
+    tfce_H0_LI_Map = tfce_H0_LI_Map.(cell2mat(fieldnames(tfce_H0_LI_Map)));
+    save(fullfile(fileparts(tmp_LIMO.dir),'H0','tfce_H0_LI_Map.mat'),'tfce_H0_LI_Map','-v7.3')
+end
+
+cd(fileparts(tmp_LIMO.dir));
+rmdir(tmp_LIMO.dir,'s')
 
 %% make a LIMO structure to be used in limo_display_results
 if nargin > 2
+    LIMO       = tmp_LIMO;
     LIMO.Level = 'LI';
-    LIMO.Method = 1;
-    LIMO.bootstrap = 1;
-    LIMO.dir = pwd;
-
-    LIMO.data.chanlocs = tmp_LIMO.data.chanlocs;
-    LIMO.data.neighbouring_matrix = tmp_LIMO.data.neighbouring_matrix;
-    LIMO.data.start = tmp_LIMO.data.start;
-    LIMO.data.end = tmp_LIMO.data.end;
-    LIMO.data.sampling_rate = tmp_LIMO.data.sampling_rate;
-
-    LIMO.design.nboot = 1000;
-    LIMO.design.electrode = tmp_LIMO.design.electrode;
-
-    save LIMO.mat LIMO
+    LIMO.dir   = pwd;
+    LIMO.data.LIelectrodes = electrodes;
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
 end
-
 clear tmp_LIMO
