@@ -1092,7 +1092,8 @@ elseif LIMO.Level == 2
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             if contains(FileName,'R2')
                 toplot = squeeze(toplot(:,:,:,1));
-            elseif contains(FileName,'ttest','IgnoreCase',true)
+            elseif contains(FileName,'ttest','IgnoreCase',true) || ...
+                contains(FileName,'LI_Map','IgnoreCase',true)
                 toplot = squeeze(toplot(:,:,:,4));
             elseif strncmp(FileName,'con_',4)
                 toplot = squeeze(toplot(:,:,:,4));
@@ -1111,7 +1112,8 @@ elseif LIMO.Level == 2
         else
             if contains(FileName,'R2')
                 toplot = squeeze(toplot(:,:,1));
-            elseif contains(FileName,'ttest','IgnoreCase',true)
+            elseif contains(FileName,'ttest','IgnoreCase',true) || ...
+                    contains(FileName,'LI_Map','IgnoreCase',true)
                 toplot = squeeze(toplot(:,:,4));
             elseif strncmp(FileName,'con_',4)
                 toplot = squeeze(toplot(:,:,4));
