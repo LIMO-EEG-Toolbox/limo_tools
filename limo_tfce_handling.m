@@ -25,7 +25,7 @@ end
 
 if exist(fullfile(filepath,[filename ext]),'file')
     if ~exist(fullfile(filepath,'LIMO.mat'),'file')
-        error('no LIMO.mat found next to %s',file)
+        error('no LIMO.mat found next to %s',filename)
     else
         filename = [filename ext];
         tmp  = load(fullfile(filepath,'LIMO.mat'));
