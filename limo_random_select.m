@@ -9,8 +9,8 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 % and organization of the data - also creating the LIMO.mat structure.
 % Once data are re-created, call is made to LIMO_random_robust.
 %
-% FORMAT: LIMO_random_select(stattest,expected_chanlocs)
-%         LIMO_random_select(stattest,expected_chanlocs,options)
+% FORMAT: limo_random_select(stattest,expected_chanlocs)
+%         limo_random_select(stattest,expected_chanlocs,options)
 %
 % INPUTS: stattest defines the statitiscal analysis 'one sample t-test'
 %                                                   'two-samples t-test'
@@ -152,7 +152,11 @@ for in = 1:2:(nargin-2)
 end
 
 if isempty(analysis_type)
-    analysis_type   = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+    if exist('questdlg2','file')
+        analysis_type = questdlg2('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+    else
+        analysis_type = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+    end
     if isempty(analysis_type)
         return
     end
@@ -171,7 +175,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         if ischar(LIMO.data.data{1}) && length(LIMO.data.data) == 1 % Case for path to the files
             [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
         else % Case when all paths are provided
-            if size(LIMO.data.data,2) == 1
+            if size(LIMO.data.data,1) == 1
                 LIMO.data.data = LIMO.data.data';
             end
             [Names,Paths,LIMO.data.data] = breaklimofiles(LIMO.data.data);
@@ -193,7 +197,11 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     end
     
     if isempty(parameters)
-        errordlg2('file selection failed, only Beta and Con files are supported','Selection error'); return
+        if exist('errordlg2','file')
+            errordlg2('file selection failed, only Beta and Con files are supported','Selection error'); return
+        else
+            errordlg('file selection failed, only Beta and Con files are supported','Selection error'); return
+        end
     end
     
     % match frames, update LIMO
@@ -211,6 +219,14 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % get data for all parameters
     % -----------------------------
     [data,removed] = getdata(1,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
+    if isempty(data)
+        if exist('errordlg2','file')
+            errordlg2('no data were retreived - check inputs and data files','limo_random_select');
+        else
+            errordlg('no data were retreived - check inputs and data files','limo_random_select');
+        end
+        return
+    end
     
     % if regression get regressor(s)
     % -------------------------------
@@ -258,11 +274,19 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                     end
                     disp('covariate adjusted for delete subjects');
                 catch ME
-                    errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+                    if exist('errordlg2','file')
+                        errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+                    else
+                        errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+                    end
                     fprintf('%s',ME.message); return
                 end
             end
-            errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+            if exist('errordlg2','file')
+                errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+            else
+                errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+            end
         end
     end
 
@@ -484,7 +508,11 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
-            errordlg('file selection is corrupted, data sizes don''t match');
+            if exist('errordlg2','file')
+                errordlg2('file selection is corrupted, data sizes don''t match');
+            else
+                errordlg('file selection is corrupted, data sizes don''t match');
+            end
             return
         end
         
@@ -502,7 +530,11 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
         
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
-            errordlg('file selection is corrupted, data sizes don''t match');
+            if exist('errordlg2','file')
+                errordlg2('file selection is corrupted, data sizes don''t match');
+            else
+                errordlg('file selection is corrupted, data sizes don''t match');
+            end
             return
         end
     end
@@ -618,15 +650,27 @@ elseif strcmpi(stattest,'paired t-test')
         end
         
         if size(Names{1},2) ~= size(Names{2},2)
-            errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
+            if exist('errordlg2','file')
+                errordlg2('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
+            else
+                errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
+            end
         end
     elseif size(parameters,2) ~=2 % if it was beta file one needs a pair of parameters
-        errordlg('2 parameters must be selected for beta files','Paired t-test error'); return
+        if exist('errordlg2','file')
+            errordlg2('2 parameters must be selected for beta files','Paired t-test error'); return
+        else
+            errordlg('2 parameters must be selected for beta files','Paired t-test error'); return
+        end
     else % check Betas match design
         for s = 1:length(Paths{1})
             sub_LIMO = load(fullfile(Paths{1}{s},'LIMO.mat'));
             if max(parameters) > size(sub_LIMO.LIMO.design.X,2)
-                errordlg('invalid parameter(s)','Paired t-test error'); return
+                if exist('errordlg2','file')
+                    errordlg2('invalid parameter(s)','Paired t-test error'); return
+                else
+                    errordlg('invalid parameter(s)','Paired t-test error'); return
+                end
             end
         end
         cd(LIMO.dir);
@@ -754,14 +798,26 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         if isempty(gp_nb)
             return
         elseif sum(str2double(gp_nb) <= 2) && strcmpi(stattest,'N-Ways ANOVA')
-            errordlg('at least 3 groups are expected for a N-ways ANOVA')
+            if exist('errordlg2','file')
+                errordlg2('at least 3 groups are expected for a N-ways ANOVA')
+            else
+                errordlg('at least 3 groups are expected for a N-ways ANOVA')
+            end
             return
         elseif sum(str2double(gp_nb) <= 1) && strcmpi(stattest,'ANCOVA')
-            errordlg('at least 2 groups are expected for an ANCOVA')
+            if exist('errordlg2','file')
+                errordlg2('at least 2 groups are expected for an ANCOVA')
+            else
+                errordlg('at least 2 groups are expected for an ANCOVA')
+            end
             return
         else
             gp_nb          = str2double(gp_nb);
-            a              = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
+            if exist('questdlg2','file')
+                a          = questdlg2('load con files or beta file','ANOVA loading files','con','beta','beta');
+            else
+                a          = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
+            end
             Names          = cell(gp_nb,1);
             Paths          = cell(gp_nb,1);
             LIMO.data.data = cell(gp_nb,1);
@@ -811,7 +867,11 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         
         if contains(stattest,'ANCOVA','IgnoreCase',true) && ...
             length(parameters) > 1 % this is only group * cov without repeated measures
-            errordlg2(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
+            if exist('errordlg2','file')
+                errordlg2(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
+            else
+                errordlg(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
+            end
             return
         end
         
@@ -925,14 +985,26 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
                     disp('covariate adjusted for delete subjects');
                 catch ME
                     if size(X,1) ~= size(data,4)
-                        errordlg('the number of regression value differs from the number of subjects'); return
+                        if exist('errordlg2','file')
+                            errordlg2('the number of regression value differs from the number of subjects'); return
+                        else
+                            errordlg('the number of regression value differs from the number of subjects'); return
+                        end
                     else
-                        errordlg(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); retun
+                        if exist('errordlg2','file')
+                            errordlg2(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); retun
+                        else
+                            errordlg(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); retun
+                        end
                     end
                 end
             end
         catch ME
-            errordlg('data format or length of the covariate does not match');
+            if exist('errordlg2','file')
+                errordlg2('data format or length of the covariate does not match');
+            else
+                errordlg('data format or length of the covariate does not match');
+            end
             error('%s',ME.message)
         end
         Cont = X;
@@ -1019,7 +1091,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if isempty(gp_nb)
         return
     elseif length(gp_nb) > 1
-        errordlg2('only 1 independent factor (with n groups) is handled by LIMO')
+        if exist('errordlg2','file')
+            errordlg2('only 1 independent factor (with n groups) is handled by LIMO')
+        else
+            errordlg('only 1 independent factor (with n groups) is handled by LIMO')
+        end
         return
     else
         if ischar(gp_nb); gp_nb = str2double(gp_nb); end
@@ -1060,7 +1136,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             try
                 factor_nb = eval(['[' factor_nb ']']);
             catch ME
-                errordlg2(sprintf('log error: %s',ME.message),'could not evaluate factors')
+                if exist('errordlg2','file')
+                    errordlg2(sprintf('log error: %s',ME.message),'could not evaluate factors')
+                else
+                    errordlg(sprintf('log error: %s',ME.message),'could not evaluate factors')
+                end
                 return
             end
         end
@@ -1101,7 +1181,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             elseif all(iscon); a = 'con'; end
         end
     else
-        a = questdlg('load several con files per subject or one beta file','ANOVA loading files','con','beta','beta');
+        if exist('questdlg2','file')
+            a = questdlg2('load several con files per subject or one beta file','ANOVA loading files','con','beta','beta');
+        else
+            a = questdlg('load several con files per subject or one beta file','ANOVA loading files','con','beta','beta');
+        end
     end
     
     % beta files
@@ -1736,8 +1820,12 @@ if strcmpi(analysis_type,'1 channel/component only')
             channel_vector = getfield(channel_vector,tmpname{1}); %#ok<GFLD>
             clear tmpname
             if length(channel_vector) ~= length(Paths)
-                errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],'Error');
-                return;
+                if exist('errordlg2','file')
+                    errordlg2(['the nb of ' LIMO.Type ' does not match the number of subjects'],'Error');
+                else
+                    errordlg(['the nb of ' LIMO.Type ' does not match the number of subjects'],'Error');
+                end
+                return
             end
             
             % add the name to LIMO if absent
@@ -1829,6 +1917,8 @@ end
 %% assemble the data matrix
 function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO)
 
+data = [];
+removed = [];
 disp('gathering data ...');
 if stattest == 1 % one sample
     index = 1;
@@ -1860,6 +1950,14 @@ if stattest == 1 % one sample
         end
         
         % data dim [channel, freq/time, param, nb subjects]
+        if isempty(LIMO.Type)
+            if exist('questdlg2','file')
+                LIMO.Type = questdlg2('Is the analysis on','Type is empty','Channels','Components','Channels');
+            else
+                LIMO.Type = questdlg('Is the analysis on','Type is empty','Channels','Components','Channels');
+            end
+        end
+        
         if strcmp(analysis_type,'Full scalp analysis')
             if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                 if strcmp(LIMO.Analysis,'Time-Frequency')
