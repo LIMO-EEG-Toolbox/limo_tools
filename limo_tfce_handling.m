@@ -28,9 +28,8 @@ if exist(fullfile(filepath,[filename ext]),'file')
         error('no LIMO.mat found next to %s',filename)
     else
         filename = [filename ext];
-        tmp  = load(fullfile(filepath,'LIMO.mat'));
-        LIMO = tmp.LIMO;
-        clear tmp
+        LIMO = load(fullfile(filepath,'LIMO.mat'));
+        LIMO = LIMO.(cell2mat(fieldnames(LIMO)));
     end
 else
     error('can''t find %s',varargin{1})
