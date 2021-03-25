@@ -126,7 +126,7 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         Pval      = squeeze(matfile.con(:,:,:,5));
         MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest')
+    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
