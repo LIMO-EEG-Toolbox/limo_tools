@@ -3,7 +3,7 @@ function [LI_Map,channels] = limo_lateralization(varargin)
 % computes a lateralization index and then it run a one_sample ttest on the
 % LI_map to know if it is significanlty different from 0
 %
-% FORMAT [LI_Map, electrodepairs] = limo_lateralization(data,LIMO)
+% FORMAT [LI_Map, electrodepairs] = limo_lateralization(data,LIMO,channels)
 %        LI_Map = limo_lateralization(data,chanlocs,start,end,sampling_rate,channels)
 %
 % INPUT
@@ -30,7 +30,7 @@ function [LI_Map,channels] = limo_lateralization(varargin)
 % this is used when looking for significant lateralization effects
 %
 % see also limo_pair_channels.m limo_LI.m
-% 
+%
 % Cyril Pernet v1 25-05-2012
 % ------------------------------
 %  Copyright (C) LIMO Team 2021
@@ -43,12 +43,16 @@ if ischar(data)
 end
 [e,t,s]= size(data);
 
-if nargin == 2
+if nargin <=3
     tmp_LIMO = varargin{2};
-    mkdir('lateralization'); 
+    mkdir('lateralization');
     cd('lateralization');
     tmp_LIMO.dir = pwd;
-    channels = limo_pair_channels(varargin{2}.data.chanlocs);
+    if nargin == 2
+        channels = limo_pair_channels(varargin{2}.data.chanlocs);
+    else
+        channels = varargin{3};
+    end
 elseif nargin == 6
     tmp_LIMO.data.chanlocs            = varargin{2}.chanlocs;
     tmp_LIMO.data.neighbouring_matrix = varargin{2}.neighbouring_matrix;
@@ -60,7 +64,7 @@ elseif nargin == 6
 else
     error('wrong number of arguments in')
 end
-  
+
 
 %% compute LI maps per subject
 
@@ -107,7 +111,7 @@ if tmp_LIMO.design.tfce ~= 0
     tfce_H0_LI_Map = tfce_H0_LI_Map.(cell2mat(fieldnames(tfce_H0_LI_Map)));
     save(fullfile(fileparts(tmp_LIMO.dir),'H0','tfce_H0_LI_Map.mat'),'tfce_H0_LI_Map','-v7.3')
 end
-    
+
 cd(fileparts(tmp_LIMO.dir));
 try
     rmdir(tmp_LIMO.dir,'s')
@@ -116,9 +120,9 @@ catch Er
 end
 
 %% make a LIMO structure to be used in limo_display_results
-if nargin > 2
+if nargin > 3
     LIMO       = tmp_LIMO;
-    LIMO.Level = 'LI';
+    LIMO.Level = 2;
     LIMO.dir   = pwd;
     LIMO.data.LIelectrodes = channels;
     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
