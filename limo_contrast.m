@@ -945,6 +945,5 @@ switch type
         end
         disp('contrast bootstrap done')
 end
-
-
+save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
 
