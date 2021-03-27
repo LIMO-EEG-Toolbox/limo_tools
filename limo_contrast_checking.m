@@ -82,6 +82,12 @@ if nargin == 1 || nargin == 3
 elseif nargin == 2
     
     X = varargin{2};
+    % check input is correct size
+    if size(varargin{1},2) ~= size(X,2)
+        error('the length of the contrast must be equal to the number of regressors in the design')
+    end
+    
+    % check this is invariant
     for s=1:size(varargin{1},1)
         C = varargin{1}(s,:);
         N = sum(X(:,C~=0)); % N per condition 
@@ -91,18 +97,10 @@ elseif nargin == 2
         elseif ~all(int16(C(C~=0) - N/sum(N))) 
             go =1; % also a sum but equal 0 weighted by total number of observations
         else
-%             check = int16(C*single((pinv(X'*X))*(X'*X)));
-%             check = (check == C);
-%             if sum(check) ~= length(C)
-%                 go = 0; % if contrast not ones nor invariant
-%             else
-%                 go = 1;
-%             end
-            
-            P = X*pinv(X); % projection
+            P      = X*pinv(X); % projection
             lambda = X*C'; % contrast
-            check = int16(P*lambda); % contrast onto X
-            check = (check == int16(lambda)); % it is invariant
+            check  = int16(P*lambda); % contrast onto X
+            check  = (check == int16(lambda)); % it is invariant
             if sum(check) ~= size(X,1)
                 go = 0; % if contrast invariant
             else

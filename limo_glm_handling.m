@@ -11,6 +11,7 @@ function limo_glm_handling(LIMO)
 %  Copyright (C) LIMO Team 2020
 
 cd(LIMO.dir);
+warning on;
 
 %% Compute GLM and save stats files
 
@@ -27,7 +28,7 @@ if strcmp(LIMO.design.status,'to do')
         array = 1;
     else
         if LIMO.Level == 2        % second level we can have missing data because of 
-            array = 1:size(Yr,1); % bad channels for some subjects - just adjust X
+            array = [1:size(Yr,1)]'; %#ok<NBRAK> % bad channels for some subjects - adjust X
         else % level 1 = skip empty channels
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 array = find(~isnan(Yr(:,1,1,1))); 
@@ -52,6 +53,12 @@ if strcmp(LIMO.design.status,'to do')
                 error('%s\n',pcout_error.message)
             end
         end
+    elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
+        N = size(Yr,numel(size(Yr)));
+        if N < 50
+            LIMO.design.method = 'OLS';
+            warning('with %g observations detected, IRLS won''t converge, switching to OLS',N)
+        end        
     end
     
     % check dimensions (3D vs 4D)
@@ -93,7 +100,7 @@ if strcmp(LIMO.design.status,'to do')
     update = 1;
     X      = LIMO.design.X;
     if isfield(LIMO,'model')
-        LIMO = removefields(LIMO,'model');
+        LIMO = rmfield(LIMO,'model');
     end
     
     warning off;
@@ -132,8 +139,8 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
-        elseif update == 1 % each channel can have different weighting and thus different df 
-            LIMO.model.model_df{channel} = model.df;
+        elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
+            LIMO.model.model_df{channel} = model.df;          
             if LIMO.design.nb_conditions ~=0
                 LIMO.model.conditions_df{channel}  = model.conditions.df;
             end
@@ -147,21 +154,26 @@ if strcmp(LIMO.design.status,'to do')
             % remove cell as sizes are identical for a given method
             if e == size(array,1)
                 tmp = cell2mat(LIMO.model.model_df)';
-                df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                df  = tmp(1:2:end,1); % a single value over time
+                dfe = tmp(2:2:end,:); % could be different over time
+                LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
                 if LIMO.design.nb_conditions ~=0
                     tmp = cell2mat(LIMO.model.conditions_df)';
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
                 end
                 if LIMO.design.nb_interactions ~=0
                     tmp =  cell2mat(LIMO.model.interactions_df);
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp
                 end
                 if LIMO.design.nb_continuous ~=0
                     tmp = cell2mat(LIMO.model.continuous_df);
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    LIMO.model = rmfield(LIMO.model,'continuous_df');
                     LIMO.model.continuous_df = [df dfe]; clear tmp
                 end
             end
@@ -250,11 +262,7 @@ if strcmp(LIMO.design.status,'to do')
     % save data on the disk and clean out
     disp('saving data to disk')
     LIMO.design.X       = X;
-    if strcmp(LIMO.design.method,'IRLS')
-        LIMO.design.weights = limo_tf_4d_reshape(W);
-    else
-        LIMO.design.weights = W;
-    end
+    LIMO.design.weights = W;
     LIMO.design.status  = 'done';
     if ~isfield(LIMO.design,'name')
         LIMO.design.name    = 'GLM';
@@ -334,8 +342,16 @@ end
 
 
 %% Bootstrap under H0
-% -------------------------------
+% ----------------------------------------------------------
+% ----------------------------------------------------------
+
 if LIMO.design.bootstrap ~=0
+    
+    % being pretty time consuming, let users have one core free
+    if isempty(gcp('nocreate'))
+        parpool(feature('numCores')-1);
+    end
+    
     % avoid overwriting / recomputing H0 if done
     % (limo_eeg(4) called via the results interface)
     if exist('H0','dir')
@@ -448,6 +464,9 @@ if LIMO.design.bootstrap ~=0
                         elseif strcmp(LIMO.design.method,'IRLS')
                             Y = squeeze(Yr(channel,:,:,:));
                             index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
+                            if numel(size(LIMO.design.weights)) == 3
+                                LIMO.design.weights = limo_tf_4d_reshape(LIMO.design.weights,LIMO.data.size4D);
+                            end
                             for f=1:size(Yr,2)
                                 Weights = squeeze(LIMO.design.weights(channel,f,:,index));
                                 model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), Weights,...
@@ -480,6 +499,9 @@ if LIMO.design.bootstrap ~=0
                                 model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
                             end
                         elseif strcmp(LIMO.design.method,'IRLS')
+                            if numel(size(LIMO.design.weights)) == 3
+                                LIMO.design.weights = limo_tf_4d_reshape(LIMO.design.weights,LIMO.data.size4D);
+                            end
                             for f=1:size(Yr,2)
                                 LIMO.Weights = squeeze(LIMO.design.weights(channel,f,:,:));
                                 model{f} = limo_glm_boot(squeeze(Yr(channel,f,:,:))',LIMO,boot_table);
@@ -600,12 +622,23 @@ if LIMO.design.bootstrap ~=0
                 for i=1:length(LIMO.design.nb_conditions)
                     name = sprintf('H0_Condition_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Condition_effect = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
                     else
-                        H0_Condition_effect = squeeze(tmp_H0_Conditions(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Conditions(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Condition_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Condition_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Condition_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Condition_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Condition_effect','-v7.3');
-                    clear H0_Condition_effect
+                    clear tmp H0_Condition_effect
                 end
                 clear tmp_H0_Conditions
             end
@@ -614,9 +647,20 @@ if LIMO.design.bootstrap ~=0
                 for i=1:length(LIMO.design.nb_interactions)
                     name = sprintf('H0_Interaction_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Interaction_effect = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
                     else
-                        H0_Interaction_effect = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Interaction_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Interaction_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Interaction_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Interaction_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Interaction_effect','-v7.3');
                     clear H0_Interaction_effect
@@ -628,12 +672,23 @@ if LIMO.design.bootstrap ~=0
                 for i=1:LIMO.design.nb_continuous
                     name = sprintf('H0_Covariate_effect_%g',i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
                     else
-                        H0_Covariate_effect = squeeze(tmp_H0_Covariates(:,:,i,:,:));
+                        tmp = squeeze(tmp_H0_Covariates(:,:,i,:,:));
+                    end
+                    
+                    if ~isempty(LIMO.design.electrode)
+                        H0_Covariate_effect = NaN([1 size(tmp)]);
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            H0_Covariate_effect(1,:,:,:,:) = tmp;
+                        else
+                            H0_Covariate_effect(1,:,:,:) = tmp;
+                        end
+                    else
+                        H0_Covariate_effect = tmp;
                     end
                     save(fullfile(LIMO.dir,['H0' filesep name]),'H0_Covariate_effect','-v7.3');
-                    clear H0_Covariate_effect
+                    clear tmp H0_Covariate_effect
                 end
                 clear tmp_H0_Covariates
             end

@@ -16,7 +16,7 @@ if new % fresh install
     if ispc
         how_much_ram = memory;
         number_of_elements = how_much_ram.MaxPossibleArrayBytes / 8; % store data as double
-        memory_available = how_much_ram.MemAvailableAllArrays;
+        memory_available   = how_much_ram.MemAvailableAllArrays;
     elseif isunix
         [r,w] = unix('free | grep Mem');
         stats = str2double(regexp(w, '[0-9]*', 'match'));
