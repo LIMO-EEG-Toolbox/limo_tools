@@ -7,11 +7,15 @@ function LI_stats = limo_LI(varargin)
 % bootrapped/TFCE data (if present)
 %
 % FORMAT LI_stats = limo_LI(file)
-%        LI_stats = limo_LI(file,'channelpairs',channelindices,'alpha',0.05)
+%        LI_stats = limo_LI(file,'channelpairs',channelindices,'summary','single','alpha',0.05,'figure','on')
 %
 % INPUT is any known LIMO stat files
 %       'channelpairs' key matches the channelindices values, a n*2 matrix for chanloc to pair
+%       'summary' can be 'single' (default) or 'split' reflecting the
+%                 summary statistic for the lateralization curve, a single mean or split negative  
+%                 and positive values of the map (for instance for a t-test between 2 conditions)   
 %       'alpha' key matches the alpha level confience interval value
+%       'figure' is 'on' by default or switch it 'off'
 %
 %  'channelpairs' is optional but it is strongly advised to provide it
 %  making sure the correct channels are paired -- this is done easily using
@@ -41,7 +45,12 @@ if isempty(filepath)
     filepath = pwd;
 end
 
-alphav = 0.05;
+% defaults
+alphav     = 0.05;
+summary    = 'single';
+fig_option = 'on';
+
+% options
 if nargin >1
     for n=1:nargin
         if strcmpi(varargin{n},'alpha')
@@ -49,8 +58,16 @@ if nargin >1
             if alphav > 1
                 alphav = alphav / 100;
             end
-        elseif strcmpi(varargin{n},'channelpairs')
+        elseif contains(varargin{n},'channelpair')
             channels = varargin{n+1};
+        elseif strcmpi(varargin{n},'summary')
+            if any(contains(varargin{n+1},{'single','split'}))
+                summary = varargin{n+1};
+            else
+               error('the option ''channelpairs'' must be with the value ''single'' or ''split''') 
+            end
+        elseif strcmpi(varargin{n},'figure')
+            fig_option = varargin{n+1};
         end
     end
 end
@@ -158,7 +175,7 @@ if ~exist('channel','var')
 end
 LI         = getLI(LIMO,channels,th_maps);
 thresholds = linspace(min(M(:)),max(M(:)),size(th_maps,numel(size(th_maps))));
-if any(thresholds<0)
+if any(thresholds<0) && strcmpi(summary,'split')
     meanLI(1) = nanmean(LI(thresholds<0));
     meanLI(2) = nanmean(LI(thresholds>0));
     H0_LI = NaN(2,1000);
@@ -191,7 +208,7 @@ for p =1:1000
         LI(th)                 = ((left-right)./(left+right)).*100;
     end
     
-    if any(thresholds<0)
+    if any(thresholds<0) && strcmpi(summary,'split')
         H0_LI(1,p) = nanmean(LI(thresholds<0));
         H0_LI(2,p) = nanmean(LI(thresholds>0));
     else
@@ -225,30 +242,35 @@ else
     LI_stats.H0CI(:,2) = [tmp(low) tmp(high)];
 end
 
-figure;
-subplot(3,6,1:12); plot(LI_stats.thresholds,LI_stats.LI,'LineWidth',3); grid on; box on
-xlabel('TFCE thresholds'); ylabel('lateralization index'); ax = get(gca);
-if length(LI_stats.mean) == 1
-    title(sprintf('Lateralization curve - mean LI %g ',LI_stats.mean))
-    if isfield(LI_stats,'H0CI')
-        hold on; plot(LI_stats.thresholds,repmat(LI_stats.H0CI(1),1,length(LI_stats.thresholds)),'k--','LineWidth',2)
-        plot(LI_stats.thresholds,repmat(LI_stats.H0CI(2),1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+%% figure
+if strcmpi(fig_option,'on')
+    figure;
+    subplot(3,6,1:12); plot(LI_stats.thresholds,LI_stats.LI,'LineWidth',3); grid on; box on
+    xlabel('TFCE thresholds'); ylabel('lateralization index'); ax = get(gca);
+    if length(LI_stats.mean) == 1
+        title(sprintf('Lateralization curve - mean LI %g ',LI_stats.mean))
+        if isfield(LI_stats,'H0CI')
+            hold on; plot(LI_stats.thresholds,repmat(LI_stats.H0CI(1),1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+            plot(LI_stats.thresholds,repmat(LI_stats.H0CI(2),1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+        end
+    else
+        title(sprintf('Lateralization curve \n negative map mean LI %g positve map mean LI %g ',LI_stats.mean(1),LI_stats.mean(2)))
+        if isfield(LI_stats,'H0CI')
+            hold on; plot(LI_stats.thresholds,repmat(LI_stats.H0CI(1,:)',1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+            plot(LI_stats.thresholds,repmat(LI_stats.H0CI(2,:)',1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+        end
     end
-else
-    title(sprintf('Lateralization curve \n negative map mean LI %g positve map mean LI %g ',LI_stats.mean(1),LI_stats.mean(2)))
-    if isfield(LI_stats,'H0CI')
-        hold on; plot(LI_stats.thresholds,repmat(LI_stats.H0CI(1,:)',1,length(LI_stats.thresholds)),'k--','LineWidth',2)
-        plot(LI_stats.thresholds,repmat(LI_stats.H0CI(2,:)',1,length(LI_stats.thresholds)),'k--','LineWidth',2)
+    axis([LI_stats.thresholds(1)-0.1 LI_stats.thresholds(end)+0.1 ax.YAxis.TickValues(1)-1 ax.YAxis.TickValues(end)+1]);
+    opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', ...
+        limo_color_images(trimmean(th_maps(:,:,:),40,3))};
+    frames = round(linspace(1,length(LI_stats.thresholds),6));
+    for f=1:length(frames)
+        subplot(3,6,12+f);
+        topoplot(sum(squeeze(th_maps(:,:,frames(f))),2),LIMO.data.chanlocs,opt{:});
     end
 end
-axis([LI_stats.thresholds(1)-0.1 LI_stats.thresholds(end)+0.1 ax.YAxis.TickValues(1)-1 ax.YAxis.TickValues(end)+1]);
-opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', ...
-    limo_color_images(trimmean(th_maps(:,:,:),40,3))};
-frames = round(linspace(1,length(LI_stats.thresholds),6));
-for f=1:length(frames)
-    subplot(3,6,12+f);
-    topoplot(sum(squeeze(th_maps(:,:,frames(f))),2),LIMO.data.chanlocs,opt{:});
-end
+
+%% addtional bias analysis
 
 % there is no effect, i.e. under H0, the tfce maps left vs right
 % should be symetric - with chance at 50%
@@ -304,6 +326,8 @@ if exist('H0_maps','var')
         LI_stats.biasCI(:,2) = [tmp(low) tmp(high)];
     end
 end
+
+%% routine to compute LI
 
 function LI = getLI(LIMO,channels,th_maps)
 
