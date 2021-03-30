@@ -270,9 +270,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             % if session - make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
                 if ischar(STUDY.datasetinfo(subject).session)
-                    root = fullfile(root,['sess-' STUDY.datasetinfo(subject).session]);
+                    root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
                 else
-                    root = fullfile(root,['sess-' num2str(STUDY.datasetinfo(subject).session)]);
+                    root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
                 end
             end
             
