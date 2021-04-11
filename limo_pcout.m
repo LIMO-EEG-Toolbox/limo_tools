@@ -12,6 +12,8 @@ function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 %   x             = 2D matrix of EEG data (dim trials x frames)
 %   'figure'      = indicate you want a figure out
 %   option        = 'new' or 'on' to plot on a new figure or the current one
+%   'xaxis'       = label followed by vector value (e.g. 'Time' [-50:4:200])
+%   'weightsas'   = 'hisotgrams','kernel'
 %
 % OUTPUTS:
 %   dist          = weights (distance) for each trial. Outliers have a near to zero weight.
@@ -31,14 +33,25 @@ function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if nargin == 3 
-   if strcmpi(varargin{1},'figure')
-       fig = varargin{2};
-   else
-      disp(''); fig = 'off'; 
-   end
-else
-    fig = 'off';
+fig = 'off';
+weightsas = 'KDE';
+
+if nargin >1
+    for i=1:nargin-2
+        if strcmpi(varargin{i},'figure')
+            fig = varargin{i+1};
+        elseif strcmpi(varargin{i},'weightsas')
+            weightsas = varargin{i+1};
+        elseif strcmpi(varargin{i},'xaxis')
+            if ischar(varargin{i+1})
+                label = varargin{i+1};
+                vect  = varargin{i+2};
+            else
+                label = varargin{i+2};
+                vect  = varargin{i+1};
+            end
+        end
+    end
 end
 
 % we have ommited dimensions with mad = 0, as this 
@@ -120,24 +133,47 @@ if strcmpi(fig,'new') || strcmpi(fig,'on')
     if strcmpi(fig,'new')
         figure('Name','limo_pcout projection')
     end
-    vect = 1:size(x,2);
+    
+    if ~exist('vect','var')
+        vect = 1:size(x,2);
+    end
+    
     % show trials
     subplot(3,5,[1 2 3]); plot(vect,x); title('Single trials');
-    axis tight; grid on; box on
-    subplot(3,5,[4 5]); plot(1:size(xpc,2),xpc); title('Projected trials onto PC space')
-    scale = range(xpc(:))*0.01; grid on; box on
-    axis([-0.5 size(xpc,2) min(xpc(:))-scale max(xpc(:))+scale]); ylabel('A.U.');
-    xlabel(sprintf('%g components / %g frames',size(xpc,2),size(x,2)));
+    grid on; box on; if exist('label','var'); xlabel(label); end
+    text(5,  min(x(:))+5, sprintf('%g frames',size(x,2)));
+    axis([-0.5 size(x,2) min(x(:)) max(x(:))]);
+    if exist('label','var'); xlabel(label); end
+    
+    subplot(3,5,[4 5]); plot(1:size(xpc,2),xpc); title('Projected trials onto PC space');
+    text(5,  min(xpc(:))+5, sprintf('%g components',size(xpc,2)));
+    axis([-0.5 size(xpc,2) min(x(:)) max(x(:))]);
+    xlabel('Eigen vectors'); grid on; box on; 
+    
+    
     % show weights
-    k = round(1 + log2(size(x,1))); % sturges binning
-    subplot(3,5,[6 7]); histogram(w1,k,'FaceColor',[0.1 0.4 0.7])
-    ylabel('frequency'); axis tight; grid on; box on; title('location weights')
-    subplot(3,5,[11 12]); histogram(w2,k,'FaceColor',[0.7 0.8 0.5]); xlabel('weight values')
-    ylabel('frequency'); axis tight; grid on; box on; title('scatter weights')
-    subplot(3,5,[8 13]); h = histogram(dist,k); BinEdges = h.BinEdges;
-    histogram(dist(out==1),BinEdges,'FaceColor',[0.9 0.6 0.6]); set(gca,'view',[90 -90])
-    hold on; histogram(dist(out==0),BinEdges,'FaceColor',[0.25 0.25 0.25]);
-    ylabel('frequency'); axis tight; grid on; box on; title('final weights')
+    if strcmpi(weightsas,'KDE')
+        [~,~,~,KDE]=data_plot([w1 w2 dist],'estimator','mean','figure','off');
+        subplot(3,5,[6 7]); bar(KDE{1}(:,1),KDE{1}(:,2),'FaceColor',[0.1 0.4 0.7])
+        ylabel('frequency'); axis tight; grid on; box on; title('location weights')
+        subplot(3,5,[11 12]); bar(KDE{2}(:,1),KDE{2}(:,2),'FaceColor',[0.7 0.8 0.5]); xlabel('weight values')
+        ylabel('frequency'); axis tight; grid on; box on; title('scatter weights')
+        subplot(3,5,[8 13]); index = KDE{3}(:,1) > min(dist(out==1));
+        bar(KDE{3}(~index,1),KDE{3}(~index,2),'FaceColor',[0.25 0.25 0.25],'EdgeColor',[0.25 0.25 0.25],'FaceAlpha',0.8,'EdgeAlpha',0.8);
+        set(gca,'view',[90 -90]); hold on; bar(KDE{3}(index,1),KDE{3}(index,2),'FaceColor',[0.9 0.6 0.6]);
+        ylabel('frequency'); axis tight; grid on; box on; title('final weights')
+    else
+        k = round(1 + log2(size(x,1))); % sturges binning
+        subplot(3,5,[6 7]); histogram(w1,k,'FaceColor',[0.1 0.4 0.7])
+        ylabel('frequency'); axis tight; grid on; box on; title('location weights')
+        subplot(3,5,[11 12]); histogram(w2,k,'FaceColor',[0.7 0.8 0.5]); xlabel('weight values')
+        ylabel('frequency'); axis tight; grid on; box on; title('scatter weights')
+        subplot(3,5,[8 13]); h = histogram(dist,k); BinEdges = h.BinEdges;
+        histogram(dist(out==1),BinEdges,'FaceColor',[0.9 0.6 0.6]); set(gca,'view',[90 -90])
+        hold on; histogram(dist(out==0),BinEdges,'FaceColor',[0.25 0.25 0.25]);
+        ylabel('frequency'); axis tight; grid on; box on; title('final weights')
+    end
+
     % show averages
     [good_mean,good_ci] = limo_central_estimator(x(out==1,:)','Mean',95/100);
     [bad_mean, bad_ci]  = limo_central_estimator(x(out==0,:)','Mean',95/100);
