@@ -270,9 +270,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             % if session - make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
                 if ischar(STUDY.datasetinfo(subject).session)
-                    root = fullfile(root,['sess-' STUDY.datasetinfo(subject).session]);
+                    root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
                 else
-                    root = fullfile(root,['sess-' num2str(STUDY.datasetinfo(subject).session)]);
+                    root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
                 end
             end
             
@@ -344,11 +344,15 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             pipeline(subject).n_contrast.opt.C = batch_contrast.mat;
         end
         
-        sub_LIMO = load(batch_contrast.LIMO_files{subject});
-        if ~isfield(sub_LIMO.LIMO,'contrast')
-            start = 0;
+        if exist(batch_contrast.LIMO_files{subject},'file')
+            sub_LIMO = load(batch_contrast.LIMO_files{subject});
+            if ~isfield(sub_LIMO.LIMO,'contrast')
+                start = 0;
+            else
+                start = length(sub_LIMO.LIMO.contrast);
+            end
         else
-            start = length(sub_LIMO.LIMO.contrast);
+            start = 0;
         end
         
         for c=1:size(batch_contrast.mat,1)
@@ -364,13 +368,13 @@ end
 %% -------------------------------------
 
 % run pipelines and report
-try
+if strcmp(option,'model specification') || strcmp(option,'both')
     N               = size(model.set_files,1);
     LIMO_files.mat  = LIMO_files.mat';
     LIMO_files.Beta = LIMO_files.Beta';
     remove_limo     = zeros(1,N);
-catch
-    N               = size(batch_contrast.LIMO_files,1);
+else
+    N               = length(batch_contrast.LIMO_files);
 end
 procstatus = zeros(1,N);
 
@@ -476,10 +480,8 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
         name = name';
         
-        if sum(remove_con) ~= 0
+        if ~any(remove_con)
             cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
-        else
-            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_'  glm_name '.txt'], name);
         end
     end
 end

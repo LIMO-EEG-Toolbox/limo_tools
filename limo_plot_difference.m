@@ -2,90 +2,58 @@ function Data = limo_plot_difference(varargin)
 
 % allows to plot the Difference between two data set with alpha % Hightest
 % Density Intervals (ie Bayesian bootstrap CI) 
-% WARNING this is computed channel/time frame wise, ie this is  not simultaneous CI
+% WARNING this is computed channel/time frame wise, ie this is not simultaneous CI
 %
 % FORMATS
-% Diff = limo_plot_Difference
-% Diff = limo_plot_Difference(data1,data2,'type','paired/independent')
-% Diff = limo_plot_Difference(data1,data2,'type','paired/independent','percent', 20, 'alpha', 0.05, 'fig', 'on')
+% Diff = limo_plot_difference
+% Diff = limo_plot_difference(data1,data2,'type','paired/independent')
+% Diff = limo_plot_difference(data1,data2,'type','paired/independent','LIMO',LIMOfilename,'percent', 20, 'alpha', 0.05, 'fig', 'on')
 %
 % INPUTS
 % data1/2 matrices of data up to 4D, if 4D because coming from robust averaging, 
 %         i.e. the last dimension is the estimator with CI, only the estimator is 
 %         used ie level 2 if dim 4
 % type    'paired' or 'independent'
-% percent the amount of trimming 0% is a mean, 20% is the default trimmed mean, 
-%         50% is the median (in case 50 is used, the Harrell-Davis estimator
-%         of the median is used)
+% LIMO    name of the LIMO file to use 
+% percent 'mean', 'trimmed mean', 'median' 
+%         or the amount of trimming 0% is a mean, 20% is the default trimmed mean, 
+%         50% is the median (using the Harrell-Davis estimator of the median) 
 % alpha   is the 1-alpha level of the HDI
 % fig     'on' (default) or 'off' indicates to produce a figure or not
+% channel for the channel to plot
 %
-% OUPUT
+% OUTPUT
 % Data    a structure with
 %         .Diff the 3D matrix of Difference with HDI
 %         .limo the LIMO structure for channel/time-freq info (optional) 
 %
-% Cyril Pernet - all options in Septembre 2019
+% Cyril Pernet 
 % ---------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2021
 
 %% check inputs
 
-percent     = 20/100; % defines the amount of trimming done
+percent     = 20;     % defines the percentage of trimming done
 alpha_level = 5/100;  % 1-alpha CI
 figure_flag = 1;      % make a figure
 wrapdata    = 0;      % for 4D wrap into 3D
 
-if nargin < 3 
+if nargin < 4
+    
     % select 1st dataset 
     % ------------------
     [file,locpath,idx]=uigetfile('.mat','Select 1st dataset');
-    if idx == 0
-        return
-    end
-    cd(locpath); 
-    data1 = load(file); 
+    if idx == 0; return; end
+    data1 = load(fullfile(locpath,file)); 
     data1 = data1.(cell2mat(fieldnames(data1)));
-    if isfield(data1,'limo')
-        limo1 = data1.limo;
-    end
-    if isfield(data1,'data')
-        data1 = data1.data;
-    end
-    if isnumeric(data1)
-        fprintf('%s loaded \n',file);
-    else
-       error('couldn''t load the data %s\n',file) 
-    end
         
     % select 2nd dataset 
     % ------------------
     [file,locpath,idx]=uigetfile('.mat','Select 1st dataset');
-    if idx == 0
-        return
-    end
-    cd(locpath);
-    data2 = load(file); 
+    if idx == 0; return; end
+    data2 = load(fullfile(locpath,file)); 
     data2 = data2.(cell2mat(fieldnames(data2)));
-    if isfield(data2,'limo')
-        limo2 = data2.limo;
-    end
-    if isfield(data2,'data')
-        data2 = data2.data;
-    end
-    if isnumeric(data2)
-        fprintf('%s loaded \n',file);
-    else
-       error('couldn''t load the data %s\n',file) 
-    end
-    
-    % type 
-    % ----
-    type = questdlg('are the data','analysis option','paired','independent','paired');
-    if isempty(type)
-        warning('selection aborded'); return
-    end
-    
+       
     % percent 
     % ----
     percent = questdlg('which summary','analysis option','mean','20% trimmed mean','median','20% trimmed mean');
@@ -111,27 +79,93 @@ if nargin < 3
         end
     end    
     
-elseif nargin>= 4 && nargin <=6
-    data1       = varargin{1};
-    data2       = varargin{2};
-    type        = varargin{3};
-    percent     = varargin{4};
-    if nargin >= 5
-        alpha_level = varargin{5}; 
-        if alpha_level > 1
-            alpha_level = alpha_level / 100;
+    % LIMO
+    % ------
+    if exist(fullfile(pwd,'LIMO.mat'),'file')
+        LIMO = load(fullfile(pwd,'LIMO.mat'));
+        LIMO = LIMO.LIMO;
+    else
+        [file,locpath,idx]=uigetfile('.mat','Select 1st dataset');
+        if idx == 0; return; end
+        LIMO = load(fullfile(locpath,file)); 
+        LIMO = LIMO.LIMO;
+    end
+           
+else % check all inputs
+    
+    if ischar(varargin{1})
+        data1 = load(varargin{1}); 
+        data1 = data1.(cell2mat(fieldnames(data1)));
+    else
+        data1 = varargin{1};
+    end
+
+    if ischar(varargin{2})
+        data2 = load(varargin{2}); 
+        data2 = data2.(cell2mat(fieldnames(data2)));
+    else
+        data2 = varargin{2};
+    end
+    
+    for n=3:nargin
+        if strcmpi(varargin{n},'type')
+            type = varargin{n+1};
+            if ~strcmpi(type,{'paired','independent'})
+                error('unknown value %s for key ''type''',type)
+            end
+        elseif strcmpi(varargin{n},'percent')
+            percent = varargin{n+1};
+            if strcmpi(percent,'mean')
+                percent = 0;
+            elseif strcmpi(percent,'20% trimmed mean')
+                percent = 20;
+            elseif strcmpi(percent,'median')
+                percent = 50;
+            end
+            if percent < 0
+                percent = percent * 100;
+            end
+        elseif strcmpi(varargin{n},'LIMO')
+            LIMO = load(varargin{n+1});
+            LIMO = LIMO.LIMO;
+        elseif strcmpi(varargin{n},'name')
+            name = varargin{n+1};
+        elseif strcmpi(varargin{n},'channel')
+            plotchannel = varargin{n+1};
+        elseif ischar(varargin{n}) % needed to use contains
+            if contains(varargin{n},'fig','IgnoreCase',true)
+                figure_flag = varargin{n+1};
+            elseif contains(varargin{n},'alpha','IgnoreCase',true)
+                alpha_level = varargin{n+1};
+                if alpha_level > 1
+                    alpha_level = alpha_level/100;
+                end
+            end
         end
     end
-    if nargin == 6
-        figure_flag = varargin{5};
-    end
-elseif nargin > 5
-    error('too many arguments')
 end
 
-if alpha_level == 0
-    disp('stange value for alpha - adjusted to 5%');
-    alpha_level = 5/100;
+if ~exist('type','var')
+    type = questdlg('are the data','analysis option','paired','independent','paired');
+    if isempty(type)
+        warning('selection aborded'); return
+    end
+end
+
+if isfield(data1,'limo'); limo1 = data1.limo; end
+if isfield(data1,'data'); data1 = data1.data; end
+if isnumeric(data1) 
+    fprintf('1st data file loaded \n');
+else
+    error('couldn''t load the data \n')
+end
+
+if isfield(data2,'limo'); limo2 = data2.limo; end
+if isfield(data2,'data'); data2 = data2.data; end
+if isnumeric(data2)
+    fprintf('2nd data file loaded \n');
+else
+    error('couldn''t load the data \n')
 end
 
 %% check possible dimensions issues
@@ -204,16 +238,16 @@ if strcmpi(type,'Paired')
                 [Diff(channel,:,2),CID]            = limo_central_estimator(squeeze(D(channel,:,:)),'Mean',1-alpha_level);
                 Diff(channel,:,1)                  = CID(1,:);
                 Diff(channel,:,3)                  = CID(2,:);
-            elseif percent == 20
-                [est1(channel,:),CI1(channel,:,:)] = limo_central_estimator(squeeze(data1(channel,:,:)),'Trimmed Mean',1-alpha_level);
-                [est2(channel,:),CI2(channel,:,:)] = limo_central_estimator(squeeze(data2(channel,:,:)),'Trimmed Mean',1-alpha_level);
-                [Diff(channel,:,2),CID]            = limo_central_estimator(squeeze(D(channel,:,:)),'Trimmed Mean',1-alpha_level);
-                Diff(channel,:,1)                  = CID(1,:); 
-                Diff(channel,:,3)                  = CID(2,:);
             elseif percent == 50
                 [est1(channel,:),CI1(channel,:,:)] = limo_central_estimator(squeeze(data1(channel,:,:)),'HD',1-alpha_level);
                 [est2(channel,:),CI2(channel,:,:)] = limo_central_estimator(squeeze(data2(channel,:,:)),'HD',1-alpha_level);
                 [Diff(channel,:,2),CID]            = limo_central_estimator(squeeze(D(channel,:,:)),'HD',1-alpha_level);
+                Diff(channel,:,1)                  = CID(1,:); 
+                Diff(channel,:,3)                  = CID(2,:);
+            else
+                [est1(channel,:),CI1(channel,:,:)] = limo_central_estimator(squeeze(data1(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                [est2(channel,:),CI2(channel,:,:)] = limo_central_estimator(squeeze(data2(channel,:,:)),'Trimmed Mean',1-alpha_level);
+                [Diff(channel,:,2),CID]            = limo_central_estimator(squeeze(D(channel,:,:)),'Trimmed Mean',1-alpha_level);
                 Diff(channel,:,1)                  = CID(1,:); 
                 Diff(channel,:,3)                  = CID(2,:);
             end
@@ -267,31 +301,49 @@ if wrapdata == 1
 end
 
 %% time/freq info
-if exist('limo1','var'); LIMO = limo1; end
-if exist('limo2','var'); LIMO = limo2; end
 if ~exist('LIMO','var')
-    [file,locpath,ind]=uigetfile({'LIMO.mat'},'Select any LIMO with right info');
-    if ind == 0
-        return
+    
+    if exist('limo1','var')
+        LIMO = limo1;
+    elseif exist('limo2','var')
+        LIMO = limo2;
     else
-        if strcmpi(file,'LIMO.mat')
-            LIMO = load(fullfile(locpath,file));
-            LIMO = LIMO.LIMO;
+        [file,locpath,ind]=uigetfile({'LIMO.mat'},'Select any LIMO with right info');
+        if ind == 0
+            return
         else
-            warning('selection aborded'); return
+            if strcmpi(file,'LIMO.mat')
+                LIMO = load(fullfile(locpath,file));
+                LIMO = LIMO.LIMO;
+            else
+                warning('selection aborded'); return
+            end
         end
     end
 end
 
 %% save
-name      = cell2mat(inputdlg('save as [?]','name option'));
-newname   = sprintf('%s',name);
-newpath   = uigetdir('destination folder?');
 Data.Diff = Diff;
 if exist('LIMO','var')
     Data.limo = LIMO;
 end
-save (fullfile(newpath,newname),'Data');
+
+if ~exist('name','var')
+    name      = cell2mat(inputdlg('save as [?]','name option'));
+    newname   = sprintf('%s',name);
+    if isempty(newname)
+        warning  on ; warning('no name - data are not saved')
+    else
+        newpath   = uigetdir('destination folder?');
+        save(fullfile(newpath,newname),'Data');
+    end
+else
+    if isempty(fileparts(name))
+        save(fullfile(pwd,name),'Data');
+    else
+        save(name,'Data');
+    end
+end
 
 %% Plot
 % -----
@@ -306,29 +358,35 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     
     % channel info
     if size(Diff,1) > 1
-        channel = inputdlg('which channel to plot','Plotting option');
-        if isempty(channel)  % cancel
-            return
-        elseif strcmp(channel,'') % ok empty
-            if ndims(Diff) == 4
-                if strcmpi(whichdim ,'time')
-                    [~,channel]=max(max(max(squeeze(Diff(:,:,:,2)),[],3)'));
+        if ~exist('plotchannel','var')
+            channel = inputdlg('which channel to plot','Plotting option');
+            
+            if isempty(channel)  % cancel
+                return
+            elseif strcmp(channel,'') % ok empty
+                if ndims(Diff) == 4
+                    if strcmpi(whichdim ,'time')
+                        [~,channel]=max(max(max(squeeze(Diff(:,:,:,2)),[],3)'));
+                    else
+                        [~,channel]=max(max(squeeze((max(squeeze(Diff(:,:,:,2)),[],2))),[],2));
+                    end
                 else
-                    [~,channel]=max(max(squeeze((max(squeeze(Diff(:,:,:,2)),[],2))),[],2));
+                    [~,channel]=max(max(squeeze(Diff(:,:,2)),[],2));
                 end
             else
-                [~,channel]=max(max(squeeze(Diff(:,:,2)),[],2));
+                channel = eval(cell2mat(channel));
             end
         else
-            channel = eval(cell2mat(channel));
-            if length(channel) > 1
-                error('1 channel only can be plotted')
-            elseif channel > size(Diff,1)
-                error('channel number invalid')
-            end
+            channel = plotchannel;
+        end
+        
+        if length(channel) > 1
+            error('1 channel only can be plotted')
+        elseif channel > size(Diff,1)
+            error('channel number invalid')
         end
     else
-        channel = 1;
+        channel = 1; % should already be one given the loop above
     end
     
     if strcmpi(LIMO.Analysis,'Time')

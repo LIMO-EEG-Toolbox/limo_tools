@@ -102,12 +102,12 @@ if type == 1 || type == 2
                 if size(out,1) == 1
                     LIMO.contrast{contrast_nb}.V = 'T';
                 else
-                    warning('the sepcificed contrast is on multiples rows, using F constrast')
+                    warning('the specificed contrast is on multiples rows, using F constrast')
                     LIMO.contrast{contrast_nb}.V = 'F';
                 end
             else
                 if size(out,1) == 1
-                    warning('the sepcificed contrast is on one row, using T constrast')
+                    warning('the specificed contrast is on one row, using T constrast')
                     LIMO.contrast{contrast_nb}.V = 'T';
                 else
                     LIMO.contrast{contrast_nb}.V = 'F';

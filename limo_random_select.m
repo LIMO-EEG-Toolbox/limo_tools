@@ -787,11 +787,13 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % -------------
     if ~isempty(LIMO.data.data)
         [gp_nb,maxsub] = size(LIMO.data.data);
+        test = sum(~all(cellfun(@(x) ischar(x),LIMO.data.data)));
         % to compute we must have more data than groups
-        if gp_nb ==1 && maxsub > 2 || gp_nb>maxsub
+        if test && gp_nb == 1 && maxsub >= 2 ...
+                 || test && gp_nb > maxsub
             LIMO.data.data = LIMO.data.data';
             [gp_nb,maxsub] = size(LIMO.data.data);
-            fprintf('%g groups with a maximum of %g subjects per group\n',gp_nb,maxsub)
+            fprintf('input transposed %g groups with %g file(s)/subjects per group\n',gp_nb,maxsub)
         end
     else
         gp_nb = cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups'));

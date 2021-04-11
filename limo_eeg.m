@@ -62,12 +62,13 @@ switch varargin{1}
         % show the GUI
         
         disp(' ')
-        disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,');
-        disp('with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar,');
-        disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus, Ramon Martinez-Cancino,');
-        disp('and Arnaud Delorme. These authors are thereafter referred as the LIMO Team');
+        disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet.');
+        disp('Current maintenance is performed by Cyril Pernet, with support from Arnaud Delorme for EEGLAB integration');
+        disp('The list of contributors is in the contributors.md file');
+        disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/blob/master/contributors.md');
+        disp('All these authors are thereafter referred to as the LIMO Team');
         disp(' ')
-        disp('LIMO_EEG  Copyright (C) 2015  LIMO TEAM');
+        disp('LIMO_EEG  Copyright (C) 2021  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
