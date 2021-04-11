@@ -955,13 +955,16 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select covariate file');
             if FilterIndex == 0
                 return
+            else
+                regressor_file = fullfile(PathName,FileName);
             end
         end
 
         if ischar(regressor_file)
-            regressor_file = fullfile(PathName,FileName);
             X = load(regressor_file);
-            X = X.(cell2mat(fieldnames(X)));
+            if ~isnumeric(X)
+                X = X.(cell2mat(fieldnames(X)));
+            end
         else
             X = regressor_file;
         end
@@ -986,17 +989,17 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
                     end
                     disp('covariate adjusted for delete subjects');
                 catch ME
-                    if size(X,1) ~= size(data,4)
+                    if size(X,1) ~= sum(nb_subjects)
                         if exist('errordlg2','file')
-                            errordlg2('the number of regression value differs from the number of subjects'); return
+                            errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),sum(nb_subjects))); return
                         else
-                            errordlg('the number of regression value differs from the number of subjects'); return
+                            errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),sum(nb_subjects))); return
                         end
                     else
                         if exist('errordlg2','file')
-                            errordlg2(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); retun
+                            errordlg2(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); return
                         else
-                            errordlg(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); retun
+                            errordlg(sprintf('log error:%s',ME.message),'fail adjusting covarate(s)'); return
                         end
                     end
                 end
