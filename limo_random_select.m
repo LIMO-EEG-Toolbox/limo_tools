@@ -262,7 +262,8 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             disp('X has been transposed'); X = X';
         end
 
-        if size(X,1) > N
+        % adjust covariate(s) or data
+        if size(X,1) > N 
             if sum(removed) ~=0
                 try
                     index = 0;
@@ -272,7 +273,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                             X(index,:) = [];
                         end
                     end
-                    disp('covariate adjusted for delete subjects');
+                    warning('covariate adjusted for delete subjects');
                 catch ME
                     if exist('errordlg2','file')
                         errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
@@ -286,6 +287,20 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
             else
                 errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
+            end
+        elseif ~isempty(sum(isnan(X),2))
+            if sum(sum(isnan(X),2)) == 1
+                warning('loaded regressor(s) include a NaN and the corresponding subject is removed')
+            else
+                warning('loaded regressor(s) include NaN(s) - corresponding subjects are removed')
+            end
+            
+            sub_toremove = find(sum(isnan(X),2));
+            X(sub_toremove,:) = [];
+            if numel(size(data)) == 4
+                data(:,:,:,sub_toremove) = [];
+            else
+                data(:,:,sub_toremove) = [];
             end
         end
     end
