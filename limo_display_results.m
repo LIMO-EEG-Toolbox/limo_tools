@@ -1397,7 +1397,26 @@ elseif LIMO.Level == 2
             
             % which ERP to make
             % ------------------
-            extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+            if isempty(g.plot3type)
+                extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+            else
+               extra = g.plot3type;
+               % allow typos
+               if contains(extra,'orig','Ignorecase',true)
+                   extra = 'Original';
+               elseif contains(extra,'Model','Ignorecase',true)
+                   extra = 'Modelled';
+               elseif contains(extra,'Adj','Ignorecase',true)
+                   extra = 'Adjusted';
+               else
+                   if exist(errodlg2,'file')
+                       errordlg2(sprintf('input option ''%s'' invalid',extra)); return
+                   else
+                       errordlg(sprintf('input option ''%s'' invalid',extra)); return
+                   end
+               end
+            end
+            
             if isempty(extra)
                 return;
             elseif strcmpi(extra,'Original')
@@ -1453,10 +1472,13 @@ elseif LIMO.Level == 2
                     else
                         channel = g.channels;
                     end
-                    if isempty(channel) || strcmpi(cell2mat(channel),'')
+                    
+                    if iscell(channel); channel = cell2mat(channel); end
+                    if ischar(channel); channel = str2double(channel); end
+
+                    if isempty(channel) || strcmpi(channel,'') || isnan(channel)
                         [v,e] = max(data(:,:,1)); [v,c]=max(v); channel = e(c);
                     else
-                        channel = eval(cell2mat(channel));
                         if length(channel) > 1
                             error('1 channel only can be plotted')
                         elseif channel > size(data,1)
