@@ -130,7 +130,7 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
-        MCC_data  = sprintf('H0_%s', filesep, FileName);
+        MCC_data  = sprintf('H0_%s', FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
