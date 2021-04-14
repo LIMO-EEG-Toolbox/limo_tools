@@ -228,9 +228,9 @@ switch method
         HM    = WX*pinv(WX);               % Hat matrix, projection onto X
         h     = diag(WX*pinv(WX'*WX)*WX'); % leverage
         d     = min(4,h/mean(h));          % power of the variance stabilizer E4
-        HC4   = (R*Y).^2./((1-h).^d);      % Cribari-Neto (2004)
         if strcmpi(variance_estimates,'HC4')
-            E = (vecnorm((R*Y)./((1-h).^d)).^2)';
+            HC4 = (R*Y).^2./((1-h).^d);      % Cribari-Neto (2004)
+            E   = (vecnorm((R*Y)./((1-h).^d)).^2)';
         else
             E = diag(Y'*R*Y);              % SS Error => vecnorm(R*Y).^2
         end
@@ -550,13 +550,13 @@ switch method
             % covariance stuff
             % -----------------
             HM    = WX{freq}*pinv(WX{freq});    
-            h     = diag(WX{freq}*pinv(WX{freq}'*WX{freq})*WX{freq}'); 
-            d     = min(4,h/mean(h));          
-            HC4   = (R*Y(freq,:,:)).^2./((1-h).^d);      
             if strcmpi(variance_estimates,'HC4')
-                E = (vecnorm((R*Y(freq,:,:))./((1-h).^d)).^2)';
+                h   = diag(WX{freq}*pinv(WX{freq}'*WX{freq})*WX{freq}');
+                d   = min(4,h/mean(h));
+                HC4 = (R*squeeze(Y(freq,:,:))).^2./((1-h).^d);
+                E   = (vecnorm((R*squeeze(Y(freq,:,:)))./((1-h).^d)).^2)';
             else
-                E = diag(Y(freq,:,:)'*R*Y(freq,:,:));             
+                E   = diag(squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:)));             
             end
             
             % degrees of freedom
