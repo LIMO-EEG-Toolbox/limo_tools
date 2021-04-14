@@ -25,6 +25,8 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % 'regressor': Provide the index of the regressor to be used.
 % 'plot3type': Type of plots to show when 'Type' is 3. Select between {'Original', 'Modeled', 'Adjusted'}
 % 'sumstats' : Course plot summary statistics 'Mean' or 'Trimmed'
+% 'restrict' : for time-frequency data, plot restrict plot to 'Time' or 'Frequency'
+% 'dimvalue' : for time-frequency data, what value to resctrict on (e.g. restrict to 'Time' with dimvalue 5Hz) 
 %
 % Although the function is mainly intented to be used via the GUI, some figures
 % can be generated automatically, for instance limo_display_results(1,'R2.mat',pwd,0.05,5,LIMO,0);
@@ -53,10 +55,12 @@ catch
     disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
 end
 
-try g.channels;   catch, g.channels  = [];  end % No default values
-try g.regressor;  catch, g.regressor = [];  end % No default values
-try g.plot3type;  catch, g.plot3type = [];  end % No default values
-try g.sumstats;   catch, g.sumstats  = [];  end % No default values
+try g.channels;  catch, g.channels  = [];  end % No default values
+try g.regressor; catch, g.regressor = [];  end % No default values
+try g.plot3type; catch, g.plot3type = [];  end % No default values
+try g.sumstats;  catch, g.sumstats  = [];  end % No default values
+try g.restrict;  catch, g.restric   = [];  end % No default values
+try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
 
 toplot = load(fullfile(PathName,FileName));
 toplot = toplot.(cell2mat(fieldnames(toplot)));
@@ -1164,9 +1168,9 @@ elseif LIMO.Level == 2
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
-                limo_display_image_tf(LIMO,toplot,mask,mytitle);
+                limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
             else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle)
+                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
             end
             
         elseif Type == 2
@@ -1249,7 +1253,7 @@ elseif LIMO.Level == 2
             data = load(fullfile(PathName,FileName));
             data = data.(cell2mat(fieldnames(data)));            
             if strcmpi(LIMO.Analysis,'Time-Frequency')
-                [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,:,[4 5])),LIMO,g.channels);
+                [~,channel,freq,time] = limo_display_reducedim(squeeze(data(:,:,:,[4 5])),LIMO,g.channels,g.restrict,g.dimvalue);
                 data                  = squeeze(data(channel,freq,time,:,:)); % 2D
                 sig                   = squeeze(single(mask(channel,freq,time))); %1D
             else
@@ -1309,12 +1313,12 @@ elseif LIMO.Level == 2
                     xvect = [];
                 end
                 
-                if length(time) > 1&& size(xvect,2) ~= size(toplot,2)
-                    xvect              = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+                if length(time) > 1&& size(xvect,2) ~= size(data,1)
+                    xvect              = linspace(LIMO.data.start,LIMO.data.end,size(data,1));
                     LIMO.data.tf_times =  xvect;
                     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
-                elseif length(freq) > 1 && size(xvect,2) ~= size(toplot,1)
-                    xvect              = linspace(LIMO.data.lowf,LIMO.data.highf,size(toplot,1));
+                elseif length(freq) > 1 && size(xvect,2) ~= size(data,1)
+                    xvect              = linspace(LIMO.data.lowf,LIMO.data.highf,size(data,1));
                     LIMO.data.tf_freqs =  xvect;
                     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
                 end
@@ -1778,11 +1782,12 @@ elseif LIMO.Level == 2
                 C                     = LIMO.design.C{effect_nb};
                 Data                  = load(fullfile(LIMO.dir,'Yr.mat'));
                 Data                  = Data.(cell2mat(fieldnames(Data)));
-                [~,channel,freq,time] = limo_display_reducedim(Data,LIMO,g.channels);
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
+                   [~,channel,freq,time] = limo_display_reducedim(Data,LIMO,g.channels,g.restrict,g.dimvalue);
                     Data              = squeeze(Data(channel,freq,time,:,:));
                     sig               = squeeze(single(mask(channel,freq,time))); 
                 else
+                    [~,channel,freq,time] = limo_display_reducedim(Data,LIMO,g.channels);
                     Data              = squeeze(Data(channel,time,:,:)); % note freq/time variables have the same values
                     sig               = single(mask(channel,:)); 
                 end
