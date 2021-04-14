@@ -7,7 +7,8 @@ function [dataout,channel,freq,time] = limo_display_reducedim(datain,LIMO,channe
 % 
 % INPUT datain 3D/4D data (usually stat file) or filename of data 
 %       LIMO LIMO structure or filename of the LIMO file to use
-%       channelsin is the channel or channels to use (optional)
+%       -- optional or empty []
+%       channelsin is the channel or channels to use 
 %       restrict is 'Time' or 'Frequency' ie the dimension to restrict the analysis to
 %       dimvalue is the value to zoom in for the dimension not looked at 
 %
@@ -63,13 +64,14 @@ end
 
 % for ERSP choose time or frequency
 if strcmpi(LIMO.Analysis,'Time-Frequency')
-    if isempty('restrict','var')
+    if isempty(restrict)
         restrict = questdlg('Which domain to plot:','ERSP plot option','Time','Frequency','Time');
     end
     
     if strcmpi(restrict,'Frequency')
         if ~isempty(dimvalue)
-            time = dimvalue;
+            time     = dimvalue;
+            [~,time] = min(abs(LIMO.data.tf_times - time));
         else
             time = cell2mat(inputdlg('At which time to plot the spectrum?','Plotting option'));
             if isempty(time)|| strcmp(time,'0')
@@ -83,7 +85,8 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         end
     elseif strcmpi(restrict,'Time')
         if ~isempty(dimvalue)
-            freq = dimvalue;
+            freq     = dimvalue;
+            [~,freq] = min(abs(LIMO.data.tf_freqs - freq));
         else
             freq =  cell2mat(inputdlg('At which frequency to plot the time course?','Plotting option'));
             if isempty(freq)|| strcmp(freq,'0')
@@ -126,5 +129,11 @@ elseif isempty(channel)
         end
     end
 end
-dataout = squeeze(datain(channel,:,:));
+
+% data out
+if strcmpi(LIMO.Analysis,'Time-Frequency')
+    dataout = squeeze(datain(channel,:,:,:));
+else
+    dataout = squeeze(datain(channel,:,:));
+end
 
