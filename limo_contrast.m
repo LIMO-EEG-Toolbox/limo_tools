@@ -856,7 +856,7 @@ switch type
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                H0_ess = limo_tf_5d_reshape(H0_ess);
+                H0_ess = limo_tf_5d_reshape(H0_ess,LIMO);
             end
             save(filename, 'H0_ess', '-v7.3');
 
@@ -917,13 +917,13 @@ switch type
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                H0_ess = limo_tf_5d_reshape(H0_ess);
+                H0_ess = limo_tf_5d_reshape(H0_ess,LIMO);
             end
             save(filename, 'H0_ess', '-v7.3');
 
             if exist('H0_ess2','var')
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    H0_ess = limo_tf_5d_reshape(H0_ess2);
+                    H0_ess = limo_tf_5d_reshape(H0_ess2,LIMO);
                 else
                     H0_ess = H0_ess2;
                 end
