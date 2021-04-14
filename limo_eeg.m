@@ -805,8 +805,11 @@ switch varargin{1}
                     else
                         limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
-                    savename = sprintf('%s.fig',name(1:end-4));
-                    saveas(gcf, savename,'fig'); close(gcf)
+                    
+                    if ~strcmpi(LIMO.Analysis,'Time-Frequency')
+                        savename = sprintf('%s.fig',name(1:end-4));
+                        saveas(gcf, savename,'fig'); close(gcf)
+                    end
                 end
             end
         end
