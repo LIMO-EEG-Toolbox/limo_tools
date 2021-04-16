@@ -9,26 +9,29 @@ function limo_add_plots(varargin)
 %
 % FORMAT limo_add_plots % calls the GUI
 %        limo_add_plots({myfiles})
-%        limo_add_plots(LIMOfile,{myfiles}, ... )
-%        limo_add_plots(key,value,LIMOfile, {myfiles})
+%        limo_add_plots({myfiles},LIMOfile)
+%        limo_add_plots({myfiles},LIMOfile,key,value)
 %
 % INPUTS myfiles is a cell array of .mat files to plot
 %        LIMOfile is the LIMO file with the corresponding metadata (optional but recommended)
-%        options are key value pairs
+%        options are defined by key value pairs
 %        'channel' with a index of the channel to plot
-%        'dimension' either 'Time' or 'Freqency' for Time-Frequency daa
-%                    followed by the dimension value for reduce
-%                    'dimension','Time',5 will plot data in time at 5Hz
+%        'restrict' either 'Time' or 'Freqency' for Time-Frequency daa
+%        'dimvalue' value for reduced dimension
+%            e.g. 'Channel',49,'restrict','Time','dimvalue',5 will plot data at channel 49 in time at 5Hz
 %        'variable' with the value to indicate the variable to plot for arrays of many variables
 %        'figure'   'new' (default) or 'hold' to plot in existing figure
 %             
 % ------------------------------
 %  Copyright (C) LIMO Team 2021
 
-out     = 0;
-turn    = 1;
-infile  = [];
-fig     = 'new';
+out      = 0;
+turn     = 1;
+infile   = [];
+channel  = [];
+restrict = [];
+dimvalue = [];
+fig      = 'new';
 warning  on
 
 if ~isempty(varargin)
@@ -36,9 +39,10 @@ if ~isempty(varargin)
         if ischar(varargin{i})
             if strcmpi(varargin{i},'channel')
                 channel = varargin{i+1};
-            elseif strcmpi(varargin{i},'dimension') % for Time-Frequency
-                whichdim  = varargin{i+1};
-                dimvalue  =  varargin{i+2};
+            elseif strcmpi(varargin{i},'restrict') % for Time-Frequency
+                restrict  = varargin{i+1};
+            elseif strcmpi(varargin{i},'dimvalue') % for Time-Frequency
+                dimvalue  =  varargin{i+1};
             elseif strcmpi(varargin{i},'variable') % for arrays of many variables
                 v  = varargin{i+1};
             elseif strcmpi(varargin{i},'figure') % for arrays of many variables
@@ -48,10 +52,18 @@ if ~isempty(varargin)
             end
         elseif iscell(varargin{i})
             infile = varargin{i}; 
+        elseif isstruct(varargin{i})
+            LIMO = varargin{i}; % LIMO.mat structure passed directly
         end
     end
 end
 
+% ERSP hack
+if length(infile) == 1 && ...
+        ~isempty(restrict) && length(dimvalue) > 1
+    infile = repmat(infile,[1,length(dimvalue)]);
+end
+        
 while out == 0
     subjects_plot = 0;
 
@@ -82,7 +94,7 @@ while out == 0
             return
         end
         name{turn} = cell2mat(datatype); 
-        tmp        = data.(cell2mat(datatype));
+        tmp        = squeeze(data.(cell2mat(datatype)));
         
         % overwrite metadata if LIMO file provided
         if exist('LIMO','var')
@@ -103,67 +115,23 @@ while out == 0
             end
         end
         
-        % reduce dimention for time freqency
+        % reduce dimension for time freqency
         if strcmpi(data.limo.Analysis,'Time-Frequency')
-            if exist('channel','var') && exist('whichdim','var') && exist('dimvalue','var')
-                tmp = limo_display_reducedim(datain,data.limo,channel,whichdim,dimvalue);
-            else
-                tmp = limo_display_reducedim(datain,data.limo);
+            opt = struct('channel',[],'restrict',[],'dimvalue',[]);
+            if exist('channel','var');  opt.channel  = channel;  end
+            if exist('restrict','var'); opt.restrict = restrict; end
+            if exist('dimvalue','var')
+                if length(dimvalue) == 1
+                    opt.dimvalue = dimvalue;
+                    if turn == 1 % freq or time index always the same since dimvalue == 1
+                        [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,opt.channel,opt.restrict,opt.dimvalue);
+                    end
+                else
+                    opt.dimvalue = dimvalue(turn); % freq or time index needs to be updated
+                    [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,opt.channel,opt.restrict,opt.dimvalue);
+                end
             end
-            
-%             if ~exist('whichdim','var') % second time, don't ask
-%                 whichdim = questdlg('which domain to plot?','option','time','frequency','time');
-%             end
-%             
-%             if isempty(whichdim)
-%                 return
-%             elseif strcmpi(whichdim,'Time')
-%                 if ~exist('dimvalue','var')
-%                     if isfield(data.limo,'data')
-%                         dimvalue = inputdlg('plot data at which frequency ?','option');
-%                     else
-%                         dimvalue = inputdlg('no time/freq info available, plot data for which matrix frequency cell','option');
-%                     end
-%                 end
-%                 
-%                 if isempty(dimvalue)
-%                     return
-%                 else
-%                     if iscell(dimvalue)
-%                         dimvalue     = str2num(cell2mat(dimvalue));
-%                     end
-%                     if isfield(data.limo,'data')
-%                         [~,dimvalue] = min(abs(data.limo.data.tf_freqs - dimvalue));
-%                         vect         = data.limo.data.tf_times;
-%                     end
-%                     tmp              = tmp(:,dimvalue,:,:,:);
-%                     tmp              = reshape(tmp,size(tmp,1),size(tmp,3),size(tmp,4),size(tmp,5));
-%                 end
-%             elseif strcmpi(whichdim,'Frequency')
-%                 if ~exist('dimvalue','var')
-%                     if isfield(data.limo,'data')
-%                         dimvalue = inputdlg('plot data at which time ?','option');
-%                     else
-%                         dimvalue = inputdlg('no time/freq info available, plot data for which matrix time cell','option');
-%                     end
-%                end
-%                 
-%                 if isempty(dimvalue)
-%                     return
-%                 else
-%                     if iscell(dimvalue)
-%                         dimvalue     = str2num(cell2mat(dimvalue));
-%                     end
-%                     if isfield(data.limo,'data')
-%                         [~,dimvalue] = min(abs(data.limo.data.tf_times - dimvalue));
-%                         vect         = data.limo.data.tf_freqs;
-%                     end
-%                     tmp              = tmp(:,:,dimvalue,:,:);
-%                     tmp              = reshape(tmp,size(tmp,1),size(tmp,2),size(tmp,4),size(tmp,5));
-%                 end
-%             else
-%                 return
-%             end
+            tmp = tmp(:,freq,time,:);
         end
         
         % the last dim of data.data can be the number of subjects or the trials 
@@ -196,13 +164,25 @@ while out == 0
     
     % store each iteration into Data
     if strcmpi('diff',datatype)
-        Data        = tmp;
+        if size(tmp,1) == 1
+            if ndims(tmp) == 4
+                Data = nan(1,size(tmp,2),size(tmp,3),size(tmp,4));
+                Data(1,:,:,:) = squeeze(tmp);
+            else
+                Data = nan(1,size(tmp,2),size(tmp,3)); 
+                Data(1,:,:) = squeeze(tmp);
+            end
+        else
+            Data        = squeeze(tmp);
+        end
     else
         if size(tmp,1) == 1 && size(tmp,3) == 1 % only 1 channel and 1 variable
             D           = squeeze(tmp(:,:,1,:));
             Data        = nan(1,size(tmp,2),size(tmp,4));
             Data(1,:,:) = D; clear D;
-        elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable
+        elseif size(tmp,1) > 1 && size(tmp,2) == 1 % only 1 variable
+            Data        = squeeze(tmp(:,1,:,:));
+        elseif size(tmp,1) > 1 && size(tmp,3) == 1 
             Data        = squeeze(tmp(:,:,1,:));
         else % many subjects for instance
             if ~exist('v','var')
@@ -262,16 +242,33 @@ while out == 0
             else
                 vect = linspace(data.limo.data.start,data.limo.data.end,size(Data,2));
             end
+        elseif strcmpi(data.limo.Analysis,'Time-Frequency')
+            if strcmpi(restrict,'time')
+                 if isfield(data.limo.data,'tf_times')
+                     vect = data.limo.data.tf_times;
+                 else
+                     vect = data.limo.data.start:(1000/data.limo.data.sampling_rate):data.limo.data.end;  % in msec
+                 end
+            elseif strcmpi(restrict,'frequency')
+                if isfield(data.limo.data,'tf_freqs')
+                    vect = data.limo.data.tf_freqs;
+                else
+                    vect = linspace(data.limo.data.lowf,data.limo.data.highf,size(Data,2));
+                end
+            else
+                warning('x axis lable info missing');
+                vect = 1:size(Data,2);
+            end
         elseif ~exist('vect','var')
             v = inputdlg('no axis info? enter x axis interval e.g. [0:0.5:200]');
             try
                 vect = eval(cell2mat(v));
                 if length(vect) ~= size(Data,2)
-                    disp('interval invalid - using defaults');
+                    warning('interval invalid - using defaults');
                     vect = 1:size(Data,2);
                 end
             catch ME
-                disp('interval invalid format');
+                warning(ME.identifier,'xaxis interval invalid:%s - using default',ME.message)
                 vect = 1:size(Data,2);
             end
         end
@@ -282,7 +279,7 @@ while out == 0
     if size(Data,1) == 1
         Data = squeeze(Data(1,:,:)); 
     else
-        if ~exist('channel','var')
+        if isempty(channel)
             channel = inputdlg(['which channel to plot 1 to' num2str(size(Data,1))],'channel choice');
             if isempty(channel) % user presed cancel
                 disp('plot aborded');
@@ -348,7 +345,7 @@ while out == 0
     grid on; axis tight; box on;
     
     if exist('whichdim','var')
-        xlabel(whichdim,'FontSize',14)
+        xlabel(restrict,'FontSize',14)
     else
         xlabel(data.limo.Analysis,'FontSize',14)
     end
