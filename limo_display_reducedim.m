@@ -109,6 +109,10 @@ elseif isempty(channel)
     if ~isempty(channelsin)
         channel = channelsin;
     else
+        if ~exist(LIMO.Type) % assume channels
+            LIMO.Type = 'Channels';
+        end
+        
         if strcmpi(LIMO.Type,'Channels')
             channel = inputdlg('which channel to plot','Plotting option');
         else
