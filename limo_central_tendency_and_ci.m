@@ -5,7 +5,7 @@ function result=limo_central_tendency_and_ci(varargin)
 % - If you input EEG data, all trials/sujects will be taken into account.
 % - If you input LIMO files, estimates of the raw data for the categorical
 % variables will be performed (continuous variables are not supported).
-% Non overlap of 95% CI shows univariate and non-corrected significant
+% Non overlap of 95% HDI shows univariate and 'non-corrected' significant
 % differences. This can also be assessed directly using limo_plot_difference
 % - If you input Betas files, estimates and 95% HDI are computed for the
 % categorical and continuous variables of your choice.
@@ -53,9 +53,11 @@ function result=limo_central_tendency_and_ci(varargin)
 % Novembre 2013 - fixed further issues related to parameter selection CP / thx to Matt Craddock
 % version 2 September 2015 - included within subject weighted mean + update for time frequency
 % version 3 February 2016 - CP/GAR updated for Bayesian HDI
-% see also limo_central_estimator.m
+% version 4+ CP maintenance of inputs/arguments/beta or con/etc .. see gitlog
+%
+% see also limo_central_estimator.m limo_add_plots.m limo_plot_difference.m
 % -------------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2021
 
 
 %% file selection and checkings
@@ -68,7 +70,7 @@ if nargin == 3 || nargin == 4
     % ------------------------
     
     data = varargin{1};
-    if ndims(data)<3 || ndims(data) >4
+    if ndims(data)<3 || ndims(data) >4 %#ok<*ISMAT>
         if ndims(data) == 2
             disp('for 2D data, try using limo_central_estimator.m');
         end
@@ -79,6 +81,7 @@ if nargin == 3 || nargin == 4
             disp('updating data structure with local LIMO.mat')
             LIMO                    = load('LIMO.mat');
             limo.Level              = LIMO.LIMO.Level;
+            limo.Type               = LIMO.LIMO.Type;
             limo.data.sampling_rate = LIMO.LIMO.data.sampling_rate;
             limo.data.trim1         = LIMO.LIMO.data.trim1;
             limo.data.trim2         = LIMO.LIMO.data.trim2;
@@ -106,6 +109,7 @@ if nargin == 3 || nargin == 4
             LIMO                    = load('LIMO.mat');
             limo.Level              = LIMO.LIMO.Level;
             limo.Analysis           = LIMO.LIMO.Analysis;
+            limo.Type               = LIMO.LIMO.Type;
             limo.data.sampling_rate = LIMO.LIMO.data.sampling_rate;
             limo.data.trim1         = LIMO.LIMO.data.trim1;
             limo.data.trim2         = LIMO.LIMO.data.trim2;
@@ -135,7 +139,7 @@ if nargin == 3 || nargin == 4
     if strcmpi(Estimator2,'Trimmed mean') || strcmpi(Estimator2,'HD') ...
             || strcmpi(Estimator2,'Median') || strcmpi(Estimator2,'Mean') ...
             || strcmpi(Estimator2,'All')
-        parameters = 1;
+        parameters = 1; %#ok<NASGU>
     else
         error('type of estimator not recognized') ;
     end
@@ -310,8 +314,8 @@ elseif nargin == 1
         
         % get the data
         % ------------
-        Names = {};
-        [Names,Paths,Files] = limo_get_files;
+        Names = {}; %#ok<NASGU>
+        [Names,Paths,Files] = limo_get_files; %#ok<ASGLU>
         if isempty(Names)
             return
         end
@@ -396,7 +400,7 @@ elseif nargin == 1
             % load file and store contend
             LIMO = load([Paths{i} filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
             Yr   = load([Paths{i} filesep Names{i}]);
-            Yr   = getfield(Yr,cell2mat(fieldnames(Yr)));
+            Yr   = Yr.(cell2mat(fieldnames(Yr)));
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 begins_at  = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
@@ -440,7 +444,7 @@ elseif nargin == 1
         
         % select data
         % -----------
-        [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},'Select LIMO files');
+        [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},'Select LIMO files'); %#ok<ASGLU>
         
         % check it's LIMO.mat files and which param to test
         % --------------------------------------------------
@@ -463,7 +467,7 @@ elseif nargin == 1
                 return
             else
                 try
-                    parameters = str2num(cell2mat(parameters));
+                    parameters = str2double(cell2mat(parameters));
                 catch
                     parameters = eval(cell2mat(parameters));
                 end
@@ -478,6 +482,8 @@ elseif nargin == 1
         Analysis_type   = questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
         if isempty(Analysis_type)
             return;
+        else
+            limo.Type  = 'Channel';
         end
         
         limo.data.neighbouring_matrix  = expected_chanlocs.channeighbstructmat;
