@@ -94,7 +94,7 @@ while out == 0
             return
         end
         name{turn} = cell2mat(datatype); 
-        tmp        = squeeze(data.(cell2mat(datatype)));
+        tmp        = data.(cell2mat(datatype));
         
         % overwrite metadata if LIMO file provided
         if exist('LIMO','var')
@@ -115,12 +115,13 @@ while out == 0
             end
         end
         
-        % reduce dimension for time freqency
+        % reduce dimension for time frequency
         if strcmpi(data.limo.Analysis,'Time-Frequency')
             opt = struct('channel',[],'restrict',[],'dimvalue',[]);
             if exist('channel','var');  opt.channel  = channel;  end
             if exist('restrict','var'); opt.restrict = restrict; end
             if exist('dimvalue','var')
+                tmp = squeeze(tmp); % only 1 variable 
                 if length(dimvalue) == 1
                     opt.dimvalue = dimvalue;
                     if turn == 1 % freq or time index always the same since dimvalue == 1
@@ -176,13 +177,11 @@ while out == 0
             Data        = squeeze(tmp);
         end
     else
-        if size(tmp,1) == 1 && size(tmp,3) == 1 % only 1 channel and 1 variable
+        if size(tmp,1) == 1 && size(tmp,3) == 1 % only 1 channel and 1 variable not squeezed yet
             D           = squeeze(tmp(:,:,1,:));
             Data        = nan(1,size(tmp,2),size(tmp,4));
             Data(1,:,:) = D; clear D;
-        elseif size(tmp,1) > 1 && size(tmp,2) == 1 % only 1 variable
-            Data        = squeeze(tmp(:,1,:,:));
-        elseif size(tmp,1) > 1 && size(tmp,3) == 1 
+        elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable not squeezed yet
             Data        = squeeze(tmp(:,:,1,:));
         else % many subjects for instance
             if ~exist('v','var')
