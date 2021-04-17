@@ -489,7 +489,7 @@ end
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
 
-% if EEGLAB STUDY
+% if EEGLAB STUDY check for groups
 if exist('STUDY','var')
     
     if isfield(model, 'set_files')
