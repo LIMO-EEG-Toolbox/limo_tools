@@ -86,11 +86,18 @@ while out == 0
     else
         data       = load(file);
         data       = data.(cell2mat(fieldnames(data)));
+        if ~isstruct(data)
+            error('limo add plots input(s) must be structures from limo_central_tendency_and_ci.m and limo_plot_difference.m')
+        end
         datatype   = fieldnames(data);
         datatype   = datatype(cellfun(@(x) strcmp(x,'limo'), fieldnames(data))==0);
         options    = {'mean','trimmed_mean','median','Harrell_Davis','diff','data'};
         if sum(strcmpi(datatype,options)) == 0
-            errordlg2('unknown file to plot');
+            if exist(errordlg2,'file')
+                errordlg2('unknown file to plot');
+            else
+                errordlg('unknown file to plot');
+            end
             return
         end
         name{turn} = cell2mat(datatype); 
@@ -117,22 +124,35 @@ while out == 0
         
         % reduce dimension for time frequency
         if strcmpi(data.limo.Analysis,'Time-Frequency')
-            opt = struct('channel',[],'restrict',[],'dimvalue',[]);
-            if exist('channel','var');  opt.channel  = channel;  end
-            if exist('restrict','var'); opt.restrict = restrict; end
-            if exist('dimvalue','var')
+            if ~isempty(dimvalue)
                 tmp = squeeze(tmp); % only 1 variable 
                 if length(dimvalue) == 1
-                    opt.dimvalue = dimvalue;
                     if turn == 1 % freq or time index always the same since dimvalue == 1
-                        [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,opt.channel,opt.restrict,opt.dimvalue);
+                        [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,channel,restrict,dimvalue);
                     end
                 else
-                    opt.dimvalue = dimvalue(turn); % freq or time index needs to be updated
-                    [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,opt.channel,opt.restrict,opt.dimvalue);
+                    tmp_dimvalue = dimvalue(turn); % freq or time index needs to be updated
+                    [~,~,freq,time] = limo_display_reducedim(tmp,data.limo,channel,restrict,tmp_dimvalue);
+                end
+            else
+                if ~isfield(data.limo,'data')
+                   [Name,Path,go] = uigetfile('LIMO.mat','Data information needed, select a relevant LIMO file'); 
+                   if go == 1 && strcmpi(Name,'LIMO.mat') 
+                       LIMO = load(fullfile(Paths,'LIMO.mat')); LIMO = LIMO.LIMO; 
+                       data.limo.data = LIMO.data; data.limo.dir = fileparts(file);
+                       save(file,'data');                       
+                   else
+                      disp('selection aborded'); return 
+                   end
+                end
+                [~,channel,freq,time] = limo_display_reducedim(tmp,data.limo,channel,restrict,dimvalue);
+                if length(time) == 1
+                    restrict = 'frequency';
+                else
+                    restrict = 'time';
                 end
             end
-            tmp = tmp(:,freq,time,:);
+            tmp = squeeze(tmp(:,freq,time,:));
         end
         
         % the last dim of data.data can be the number of subjects or the trials 
@@ -183,6 +203,8 @@ while out == 0
             Data(1,:,:) = D; clear D;
         elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable not squeezed yet
             Data        = squeeze(tmp(:,:,1,:));
+        elseif size(tmp,1) > 1 && size(tmp,3) == 3 
+            Data        = tmp;
         else % many subjects for instance
             if ~exist('v','var')
                 v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
@@ -202,7 +224,11 @@ while out == 0
                         Data        = nan(1,size(tmp,2),size(tmp,4));
                         Data(1,:,:) = D; clear D;
                     else
-                        Data        = squeeze(tmp(:,:,:,v));
+                        if ndims(tmp) == 4
+                            Data    = squeeze(tmp(:,:,:,v));
+                        else
+                            Data    = squeeze(tmp(:,:,v));
+                        end
                     end
                 else
                     if size(tmp,1) == 1 && size(tmp,3) > 1
@@ -343,7 +369,7 @@ while out == 0
     end
     grid on; axis tight; box on;
     
-    if exist('whichdim','var')
+    if ~isempty(restrict)
         xlabel(restrict,'FontSize',14)
     else
         xlabel(data.limo.Analysis,'FontSize',14)
