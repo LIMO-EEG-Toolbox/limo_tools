@@ -109,7 +109,7 @@ elseif isempty(channel)
     if ~isempty(channelsin)
         channel = channelsin;
     else
-        if ~exist(LIMO.Type) % assume channels
+        if ~isfield(LIMO,'Type') % assume channels
             LIMO.Type = 'Channels';
         end
         
