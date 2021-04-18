@@ -26,10 +26,10 @@ function result=limo_central_tendency_and_ci(varargin)
 %                savename (optional) name for saving files
 %
 % limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_channels,savename)
-%                Files are the full names (with paths) of LIMO.mat files
-%                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]
+%                Files are the full names (with paths) of LIMO.mat files or con files
+%                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]; for con files parameter is 1
 %                expected_chan_loc is the channel structure from EEGLAB but for the group of subjects
-%                Estimator should be 'Mean', 'Weighted mean', 'Trimmed mean', 'HD' or 'Median'
+%                Estimator should be 'Mean', 'Weighted mean', 'Trimmed mean', 'HD' or 'Median' (doesn't matter for con files)
 %                Estimator 1 is applied to trials within-subjects
 %                Estimator 2 is applied across subjects
 %                selected_channels can be [] for all brain or 1 or many channels (=nb files) 
@@ -74,7 +74,7 @@ if nargin == 3 || nargin == 4
         if ndims(data) == 2
             disp('for 2D data, try using limo_central_estimator.m');
         end
-        error('data in must be 3 or 4 dimensional: all channels, [freq/time] frames, subjects')
+        error('data in must be 3 or 4 dimensional: [1/all channels], [freq/time] frames, subjects')
     elseif ndims(data) == 4
         limo.Analysis = 'Time-Frequency';
          if exist('LIMO.mat','file')
@@ -169,18 +169,24 @@ elseif nargin == 6 || nargin == 7
     
     if exist(varargin{1},'file')
         Files = varargin{1};
+        if size(Files,1) == 1 % select a txt file listing all files
+            [Names,Paths,Files] = limo_get_files([],[],[],Files);
+        end
     else
         error('input file not found')
     end
-    if size(Files,1) == 1
-        Files = textread(Files,'%s','delimiter','');  % select a txt file listing all files
-        %[~,Paths,Files] = limo_get_files([],[],[],Files);
-    end
     
-    for i=length(Files):-1:1
-        Paths{i} = Files{i}(1:end-9);
+    parameters = varargin{2};
+    is_limo    = zeros(1,size(Names,2));
+    is_con     = zeros(1,size(Names,2));
+    for i=size(Names,2):-1:1
+        if strfind(Names{i},'LIMO'); is_limo(i) = 1;
+        elseif strfind(Names{i},'con'); is_con(i) = 1; end
     end
-    parameters          = varargin{2};
+    if all(is_con) && parameters ~=1; parameters = 1; 
+        warning on; warning('all con files in, parameter set to 1'); warning off
+    end
+            
     expected_chanlocs   = varargin{3};
     if ischar(expected_chanlocs)
         expected_chanlocs             = load(expected_chanlocs);
@@ -207,9 +213,18 @@ elseif nargin == 6 || nargin == 7
     disp('gathering data ...'); 
     for i=size(Paths,2):-1:1 % for each subject
         fprintf('processing subject %g\n',i);
-        LIMO = load(fullfile(Paths{i},'LIMO.mat')); LIMO = LIMO.LIMO;
-        Yr   = load(fullfile(Paths{i},'Yr.mat'));   Yr = Yr.Yr;
-        if strcmp(LIMO.Analysis,'Time-Frequency')
+        LIMO         = load(fullfile(Paths{i},'LIMO.mat')); 
+        LIMO         = LIMO.LIMO;
+        limo.Type{i} = LIMO.Type;
+
+        if all(is_limo)
+            Yr = load(fullfile(Paths{i},'Yr.mat'));   
+        elseif all(is_con)
+            Yr = load(Files{i}); 
+        end
+        Yr = Yr.(cell2mat(fieldnames(Yr)));
+
+        if strcmpi(LIMO.Analysis,'Time-Frequency')
             begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
             ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));
             ends_at(2) = size(Yr,3) - (last_frame(i,1) - min(last_frame(:,1)));
@@ -219,43 +234,54 @@ elseif nargin == 6 || nargin == 7
         end
         
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
-            index = logical(sum(LIMO.design.X(:,parameters)==1,2));
-            for channel=size(Yr,1):-1:1
-                if strcmpi(Estimator1,'Weighted Mean')
-                    if strcmp(LIMO.Analysis,'Time-Frequency')
-                        for f=size(Yr,2):-1:1
-                            fw(1,f,:,:)  = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
+            if all(is_limo)
+                index = logical(sum(LIMO.design.X(:,parameters)==1,2));
+                for channel=size(Yr,1):-1:1
+                    if strcmpi(Estimator1,'Weighted Mean')
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
+                            for f=size(Yr,2):-1:1
+                                fw(1,f,:,:)  = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
+                            end
+                            tmp(channel,:,:) = limo_tf_4d_reshape(fw,LIMO.data.size3D);
+                            clear fw;
+                        else
+                            tmp(channel,:,:) = squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
                         end
-                        tmp(channel,:,:) = limo_tf_4d_reshape(fw,LIMO.data.size3D);
-                        clear fw;
                     else
-                        tmp(channel,:,:) = squeeze(Yr(channel,:,index)).*repmat(LIMO.design.weights(channel,index),size(Yr,2),1);
+                        tmp(channel,:,index) = squeeze(Yr(channel,:,index));
                     end
+                end
+                
+                % 1st level analysis
+                % --------------------
+                if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
+                    tmp = limo_trimmed_mean(tmp,20);
+                elseif strcmpi(Estimator1,'Median') % median raw data
+                    tmp = nanmedian(tmp,3);
+                elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
+                    tmp = limo_harrell_davis(tmp,0.5);
+                elseif strcmpi(Estimator1,'Mean') || strcmpi(Estimator1,'Weighted Mean') % mean of raw data
+                    tmp = nanmean(tmp,3);
+                end
+            else
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    tmp = limo_tf_4d_reshape(Yr,LIMO.data.size3D);
+                    tmp = squeeze(tmp(:,:,1));
                 else
-                    tmp(channel,:,index) = squeeze(Yr(channel,:,index));
+                    tmp = Yr;
+                    tmp = squeeze(tmp(:,:,1));
                 end
             end
+            clear Yr
             
-            % 1st level analysis
-            % --------------------
-            if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
-                tmp = limo_trimmed_mean(tmp,20);
-            elseif strcmpi(Estimator1,'Median') % median raw data
-                tmp = nanmedian(tmp,3);
-            elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
-                tmp = limo_harrell_davis(tmp,0.5);
-            elseif strcmpi(Estimator1,'Mean') || strcmpi(Estimator1,'Weighted Mean') % mean of raw data
-                tmp = nanmean(tmp,3);
-            end
-            
-            if strcmp(Analysis_type,'Full brain analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
-                 if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmpi(Analysis_type,'Full brain analysis') && size(subj_chanlocs(i).chanlocs,2) == size(tmp,1)
+                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                      data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                  else
                      data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                  end
-            elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                if strcmp(LIMO.Analysis,'Time-Frequency')
+            elseif strcmpi(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
                     if size(selected_channels,2) == 1
                         data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                     else
@@ -289,6 +315,12 @@ elseif nargin == 6 || nargin == 7
         end
     end
 
+    if all(cellfun(@(x) strcmpi(x,limo.Type{1}), limo.Type))
+        limo.Type = limo.Type{1};
+    else
+        error('despite successful data aggregation, LIMO.Type differ?? channels/compomnents/sources - check your data')
+    end
+    
 elseif nargin == 1
     % ---------------------------
     
@@ -304,11 +336,11 @@ elseif nargin == 1
     % -----------------------------
     % ANALYSIS ON BETAS PARAMETERS
     % -----------------------------
-    if strcmp(option,'Betas') || strcmp(option,'Con')
+    if strcmpi(option,'Betas') || strcmpi(option,'Con')
         
         Estimator1 = option;
         Estimator2 = questdlg('Estimation option','which estimator?','Mean','Trimmed mean','HD/Median','Trimmed mean');
-        if strcmp(Estimator2,'HD/Median')
+        if strcmpi(Estimator2,'HD/Median')
             Estimator2 = 'HD';
         end
         
@@ -367,7 +399,7 @@ elseif nargin == 1
             return
         end
         
-        if strcmp(Analysis_type,'1 channel only')
+        if strcmpi(Analysis_type,'1 channel only')
             channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
                 [file,dirf,index] = uigetfile('*.mat','select your channel file');
@@ -402,7 +434,7 @@ elseif nargin == 1
             Yr   = load([Paths{i} filesep Names{i}]);
             Yr   = Yr.(cell2mat(fieldnames(Yr)));
             
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
                 begins_at  = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
                 ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));
                 ends_at(2) = size(Yr,3) - (last_frame(i,1) - min(last_frame(:,1)));
@@ -411,21 +443,21 @@ elseif nargin == 1
                 ends_at   = size(Yr,2) - (last_frame(i) - min(last_frame));
             end
             
-            if strcmp(Analysis_type,'Full brain analysis')
-                if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmpi(Analysis_type,'Full brain analysis')
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
                     data(:,:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,:,parameters)));
                 else
                     data(:,:,i)     = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,parameters)));
                 end
-            elseif strcmp(Analysis_type,'1 channel only')
+            elseif strcmpi(Analysis_type,'1 channel only')
                 if size(selected_channels,2) == 1
-                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                    if strcmpi(LIMO.Analysis,'Time-Frequency')
                         data(1,:,:,1:length(parameters),i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,:,parameters)));
                     else
                         data(1,:,1:length(parameters),i)   = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,parameters)));
                     end
                 else % optimized channel
-                    if strcmp(LIMO.Analysis,'Time-Frequency')
+                    if strcmpi(LIMO.Analysis,'Time-Frequency')
                         out             = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,:,parameters))); % out is for all expected chanlocs, i.e. across subjects
                         data(1,:,:,:,i) = out(i,:,:,:); % matches the expected chanloc of the subject
                     else
@@ -450,14 +482,14 @@ elseif nargin == 1
         % --------------------------------------------------
         is_limo = [];
         for i=size(Names,2):-1:1
-            if strcmp(Names{i},'LIMO.mat')
+            if strcmpi(Names{i},'LIMO.mat')
                 is_limo(i) = 1;
             end
         end
         
         if (isempty(is_limo)) == 0 && sum(is_limo) == size(Names,2)
             Q = questdlg('Type of merging','Options','Evaluate single conditions','Pool Conditions','Evaluate single conditions');
-            if strcmp(Q,'Evaluate single conditions')
+            if strcmpi(Q,'Evaluate single conditions')
                 parameters = inputdlg('which parameters to test e.g [1:3]','parameters option');
             else
                 parameters = inputdlg('which parameters to pool e.g [1 3 5]','parameters option');
@@ -487,7 +519,7 @@ elseif nargin == 1
         end
         
         limo.data.neighbouring_matrix  = expected_chanlocs.channeighbstructmat;
-        if strcmp(Analysis_type,'1 channel only')
+        if strcmpi(Analysis_type,'1 channel only')
            channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
                 [file,dir,index] = uigetfile('*.mat','select your channel file');
@@ -523,7 +555,7 @@ elseif nargin == 1
             return
         end
         
-        if strcmp(Estimator1,'All') || strcmp(Estimator1,'Mean')
+        if strcmpi(Estimator1,'All') || strcmpi(Estimator1,'Mean')
             weighted_mean = questdlg('do you want to use weights to compute means?','saving option','yes','no','yes');
         end
         
@@ -539,7 +571,7 @@ elseif nargin == 1
             fprintf('processing subject %g',i); disp(' ')
             LIMO = load(fullfile(Paths{i},'LIMO.mat')); LIMO = LIMO.LIMO;
             Yr   = load(fullfile(Paths{i},'Yr.mat'));   Yr = Yr.Yr;
-            if strcmp(LIMO.Analysis,'Time-Frequency')
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
                 begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
                 ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));
                 ends_at(2) = size(Yr,3) - (last_frame(i,1) - min(last_frame(:,1)));
@@ -549,13 +581,13 @@ elseif nargin == 1
                 ends_at = size(Yr,2) - (last_frame(i) - min(last_frame));
             end
             
-            if strcmp(Q,'Evaluate single conditions')
+            if strcmpi(Q,'Evaluate single conditions')
                 for j=length(parameters):-1:1
                     if parameters(j) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
                         index = LIMO.design.X(:,parameters(j))==1;
-                        if strcmp(weighted_mean,'yes')
+                        if strcmpi(weighted_mean,'yes')
                             for channel=1:size(Yr,1)
-                                if strcmp(LIMO.Analysis,'Time-Frequency')
+                                if strcmpi(LIMO.Analysis,'Time-Frequency')
                                     for f=size(Yr,2):-1:1
                                         fw(1,f,:,:) = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
                                     end
@@ -571,24 +603,24 @@ elseif nargin == 1
                         
                         % 1st level analysis
                         % --------------------
-                        if strcmp(Estimator1,'Trimmed mean') % trim raw data @ 20%
+                        if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
                             tmp = limo_trimmed_mean(tmp,20);
-                        elseif strcmp(Estimator1,'Median') % median raw data
+                        elseif strcmpi(Estimator1,'Median') % median raw data
                             tmp = nanmedian(tmp,3);
-                        elseif strcmp(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
+                        elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                             tmp = limo_harrell_davis(tmp,0.5);
-                        elseif strcmp(Estimator1,'Mean') % mean of raw or weighted data
+                        elseif strcmpi(Estimator1,'Mean') % mean of raw or weighted data
                             tmp = nanmean(tmp,3);
                         end
                         
-                        if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                            if strcmp(LIMO.Analysis,'Time-Frequency')
+                        if strcmpi(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
                                 data(:,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                             else
                                 data(:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                             end
-                        elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                            if strcmp(LIMO.Analysis,'Time-Frequency')
+                        elseif strcmpi(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
                                 if size(selected_channels,2) == 1
                                     data(1,:,:,j,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                                 else
@@ -609,12 +641,12 @@ elseif nargin == 1
                         fprintf('parameter %g not computed - continuous regressor \n',j);
                     end
                 end
-            elseif strcmp(Q,'Pool Conditions')
+            elseif strcmpi(Q,'Pool Conditions')
                 if max(parameters) <= sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions)
                     index = find(sum(LIMO.design.X(:,parameters)==1,2)); % find all trials from selected columns
-                    if strcmp(weighted_mean,'yes')
+                    if strcmpi(weighted_mean,'yes')
                         for channel=size(Yr,1):-1:1
-                            if strcmp(LIMO.Analysis,'Time-Frequency')
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
                                 for f=size(Yr,2):-1:1
                                      fw(1,f,:,:) = squeeze(Yr(channel,f,:,index)).*repmat(squeeze(LIMO.design.weights(channel,f,index))',size(Yr,3),1);
                                 end
@@ -625,7 +657,7 @@ elseif nargin == 1
                             end
                         end
                     else
-                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
                             tmp =  limo_tf_4d_reshape(squeeze(Yr(:,:,:,index)),LIMO.data.size3D);
                         else
                             tmp =  squeeze(Yr(:,:,index)); % retain those trials only
@@ -634,24 +666,24 @@ elseif nargin == 1
                     
                     % 1st level analysis
                     % --------------------
-                    if strcmp(Estimator1,'Trimmed mean') % trim raw data @ 20%
+                    if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
                         tmp=limo_trimmed_mean(tmp,20);
-                    elseif strcmp(Estimator1,'Median') % median raw data
+                    elseif strcmpi(Estimator1,'Median') % median raw data
                         tmp = nanmedian(tmp,3);
-                    elseif strcmp(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
+                    elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                         tmp = limo_harrell_davis(tmp,0.5);
-                    elseif strcmp(Estimator1,'Mean') % mean of raw data on which we do across subjects TM, HD and Median
+                    elseif strcmpi(Estimator1,'Mean') % mean of raw data on which we do across subjects TM, HD and Median
                         tmp = nanmean(tmp,3);
                     end
                     
-                    if strcmp(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                    if strcmpi(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
                             data(:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                         else
                             data(:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,tmp);
                         end
-                    elseif strcmp(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
-                        if strcmp(LIMO.Analysis,'Time-Frequency')
+                    elseif strcmpi(Analysis_type,'1 channel only') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
+                        if strcmpi(LIMO.Analysis,'Time-Frequency')
                             if size(selected_channels,2) == 1
                                 data(1,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,reshape(tmp,LIMO.data.size4D(1:3)));
                             else
@@ -675,7 +707,7 @@ elseif nargin == 1
             clear Yr
         end
         % update estimator1 name
-        if strcmp(weighted_mean,'yes')
+        if strcmpi(weighted_mean,'yes')
             Estimator1 = 'Weighted mean';
         end
     end
@@ -712,7 +744,7 @@ if ~isempty(data)
     end
     
     n = size(data,ndims(data)); % number of subjects always last
-    if n<=10 && strcmp(Estimator2,'HD')
+    if n<=10 && strcmpi(Estimator2,'HD')
         msgbox('CI of the Harell Davis estimates cannot be computed for less than 11 observations - switched to median','Computation info');
         Estimator2 = 'Median';
     end
@@ -752,7 +784,7 @@ if ~isempty(data)
         result.limo = limo;
     end
         
-    if strcmp(Estimator2,'Mean') || strcmp(Estimator2,'All')
+    if strcmpi(Estimator2,'Mean') || strcmpi(Estimator2,'All')
         disp('Compute the Mean estimator and 95% CI ...')
         index = 1; h = waitbar(0,'computing','name','% done');
         if strcmpi(limo.Analysis,'Time-Frequency')
@@ -813,7 +845,7 @@ if ~isempty(data)
     end
     
     % --------------------------------------------------------------
-    if strcmp(Estimator2,'Trimmed mean') || strcmp(Estimator2,'All')
+    if strcmpi(Estimator2,'Trimmed mean') || strcmpi(Estimator2,'All')
         disp('Compute 20% Trimmed Mean estimator and 95% CI ...')
         index = 1; h = waitbar(0,'computing','name','% done');
         if strcmpi(limo.Analysis,'Time-Frequency')
@@ -875,7 +907,7 @@ if ~isempty(data)
     end
     
     % -----------------------------------------------------
-    if strcmp(Estimator2,'HD') || strcmp(Estimator2,'All')
+    if strcmpi(Estimator2,'HD') || strcmpi(Estimator2,'All')
         disp('Compute Harrell-Davis estimator and 95% CI ...')
         if strcmpi(limo.Analysis,'Time-Frequency')
             HD = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
@@ -936,7 +968,7 @@ if ~isempty(data)
     end
     
     % -------------------------------------------------
-    if strcmp(Estimator2,'Median') || strcmp(Estimator2,'All')
+    if strcmpi(Estimator2,'Median') || strcmpi(Estimator2,'All')
         disp('Compute Median estimator and 95% CI ...')
         index = 1; h = waitbar(0,'computing','name','% done');
         if strcmpi(limo.Analysis,'Time-Frequency')
