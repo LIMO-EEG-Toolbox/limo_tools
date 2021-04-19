@@ -1720,25 +1720,29 @@ elseif LIMO.Level == 2
             % -----------------------------------------------------------------------------
             
             if contains(FileName,'LIMO')
-                warndlg('Select summary stat file, nothing to infer from repeated measure LIMO file')
+                error('Select summary stat file, nothing to infer from LIMO file')
             end
             
+            % which summary stat
+            % -------------------
+            if ~isempty(g.sumstats) && any(strcmpi(g.sumstats,{'Mean','Trimmed'}))
+                extra = g.sumstats;
+            else
+                if contains(LIMO.design.name,'robust','Ignorecase',true)
+                    extra = 'Trimmed Mean';
+                else
+                    extra = 'Mean';
+                end
+                % let's not give GUI option and follow the design
+                % extra = questdlg('Summarize data using:','Data plot option','Mean','Trimmed Mean','Mean');
+                % if isempty(extra)
+                %     return
+                % end
+            end
+
             if contains(FileName,'Rep_ANOVA_Main')
                 % -----------------------------------
-                
-                % which summary stat
-                % -------------------
-                if ~isempty(g.sumstats) && any(strcmpi(g.sumstats,{'Mean','Trimmed'}))
-                    extra = g.sumstats;
-                else
-                    extra = questdlg('Summarize data using:','Data plot option','Mean','Trimmed','Trimmean');
-                    if isempty(extra)
-                        return
-                    end
-                end
-                
-                % -----------------------
-                
+                                
                 % the data to plot are the difference in Yr given LIMO.design.C (see limo_rep_anova)
                 if contains(FileName,'Main_effect','IgnoreCase',true)
                     index1 = strfind(FileName,'Main_effect')+12;
@@ -1768,7 +1772,7 @@ elseif LIMO.Level == 2
                         avg(time_or_freq,:) = nanmean(C*squeeze(Data(time_or_freq,:,:))',2);
                         S(time_or_freq,:,:) = nancov(squeeze(Data(time_or_freq,:,:)));
                     end
-                    if size(Data,1)>1
+                    if isempty(LIMO.design.electrode)
                         mytitle = sprintf('Original %s \n %s %s (%g)',mytitle,LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel);
                     else
                         mytitle = sprintf('Original %s \n virtual %s',mytitle,LIMO.Type(1:end-1));
@@ -1788,7 +1792,7 @@ elseif LIMO.Level == 2
                         S(time_or_freq,:,:)  = cov(SD); % winsorized covariance
                     end
                     clear mytitle
-                    if size(Data,1)>1
+                    if isempty(LIMO.design.electrode)
                         mytitle = sprintf('Trimmed %s \n channel %s (%g)',mytitle,LIMO.data.chanlocs(channel).labels,channel);
                     else
                         mytitle = sprintf('Trimmed %s \n optimized channel',mytitle);
@@ -1858,10 +1862,8 @@ elseif LIMO.Level == 2
                 trimci = [c ; avg ; b];
                 assignin('base','Plotted_data',trimci);
                 
-                
                 % ----------------------
             elseif contains(FileName,'Rep_ANOVA_Gp')  %% plot pairs of gp differences
-                
                 
                 % -------------------
                 % which ERP to make
@@ -1878,7 +1880,7 @@ elseif LIMO.Level == 2
                     Rep_ANOVA_Gp_effect   = squeeze(Rep_ANOVA_Gp_effect(channel,freq,time,:,:));
                     sig                   = squeeze(single(mask(channel,freq,time)));
                 else
-                    [~,channel,freq,time] = limo_display_reducedim(Rep_ANOVA_Gp_effect,LIMO,g.channels);
+                    [~,channel,freq,time] = limo_display_reducedim(Rep_ANOVA_Gp_effect,LIMO,g.channels); %#ok<ASGLU>
                     Rep_ANOVA_Gp_effect   = squeeze(Rep_ANOVA_Gp_effect(channel,time,:,:)); % note freq/time variables have the same values
                     sig                   = single(mask(channel,:));
                 end
@@ -1887,7 +1889,7 @@ elseif LIMO.Level == 2
                 if size(Rep_ANOVA_Gp_effect,1) > 1
                     if isempty(channel)
                         [v,e] = max(Rep_ANOVA_Gp_effect(:,:,1));
-                        [v,c] = max(v); channel = e(c);
+                        [~,c] = max(v); channel = e(c);
                     else
                         if ischar(channel)
                             channel = str2double(channel);
@@ -1914,8 +1916,8 @@ elseif LIMO.Level == 2
                 if strcmpi(extra,'Original')
                     Data = mean(squeeze(Yr(channel,:,:,:)),3);
                     combinations = nchoosek(1:LIMO.design.nb_conditions,2);
-                    for d = 1:size(combinations,1)
-                        Effect(:,d) = nanmean(Data(:,find(LIMO.data.Cat == combinations(d,1))),2) - nanmean(Data(:,find(LIMO.data.Cat == combinations(d,2))),2);
+                    for d = size(combinations,1):-1:1
+                        Effect(:,d) = nanmean(Data(:,find(LIMO.data.Cat == combinations(d,1))),2) - nanmean(Data(:,find(LIMO.data.Cat == combinations(d,2))),2); %#ok<FNDSB>
                     end
                 end
                 
@@ -1923,27 +1925,27 @@ elseif LIMO.Level == 2
                 X = zeros(size(Yr,3),LIMO.design.nb_conditions+1);
                 X(:,end) = 1;
                 for i=1:LIMO.design.nb_conditions
-                    X(find(LIMO.data.Cat == i),i) = 1;
+                    X(find(LIMO.data.Cat == i),i) = 1; %#ok<FNDSB>
                 end
                 
                 % data again
                 Y = nanmean(squeeze(Yr(channel,:,:,:)),3);
-                X = X(find(~isnan(Y(1,:))),:);
-                Y = Y(:,find(~isnan(Y(1,:))))';
+                X = X(find(~isnan(Y(1,:))),:); %#ok<FNDSB>
+                Y = Y(:,find(~isnan(Y(1,:))))'; %#ok<FNDSB>
                 if strcmpi(extra,'Modelled')
                     beta = pinv(X)*Y; Yhat = X*beta;
                     combinations = nchoosek(1:LIMO.design.nb_conditions,2);
                     for d = 1:size(combinations,1)
-                        Effect(:,d) = mean(Yhat(:,find(X(:,combinations(d,1)))),2) - nanmean(Yhat(:,find(X(:,combinations(d,2)))),2);
+                        Effect(:,d) = nanmean(Yhat(find(X(:,combinations(d,1))),:),1)' - nanmean(Yhat(find(X(:,combinations(d,2))),:),1)'; %#ok<FNDSB>
                     end
                 end
                 
-                Res = (Y'*[eye(size(Y,1)) - (X*pinv(X))]*Y);
-                df = size(Y,1)-rank(X); t = tcdf(1-p,df);
+                Res    = (Y'*(eye(size(Y,1)) - (X*pinv(X)))*Y);
+                df     = size(Y,1)-rank(X); t = tcdf(1-p,df);
                 sigma2 = sum((Res.^2./df),2);
-                v = t.*sqrt(sigma2 ./ norm(X(:,1:end-1)).^2);
-                b = Effect - v(channel,:);
-                c = Effect + v(channel,:);
+                v      = t.*sqrt(sigma2 ./ norm(X(:,1:end-1)).^2);
+                b      = Effect - v(channel,:);
+                c      = Effect + v(channel,:);
                 if channel == 1
                     if length(LIMO.design.electrode) == 1
                         if strcmpi(extra,'Original')
@@ -1966,45 +1968,31 @@ elseif LIMO.Level == 2
                     end
                 end
                 
-                figure;set(gcf,'Color','w')
+                figure;set(gcf,'Color','w'); hold on
+                RGB = limo_color_images(size(Effect,2));
                 if strcmpi(LIMO.Analysis,'Time')
-                    timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
-                    plot(timevect,Effect,'LineWidth',3);
-                    fillhandle = patch([timevect fliplr(timevect)], [c',fliplr(b')], [1 0 0]);
+                    xvect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
                 else
-                    freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
-                    plot(freqvect,Effect,'LineWidth',3);
-                    fillhandle = patch([freqvectt fliplr(freqvect)], [c',fliplr(b')], [1 0 0]);
+                    xvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                 end
-                set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-                grid on; box on; axis tight; hold on; h = axis;
-                if strcmpi(LIMO.Analysis, 'Time')
-                    plot(timevect,(sig./10+1).*h(3),'r.','MarkerSize',20)
-                    xlabel('Time in ms','FontSize',14)
-                    ylabel('Amplitude (A.U.)','FontSize',14)
-                else
-                    plot(freqvect,(sig./10+1).*h(3),'r.','MarkerSize',20)
-                    xlabel('Frequency in Hz','FontSize',14)
-                    ylabel('Spectral Power (A.U.)','FontSize',14)
+                
+                for d = size(combinations,1):-1:1
+                    plot(xvect,Effect(:,d),'LineWidth',3,'Color',RGB(d,:));
+                    fillhandle = patch([xvect fliplr(xvect)], [c(:,d)',fliplr(b(:,d)')], RGB(d,:));
+                    set(fillhandle,'EdgeColor',RGB(d,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                    Gp_difference{d} = [c(:,d)' ; Effect(:,d)' ; b(:,d)'];
                 end
+                grid on; box on; axis tight; hold on; 
+                h = axis; sig(sig==0)=NaN;
+                plot(xvect,(sig./10+1).*h(3),'r.','MarkerSize',20)
                 set(gca,'FontSize',14,'layer','top');
                 title(mytitle,'FontSize',16); drawnow;
-                Gp_difference = [c' ; Effect' ; b'];
                 assignin('base','Plotted_data',Gp_difference);
-                
                 
                 % -------------------------
             elseif contains(FileName,'Rep_ANOVA_Interaction') % Gp * Repeated measures - plot differences btween condition per gp
                 % ------------------------
                 
-                
-                % which ERP to make
-                % ------------------
-                extra = questdlg('Plotting ERP','ERP Options','Original','Trimmed','Original');
-                if isempty(extra)
-                    return;
-                end
-                % -----------------------
                 Rep_ANOVA_Interaction_with_gp = load(FileName);
                 Rep_ANOVA_Interaction_with_gp = Rep_ANOVA_Interaction_with_gp.(cell2mat(fieldnames(Rep_ANOVA_Interaction_with_gp)));
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -2012,17 +2000,21 @@ elseif LIMO.Level == 2
                     Rep_ANOVA_Interaction_with_gp = squeeze(Rep_ANOVA_Interaction_with_gp(channel,freq,time,:,:));
                     sig                           = squeeze(single(mask(channel,freq,time)));
                 else
-                    [~,channel,freq,time]         = limo_display_reducedim(Rep_ANOVA_Interaction_with_gp,LIMO,g.channels);
+                    [~,channel,freq,time]         = limo_display_reducedim(Rep_ANOVA_Interaction_with_gp,LIMO,g.channels); %#ok<ASGLU>
                     Rep_ANOVA_Interaction_with_gp = squeeze(Rep_ANOVA_Interaction_with_gp(channel,time,:,:)); % note freq/time variables have the same values
                     sig                           = single(mask(channel,:));
                 end
-                
+                sig(sig==0)=NaN;
+
                 if size(Rep_ANOVA_Interaction_with_gp,1) > 1
-                    if isempty(channel) || strcmpi(cell2mat(channel),'')
+                    if isempty(channel) 
                         [v,e] = max(Rep_ANOVA_Interaction_with_gp(:,:,1));
-                        [v,c] = max(v); channel = e(c);
+                        [~,c] = max(v); channel = e(c);
                     else
-                        channel = eval(cell2mat(channel));
+                        if ischar(channel)
+                            channel = str2double(channel);
+                        end
+                        
                         if length(channel) > 1
                             error('1 channel only can be plotted')
                         elseif channel > size(Rep_ANOVA_Interaction_with_gp,1)
@@ -2034,18 +2026,17 @@ elseif LIMO.Level == 2
                 end
                 
                 % the data to plot are the difference in Yr given LIMO.design.C (see limo_rep_anova)
-                effect_nb = eval(FileName(end-4));
+                effect_nb = str2double(FileName(strfind(FileName,'Factor_')+7:strfind(FileName,'Factor_')+6+strfind(FileName(strfind(FileName,'Factor_')+6:end),'_')));
                 C         = LIMO.design.C{effect_nb};
                 Yr        = load(fullfile(LIMO.dir,'Yr.mat'));
                 Yr        = Yr.Yr;
                 Data      = squeeze(Yr(channel,:,:,:));
                 
                 % compute differences between pairs using C and Cov
-                n = size(Data,2);
-                if strcmpi(extra,'Original')
+                if strcmpi(extra,'Mean')
                     for gp = 1:LIMO.design.nb_conditions
                         index = find(LIMO.data.Cat==gp);
-                        for time=1:size(Data,1)
+                        for time=size(Data,1):-1:1
                             avg(gp,time,:) = nanmean(C*squeeze(Data(time,index,:))',2);
                             S(gp,time,:,:) = cov(squeeze(Data(time,index,:)));
                         end
@@ -2060,7 +2051,7 @@ elseif LIMO.Level == 2
                         index = find(LIMO.data.Cat==gp);
                         n     = length(index);
                         g     = floor((20/100)*n); %% compute for 20% trimmed mean
-                        for time_or_freq=1:size(Data,1)
+                        for time_or_freq=size(Data,1):-1:1
                             [v,indices]             = sort(squeeze(Data(time_or_freq,index,:))); % sorted data
                             TD(gp,time_or_freq,:,:) = v((g+1):(n-g),:); % trimmed data - doesn't matter if relationship was kept since we only compute means
                             avg(gp,time_or_freq)    = nanmean(C*squeeze(TD(gp,time_or_freq,:,:))',2);
@@ -2081,60 +2072,48 @@ elseif LIMO.Level == 2
                     end
                 end
                 
-                figure; set(gcf,'Color','w'); df = rank(C);
+                figure; set(gcf,'Color','w'); hold on
                 if strcmpi(LIMO.Analysis,'Time')
-                    timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
+                    xvect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
                 else
-                    freqvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
+                    xvect=linspace(LIMO.data.freqlist(1),LIMO.data.freqlist(end),size(toplot,2));
                 end
                 
+                colorindex = 1;
+                trimci     = cell(size(avg,1)*size(avg,3),1);
+                RGB        = limo_color_images(size(avg,1)*size(avg,3)); 
                 for gp = 1:LIMO.design.nb_conditions
-                    index = find(LIMO.data.Cat==gp);
-                    dfe   = size(Data,2)-length(index)+1;
-                    if gp==1
-                        if strcmpi(LIMO.Analysis,'Time')
-                            plot(timevect,avg(gp,:),'LineWidth',3);
-                        elseif LIMO.analysis_flag == 2
-                            plot(freqvect,avg(gp,:),'LineWidth',3);
-                        end
-                        colorOrder = get(gca, 'ColorOrder');
-                    else
-                        if strcmpi(LIMO.Analysis,'Time')
-                            plot(timevect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
-                        else
-                            plot(freqvect,avg(gp,:),'Color',colorOrder(gp,:),'LineWidth',3);
-                        end
+                    % get the variance per comparison
+                    for frame = size(avg,2):-1:1
+                        varc(:,frame) = diag(sqrt(C*squeeze(S(gp,frame,:,:))*C'));
                     end
-                    
-                    % there is an error in the following 2 formulas I cannot fix -- @disbeat
-                    c = avg(gp,:,:) + tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
-                    b = avg(gp,:,:) - tinv(p./(2*size(C,1)),dfe).*(sqrt(C*squeeze(S(gp,:,:,:))*C'));
-                    if strcmpi(LIMO.Analysis,'Time')
-                        fillhandle = patch([timevect fliplr(timevect)], [c,fliplr(b)], colorOrder(gp,:));
-                        xlabel('Time in ms','FontSize',14)
-                        ylabel('Amplitude (A.U.)','FontSize',14)
-                    else
-                        fillhandle = patch([freqvect fliplr(freqvect)], [c,fliplr(b)], colorOrder(gp,:));
-                        xlabel('Frequency in Hz','FontSize',14)
-                        ylabel('Spectral Power (A.U.)','FontSize',14)
+                    % plot each comparison
+                    for c = 1:size(avg,3)
+                        plot(xvect,squeeze(avg(gp,:,c)),'Color',RGB(colorindex,:),'LineWidth',3);
+                        % there is an error in the following 2 formulas I cannot fix -- @disbeat
+                        index      = find(LIMO.data.Cat==gp);
+                        dfe        = size(Data,2)-length(index)+1;
+                        up         = avg(gp,:,c) + tinv(p./(2*size(C,1)),dfe).* varc(c,:);
+                        down       = avg(gp,:,c) - tinv(p./(2*size(C,1)),dfe).* varc(c,:);
+                        fillhandle = patch([xvect fliplr(xvect)], [up,fliplr(down)], RGB(colorindex,:));
+                        set(fillhandle,'EdgeColor',RGB(colorindex,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+                        trimci{colorindex} = [up ; squeeze(avg(gp,:,c)); down];
+                        colorindex = colorindex + 1;
                     end
-                    set(fillhandle,'EdgeColor',colorOrder(gp,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-                    hold on
                 end
                 
                 grid on; box on; axis tight
-                sig = single(mask(channel,:)); sig(sig==0)=NaN;
                 h = axis;  hold on;
+                plot(xvect,(sig./10+1).*h(3),'r.','MarkerSize',20)
+                ylabel('Amplitude (A.U.)','FontSize',14)
                 if strcmpi(LIMO.Analysis,'Time')
-                    plot(timevect,(sig./10+1).*h(3),'r.','MarkerSize',20)
+                    xlabel('Time in ms','FontSize',14)
                 else
-                    plot(freqvect,(sig./10+1).*h(3),'r.','MarkerSize',20)
+                    ylabel('Frequency in Hz','FontSize',14)
                 end
                 set(gca,'FontSize',14,'layer','top');
                 title(mytitle,'FontSize',16); drawnow;
-                trimci = [c ; avg ; b];
                 assignin('base','Plotted_data',trimci);
-                
             end
         else
             errordlg('this file is not supported for this kind of plot','Nothing plotted')
@@ -2153,7 +2132,6 @@ elseif strcmpi(LIMO.Level,'LI')
             warndlg('no values under threshold parameter','no significant effect');
         else
             scale = M.*mask;
-            v = max(scale(:)); [e,f]=find(scale==v);
             if min(scale(:))<0
                 scale(scale==0)=min(scale(:))+(min(scale(:))/10);
             else
@@ -2163,7 +2141,7 @@ elseif strcmpi(LIMO.Level,'LI')
             figure; set(gcf,'Color','w');
             timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(M,2));
             imagesc(timevect,1:size(M,1),scale);
-            title([mytitle],'FontSize',18);
+            title(mytitle,'FontSize',18);
             color_images_(scale,LIMO);
             assignin('base','Plotted_data',scale)
             assignin('base','Mask_of_sig',mask)
@@ -2211,9 +2189,9 @@ cc              = limo_color_images(scale); % get a color map commensurate to th
 colormap(cc);
 
 set(gca,'XMinorTick','on','LineWidth',2)
-try
+if isfield(LIMO.data,'expected_chanlocs')
     set(gca,'YTick',1:length(LIMO.data.expected_chanlocs));
-catch ME
+else
     set(gca,'YTick',1:length(LIMO.data.chanlocs));
 end
 
@@ -2228,17 +2206,17 @@ if LIMO.Level == 1
     if strcmpi(LIMO.data.chanlocs,'Components')
         label_electrodes = [];
     else
-        for i = 1 : length(LIMO.data.chanlocs)
-            try
+        for i = length(LIMO.data.chanlocs):-1:1
+            if isfield(LIMO.data,'expected_chanlocs')
                 label_electrodes{i} = LIMO.data.expected_chanlocs(i).labels;
-            catch ME
+            else
                 label_electrodes{i} = LIMO.data.chanlocs(i).labels;
             end
         end
     end
 else
     if isempty(LIMO.design.electrode)
-        for i = 1 : length(LIMO.data.chanlocs)
+        for i = length(LIMO.data.chanlocs):-1:1
             label_electrodes{i} = LIMO.data.chanlocs(i).labels;
         end
     else
