@@ -160,6 +160,10 @@ switch type
         end
         clear tmp
         
+        if ~isfield(LIMO.design,'method')
+            LIMO.design.method = 'Trimmed Mean';
+        end
+        
         % ------------------------------------------------
         % make a one_sample file per parameter (channels, frames, [mean value, se, df, t, p])
         one_sample = NaN(size(data,1), size(data,2), 5);
@@ -168,27 +172,23 @@ switch type
         for channel = 1:size(data,1) % run per channel because we have to remove NaNs
             fprintf('analyse parameter %g channel %g \n',parameter, channel);
             tmp = data(channel,:,:);
-            if nansum(tmp(1,:)) == 0
-                error('there is at least one empty channel using the specified expected chanlocs')
+            if nansum(tmp(1,1,:)) == 0
+                warning('empty channel - filling with NaNs')
+                one_sample(channel,:,:) = NaN;
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
+                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
+                        one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
+                elseif strcmpi(LIMO.design.method,'Mean')
+                    [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
+                        one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
+                    one_sample(channel,:,2) = sd./sqrt(n);
+                else
+                    error('unrecognized LIMO.design.method: %s',LIMO.design.method)
+                end
+                clear tmp Y
             end
-            
-            if ~isfield(LIMO.design,'method')
-                LIMO.design.method = 'Trimmed Mean';
-            end
-            
-            if strcmpi(LIMO.design.method,'Trimmed Mean')
-                [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
-                    one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
-            elseif strcmpi(LIMO.design.method,'Mean')
-                [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
-                    one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
-                one_sample(channel,:,2) = sd./sqrt(n);
-            else
-                error('unrecognized LIMO.design.method: %s',LIMO.design.method)
-            end
-            clear tmp Y
         end
         
         if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -257,8 +257,8 @@ switch type
         if LIMO.design.tfce ~= 0
             limo_tfce_handling(fullfile(LIMO.dir,name));
             LIMO.design.tfce = 1;
-            save(fullfile(LIMO.dir,'LIMO.mat'));
         end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         disp('one sample t-test done')
             
         %--------------------------------------------------------------------------
@@ -415,8 +415,8 @@ switch type
         if LIMO.design.tfce ~= 0
             limo_tfce_handling(fullfile(LIMO.dir,name));
             LIMO.design.tfce = 1;
-            save(fullfile(LIMO.dir,'LIMO.mat'));
         end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         disp('two samples t-test done')
         
         
@@ -569,8 +569,8 @@ switch type
         if LIMO.design.tfce ~= 0
             limo_tfce_handling(fullfile(LIMO.dir,name));
             LIMO.design.tfce = 1;
-            save(fullfile(LIMO.dir,'LIMO.mat'));
         end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         disp('Paired t-test done')
         
         %------------------------------------------------------------------
@@ -651,7 +651,7 @@ switch type
             LIMO.design.zscore = 0;
         end
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-        
+
         % make design matrix and files
         if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
             [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
@@ -669,7 +669,7 @@ switch type
         close('LIMO design');        
 
         if strcmpi(go,'Yes')
-            save LIMO LIMO
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             if nargout ~= 0, LIMOPath = fullfile(pwd,'LIMO.mat'); end
             clear data regressors files; limo_eeg(4); disp('regression analysis done');
         else
@@ -740,8 +740,8 @@ switch type
             [LIMO.design.X, LIMO.design.nb_conditions, LIMO.design.nb_interactions,...
                 LIMO.design.nb_continuous] = limo_design_matrix(data, LIMO,1);
         end
-        save LIMO LIMO
-        
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+
         % ------------------------------------------------
         % do the analysis
         if ~exist('design_check','var')
@@ -843,8 +843,8 @@ switch type
             fprintf('Thresholding bootstrapped N-way ANOVA using TFCE \n');
             limo_tfce_handling(fullfile(LIMO.dir,'Condition_effect_1.mat'));
             LIMO.design.tfce = 1;
-            save(fullfile(LIMO.dir,'LIMO.mat'));
         end
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
 
         if strcmp(LIMO.design.method,'Generalized Welch''s method')
             disp('Robust Gp ANOVA for trimmed means (generalization of Welch''s method) done')
@@ -924,7 +924,7 @@ switch type
         LIMO.design.fullfactorial    = 0;
         LIMO.design.zscore           = 0;
         LIMO.design.repeated_measure = factor_levels;
-        save('LIMO.mat','LIMO')
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         
         % specific stuff for repeated measures
         % from the input we know which case to handle
@@ -1370,8 +1370,8 @@ switch type
             end
         end
         LIMO.design.bootstrap = LIMO.design.bootstrap;
-        save(fullfile(LIMO.dir,'LIMO.mat'));
-        
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+
         % ------------------------- TFCE ---------------
         if LIMO.design.tfce ~= 0 % check if tfce is on and if more than one channel
             fprintf('Thresholding bootstrapped Rep ANOVA using TFCE \n');

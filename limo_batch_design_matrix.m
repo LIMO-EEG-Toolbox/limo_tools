@@ -83,7 +83,7 @@ if strcmp(LIMO.Analysis,'Time')
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
-                signal = load(EEGLIMO.etc.datafiles.daterp);
+                signal = load('-mat', EEGLIMO.etc.datafiles.daterp);
                 if isstruct(signal)
                     signal = signal.(cell2mat(fieldnames(signal)));
                 end

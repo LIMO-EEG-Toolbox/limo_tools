@@ -30,7 +30,7 @@ This Code of Conduct applies to all [LIMO_MEEG](https://github.com/LIMO-EEG-Tool
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at cyril.pernet@gmail.com. The project team will review and investigate all complaints, and will respond in a way that it deems appropriate to the circumstances. 
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at wamcyril@gmail.com. The project team will review and investigate all complaints, and will respond in a way that it deems appropriate to the circumstances. 
 
 ## Attribution 
 

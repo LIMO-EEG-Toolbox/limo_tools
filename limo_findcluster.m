@@ -3,8 +3,7 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 % limo_findcluster returns all connected clusters in a 3 dimensional matrix
 % with a connectivity of 6.
 %
-% FORMAT: [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat)
-%         [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, minnbchan)
+% FORMAT: [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, minnbchan)
 %         [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, spatdimneighbselmat, minnbchan)
 %
 % INPUT: onoff is a 3D boolean matrix with size N1xN2xN3 (typically T/F values > threshold)
@@ -43,10 +42,14 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
+if nargin < 3
+    help limo_findcluster
+    error('at least 3 arguments in needed')
+end
 
 spatdimlength = size(onoff, 1);
-nfreq = size(onoff, 2);
-ntime = size(onoff, 3);
+nfreq         = size(onoff, 2);
+ntime         = size(onoff, 3);
 
 if length(size(spatdimneighbstructmat))~=2 || ~all(size(spatdimneighbstructmat)==spatdimlength)
     error('invalid dimension of spatdimneighbstructmat');
@@ -54,12 +57,11 @@ end
 
 minnbchan=2;
 if length(varargin)==1
-    minnbchan=varargin{1};
-end;
-if length(varargin)==2
-    spatdimneighbselmat=varargin{1};
-    minnbchan=varargin{2};
-end;
+    minnbchan           = varargin{1};
+elseif length(varargin)==2
+    spatdimneighbselmat = varargin{1};
+    minnbchan           = varargin{2};
+end
 
 if minnbchan>0
     % For every (time,frequency)-element, it is calculated how many significant
@@ -68,18 +70,18 @@ if minnbchan>0
     
     if length(varargin)==1
         selectmat = single(spatdimneighbstructmat | spatdimneighbstructmat');
-    end;
+    end
     if length(varargin)==2
         selectmat = single(spatdimneighbselmat | spatdimneighbselmat');
-    end;
+    end
     nremoved=1;
     while nremoved>0
-        nsigneighb=reshape(selectmat*reshape(single(onoff),[spatdimlength (nfreq*ntime)]),[spatdimlength nfreq ntime]);
-        remove=(onoff.*nsigneighb)<minnbchan;
-        nremoved=length(find(remove.*onoff));
-        onoff(remove)=0;
-    end;
-end;
+        nsigneighb    = reshape(selectmat*reshape(single(onoff),[spatdimlength (nfreq*ntime)]),[spatdimlength nfreq ntime]);
+        remove        = (onoff.*nsigneighb)<minnbchan;
+        nremoved      = length(find(remove.*onoff));
+        onoff(remove) = 0;
+    end
+end
 
 % for each channel (combination), find the connected time-frequency clusters
 labelmat = zeros(size(onoff));
@@ -94,23 +96,17 @@ if exist('spm_bwlabel','file') == 3   % axs - preferentially use spm_bwlabel mex
         total = total + num;
     end
     
-    
 elseif exist('bwlabeln','file') == 2 && exist('spm_bwlabel','file') ~= 3
     
     for spatdimlev=1:spatdimlength
-        
         [labelmat(spatdimlev, :, :), num] = bwlabeln(reshape(onoff(spatdimlev, :, :), nfreq, ntime), 4);
-        
         labelmat(spatdimlev, :, :) = labelmat(spatdimlev, :, :) + (labelmat(spatdimlev, :, :)~=0)*total;
         total = total + num;
     end
     
-    
 else
-    errordlg('You need either the Image Processing Toolbox or SPM in your path to do clustering');
+    errordlg('You need either the Image Processing Toolbox or SPM in your path to do clustering'); return
 end
-
-
 
 
 % combine the time and frequency dimension for simplicity
@@ -140,26 +136,19 @@ for spatdimlev=1:spatdimlength
     end
 end
 
-
-
 % renumber all the clusters
-num = 0;
-cluster = zeros(size(labelmat));
-
-uniquelabel=unique(replaceby(:))';
+num         = 0;
+cluster     = zeros(size(labelmat));
+uniquelabel = unique(replaceby(:))';
 
 for j = 1:length(uniquelabel)
     num = num+1;
-    
     uniquelabel_here = find(replaceby==uniquelabel(j));
-    %labelmat_is_unique_here = ismember(labelmat(:),uniquelabel_here);
-    
-    labelmat_is_unique_here = ismembc(labelmat(:),uniquelabel_here); % axs - Using the semi-documented ismembc is x3 faster than ismember
-    % For ismembc to work, uniquelabel_here MUST be sorted
-    % low-high. This should be the case.
+    %labelmat_is_unique_here = ismember(labelmat(:),uniquelabel_here);  
+    labelmat_is_unique_here = ismembc(labelmat(:),uniquelabel_here); % axs - Using the undocumented ismembc is x3 faster than ismember
+    % For ismembc to work, uniquelabel_here MUST be sorted low-high. This should be the case.
     cluster(labelmat_is_unique_here) = num;
 end
-
 
 % reshape the output to the original format of the data
 cluster = reshape(cluster, spatdimlength, nfreq, ntime);
