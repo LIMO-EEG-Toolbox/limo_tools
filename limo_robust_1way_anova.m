@@ -1,4 +1,4 @@
-function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
+function [F,p,YM,df,dfe] = limo_robust_1way_anova(Y,X,percent)
 
 % A heteroscedastic one-way ANOVA for trimmed means
 % using a generalization of Welch's method.
@@ -13,7 +13,7 @@ function [F,p,YM] = limo_robust_1way_anova(Y,X,percent)
 %        Warning: do not use this function to compare medians (percent=50)
 %
 % OUTPUT: F and p values for trimmed mean differences 
-%         YM is the matrix of averaged trmmed data (ie the modelled data)
+%         YM is the matrix of averaged trimmed data (i.e. the modelled data)
 %
 % EXAMPLE: 200 time frames x 5 groups of 20 subjects
 %          Y = randn(200,100);
