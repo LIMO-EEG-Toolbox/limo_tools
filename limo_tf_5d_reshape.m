@@ -1,4 +1,4 @@
-function reshaped = limo_tf_5d_reshape(reshape_in)
+function reshaped = limo_tf_5d_reshape(reshape_in,varargin)
 
 % Simple function to 'unstack' loaded elec-freqs*times-N-boot 4D
 % data into a 5D matrix elec-freqs-times-N-boot
@@ -12,12 +12,26 @@ function reshaped = limo_tf_5d_reshape(reshape_in)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if ~exist('LIMO','var')
-    try load LIMO
-    catch no_limo
-        global LIMO
+if nargin == 2
+    LIMO = varargin{1};
+    clear varargin
+else
+    if ~exist('LIMO','var')
+        if exist(fullfile(pwd,'LIMO.mat'),'file')
+            LIMO = load(fullfile(pwd,'LIMO.mat')); LIMO = LIMO.LIMO;
+        elseif exist(fullfile(fileparts(pwd),'LIMO.mat'),'file')
+            LIMO = load(fullfile(fileparts(pwd),'LIMO.mat')); LIMO = LIMO.LIMO;
+        else
+            global LIMO
+            if ~isempty(LIMO)
+                warning('No LIMO file file to unstack 5D data accessing global');
+            else
+                error('no LIMO.mat file found to unstack 5D file')
+            end
+        end
     end
 end
+
 n_freqs = LIMO.data.size4D(2);
 n_times = LIMO.data.size4D(3);
 [n_elec, n_freqs_times, N, n_boot] = size(reshape_in);

@@ -102,12 +102,12 @@ if type == 1 || type == 2
                 if size(out,1) == 1
                     LIMO.contrast{contrast_nb}.V = 'T';
                 else
-                    warning('the sepcificed contrast is on multiples rows, using F constrast')
+                    warning('the specificed contrast is on multiples rows, using F constrast')
                     LIMO.contrast{contrast_nb}.V = 'F';
                 end
             else
                 if size(out,1) == 1
-                    warning('the sepcificed contrast is on one row, using T constrast')
+                    warning('the specificed contrast is on one row, using T constrast')
                     LIMO.contrast{contrast_nb}.V = 'T';
                 else
                     LIMO.contrast{contrast_nb}.V = 'F';
@@ -224,9 +224,10 @@ switch type
                     filename = sprintf('ess_%g.mat',size(LIMO.contrast,2));
                 end
                 
+                warning off;
                 array = find(~isnan(Y(:,1,1))); % skip empty channels
                 for e = 1:length(array)
-                    channel = array(e); warning off;
+                    channel = array(e); 
                     if strcmp(LIMO.Type,'Channels')
                         fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                     else
@@ -271,6 +272,7 @@ switch type
                         end
                     end
                 end
+                warning on;
                 
             else % all other data/methods
                 
@@ -284,9 +286,10 @@ switch type
                 end
                 
                 % update con/ess file
+                warning off;
                 array = find(~isnan(Y(:,1,1))); % skip empty channels
                 for e = 1:length(array)
-                    channel = array(e); warning off;
+                    channel = array(e);
                     if strcmp(LIMO.Type,'Channels')
                         fprintf('applying contrast on channel %g/%g \n',e,size(array,1));
                     else
@@ -299,10 +302,10 @@ switch type
                         
                         % Update con file [mean value, se, df, t, p]
                         if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel);
-                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))';
-                            WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2));
-                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var is weighted already 
+                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel); % sum of (xi-mean)^2 since res are xi-mean take res^2, dived by dfe ie n-dimensions of the mean
+                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))'; % how do we scale axes of WX
+                            WX                       = X.*repmat(LIMO.design.weights(channel,:)',1,size(X,2)); 
+                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var = avg distance to model projected into the contrast space
                             con(channel,:,3)         = dfe(channel);
                             con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
                             con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
@@ -359,7 +362,8 @@ switch type
                         end
                     end
                 end
-                
+                warning on;
+               
                 % reshape Time-Frequency files
                 if strcmp(LIMO.Analysis ,'Time-Frequency')
                     if Test == 0
@@ -464,12 +468,13 @@ switch type
         
         if strcmp(Method,'Mass-univariate')
             % ---------------------------------
+            warning off;
             for e = 1:length(array)
-                channel = array(e); warning off;
+                channel = array(e);
                 fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     if ~iscell(boot_table)
-                        resampling_index = boot_table(:,B); % 1st level boot_table all the same 
+                        resampling_index = boot_table(:,B); % 1st level boot_table all the same
                     else
                         resampling_index = boot_table{channel}(:,B);
                     end
@@ -581,6 +586,7 @@ switch type
                     end
                 end
             end
+            warning on;
             
             if Test == 0
                 save (fullfile(LIMO.dir,['H0' filesep filename]), 'H0_con'); clear H0_con; 
@@ -599,8 +605,9 @@ switch type
         if strcmp(Method,'Multivariate')
             % ----------------------------------------
             
+            warning off;
             for e = 1:size(Y,1)
-                channel = array(e); warning off;
+                channel = array(e);
                 fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     % create data under H0
@@ -648,7 +655,8 @@ switch type
                     result = multivariate;
                 end
             end
-        end
+            warning on;
+       end
         
     case(3)
         % --------------------------------------------
@@ -848,7 +856,7 @@ switch type
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                H0_ess = limo_tf_5d_reshape(H0_ess);
+                H0_ess = limo_tf_5d_reshape(H0_ess,LIMO);
             end
             save(filename, 'H0_ess', '-v7.3');
 
@@ -909,13 +917,13 @@ switch type
             end
             
             if strcmp(LIMO.Analysis,'Time-Frequency')
-                H0_ess = limo_tf_5d_reshape(H0_ess);
+                H0_ess = limo_tf_5d_reshape(H0_ess,LIMO);
             end
             save(filename, 'H0_ess', '-v7.3');
 
             if exist('H0_ess2','var')
                 if strcmp(LIMO.Analysis,'Time-Frequency')
-                    H0_ess = limo_tf_5d_reshape(H0_ess2);
+                    H0_ess = limo_tf_5d_reshape(H0_ess2,LIMO);
                 else
                     H0_ess = H0_ess2;
                 end
@@ -937,6 +945,5 @@ switch type
         end
         disp('contrast bootstrap done')
 end
-
-
+save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
 

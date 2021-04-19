@@ -1,4 +1,4 @@
-function tfce_score = limo_tfce(varargin)
+function [tfce_score,thresholded_maps] = limo_tfce(varargin)
 
 % implementation of the Threshold-free cluster enhancement method
 % developped for fMRI by Smith & Nichols, NeuroImage 44(2009), 83-98
@@ -16,7 +16,9 @@ function tfce_score = limo_tfce(varargin)
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
 %
 %
-% OUPUT tfce_score is a map of scores (ie transformed t/F values)
+% OUPUTS tfce_score is a map of scores (ie transformed t/F values)
+%        thresholded_maps returns every tfce maps before integration
+%                         i.e. maps for each dh value in sum(extent(h)^E*height^H*dh) 
 %
 % References
 %
@@ -61,9 +63,10 @@ elseif nargin > 8
     error('too many arguments')
 end
 
-type = varargin{1};
-data = varargin{2};
+type                = varargin{1};
+data                = varargin{2};
 channeighbstructmat = varargin{3};
+thresholded_maps    = [];
 clear varargin
 
 %% start tcfe
@@ -71,7 +74,7 @@ clear varargin
 switch type
     
     % ---------------------------------------------------------------------
-    case{1}  % 1D data -- needs to be updated (doesn't work)
+    case{1}  % 1D data -- needs to be checked a
         % ---------------------------------------------------------------------
         
         if isvector(data)
@@ -127,7 +130,11 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(tfce,3);
-                    try close(f); end
+                    try close(f); end %#ok<*TRYNC>
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -178,6 +185,13 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                   end
                 end
                 
                 
@@ -363,6 +377,10 @@ switch type
                     % compute final score
                     tfce_score = nansum(tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -423,6 +441,13 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                   end
                 end
                 
                 
@@ -621,6 +646,10 @@ switch type
                     % compute final score
                     tfce_score = nansum(tfce,4);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -682,7 +711,14 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,4)+nansum(neg_tfce,4);
                     try close(f); end
-                end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
+               end
                 
                 
             case{2}

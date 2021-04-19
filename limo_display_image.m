@@ -53,6 +53,8 @@ cluster_maxf  = NaN(1,n_cluster); % frame location of the max value of each clus
 
 for c=1:n_cluster
     tmp                               = toplot.*(mask==c);
+    tmp(tmp==Inf)                     = NaN;
+    tmp(tmp==-Inf)                    = NaN;
     sigframes                         = sum(tmp,1);
     cluster_start(c)                  = find(sigframes,1,'first');
     cluster_end(c)                    = find(sigframes,1,'last');

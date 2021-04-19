@@ -126,11 +126,11 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         Pval      = squeeze(matfile.con(:,:,:,5));
         MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest')
+    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
-        MCC_data  = sprintf('H0_%s', filesep, FileName);
+        MCC_data  = sprintf('H0_%s', FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
@@ -178,7 +178,7 @@ else  % same with one less dimention
         Pval      = squeeze(matfile.con(:,:,5));
         MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest')
+    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,4); % T values
         Pval      = matfile(:,:,5);
@@ -468,86 +468,3 @@ if contains(FileName,'Rep_ANOVA')
     end
 end
 
-% -----------------------
-%% Lateralization maps
-% -----------------------
-if contains(FileName,'LI_Map')
-    
-    M = squeeze(matfile.LI_Map(:,:,4)); % T values
-    
-    % no correction for multiple testing
-    % -----------------------------------
-    if MCC == 1
-        mask = matfile.LI_Map(:,:,5) <= p;
-        mytitle = sprintf('LI Map T values');
-        
-        % 2D cluster correction for multiple testing
-        % ---------------------------------------
-    elseif MCC == 2
-        
-        MCC_data = sprintf('boot_%s',FileName);
-        if exist(MCC_data,'file')
-            try
-                H0_LI_Map = load(MCC_data);
-                H0_LI_Map = H0_LI_Map.H0_LI_Map;
-                bootT     = squeeze(H0_LI_Map(:,:,2,:)); % get all T values under H0
-                bootP     = squeeze(H0_LI_Map(:,:,3,:)); % get all P values under H0
-                clear H0_LI_Map
-                
-                [mask,M]  = limo_clustering(M.^2,squeeze(matfile.LI(:,:,5)),bootT.^2,bootP,LIMO,MCC,p); % square T values
-                Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
-                if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
-                mytitle = sprintf('LI Map T-values cluster correction (%g %s)', Nclust, Mclust);
-                
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
-                return
-            end
-        else
-            errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
-            return
-        end
-        
-        
-        % T max correction for multiple testing
-        % --------------------------------------
-    elseif MCC == 4
-        MCC_data = sprintf('boot_%s',FileName);
-        if exist(MCC_data,'file')
-            try
-                H0_LI_Map = load(MCC_data);
-                H0_LI_Map = H0_LI_Map.H0_LI_Map;
-                bootT  = squeeze(H0_LI_Map(:,:,2,:)); % take all T values under H0
-                clear H0_LI_Map
-                [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
-                mytitle = sprintf('LI Map T values correction by T max');
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
-                return
-            end
-        else
-            errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
-            return
-        end
-        
-        % Correction using TFCE
-        % -------------------------------------
-    elseif MCC == 3 % Stat tfce
-        tfce_data    = sprintf('tfce%stfce_%s',filesep, FileName);
-        H0_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
-        if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
-            try
-                tfce_data    = load(tfce_data);
-                H0_tfce_data = load(H0_tfce_data);
-                [mask,M]     = limo_max_correction(tfce_data.tfce_LI, H0_tfce_data.tfce_H0_LI,p);
-                mytitle      = sprintf('LI Map T-values correction using TFCE');
-            catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
-                return
-            end
-        else
-            errordlg('no tfce file or bootstrap file was found to compute the max distribution','missing data')
-            return
-        end
-    end
-end
