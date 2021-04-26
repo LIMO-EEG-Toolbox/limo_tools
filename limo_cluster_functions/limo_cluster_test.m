@@ -44,6 +44,7 @@ if n~=0
     sort_clustermax = [NaN(n,1); sort_clustermax];
 end
 maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
+fprintf('cluster mass threshold: %g\n',maxclustersum_th)
 
 % compute the mask: for each cluster do the sum and set significant if > maxclustersum_th
 mask = zeros(size(ori_f));
