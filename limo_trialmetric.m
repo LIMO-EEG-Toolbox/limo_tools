@@ -47,7 +47,7 @@ end
 
 % options
 sampling_freq = 1;
-op = struct('std_time','on','delta_amplitude','off','power','on','autocorrelation','on');
+op = struct('std_time','on','power','on','autocorrelation','on');
 for o=1:length(varargin)
     if ischar(varargin{o})
         if strcmpi(varargin{o},'std_time') || strcmpi(varargin{o},'std time')
