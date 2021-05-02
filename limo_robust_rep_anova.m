@@ -121,7 +121,7 @@ switch type
             end
         end
         
-        y = squeeze(limo_trimmed_mean(Data,2)); % these are the means to compare   
+        y = squeeze(limo_trimmed_mean(Data,20)); % these are the means to compare   
         if iscell(C)
             for effect = 1:size(C,2)
                 c                    = C{effect};
