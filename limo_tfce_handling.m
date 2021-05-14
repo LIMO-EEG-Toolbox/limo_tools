@@ -1,6 +1,6 @@
 function [tfce_score,thresholded_maps] = limo_tfce_handling(varargin)
 
-% routine for create tfce files commensurate to boostrapped files
+% routine to create tfce files commensurate to boostrapped files
 %
 % FORMAT  [tfce_score,thresholded_maps] = limo_tfce_handling(filename,'checkfile','yes')
 %
