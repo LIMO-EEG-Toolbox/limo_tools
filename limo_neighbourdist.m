@@ -1,7 +1,8 @@
 function channeighbstructmat = limo_neighbourdist(EEG)
 
-% This function creates a neighbourhood 
-% distance matrix used to control for multiple comparisons.
+% This function takes as input an EEGLAB dataset (with channel locations)
+% and creates a neighbourhood distance matrix used to control for 
+%  multiple comparisons.
 %
 % For explanations:
 % >>help limo_ft_neighbourselection
