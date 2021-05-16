@@ -55,7 +55,7 @@ if nargin < 4
         
     % select 2nd dataset 
     % ------------------
-    [file,locpath,idx]=uigetfile('.mat','Select 1st dataset');
+    [file,locpath,idx]=uigetfile('.mat','Select 2nd dataset');
     if idx == 0; return; end
     data2 = load(fullfile(locpath,file)); 
     data2 = data2.(cell2mat(fieldnames(data2)));
@@ -79,7 +79,11 @@ if nargin < 4
     if isempty(v)
         return
     else
-        alpha_level = eval(cell2mat(v));
+        if ~isnumeric(str2double(cell2mat(v)))
+            warning('not a numeric value - selection aborded'); return
+        else
+            alpha_level =str2double(cell2mat(v));
+        end
         if alpha_level > 1
             alpha_level = alpha_level / 100;
         end
@@ -90,8 +94,19 @@ if nargin < 4
     if exist(fullfile(pwd,'LIMO.mat'),'file')
         LIMO = load(fullfile(pwd,'LIMO.mat'));
         LIMO = LIMO.LIMO;
+    elseif isfield(data1,'limo') && isfield(data2,'limo')
+        fn = fieldnames(data1.limo.data);
+        if ~strcmpi(data1.limo.Analysis,data2.limo.Analysis)
+            error('Different domains cannot be compared %s vs. %s',data1.limo.Analysis,data2.limo.Analysis)
+        end
+        for f=1:length(fn)
+            if ~isequal(data1.limo.data.(fn{f}),data2.limo.data.(fn{f}))
+                error('datasets information ''data.%s'' do not match',fn{f})
+            end
+        end
+        LIMO = data1.limo;
     else
-        [file,locpath,idx]=uigetfile('.mat','Select 1st dataset');
+        [file,locpath,idx]=uigetfile('.mat','Select a LIMO file for those data');
         if idx == 0; return; end
         LIMO = load(fullfile(locpath,file)); 
         LIMO = LIMO.LIMO;
@@ -178,7 +193,7 @@ end
 
 %% check possible dimensions issues
 squish = size(data1)==1;
-if squish(end-1)==1
+if squish(end-1)==1 % single parameter
     if size(data1,1) == 1
         tmp = squeeze(data1); clear data1
         if ndims(tmp) == 3
@@ -284,7 +299,7 @@ elseif strcmpi(type,'Independent')
                 Diff(channel,:,2)                      = est1(channel,:)-est2(channel,:);
             end
             
-            sorted_data   = sort(sort(bb1)-sort(bb2),2);
+            sorted_data   = sort(sort(bb1,2)-sort(bb2,2),2);
             upper_centile = floor((1-alpha_level)*size(sorted_data,2)); % upper bound
             nCIs          = size(sorted_data,2) - upper_centile;
             for frame = 1:size(sorted_data,1)

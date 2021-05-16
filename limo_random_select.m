@@ -297,10 +297,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             
             sub_toremove = find(sum(isnan(X),2));
             X(sub_toremove,:) = [];
-            if numel(size(data)) == 4
-                data(:,:,:,sub_toremove) = [];
+            if numel(size(data)) == 5 
+                data(:,:,:,:,sub_toremove) = [];%<--- dim 4 = parameters
             else
-                data(:,:,sub_toremove) = [];
+                data(:,:,:,sub_toremove) = []; %<--- dim 3 = parameters
             end
         end
     end

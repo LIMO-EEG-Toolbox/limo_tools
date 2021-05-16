@@ -57,6 +57,7 @@ nboot           = length(sortmaxM);
 U               = round((1-p).*nboot);
 max_th          = sortmaxM(U);
 mask            = squeeze(M) >= max_th;
+fprintf('max threshold %g\n',max_th)
 
 % get the equivalent bootstrapped p-value
 smalest_pval = 1/nboot;

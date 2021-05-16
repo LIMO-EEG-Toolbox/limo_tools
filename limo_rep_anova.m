@@ -8,7 +8,7 @@ function result = limo_rep_anova(varargin)
 % have to account for sphericity and thus it saves a lot of computational time.
 % In short we simply either run a T2 on the repeated measures or a MANOVA 
 % (generalized T2 on transformed data). The code implements equations described 
-% in Rencher (2002) Methods of multivariate analysis John Wiley.
+% in Rencher (2002) Methods of multivariate analysis - John Wiley.
 %
 % INPUT
 %
@@ -131,8 +131,8 @@ clear varargin
 % -----------------------------
 [f,n,p]       = size(Data);
 nb_factors    = size(factors,2);
-nb_effects    = (2^nb_factors - 1);
-nb_conditions = prod(factors);
+% nb_effects    = (2^nb_factors - 1);
+% nb_conditions = prod(factors);
 nb_gp         = size(gp,2);
 if nb_gp > 1
     errordlg('Designs with more than 1 between factor are not supported')
@@ -172,8 +172,8 @@ switch type
         
         if isempty(S)
             S = NaN(size(Data,1),size(Data,3),size(Data,3));
-            for time = 1:size(Data,1)
-                S(time,:,:) = cov(squeeze(Data(time,:,:))); % covariance to account for spericity
+            for frame = 1:size(Data,1)
+                S(frame,:,:) = cov(squeeze(Data(frame,:,:))); % covariance to account for spericity
             end
         end
 
@@ -181,10 +181,10 @@ switch type
         dfe          = n-p+1; 
         y            = squeeze(nanmean(Data,2)); % these are the means to compare
         if size(Data,1) == 1 %% no time or freq dim
-            Tsquare = n*(C*y)'*inv(C*squeeze(S(1,:,:))*C')*(C*y);   % Hotelling Tsquare
+            Tsquare = n*(C*y)'*inv(C*squeeze(S(1,:,:))*C')*(C*y);   %#ok<*MINV> % Hotelling Tsquare
         else
-            for time = 1:size(Data,1)
-                Tsquare(time)      = n*(C*y(time,:)')'*inv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');   % Hotelling Tsquare
+            for frame = size(Data,1):-1:1
+                Tsquare(frame)      = n*(C*y(frame,:)')'*inv(C*squeeze(S(frame,:,:))*C')*(C*y(frame,:)');   % Hotelling Tsquare
             end
         end
         
@@ -200,19 +200,19 @@ switch type
         
         if isempty(S)
             S = NaN(size(Data,1),size(Data,3),size(Data,3));
-            for time = 1:size(Data,1)
-                S(time,:,:) = cov(squeeze(Data(time,:,:))); % covariance to account for spericity
+            for frame = 1:size(Data,1)
+                S(frame,:,:) = cov(squeeze(Data(frame,:,:))); % covariance to account for spericity
             end
         end
         
         y = squeeze(nanmean(Data,2)); % these are the means to compare   
         if iscell(C)
-            for effect = 1:size(C,2)
+            for effect = size(C,2):-1:1
                 c                    = C{effect};
                 df(effect)           = rank(c);
                 dfe(effect)          = n-df(effect);
-                for time = 1:size(Data,1)
-                    Tsquare(time)    =  n*(c*y(time,:)')'*pinv(c*squeeze(S(time,:,:))*c')*(c*y(time,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
+                for frame = 1:size(Data,1)
+                    Tsquare(frame)    =  n*(c*y(frame,:)')'*pinv(c*squeeze(S(frame,:,:))*c')*(c*y(frame,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
                 end
                 result.F(effect,:)   = ( dfe(effect) / ((n-1)*(df(effect))) ) * Tsquare;
                 result.p(effect,:)   =  1 - fcdf(result.F(effect,:), df(effect), dfe(effect));
@@ -220,8 +220,8 @@ switch type
         else
             df           = rank(C);
             dfe          = n-df;
-            for time = 1:size(Data,1)
-                Tsquare(time)    =  n*(C*y(time,:)')'*pinv(C*squeeze(S(time,:,:))*C')*(C*y(time,:)');
+            for frame = size(Data,1):-1:1
+                Tsquare(frame)    =  n*(C*y(frame,:)')'*pinv(C*squeeze(S(frame,:,:))*C')*(C*y(frame,:)');
             end
             result.F   = ( dfe / ((n-1)*(df)) ) * Tsquare;
             result.p   =  1 - fcdf(result.F, df, dfe);
@@ -252,8 +252,8 @@ switch type
         % get the error matrix of the full model
         % ---------------------------------------------------
         R  = eye(size(Data,2)) - (X*pinv(X));
-        for time=1:f
-            E(time,:,:)  = (squeeze(Data(time,:,:))'*R*squeeze(Data(time,:,:)));                                                                              
+        for frame=f:-1:1
+            E(frame,:,:)  = (squeeze(Data(frame,:,:))'*R*squeeze(Data(frame,:,:)));                                                                              
         end
         
         % compute the repeated measure
@@ -267,8 +267,8 @@ switch type
         yp  = squeeze(nanmean(Data,2))'; % average across gp
         ve  = sum(sum(X(:,1:end-1))-1); % - rank(X); % dfe for different sample sizes (gives the same as rank(X)*(sum(X(:,1))-1) for equal sample sizes            
         Spl = E/ve; % covariance of data split per gp
-        for time = 1:f
-            Tsquare(time)                 = n*(C*yp(:,time))'*inv(C*squeeze(Spl(time,:,:))*C')*(C*yp(:,time));
+        for frame = f:-1:1
+            Tsquare(frame)                 = n*(C*yp(:,frame))'*inv(C*squeeze(Spl(frame,:,:))*C')*(C*yp(:,frame));
         end
         result.repeated_measure.F    = ( dfe / (ve*df) ) * Tsquare; 
         result.repeated_measure.p    = 1 - fcdf(result.repeated_measure.F, df, dfe);
@@ -282,9 +282,9 @@ switch type
         
        % compute interaction (= multivariate on differences)
        % -------------------------------------------------------
-       for time=1:f
-           I = (C*squeeze(Data(time,:,:))')';
-           [result.interaction.F(time), result.interaction.p(time)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+       for frame=1:f
+           I = (C*squeeze(Data(frame,:,:))')';
+           [result.interaction.F(frame), result.interaction.p(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
        end
        
         % -----------------------------------------------------------------
@@ -308,8 +308,8 @@ switch type
         % get the effect and error matrices of the full model
         % ---------------------------------------------------
         R  = eye(size(Data,2)) - (X*pinv(X));
-        for time=1:f
-            E(time,:,:)  = (squeeze(Data(time,:,:))'*R*squeeze(Data(time,:,:)));                                                                              
+        for frame=f:-1:1
+            E(frame,:,:)  = (squeeze(Data(frame,:,:))'*R*squeeze(Data(frame,:,:)));                                                                              
         end
         
         % compute the repeated measure
@@ -331,8 +331,8 @@ switch type
                 df  = rank(c);
                 dfe = n-df-(k-1);
                 Spl = E/ve;
-                for time = 1:f
-                    Tsquare(time) = n*(c*y(:,time))'*pinv(c*squeeze(Spl(time,:,:))*c')*(c*y(:,time));
+                for frame = f:-1:1
+                    Tsquare(frame) = n*(c*y(:,frame))'*pinv(c*squeeze(Spl(frame,:,:))*c')*(c*y(:,frame));
                 end
                 result.repeated_measure.F(effect,:) = ( dfe / (ve*df) ) .* Tsquare;
                 result.repeated_measure.p(effect,:) = 1 - fcdf(result.repeated_measure.F(effect,:), df, dfe);
@@ -341,8 +341,8 @@ switch type
             df  = rank(C);
             dfe = n-df-(k-1);
             Spl = E/ve;
-            for time = 1:f
-                Tsquare(time) = n*(C*y(:,time))'*pinv(C*squeeze(Spl(time,:,:))*C')*(C*y(:,time));
+            for frame = f:-1:1
+                Tsquare(frame) = n*(C*y(:,frame))'*pinv(C*squeeze(Spl(frame,:,:))*C')*(C*y(:,frame));
             end
             result.repeated_measure.F = ( dfe / (ve*df) ) .* Tsquare;
             result.repeated_measure.p = 1 - fcdf(result.repeated_measure.F, df, dfe);
@@ -358,15 +358,15 @@ switch type
        if iscell(C)
            for effect = 1:length(C)
                c = C{effect};
-               for time=1:f
-                   I = (c*squeeze(Data(time,:,:))')';
-                   [result.interaction.F(effect,time), result.interaction.p(effect,time)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+               for frame=1:f
+                   I = (c*squeeze(Data(frame,:,:))')';
+                   [result.interaction.F(effect,frame), result.interaction.p(effect,frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
                end
            end
        else
-           for time=1:f
-               I = (C*squeeze(Data(time,:,:))')';
-               [result.interaction.F(time), result.interaction.p(time)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+           for frame=1:f
+               I = (C*squeeze(Data(frame,:,:))')';
+               [result.interaction.F(frame), result.interaction.p(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
            end
        end
        
@@ -378,7 +378,6 @@ end % closes the function
 % --------------
 function [F,p] = local_glm(Y,X,nb_gp,nb_subjects,flag)
 
-T              = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total
 R              = eye(size(Y,1)) - (X*pinv(X));  % Residual matrix
 E              = (Y'*R*Y);   % SS Error
 Betas          = pinv(X)*Y;    
@@ -413,7 +412,7 @@ if flag == 2
         U = max(Eigen_values);
         df_Hotelling = p;
         dfe_Hotelling = ve-p+1;
-        F = (dfe_Hotelling/df_Hotelling) * max(Eigen_values);
+        F = (dfe_Hotelling/df_Hotelling) * U;
         p = 1-fcdf(F,df_Hotelling,dfe_Hotelling);
     end
 else

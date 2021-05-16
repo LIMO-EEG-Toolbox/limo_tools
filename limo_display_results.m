@@ -59,7 +59,7 @@ try g.channels;  catch, g.channels  = [];  end % No default values
 try g.regressor; catch, g.regressor = [];  end % No default values
 try g.plot3type; catch, g.plot3type = [];  end % No default values
 try g.sumstats;  catch, g.sumstats  = [];  end % No default values
-try g.restrict;  catch, g.restric   = [];  end % No default values
+try g.restrict;  catch, g.restrict  = [];  end % No default values
 try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
 
 toplot = load(fullfile(PathName,FileName));
@@ -1231,7 +1231,7 @@ elseif LIMO.Level == 2
         
         %--------------------------
         % Course plot
-        %--------------------------
+        %--------------------------       
         
         if contains(FileName,'one_sample','IgnoreCase',true) || contains(FileName,'two_samples','IgnoreCase',true) || ...
                 contains(FileName,'paired_samples','IgnoreCase',true) || contains(FileName,'con_','IgnoreCase',true) || ...
@@ -1329,7 +1329,6 @@ elseif LIMO.Level == 2
                 xlabel('Frequency in Hz','FontSize',14)
                 ylabel('Spectral Power (A.U.)','FontSize',14)
             end
-            clear mytitle
             if isempty(LIMO.design.electrode)
                 title(sprintf('%s \n%s %s %s (%g)',mytitle,'Mean values',LIMO.Type(1:end-1),LIMO.data.chanlocs(channel).labels,channel),'FontSize',16); drawnow;
             else
@@ -1448,8 +1447,9 @@ elseif LIMO.Level == 2
             Yr    = load(fullfile(LIMO.dir,'Yr.mat'));
             Yr    = Yr.Yr;
             
-            if strcmpi(extra,'Original data')
-                if regressor <= length(LIMO.design.nb_conditions) % for categorical variables
+            if contains(extra,'Original','Ignorecase',true) 
+                if regressor <= length(LIMO.design.nb_conditions) && ...
+                        LIMO.design.nb_conditions ~= 0 % for categorical variables
                     if length(LIMO.design.nb_conditions) == 1
                         start = 1;
                     else
@@ -1499,7 +1499,7 @@ elseif LIMO.Level == 2
                     reg_values(remove,:)   = [];
                 end
                 
-            elseif strcmpi(extra,'Modelled data')
+            elseif contains(['Modelled','Modeled'],extra,'Ignorecase',true)
                 if exist('Betas.mat','file') % OLS & IRLS GLM
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         Betas = load('Betas.mat');
@@ -1520,7 +1520,8 @@ elseif LIMO.Level == 2
                     Res            = squeeze(Yr(channel,:,:))-Yh;
                 end
                 
-                if regressor <= length(LIMO.design.nb_conditions) % for categorical variables
+                if regressor <= length(LIMO.design.nb_conditions) && ...
+                        LIMO.design.nb_conditions ~= 0 % for categorical variables
                     if length(LIMO.design.nb_conditions) == 1
                         start = 1;
                     else
@@ -1566,7 +1567,7 @@ elseif LIMO.Level == 2
                     reg_values(remove,:)   = [];
                 end
                 
-            else % Adjusted
+            elseif contains(extra,'Adjusted','Ignorecase',true)
                 if length(LIMO.design.nb_conditions) == 1 && LIMO.design.nb_continuous == 0
                     warning on;
                     if exist('warndlg2','file')
@@ -1597,7 +1598,8 @@ elseif LIMO.Level == 2
                 Ya = Yr - confounds;
                 clear Yr Betas confounds;
                 
-                if regressor <= length(LIMO.design.nb_conditions) % for categorical variables
+                if regressor <= length(LIMO.design.nb_conditions) && ...
+                        LIMO.design.nb_conditions ~= 0 % for categorical variables
                     if length(LIMO.design.nb_conditions) == 1
                         start = 1;
                     else
@@ -1636,12 +1638,15 @@ elseif LIMO.Level == 2
                     continuous(remove,:,:) = [];
                     reg_values(remove,:)   = [];
                 end
+            else
+                error('unspecified data type to plot ''Original'',''Modelled'' or ''Adjusted'' ')
             end
             
             % make the figure(s)
             % ------------------
             figure;set(gcf,'Color','w')
-            if regressor <= length(LIMO.design.nb_conditions)
+            if regressor <= length(LIMO.design.nb_conditions) && ...
+                    LIMO.design.nb_conditions ~= 0 % for categorical variables
                 for i=1:size(average,1)
                     if strcmpi(LIMO.Analysis,'Time') || strcmpi(g.restrict,'time')
                         timevect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end;

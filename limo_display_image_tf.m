@@ -542,10 +542,11 @@ guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function CloseMenuItem_Callback(hObject, eventdata, handles)
-clc; uiresume
 if handles.flag == 0
+    handles.title(strfind(handles.title,':')) = [];
     saveas(handles.figure1,handles.title,'fig')
 end
+clc; uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 

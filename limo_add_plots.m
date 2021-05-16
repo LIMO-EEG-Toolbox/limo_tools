@@ -136,14 +136,19 @@ while out == 0
                 end
             else
                 if ~isfield(data.limo,'data')
-                   [Name,Path,go] = uigetfile('LIMO.mat','Data information needed, select a relevant LIMO file'); 
-                   if go == 1 && strcmpi(Name,'LIMO.mat') 
-                       LIMO = load(fullfile(Paths,'LIMO.mat')); LIMO = LIMO.LIMO; 
-                       data.limo.data = LIMO.data; data.limo.dir = fileparts(file);
-                       save(file,'data');                       
-                   else
-                      disp('selection aborded'); return 
-                   end
+                    if ~exist('LIMO','var')
+                        [Name,Path,go] = uigetfile('LIMO.mat','Data information needed, select a relevant LIMO file');
+                        if go == 1 && strcmpi(Name,'LIMO.mat')
+                            LIMO = load(fullfile(Path,'LIMO.mat')); LIMO = LIMO.LIMO;
+                            data.limo.data = LIMO.data; data.limo.dir = fileparts(file);
+                            save(file,'data');
+                        else
+                            disp('selection aborded'); return
+                        end
+                    else
+                        data.limo.data = LIMO.data; data.limo.dir = fileparts(file);
+                        save(file,'data');
+                    end
                 end
                 [~,channel,freq,time] = limo_display_reducedim(tmp,data.limo,channel,restrict,dimvalue);
                 if length(time) == 1
