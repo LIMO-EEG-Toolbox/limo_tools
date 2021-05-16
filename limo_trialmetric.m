@@ -4,7 +4,6 @@ function [DT,TP,AC] = limo_trialmetric(data,varargin)
 % 1 - amplitude variations over time = std(trial) ; how much change over time
 % 2 - total power = sum(abs(trial)^2)/length(trial) ; how much spectral energy [Parseval theorem] 
 % 3 - autocorrelation = size of the peak of the autocorrelation function ; smoothness of the signal over time
-% 4 - amplitude variations relative to a reference ~std(trial/ref); how much change relative to others
 %
 % FORMAT [DT,TP,AC] = limo_trialmetric(data)
 %        [DT,TP,AC] = limo_trialmetric(data,options)
@@ -48,7 +47,7 @@ end
 
 % options
 sampling_freq = 1;
-op = struct('std_time','on','delta_amplitude','off','power','on','autocorrelation','on');
+op = struct('std_time','on','power','on','autocorrelation','on');
 for o=1:length(varargin)
     if ischar(varargin{o})
         if strcmpi(varargin{o},'std_time') || strcmpi(varargin{o},'std time')

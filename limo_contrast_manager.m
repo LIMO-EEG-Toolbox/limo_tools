@@ -302,6 +302,7 @@ global LIMO
 
 if ~isempty(handles.C)
     if handles.go == 1
+        disp('executing contrast')
         
         if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir')
             choice = questdlg('(re)compute contrast bootstrap?','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
