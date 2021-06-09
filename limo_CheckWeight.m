@@ -1,4 +1,4 @@
-function limo_checkweight(LIMO_files, expected_chanlocs, varargin)
+function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 
 % general function designed to look at the weights computed for each trial
 % at the each channel for each subject

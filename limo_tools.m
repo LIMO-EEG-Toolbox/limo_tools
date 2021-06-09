@@ -80,7 +80,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 % --- Executes on button press in check_weights.
 function check_weights_Callback(hObject, eventdata, handles)
-limo_checkweight
+limo_CheckWeight
 guidata(hObject, handles);
 
 

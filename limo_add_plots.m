@@ -212,7 +212,12 @@ while out == 0
             Data        = tmp;
         else % many subjects for instance
             if ~exist('v','var')
-                v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                if isfield(data.limo,'PlotRank')
+                    v = cell2mat(inputdlg(['which decile to plot, 1 to ' num2str(size(tmp,4)-1)],'plotting option'));
+                else
+                    v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                end
+                
                 if isempty(v)
                     out = 1; return
                 elseif ischar(v)
