@@ -480,7 +480,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
         name = name';
         
-        if ~any(remove_con)
+        if ~all(remove_con)
             cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
         end
     end
