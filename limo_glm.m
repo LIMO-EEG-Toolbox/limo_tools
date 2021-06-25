@@ -989,11 +989,6 @@ switch method
             betas_se(:,frame) = sqrt(diag((E/dfe(frame))*pinv(WX'*WX)));
             dof(:,frame)      = [df(frame) dfe(frame)];
             
-            % quick check against fitlm
-%             opt.RobustWgtFun = 'bisquare';
-%             opt.Tune         = 4.685;
-%             mat_mdl          = fitlm(X, Y, 'y ~ x1+x2+x3+x4+x5+x6-1', 'RobustOpts', opt);
-% 
             %% Compute effects
             % ------------------
             
