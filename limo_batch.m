@@ -535,12 +535,16 @@ if sum(failed) == 0
 else
     if sum(failed) == N % all subjects
         if WLS_error == N
-            error('%s\n%s','LIMO batch done, all subjects failed when using WLS estimation','either downsampling the data or using OLS usually solves this issue')
+            error('%s\n%s','LIMO batch done, all subjects failed when using WLS estimation','downsampling the data/restricting frames or using OLS usually solves this issue')
         else
             warning('LIMO batch done but all subjects failed')
         end
     else
-        warning('LIMO batch done, some errors where detected\nsee limo batch report subjects %s',num2str(find(failed)))
+        if WLS_error ~=0
+            warning('%g subjects could not be processed using WLS, not enough trials \ncheck limo batch report',WLS_error)
+        else
+            warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
+        end
     end
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')

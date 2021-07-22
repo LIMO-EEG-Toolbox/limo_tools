@@ -46,11 +46,10 @@ if strcmp(LIMO.design.status,'to do')
                 limo_pcout(squeeze(Yr(array(1),:,:))');
             end
         catch pcout_error
-            if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-                error_msg = sprintf('error in %s\n %s\n running the analysis using OLS and downsampling data solves this issue',LIMO.dir,pcout_error.message);
-                errordlg(error_msg,'WLS issue','non-modal'); error('%s\n',pcout_error.message)
-            else
+            if contains(pcout_error.message,'Principal Component Projection cannot be computed')
                 error('%s\n',pcout_error.message)
+            else
+                error('limo_pcout test failure - that''s a bug, raise an issue to the team \n%s',pcout_error.message)
             end
         end
     elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
