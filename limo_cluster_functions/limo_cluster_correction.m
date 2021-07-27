@@ -79,7 +79,3 @@ elseif MCC == 1
     [mask, cluster_p] = limo_chancluster_test(squeeze(M),squeeze(P),squeeze(bootM),squeeze(bootP),p);
 end
 
-
-
-
-
