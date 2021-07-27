@@ -469,7 +469,11 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
                 && ~isempty(test(1).sph_phi) && ~isempty(test(1).sph_radius) 
             defaults.chanloc = test; disp('channel location loaded');
         else
-            warndlg('this file is not recognize as a channel location file or informations are missing','file error')
+            if ~exist('warndlg2',file)
+                warndlg('this file is not recognize as a channel location file or informations are missing','file error')
+            else
+                warndlg2('this file is not recognize as a channel location file or informations are missing','file error')
+            end
         end
     else
         disp('exiting batch mode'); limo_gui; return
@@ -478,7 +482,11 @@ end
 handles.defaults = defaults;
 
 if isempty(handles.CatName) && isempty(handles.ContName)
-    warndlg2('no regressors loaded, only the mean will be created','no regressors')
+    if ~exist('warndlg2',file)
+        warndlg('no regressors loaded, only the mean will be created','no regressors')
+    else
+        warndlg2('no regressors loaded, only the mean will be created','no regressors')
+    end
 end
 uiresume
 guidata(hObject, handles);
