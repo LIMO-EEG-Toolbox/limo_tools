@@ -1,11 +1,12 @@
 function varargout = limo_display_image_tf(varargin)
 % limo_display_results_tf: interactive GUI to display time*freq results
 %
-%      INPUT limo_display_results_tf(LIMO,toplot,mask,title)
+%      INPUT limo_display_results_tf(LIMO,toplot,mask,title,flag)
 %       1 - LIMO struct
 %       2 - 3D matrix of values to plot, dim elec x freqs x time-bins
 %       3 - 3D matrix of significant cells
 %       4 - title (from limo_stat_values_tf)
+%       5 - flag (indicate to keep on, or saveas and close)
 %
 % ----------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2020
@@ -40,8 +41,17 @@ scale              = handles.data3d.*single(handles.mask>0);
 scale(scale==0)    = NaN;
 handles.cc         = limo_color_images(scale);
 handles.scale      = scale;
-handles.title      = varargin{4};
 handles.plot_sel   = 1;
+if length(varargin) >=4
+    handles.title  = varargin{4};
+else
+    handles.title  = 'Time-Frequency data';
+end
+if length(varargin) ==5
+    handles.flag  = varargin{5};
+else
+    handles.flag  = 1;
+end
 
 % get axes right away
 if isfield(handles.LIMO.data,'tf_freqs')
@@ -144,6 +154,9 @@ if strcmp(get(hObject,'Visible'),'off')
 end
 
 function varargout = limo_display_results_tf_OutputFcn(hObject, eventdata, handles)
+if handles.flag == 0
+    CloseMenuItem_Callback(hObject, eventdata, handles)
+end
 varargout{1} = handles.output;
 
 %% interactive part
@@ -529,6 +542,10 @@ guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function CloseMenuItem_Callback(hObject, eventdata, handles)
+if handles.flag == 0
+    handles.title(strfind(handles.title,':')) = [];
+    saveas(handles.figure1,handles.title,'fig')
+end
 clc; uiresume
 guidata(hObject, handles);
 delete(handles.figure1)

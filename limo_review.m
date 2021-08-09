@@ -37,7 +37,12 @@ else
     % display a scaled version of X
     add_subplots = 1;
     if ~isempty(LIMO.design.X)
-        W = LIMO.design.weights;
+        if isfield(LIMO.design, 'weights')
+            W = LIMO.design.weights;
+        else
+            W = ones(size(LIMO.design.X,1),1);
+        end
+        
         if ndims(W) == 2
             W = mean(W,1)';
         elseif ndims(W) == 3

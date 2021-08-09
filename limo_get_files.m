@@ -69,8 +69,8 @@ while go == 1
             [name,path] = uigetfile(filter,guititle);
         end
     else
-        if exist(path2file(index,:),'file') 
-            [path,filename,filext] = fileparts(path2file(index,:));
+        if exist(path2file,'file') 
+            [path,filename,filext] = fileparts(path2file);
             name = [filename filext]; clear filename filext;
         else
             error('A valid path to the file must be provided \n %s not found',path2file);
@@ -79,15 +79,12 @@ while go == 1
     
     if name == 0
         go = 0; % exit
-    elseif strcmp(name(end-2:end),'mat') || strcmp(name(end-2:end),'set') % select mat file
+    elseif strcmp(name(end-2:end),'mat') || strcmp(name(end-2:end),'set') % select mat files
         Names{index} = name;
         Paths{index} = path;
         Files{index} = fullfile(path,name);
         cd(path); cd ..
         index = index + 1;
-        if index > size(path2file,1)
-            go = 0;
-        end
     elseif strcmp(name(end-4:end),'study')  % select study file
         load('-mat', name);       
         for f=1:size(STUDY.datasetinfo,2)

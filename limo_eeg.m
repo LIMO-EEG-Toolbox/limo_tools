@@ -62,20 +62,20 @@ switch varargin{1}
         % show the GUI
         
         disp(' ')
-        disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet,');
-        disp('with the contributon of Andrew Stewart, Nicolas Chauveau, Carl Gaspar,');
-        disp('Luisa Frei, Ignacio Suay Mas and Marianne Latinus, Ramon Martinez-Cancino,');
-        disp('and Arnaud Delorme. These authors are thereafter referred as the LIMO Team');
+        disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet.');
+        disp('Current maintenance is performed by Cyril Pernet, with support from Arnaud Delorme for EEGLAB integration');
+        disp('The list of contributors is in the contributors.md file');
+        disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/blob/master/contributors.md');
+        disp('All these authors are thereafter referred to as the LIMO Team');
         disp(' ')
-        disp('LIMO_EEG  Copyright (C) 2015  LIMO TEAM');
+        disp('LIMO_EEG  Copyright (C) 2021  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
         disp(' ');
-        disp('LIMO EEG Ref:')
-        disp('Pernet, C.R., Chauveau, N., Gaspar, C., Rousselet, G.A. (2011).')
-        disp('LIMO EEGLIMO: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic data.')
-        disp('Computational Intelligence and Neuroscience, Volume 2011')
+        disp('Please use our boilerplate Citation and Reporting:')
+        disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki/Reporting-methods-and-results')
+        disp('References are in the citations.nbid file')
         disp(' ')
         limo_gui
         
@@ -439,6 +439,9 @@ switch varargin{1}
         % get the LIMO.mat
         if nargin == 2
             if ischar(varargin{2})
+                if isfolder(varargin{2})
+                    varargin{2} = [varargin{2} filesep 'LIMO.mat'];
+                end
                 LIMO = load(varargin{2});
                 if ~isfield(LIMO,'LIMO')
                     error('input file not recognized as a LIMO.mat structure')
@@ -493,7 +496,7 @@ switch varargin{1}
             end
             
             % -------------- loop the analysis time frames per time frames
-
+            
             if strcmp(LIMO.design.status,'to do')
                 
                 % 1st get weights based on time
@@ -802,8 +805,11 @@ switch varargin{1}
                     else
                         limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
-                    savename = sprintf('%s.fig',name(1:end-4));
-                    saveas(gcf, savename,'fig'); close(gcf)
+                    
+                    if ~strcmpi(LIMO.Analysis,'Time-Frequency')
+                        savename = sprintf('%s.fig',name(1:end-4));
+                        saveas(gcf, savename,'fig'); close(gcf)
+                    end
                 end
             end
         end

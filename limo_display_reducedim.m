@@ -1,12 +1,16 @@
-function [dataout,channel,freq,time] = limo_display_reducedim(datain,LIMO)
+function [dataout,channel,freq,time] = limo_display_reducedim(datain,LIMO,channelsin,restrict,dimvalue)
 
-% routine to reduce dimentionality of datain using user prompt
+% routine to reduce dimentionality of datain
 % returning dataout to plot
 %
 % FORMAT dataout = limo_display_reducedim(datain,LIMO)
 % 
 % INPUT datain 3D/4D data (usually stat file) or filename of data 
 %       LIMO LIMO structure or filename of the LIMO file to use
+%       -- optional or empty []
+%       channelsin is the channel or channels to use 
+%       restrict is 'Time' or 'Frequency' ie the dimension to restrict the analysis to
+%       dimvalue is the value to zoom in for the dimension not looked at 
 %
 % OUTPUT dataout are the data to plot
 %        channel is the channel/component number selected
@@ -20,7 +24,7 @@ function [dataout,channel,freq,time] = limo_display_reducedim(datain,LIMO)
 if nargin == 0
     help limo_display_reducedim
     return
-elseif nargin == 1 || nargin > 2
+elseif nargin == 1 || nargin > 5
     help limo_display_reducedim
     error('Wrong number of arguments in')
 end
@@ -39,6 +43,15 @@ if ~isfield(LIMO, 'Analysis')
     error('Analysis field missing from LIMO file, can''t workout dimensions to reduce')
 end
 
+if ~exist('channelsin','var')
+    channelsin = [];
+end
+
+if ~exist('restrict','var')
+    restrict = [];
+    dimvalue = [];
+end
+
 %% ask user what to do
 channel      = [];
 if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -51,28 +64,40 @@ end
 
 % for ERSP choose time or frequency
 if strcmpi(LIMO.Analysis,'Time-Frequency')
-    restrict = questdlg('Which domain to plot:','ERSP plot option','Time','Frequency','Time');
+    if isempty(restrict)
+        restrict = questdlg('Which domain to plot:','ERSP plot option','Time','Frequency','Time');
+    end
     
     if strcmpi(restrict,'Frequency')
-        time = cell2mat(inputdlg('At which time to plot the spectrum?','Plotting option'));
-        if isempty(time)|| strcmp(time,'0')
-            v              = max(datain(:,:,:,1),[],2);
-            [channel,time] = ind2sub(size(v),find(v == max(v(:))));
+        if ~isempty(dimvalue)
+            time     = dimvalue;
+            [~,time] = min(abs(LIMO.data.tf_times - time));
         else
-            time = eval(time);
+            time = cell2mat(inputdlg('At which time to plot the spectrum?','Plotting option'));
+            if isempty(time)|| strcmp(time,'0')
+                v              = max(datain(:,:,:,1),[],2);
+                [channel,time] = ind2sub(size(v),find(v == max(v(:))));
+            else
+                time = eval(time);
+            end
+            [~,time] = min(abs(LIMO.data.tf_times - time));
+            datain = squeeze(datain(:,:,time,:));
         end
-        [~,time] = min(abs(LIMO.data.tf_times - time));
-        datain = squeeze(datain(:,:,time,:));
     elseif strcmpi(restrict,'Time')
-        freq =  cell2mat(inputdlg('At which frequency to plot the time course?','Plotting option'));
-        if isempty(freq)|| strcmp(freq,'0')
-            v              = max(datain(:,:,:,1),[],3);
-            [channel,freq] = ind2sub(size(v),find(v == max(v(:))));
+        if ~isempty(dimvalue)
+            freq     = dimvalue;
+            [~,freq] = min(abs(LIMO.data.tf_freqs - freq));
         else
-            freq = eval(freq);
+            freq =  cell2mat(inputdlg('At which frequency to plot the time course?','Plotting option'));
+            if isempty(freq)|| strcmp(freq,'0')
+                v              = max(datain(:,:,:,1),[],3);
+                [channel,freq] = ind2sub(size(v),find(v == max(v(:))));
+            else
+                freq = eval(freq);
+            end
+            [~,freq] = min(abs(LIMO.data.tf_freqs - freq));
+            datain = squeeze(datain(:,freq,:,:));
         end
-        [~,freq] = min(abs(LIMO.data.tf_freqs - freq));
-        datain = squeeze(datain(:,freq,:,:));
     end
 end
 
@@ -81,24 +106,38 @@ end
 if size(datain,1) == 1
     channel = 1;
 elseif isempty(channel)
-    if strcmpi(LIMO.Type,'Channels')
-        channel = inputdlg('which channel to plot','Plotting option');
+    if ~isempty(channelsin)
+        channel = channelsin;
     else
-        channel = inputdlg('which component to plot','Plotting option');
-    end
-    
-    if isempty(channel) || strcmp(cell2mat(channel),'')
-        [v,e]   = max(datain(:,:,1));
-        [~,c]   = max(v);
-        channel = e(c);
-    else
-        channel = eval(cell2mat(channel));
-        if length(channel) > 1
-            error('1 %s only can be plotted',LIMO.Type(1:end-1));
-        elseif channel > size(datain,1)
-            error('%s number invalid',LIMO.Type(1:end-1));
+        if ~isfield(LIMO,'Type') % assume channels
+            LIMO.Type = 'Channels';
+        end
+        
+        if strcmpi(LIMO.Type,'Channels')
+            channel = inputdlg('which channel to plot','Plotting option');
+        else
+            channel = inputdlg('which component to plot','Plotting option');
+        end
+        
+        if isempty(channel) || strcmp(cell2mat(channel),'')
+            [v,e]   = max(datain(:,:,1));
+            [~,c]   = max(v);
+            channel = e(c);
+        else
+            channel = eval(cell2mat(channel));
+            if length(channel) > 1
+                error('1 %s only can be plotted',LIMO.Type(1:end-1));
+            elseif channel > size(datain,1)
+                error('%s number invalid',LIMO.Type(1:end-1));
+            end
         end
     end
 end
-dataout = squeeze(datain(channel,:,:));
+
+% data out
+if strcmpi(LIMO.Analysis,'Time-Frequency')
+    dataout = squeeze(datain(channel,:,:,:));
+else
+    dataout = squeeze(datain(channel,:,:));
+end
 
