@@ -1,7 +1,22 @@
-function [eeg_limo] = limo_get_ft_chanlocs(eeg_limo, defaults)
+function eeg_limo = limo_get_ft_chanlocs(eeg_limo, defaults)
 
-% This function is used to create the chanlocs structure required by LIMO
+% This function creates the chanlocs structure required by LIMO
 % from FieldTrip data (channel or source).
+%
+% FORMAT: eeg_limo = limo_get_ft_chanlocs(eeg_limo, defaults)
+%
+% INPUTS: eeg_limo structure with at least the fields 'filepath' and 'filename'
+%         defaults is a structure specifying all the parameters
+%                to use in the GLM (ie set in LIMO.mat)
+%
+% OUTPUT: eeg_limo structure updated with the fields
+%         - elec.chanpos and elec.label from fieldtrip
+%         - chanlocs as per EEGLAB (for channels and sources)
+%
+% see also limo_batch, limo_batch_import_data
+% -----------------------------------------
+%  Copyright (C) LIMO Team 2021
+
 
 switch(ft_datatype(eeg_limo))
     case 'raw'
