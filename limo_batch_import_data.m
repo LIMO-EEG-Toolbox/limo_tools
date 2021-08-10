@@ -17,7 +17,7 @@ function limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 %
 % see also limo_batch 
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2021
 
 global EEGLIMO
 
@@ -90,10 +90,10 @@ if strcmp(defaults.analysis,'Time')
     elseif isfield(EEGLIMO,'time') % FieldTrip
         timevect = EEGLIMO.time{1}*1000; %convert in ms
     else
-        disp('the field EEG.etc.timeerp is missing - reloading single trials');
-%         data     = load('-mat',EEGLIMO.etc.timeerp);
-%         timevect = data.times; clear data;
-        timevect = EEGLIMO.times;
+        warning('the field EEG.etc.timeerp is missing');
+        if isfield(EEGLIMO,'times')
+            timevect = EEGLIMO.times;
+        end
     end
     
     % start
