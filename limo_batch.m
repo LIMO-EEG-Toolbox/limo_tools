@@ -171,6 +171,12 @@ elseif nargin > 1
     end
 end
 
+if isfield(batch_contrast,'LIMO_files')
+  batch_contrast_size = size(batch_contrast.LIMO_files);
+else
+  batch_contrast_size = 0;
+end
+
 % check EEGLAB STUDY
 if nargin == 4
     STUDY = varargin{4}; clear varargin{4};
@@ -293,8 +299,8 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
-        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
-                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+        if strcmp(option,'both') && batch_contrast_size==0
+            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
         end
 
@@ -540,7 +546,7 @@ else
             warning('LIMO batch done but all subjects failed')
         end
     else
-        warning('LIMO batch done, some errors where detected\nsee limo batch report subjects %s',num2str(find(failed)))
+        warning('LIMO batch done, some errors were detected\nsee limo batch report subjects %s',num2str(find(failed)))
     end
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
