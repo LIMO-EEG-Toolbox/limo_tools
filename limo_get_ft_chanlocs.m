@@ -5,11 +5,11 @@ function eeg_limo = limo_get_ft_chanlocs(eeg_limo, defaults)
 %
 % FORMAT: eeg_limo = limo_get_ft_chanlocs(eeg_limo, defaults)
 %
-% INPUTS: eeg_limo strcture with at least the fields 'filepath' and 'filename'
+% INPUTS: eeg_limo structure with at least the fields 'filepath' and 'filename'
 %         defaults is a structure specifying all the parameters
 %                to use in the GLM (ie set in LIMO.mat)
 %
-% OUTPUT: eeg_limo structure updated with the fileds
+% OUTPUT: eeg_limo structure updated with the fields
 %         - elec.chanpos and elec.label from fieldtrip
 %         - chanlocs as per EEGLAB (for channels and sources)
 %
