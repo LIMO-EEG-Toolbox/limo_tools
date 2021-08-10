@@ -347,9 +347,11 @@ elseif nargin == 1
         % get the data
         % ------------
         Names = {}; %#ok<NASGU>
-        [Names,Paths,Files] = limo_get_files; %#ok<ASGLU>
+        [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},sprintf('Select %s files',option)); %#ok<ASGLU>
         if isempty(Names)
             return
+        elseif size(Names,2) < 3
+            error('LIMO cannot do group bootrap estimates - too few subjects')
         end
         
         % check type of files and returns which beta param to test
@@ -477,6 +479,11 @@ elseif nargin == 1
         % select data
         % -----------
         [Names,Paths,Files] = limo_get_files([],{'*.mat;*.txt','matlab or text'},'Select LIMO files'); %#ok<ASGLU>
+        if isempty(Names)
+            return
+        elseif size(Names,2) < 3
+            error('LIMO cannot do group bootrap estimates - too few subjects')
+        end
         
         % check it's LIMO.mat files and which param to test
         % --------------------------------------------------
@@ -744,6 +751,12 @@ if ~isempty(data)
     end
     
     n = size(data,ndims(data)); % number of subjects always last
+    if ndims(data) < 4 
+        error('an unexpected issue occured, the number of dimensions is too low, likely caused by selected only 1 subject')
+    elseif n < 3
+        error('LIMO cannot do group bootrap estimates - too few subjects')
+    end
+    
     if n<=10 && strcmpi(Estimator2,'HD')
         msgbox('CI of the Harell Davis estimates cannot be computed for less than 11 observations - switched to median','Computation info');
         Estimator2 = 'Median';

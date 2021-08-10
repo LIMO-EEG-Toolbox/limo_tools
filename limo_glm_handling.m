@@ -46,11 +46,10 @@ if strcmp(LIMO.design.status,'to do')
                 limo_pcout(squeeze(Yr(array(1),:,:))');
             end
         catch pcout_error
-            if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-                error_msg = sprintf('error in %s\n %s\n running the analysis using OLS and downsampling data solves this issue',LIMO.dir,pcout_error.message);
-                errordlg(error_msg,'WLS issue','non-modal'); error('%s\n',pcout_error.message)
-            else
+            if contains(pcout_error.message,'Principal Component Projection cannot be computed')
                 error('%s\n',pcout_error.message)
+            else
+                error('limo_pcout test failure - that''s a bug, raise an issue to the team \n%s',pcout_error.message)
             end
         end
     elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
@@ -360,7 +359,11 @@ if LIMO.design.bootstrap ~=0
         else
             overwrite_H0boot = questdlg('overwrite H0?','limo check','yes','no','yes');
             if strcmp(overwrite_H0boot,'no') || isempty(overwrite_H0boot)
-                warndlg2('Analysis stopped - not overwriting H0')
+                if exist('warndlg2','file')
+                    warndlg2('Analysis stopped - not overwriting H0')
+                else
+                    warndlg('Analysis stopped - not overwriting H0')
+                end
                 return
             end
         end
@@ -627,12 +630,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Conditions(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Condition_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Condition_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Condition_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Condition_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Condition_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Condition_effect(1,:,:,:) = tmp;
+                            H0_Condition_effect = tmp;
                         end
                     else
                         H0_Condition_effect = tmp;
@@ -652,12 +659,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Interaction_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Interaction_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Interaction_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Interaction_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Interaction_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Interaction_effect(1,:,:,:) = tmp;
+                            H0_Interaction_effect = tmp;
                         end
                     else
                         H0_Interaction_effect = tmp;
@@ -677,12 +688,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Covariates(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Covariate_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Covariate_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Covariate_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Covariate_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Covariate_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Covariate_effect(1,:,:,:) = tmp;
+                            H0_Covariate_effect = tmp;
                         end
                     else
                         H0_Covariate_effect = tmp;

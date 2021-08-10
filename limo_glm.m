@@ -235,6 +235,12 @@ switch method
             E = diag(Y'*R*Y);              % SS Error => vecnorm(R*Y).^2
         end
         
+        if any(E<0)
+            warning on
+            warning('data and model are too close! negative MSE inverted\n')
+            E = abs(E); warning off
+        end
+        
         % degrees of freedom
         % -------------------
        df  = rank(WX)-1;
@@ -557,6 +563,12 @@ switch method
                 E   = (vecnorm((R*squeeze(Y(freq,:,:)))./((1-h).^d)).^2)';
             else
                 E   = diag(squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:)));             
+            end
+            
+            if any(E<0)
+                warning on
+                warning('data and model are too close! negative MSE inverted - freq%g\n',freq)
+                E = abs(E); warning off
             end
             
             % degrees of freedom
@@ -943,6 +955,11 @@ switch method
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
+            if E<0
+                warning on
+                warning('data and model are too close! negative MSE inverted - frame %g\n',frame)
+                E = abs(E); warning off
+            end
             % The number of degrees of freedom can be defined as the minimum number of
             % independent coordinates that can specify the position of the system completely.
             % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
@@ -953,7 +970,7 @@ switch method
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
             % MSE adjustment, E cannot be smaller than OLS since the
             % hyperplane we fit is farther away from some observations
-            if E < E_ols
+            if E < abs(E_ols)
                 n = size(X,1); p = rank(X);
                 sigmar = E/(n-p); sigmals = E_ols/(n-p);
                 MSE = (n*sigmar + p^2*sigmals) / (n+p^2);
