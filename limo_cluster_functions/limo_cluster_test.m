@@ -2,7 +2,7 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 
 % limo_cluster_test finds clusters of significant F values, computes the
 % sum of F values inside each cluster, and compares that sum to a threshold
-% sum of F values expected by chance.
+% sum of F values expected by chance (for t test - use t^2).
 %
 % FORMAT: [mask, pval, L, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 %
