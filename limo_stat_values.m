@@ -128,7 +128,7 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         titlename = sprintf('Contrast %g T values',effect_nb);
     elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
-        M         = matfile(:,:,:,4); % T values
+        M         = matfile(:,:,:,4).^2; % T values
         Pval      = matfile(:,:,:,5);
         MCC_data  = sprintf('H0_%s', FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
@@ -180,7 +180,7 @@ else  % same with one less dimention
         titlename = sprintf('Contrast %g T values',effect_nb);
     elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
-        M         = matfile(:,:,4); % T values
+        M         = matfile(:,:,4).^2; % T values
         Pval      = matfile(:,:,5);
         MCC_data  = sprintf('H0_%s', FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
