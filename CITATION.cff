@@ -12,34 +12,34 @@ message: "If you use this software, please cite relevant articles below."
 references:
   - type: article
     authors:
-      - family-names: Pernet
-        given names: Cyril
-      - family-names: Chauveau
-        given names: Nicolas
-      - family-names: Gaspar
-        given names: Carl  
-      - family-names: Rousselet
-        given names: Guillaume                 
-    title: LIMO EEG: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic
-      data.
-    journal: Computational intelligence and neuroscience
+      - family-names: "Pernet"
+        given names: "Cyril"
+      - family-names: "Chauveau"
+        given names: "Nicolas"
+      - family-names: "Gaspar"
+        given names: "Carl"
+      - family-names: "Rousselet"
+        given names: "Guillaume"
+    title: "LIMO EEG: a toolbox for hierarchical LInear MOdeling of ElectroEncephaloGraphic
+      data."
+    journal: "Computational intelligence and neuroscience"
     date-published: 2011
     number-volumes: 2011
     pages: 831409
     doi: 10.1155/2011/831409
   - type: article
     authors:
-      - family-names: Pernet
-        given names: Cyril
-      - family-names: Latinus
-        given names: Marianne
-      - family-names: Nichols
-        given names: Thomas  
-      - family-names: Rousselet
-        given names: Guillaume                 
-    title: Cluster-based computational methods for mass univariate analyses of event-related
-          brain potentials/fields: A simulation study.
-    journal: Journal of neuroscience methods
+      - family-names: "Pernet"
+        given names: "Cyril"
+      - family-names: "Latinus"
+        given names: "Marianne"
+      - family-names: "Nichols"
+        given names: "Thomas"
+      - family-names: "Rousselet"
+        given names: "Guillaume"
+    title: "Cluster-based computational methods for mass univariate analyses of event-related
+          brain potentials/fields: A simulation study."
+    journal: "Journal of neuroscience methods"
     date-published: 2015
     number-volumes: 250
     pages: 85-93
