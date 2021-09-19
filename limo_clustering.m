@@ -1,20 +1,22 @@
-function [mask,cluster_pval,max_th] = limo_clustering(varargin)
+function [mask,cluster_pval,max_th] = limo_clustering(M, P, bootM, bootP, LIMO, MCC, cluster_th, alpha_v, fig)
 
 % FORMAT:  [mask,cluster_p,max_th] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 %
 % INPUT
-% M     = 2D matrix of observed F values (for a single channel use 1 in the 1st dimension)
-% P     = 2D matrix of observed p values (for a single channel use 1 in the 1st dimension)
-% bootM = 3D matrix of F values for data bootstrapped under H0
-% bootP = 3D matrix of F values for data bootstrapped under H0
-% LIMO  = LIMO structure - the necessary information is
-%                         LIMO.data.chanlocs: the structure describing channels
-%                         LIMO.data.neighbouring_matrix: the binary matrix of neighbours
-% MCC   = 2 (spatial-temporal clustering) or 3 (temporal clustering)
-% p     = threshold to apply (note this applied to create the excursion set,
-%         and then use as the corrected p value)
-% fig   = 1/0 to plot the maximum stat under H0 (if empty, turned on if no
-%         significant values)
+% M          = 2D matrix of observed statistic values (for a single channel
+%              use 1 in the 1st dimension)
+% P          = 2D matrix of observed p values (for a single channel use 1 
+%              in the 1st dimension)
+% bootM      = 3D matrix of statistic values for data bootstrapped under H0
+% bootP      = 3D matrix of statistic values for data bootstrapped under H0
+% LIMO       = LIMO structure - the necessary information is
+%                   LIMO.data.chanlocs: the structure describing channels
+%                   LIMO.data.neighbouring_matrix: the binary matrix of neighbours
+% MCC        = 2 (spatial-temporal clustering) or 3 (temporal clustering)
+% cluster_th = Cluster-forming threshold 
+% alpha_v    = Critical alpha (used aqt the corrected p level)
+% fig        = 1/0 to plot the maximum stat under H0 (if empty, turned on 
+%              if no significant statistics are found)
 %
 % OUTPUT
 % mask is a labelled matrix of the same size as M corresponding to a threshold
@@ -27,20 +29,11 @@ function [mask,cluster_pval,max_th] = limo_clustering(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-% check inputs 
-M       = varargin{1};
-P       = varargin{2};
-bootM   = varargin{3};
-bootP   = varargin{4};
-LIMO    = varargin{5};
-MCC     = varargin{6};
-p       = varargin{7};
-if nargin == 7
-    fig = [];
-else
-    fig = varargin{8};
+% If a critical value for the corrected p values isn't specified, use
+% cluster_th
+if isempty(alpha_v)
+    alpha_v = cluster_th;
 end
-clear varargin
 
 % switch behavioural to 1D clustering if one channel, no matter user choice
 if size(M,1) == 1
@@ -48,7 +41,7 @@ if size(M,1) == 1
 end
 
 % boostrap parameters
-nboot = size(bootM,3);      % nb of boostrap performed
+nboot = size(bootM,3); % number of boostrap performed
     
 % set outputs empty as default
 cluster_pval = [];
@@ -69,14 +62,14 @@ if MCC == 2 && size(bootM,1)>1
     disp('getting clusters under H0 boot ...');
     parfor boot = 1:nboot
         % 1st find the cluster, thresholding H0 pvalues <= threshold p
-        [posclusterslabelmat,nposclusters] = limo_findcluster((bootP(:,:,boot) <= p),channeighbstructmat,minnbchan);
+        [clusterslabelmat, nclusters] = limo_findcluster(bootP(:,:,boot) <= cluster_th, channeighbstructmat, minnbchan);
         
         % 2nd compute the mass for each cluster
         bootM_b = bootM(:,:,boot);
-        if nposclusters~=0
-            tmp = zeros(1,nposclusters);
-            for C = 1:nposclusters 
-                tmp(C) = sum(bootM_b(posclusterslabelmat==C)); % sum stat value in a cluster label
+        if nclusters~=0
+            tmp = zeros(1,nclusters);
+            for C = 1:nclusters 
+                tmp(C) = sum(bootM_b(clusterslabelmat==C)); % sum stat value in a cluster label
             end
             boot_maxclustersum(boot) = max(tmp(:)); % save max value only
         else
@@ -87,17 +80,17 @@ if MCC == 2 && size(bootM,1)>1
     % 3rd threshold observed cluster mass by the distribution of cluster
     % max computed in step 2
     [mask, cluster_pval, maxval, max_th] = limo_cluster_test(M,P,...
-        boot_maxclustersum,channeighbstructmat,minnbchan,p);
+        boot_maxclustersum,channeighbstructmat,minnbchan,cluster_th,alpha_v);
 end
 
 %% temporal clustering
 
 if MCC == 2 && size(bootM,1)==1 || MCC == 3
     % 1st get the distribution of maxima under H0
-    [th,boot_maxclustersum]           = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);   
+    [th,boot_maxclustersum]           = limo_ecluster_make(squeeze(bootM),squeeze(bootP),cluster_th);   
     max_th                            = th.elec;
     % 2nd threshold observed data
-    [sigcluster, cluster_pval,maxval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p, boot_maxclustersum);
+    [sigcluster, cluster_pval,maxval] = limo_ecluster_test(squeeze(M),squeeze(P),th,cluster_th, boot_maxclustersum);
     mask                              = sigcluster.elec_mask; 
 end
 
