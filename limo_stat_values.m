@@ -1,18 +1,23 @@
-function [M, mask, mytitle] = limo_stat_values(varargin)
+function [M, mask, mytitle] = limo_stat_values(FileName, p, MCC, LIMO, varargin)
 
 % find corrected p values and mask from data under H0
 %
 % FORMAT [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO)
 %
 % INPUTS
-%         FileName = Name of the file selected
-%         p        = p value for thresholding
-%         MCC      = multiple comparisons option
-%                    1 none
-%                    2 clustering
-%                    3 TFCE
-%                    4 Max
-%         LIMO     = LIMO.mat structure
+%         FileName    = Name of the file selected
+%         p           = p value for thresholding (both to form the clusters 
+%                       and to find the siginificant ones)
+%         MCC         = multiple comparisons correction option:
+%                       1 none
+%                       2 clustering
+%                       3 TFCE
+%                       4 Max
+%         LIMO        = LIMO.mat structure
+%         Optional:
+%         square_stat = Square the statistics before clustering (only
+%                       relevant for t-tests). Otherwise, cluster
+%                       separately negative and positive values (default)
 %
 % OUTPUTS
 %         M        = the (corrected) p values
@@ -25,11 +30,12 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 % ------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2020
 
-
-FileName  = varargin{1}; % Name of the file selected
-p         = varargin{2}; % p value
-MCC       = varargin{3}; % multiple comparison option
-LIMO      = varargin{4}; % LIMO.mat
+% Default to cluster separately negative and positive statistics values
+if isempty(varargin)
+    square_stat = false;
+else
+    square_stat = varargin{1};
+end
 
 % check the appropriate method is used
 % -----------------------------------
@@ -243,7 +249,31 @@ elseif ~isempty(M) && MCC == 2
             
             % finally get cluster mask and corrected p-values
             if contains(FileName,'ttest') || contains(FileName,'LI_Map')
-                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p); % mask and cluster p values
+                if square_stat
+                    % Use squeared statistics. This can mix positive and negative
+                    % statistics into common clusters
+                    [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p); % mask and cluster p values
+                else
+                    % Find negative and positive clusters separately, and use alpha/2
+                    % on the permutation p values
+                    
+                    pos_obs = M > 0;
+                    pos_prm = bootM > 0;
+                    % Negative clusters
+                    Pval_n = Pval; Pval_n(pos_obs) = 1;
+                    bootP_n = bootP; bootP_n(pos_obs) = 1;
+                    [mask_neg, M_neg] = limo_clustering(-M.*(~pos_obs), Pval_n, -bootM.*(~pos_prm), bootP_n, LIMO, MCC, p/2); % mask and cluster p values
+                    
+                    % Positive clusters
+                    Pval_p = Pval; Pval_p(~pos_obs) = 1;
+                    bootP_p = bootP; bootP_p(~pos_obs) = 1;
+                    [mask_pos, M_pos] = limo_clustering(M.*(pos_obs), Pval_p, bootM.*(pos_prm), bootP_p, LIMO, MCC, p/2); % mask and cluster p values
+                    
+                    % Combine clusters, negative first
+                    mask_pos = (mask_pos + max(mask_neg(:))) .* (mask_pos > 0);
+                    mask = mask_pos + mask_neg;
+                    M    = M_pos + M_neg;
+                end
             else
                 [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
             end
