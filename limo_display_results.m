@@ -146,7 +146,7 @@ if LIMO.Level == 1
                 % ------------------
                 if data_cached == 0
                     
-                    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice);
+                    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
                     
                     if isempty(mask)
                         disp('no values computed'); return
@@ -903,10 +903,10 @@ if LIMO.Level == 1
                                 end
                             else
                                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(squeeze(mask(channel,freq_index,:))); sig(sig==0)=NaN;
                                 else
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(mask(channel,:)); sig(sig==0)=NaN;
                                 end
                             end
@@ -946,10 +946,10 @@ if LIMO.Level == 1
                                     end
                                 else
                                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                                        [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                        [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                         sig = single(squeeze(mask(channel,freq_index,:))); sig(sig==0)=NaN;
                                     else
-                                        [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                        [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                         sig = single(mask(channel,:)); sig(sig==0)=NaN;
                                     end
                                 end
@@ -1083,7 +1083,7 @@ elseif LIMO.Level == 2
     % -------------------------------------------
     if data_cached == 0
         
-        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
         if isempty(mask)
             return
@@ -2127,7 +2127,7 @@ elseif LIMO.Level == 2
     
 elseif strcmpi(LIMO.Level,'LI')
     
-    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,[],[]);
+    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
     
     if Type == 1
         %--------------------------
