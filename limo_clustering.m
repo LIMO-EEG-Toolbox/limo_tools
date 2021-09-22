@@ -1,4 +1,4 @@
-function [mask,cluster_pval,max_th] = limo_clustering(M, P, bootM, bootP, LIMO, MCC, p, fig)
+function [mask,cluster_pval,max_th] = limo_clustering(M, P, bootM, bootP, LIMO, MCC, p, varargin)
 
 % FORMAT:  [mask,cluster_p,max_th] = limo_clustering(M,P,bootM,bootP,LIMO,MCC,p,fig)
 %
@@ -28,6 +28,13 @@ function [mask,cluster_pval,max_th] = limo_clustering(M, P, bootM, bootP, LIMO, 
 % outsourced from limo_stat_values
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
+
+% Present plot only if no significant cluster was found
+if isempty(varargin)
+    fig = [];
+else
+    fig = varargin{1};
+end
 
 % switch behavioural to 1D clustering if one channel, no matter user choice
 if size(M,1) == 1
