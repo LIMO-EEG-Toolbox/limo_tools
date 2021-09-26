@@ -272,7 +272,12 @@ elseif ~isempty(M) && MCC == 2
                     % Combine clusters, negative first
                     mask_pos = (mask_pos + max(mask_neg(:))) .* (mask_pos > 0);
                     mask = mask_pos + mask_neg;
-                    M    = M_pos + M_neg;
+                    
+                    % Start with the negative clusters p values, and then
+                    % assign the positive ones (cant just add because NaN +
+                    % double = NaN)
+                    M = M_neg;
+                    M(mask_pos > 0) = M_pos(mask_pos > 0);
                 end
             else
                 [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
