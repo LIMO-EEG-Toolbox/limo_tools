@@ -34,7 +34,8 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
-%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects)
+%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects, rows are contrasts, 
+%                     columns are variables in the GLM including the constant)
 %       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
 %
 % OUTPUT  
