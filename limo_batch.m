@@ -17,7 +17,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.cat_files: a cell array of categorial variable or variable files
 %       model.cont_files: a cell array of continuous variable or variable files
 %       model.defaults: specifiy the parameters to use for each subject
-%       model.defaults.type = 'Channels' or 'Components'
+%       model.defaults.type = 'Channels','Components','Sources'
 %       model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
 %       model.defaults.method 'WLS' 'IRLS' 'OLS'
 %       model.defaults.type_of_analysis 'univariate' or 'multivariate'
