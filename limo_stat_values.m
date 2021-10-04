@@ -242,7 +242,12 @@ elseif ~isempty(M) && MCC == 2
             end
             
             % finally get cluster mask and corrected p-values
-            [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            if contains(FileName,'ttest') || contains(FileName,'LI_Map')
+                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p); % mask and cluster p values
+            else
+                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            end
+                
             Nclust   = unique(mask); 
             Nclust   = length(Nclust)-1; % mask = mask>0;
             if Nclust <= 1

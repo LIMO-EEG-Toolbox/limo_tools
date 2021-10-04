@@ -32,27 +32,6 @@ end
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
-if strcmp(ext,'.set') %EEGLAB
-    LIMO.data.sampling_rate      = EEGLIMO.srate;
-elseif strcmp(ft_datatype(EEGLIMO),'raw') %FieldTrip
-    LIMO.data.sampling_rate      = EEGLIMO.fsample;
-    if ~isfield(EEGLIMO,'elec') || (isfield(EEGLIMO,'elec') && ~isfield(EEGLIMO,'chanlocs'))
-        EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
-    end
-elseif strcmp(ft_datatype(EEGLIMO),'source') %FieldTrip source
-    if ~isfield(EEGLIMO,'chanlocs')
-        EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
-    end
-    LIMO.data.sampling_rate = length(EEGLIMO.time)/(EEGLIMO.time(end)-EEGLIMO.time(1));
-    % adapt the time field
-    tmp = EEGLIMO.time;
-    clear EEGLIMO.time
-    EEGLIMO.time = {};
-    EEGLIMO.time{1} = tmp;
-else
-    error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
-end
-
 LIMO.Analysis                = defaults.analysis;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
@@ -63,6 +42,36 @@ LIMO.design.bootstrap        = defaults.bootstrap;
 LIMO.design.tfce             = defaults.tfce;
 LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
+
+if strcmp(ext,'.set') %EEGLAB
+    LIMO.data.sampling_rate      = EEGLIMO.srate;
+elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
+    % this seems a data structure according to FieldTrip specs
+    dtype = ft_datatype(EEGLIMO);
+    switch dtype
+        case 'raw'
+            error('ERROR in limo_batch_import_data: FieldTrip ''raw'' data structures are not supported, convert to a ''timelock'' representation first');
+        case 'timelock'
+            % check whether the data has a 'trial' field
+            if ~isfield(EEGLIMO, 'trial')
+                error('ERROR in limo_batch_import_data: FieldTrip ''timelock'' data structures need a ''trial'' field');
+            end
+            if ~isfield(EEGLIMO, 'chanlocs')
+                EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+            end
+            LIMO.Analysis = 'Time';
+            LIMO.data.timevect = EEGLIMO.time*1000;
+            LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
+           
+              
+        case 'freq'
+        case 'source'
+        otherwise
+    end
+else
+    error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
+end
+
 
 % optional fields for EEGLAB study
 if isfield(defaults,'icaclustering')
@@ -84,12 +93,12 @@ if isfield(defaults,'studyinfo')
 end
 
 % update according to the type of data
-if strcmp(defaults.analysis,'Time') 
+if strcmp(LIMO.Analysis,'Time') 
   
-    if isfield(EEGLIMO,'etc') && isfield(EEGLIMO.etc,'timeerp') %EEGLAB
+    if isfield(EEGLIMO,'timevect')
+        timevect = EEGLIMO.timevect;
+    elseif isfield(EEGLIMO,'etc') && isfield(EEGLIMO.etc,'timeerp') %EEGLAB
         timevect = EEGLIMO.etc.timeerp;
-    elseif isfield(EEGLIMO,'time') % FieldTrip
-        timevect = EEGLIMO.time{1}*1000; %convert in ms
     else
         warning('the field EEG.etc.timeerp is missing');
         if isfield(EEGLIMO,'times')

@@ -14,6 +14,7 @@ Marianne Latinus 💻✅
 Ramon Martinez-Cancino 🐛💻⚠️🔌🎨  
 Tom Nichols  🤔  
 Ignacio Suay Mas 💻  
+Nir Ofir 🐛💻
 Cyril Pernet 💬💻📖🎨🤔📋 ✅📢  
 Guillaume Rousselet 💻🎨📖  
 Marco Simões 🐛💻  
