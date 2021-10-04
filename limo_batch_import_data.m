@@ -63,10 +63,25 @@ elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
             LIMO.data.timevect = EEGLIMO.time*1000;
             LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
            
-              
         case 'freq'
+          % check whether the data has a 'powspctrm' field
+          if ~isfield(EEGLIMO, 'powspctrm')
+              error('ERROR in limo_batch_import_data: FieldTrip ''freq'' data structures require a ''powspctrm'' field');
+          end
+          if isfield(EEGLIMO, 'time')
+            % time-freq
+            LIMO.Analysis = 'Time-Frequency';
+            LIMO.tf_times = EEGLIMO.time*1000;
+            LIMO.tf_freqs = EEGLIMO.freq;
+          else
+            LIMO.Analysis = 'Frequency';
+            LIMO.freqvect = EEGLIMO.freq;
+          end
+          
         case 'source'
-        otherwise
+            error('ERROR in limo_batch_import_data: FieldTrip ''source'' data structures are not (yet) supported');
+      otherwise
+          error('ERROR in limo_batch_import_data: FieldTrip ''%s'' data structures are not supported', dtype); 
     end
 else
     error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
