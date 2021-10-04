@@ -17,60 +17,56 @@ function eeg_limo = limo_get_ft_chanlocs(eeg_limo, defaults)
 % -----------------------------------------
 %  Copyright (C) LIMO Team 2021
 
-
-switch(ft_datatype(eeg_limo))
-    case 'raw'
-        default_label = defaults.template_elec.label;
-        default_chanpos = defaults.template_elec.chanpos;
-
-        if ~isfield(eeg_limo,'elec')
-            disp('Channel positions not defined in EEG_DATA.elec.chanpos')
-            disp('Lets use the default electrode set-up');
-            eeg_labels = ft_channelselection('eeg', default_label);
-            eeg_limo.elec.chanpos = zeros(length(eeg_labels),3);
-            for i = 1:length(eeg_labels)
-                lab = eeg_labels{i};
-                eeg_limo.elec.chanpos(i,:) = default_chanpos(strcmp(default_label,lab),:);
-            end
-            if ~isfield(eeg_limo,'label')
-                disp('Channel labels not defined in EEG_DATA.label')
-                disp('Lets use the default electrode set-up');
-                eeg_limo.elec.label = ft_channelselection('eeg', default_label);
-            else
-                eeg_limo.elec.label = eeg_limo.label;
-            end
-        end
-
-        eeg_limo.chanlocs = struct('labels', eeg_limo.elec.label);
-        for i = 1:length(eeg_limo.elec.chanpos)
-            eeg_limo.chanlocs(i).X = eeg_limo.elec.chanpos(i,1);
-            eeg_limo.chanlocs(i).Y = eeg_limo.elec.chanpos(i,2);
-            eeg_limo.chanlocs(i).Z = eeg_limo.elec.chanpos(i,3);
-        end
+israw      = ft_datatype(eeg_limo, 'raw');
+istimelock = ft_datatype(eeg_limo, 'timelock');
+isfreq     = ft_datatype(eeg_limo, 'freq');
+issens     = ft_datatype(eeg_limo, 'sens');
+issource   = ft_datatype(eeg_limo, 'source');
+if issens
+    eeg_limo.chanlocs = struct('labels', eeg_limo.label);
+    for i = 1:length(eeg_limo.chanpos)
+        eeg_limo.chanlocs(i).X = eeg_limo.chanpos(i,1);
+        eeg_limo.chanlocs(i).Y = eeg_limo.chanpos(i,2);
+        eeg_limo.chanlocs(i).Z = eeg_limo.chanpos(i,3);
+    end
+elseif israw||istimelock||isfreq||istimelock
+    
+    hasopto = isfield(eeg_limo, 'opto');
+    hasgrad = isfield(eeg_limo, 'grad');
+    haselec = isfield(eeg_limo, 'elec');
+    chanlocs = struct([]);
+    if hasopto
+        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.opto, defaults));
+    end
+    if hasgrad
+        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.grad, defaults));
+    end
+    if haselec
+        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.elec, defaults));
+    end
+    eeg_limo.chanlocs = chanlocs;
+    
+    if isempty(eeg_limo.chanlocs)  
+        disp('Channel positions not found in the input data structure')
+        disp('Lets use the default electrode set-up, assuming EEG');
+        eeg_limo.chanlocs = limo_get_ft_chanlocs(defaults.template_elec, defaults);
+    end
         
-    case 'source'
-        if ~isfield(eeg_limo,'pos')
-            error('ERROR: non existing "pos" field')
-        elseif ~isfield(eeg_limo,'label')
-            error('ERROR: non existing "label" field')
-        end
+elseif issource
+    
+    if ~isfield(eeg_limo,'pos')
+        error('ERROR: non existing "pos" field')
+    elseif ~isfield(eeg_limo,'label')
+        error('ERROR: non existing "label" field')
+    end
 
-        eeg_limo.chanlocs = struct('labels', eeg_limo.label);
-        for i = 1:length(eeg_limo.pos)
-            eeg_limo.chanlocs(i).X = eeg_limo.pos(i,1);
-            eeg_limo.chanlocs(i).Y = eeg_limo.pos(i,2);
-            eeg_limo.chanlocs(i).Z = eeg_limo.pos(i,3);
-        end
+    eeg_limo.chanlocs = struct('labels', eeg_limo.label); %FIXME this probably does not work
+    for i = 1:length(eeg_limo.pos)
+        eeg_limo.chanlocs(i).X = eeg_limo.pos(i,1);
+        eeg_limo.chanlocs(i).Y = eeg_limo.pos(i,2);
+        eeg_limo.chanlocs(i).Z = eeg_limo.pos(i,3);
+    end
         
-    case 'elec'
-        eeg_limo.chanlocs = struct('labels', eeg_limo.label);
-        for i = 1:length(eeg_limo.chanpos)
-            eeg_limo.chanlocs(i).X = eeg_limo.chanpos(i,1);
-            eeg_limo.chanlocs(i).Y = eeg_limo.chanpos(i,2);
-            eeg_limo.chanlocs(i).Z = eeg_limo.chanpos(i,3);
-        end
 end
 
 eeg_limo.chanlocs = convertlocs(eeg_limo.chanlocs,'cart2all');
-
-end
