@@ -32,7 +32,6 @@ end
 LIMO.dir                     = defaults.name;
 LIMO.data.data               = [name ext];
 LIMO.data.data_dir           = root;
-LIMO.Analysis                = defaults.analysis;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
 LIMO.design.method           = defaults.method;
@@ -44,8 +43,9 @@ LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
 
 if strcmp(ext,'.set') %EEGLAB
+    LIMO.Analysis                = defaults.analysis;
     LIMO.data.sampling_rate      = EEGLIMO.srate;
-elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
+elseif ~strcmp(ft_datatype(EEGLIMO),'unknown')
     % this seems a data structure according to FieldTrip specs
     dtype = ft_datatype(EEGLIMO);
     switch dtype
@@ -60,7 +60,7 @@ elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
                 EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
             end
             LIMO.Analysis = 'Time';
-            LIMO.data.timevect = EEGLIMO.time*1000;
+            EEGLIMO.timevect = EEGLIMO.time*1000;
             LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
            
         case 'freq'
@@ -68,14 +68,17 @@ elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
           if ~isfield(EEGLIMO, 'powspctrm')
               error('ERROR in limo_batch_import_data: FieldTrip ''freq'' data structures require a ''powspctrm'' field');
           end
+          if ~isfield(EEGLIMO, 'chanlocs')
+              EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+          end
           if isfield(EEGLIMO, 'time')
             % time-freq
             LIMO.Analysis = 'Time-Frequency';
-            LIMO.tf_times = EEGLIMO.time*1000;
-            LIMO.tf_freqs = EEGLIMO.freq;
+            EEGLIMO.tf_times = EEGLIMO.time*1000;
+            EEGLIMO.tf_freqs = EEGLIMO.freq;
           else
             LIMO.Analysis = 'Frequency';
-            LIMO.freqvect = EEGLIMO.freq;
+            EEGLIMO.freqvect = EEGLIMO.freq;
           end
           
         case 'source'
@@ -143,9 +146,11 @@ if strcmp(LIMO.Analysis,'Time')
     
     LIMO.data.timevect  = timevect(LIMO.data.trim1:LIMO.data.trim2);
     
-elseif strcmp(defaults.analysis,'Frequency') 
+elseif strcmp(LIMO.Analysis,'Frequency') 
     
-    if ~isfield(EEGLIMO.etc,'freqspec')
+    if isfield(EEGLIMO, 'freqvect')
+        freqvect = EEGLIMO.freqvect;
+    elseif ~isfield(EEGLIMO.etc,'freqspec')
         disp('the fied EEG.etc.freqspec is missing - reloading single trials');
         data     = load('-mat',EEGLIMO.etc.freqspec);
         freqvect = data.freqs; clear data;
@@ -175,9 +180,12 @@ elseif strcmp(defaults.analysis,'Frequency')
     
     LIMO.data.freqlist  = freqvect(LIMO.data.trim1:LIMO.data.trim2);
 
-elseif strcmp(defaults.analysis,'Time-Frequency')
+elseif strcmp(LIMO.Analysis,'Time-Frequency')
     
-    if ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
+    if isfield(EEGLIMO, 'tf_times') && isfield(EEGLIMO, 'tf_freqs')
+        timevect = EEGLIMO.tf_times;
+        freqvect = EEGLIMO.tf_freqs;
+    elseif ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
         disp('ersp fied in EEG.etc absent or impcomplete, reloading the single trials')
         data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
         timevect = data.times;
