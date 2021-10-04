@@ -321,7 +321,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
 end
 
 clear ALLEEGLIMO
-cd (LIMO.dir) ; save LIMO LIMO
+save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO');
 
 % make the design matrix
 disp('computing design matrix');
