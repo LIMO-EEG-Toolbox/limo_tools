@@ -15,13 +15,22 @@ LIMO = load(LIMOfile);
 LIMO = LIMO.LIMO;
 if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
     if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
-        cd (LIMO.data.data_dir);
-        disp('reloading data ..');
-        EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
+        cd(LIMO.data.data_dir); disp('reloading data ..');
+        [~,~,ext]=fileparts(LIMO.data.data);
+        if strcmpi(ext,'.set')
+            EEGLIMO = pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]); % eeglab
+        elseif strcmpi(ext,'.mat')
+            EEGLIMO = load([LIMO.data.data_dir filesep LIMO.data.data]); % fieldtrip
+            EEGLIMO = EEGLIMO.(cell2mat(fieldnames(EEGLIMO)));
+
+            if strcmp(ft_datatype(EEGLIMO),'unknown')
+                error('ERROR: neither EEGLAB nor FieldTrip input file!')
+            end
+        end
     end
 else
     disp('reloading data ..');
-    EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
+    EEGLIMO = pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
 end
 
 if strcmp(LIMO.Analysis,'Time')
@@ -81,9 +90,12 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
-        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
+        if ~exist(erp,'file')  
+            % load from field
+            signal = cell2mat(permute(EEGLIMO.trial,[1,3,2]));
+        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
-                signal = load('-mat', EEGLIMO.etc.datafiles.daterp);
+                signal = load(EEGLIMO.etc.datafiles.daterp, '-mat');
                 if isstruct(signal)
                     signal = signal.(cell2mat(fieldnames(signal)));
                 end
@@ -357,7 +369,6 @@ end
 LIMO.design.status = 'to do';
 save LIMO LIMO; clear Y
 
-end
 % -------------------------------------------------------------------------
 function file_fullpath = rel2fullpath(studypath,filepath)
 % Return full path if 'filepath' is a relative path. The output format will
@@ -393,5 +404,4 @@ for i = nit:-1:1
             file_fullpath = pathtmp;
         end
     end
-end
 end
