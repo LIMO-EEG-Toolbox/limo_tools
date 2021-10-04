@@ -270,8 +270,4 @@ end
 if ~exist('LIMO.dir','dir')
     mkdir(LIMO.dir)
 end
-cd(LIMO.dir); 
-save LIMO LIMO; 
-cd ..
-
-
+save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO'); 
