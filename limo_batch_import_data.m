@@ -2,9 +2,10 @@ function limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 
 % routine to import 
 %
-% FORMAT limo_batch_import_data(setfile,cat,cont,defaults)
+% FORMAT limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 % 
-% INPUT setfile is a an EEG files .set to be loaded
+% INPUT EEG_DATA is a an EEG file (temporary .set or .mat) to be loaded
+%                from EEGLAB or FieldTrip
 %       cat and cont are either numeric or txt or mat files
 %               corresponding to the regressors in the model
 %       defaults is a structure specifying all the parameters
@@ -118,93 +119,93 @@ if strcmp(defaults.analysis,'Time')
     
     LIMO.data.timevect  = timevect(LIMO.data.trim1:LIMO.data.trim2);
     
-% elseif strcmp(defaults.analysis,'Frequency') 
-%     
-%     if ~isfield(EEGLIMO.etc,'freqspec')
-%         disp('the fied EEG.etc.freqspec is missing - reloading single trials');
-%         data     = load('-mat',EEGLIMO.etc.freqspec);
-%         freqvect = data.freqs; clear data;
-%     else
-%         freqvect = EEGLIMO.etc.freqspec;
-%     end
-% 
-%     % start
-%     if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
-%         LIMO.data.start = freqvect(1);
-%         LIMO.data.trim1 = 1;
-%     else
-%         [~,position]    = min(abs(freqvect-defaults.lowf));
-%         LIMO.data.start = freqvect(position);
-%         LIMO.data.trim1 = position; 
-%     end
-%     
-%     % end
-%     if isempty(defaults.highf) || defaults.highf > freqvect(end)
-%         LIMO.data.end   = freqvect(end);
-%         LIMO.data.trim2 = numel(freqvect);
-%     else
-%         [~,position]    = min(abs(freqvect-defaults.highf));
-%         LIMO.data.end   = freqvect(position);
-%         LIMO.data.trim2 = position; 
-%     end
-%     
-%     LIMO.data.freqlist  = freqvect(LIMO.data.trim1:LIMO.data.trim2);
-% 
-% elseif strcmp(defaults.analysis,'Time-Frequency')
-%     
-%     if ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
-%         disp('ersp fied in EEG.etc absent or impcomplete, reloading the single trials')
-%         data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
-%         timevect = data.times;
-%         freqvect = data.freqs;
-%     else
-%         timevect = EEGLIMO.etc.timeersp;
-%         freqvect = EEGLIMO.etc.freqersp;
-%     end
-%        
-%     % start
-%     if isempty(defaults.start) || defaults.start < min(timevect)
-%         LIMO.data.start = timevect(1);
-%         LIMO.data.trim1 = 1;    
-%     else
-%         [~,position]    = min(abs(timevect - defaults.start));
-%         LIMO.data.start = timevect(position);
-%         LIMO.data.trim1 =  find(timevect == LIMO.data.start);
-%     end
-%     
-%     % end
-%     if isempty(defaults.end) || defaults.end > max(timevect)
-%         LIMO.data.end   = timevect(end);
-%         LIMO.data.trim2 = length(timevect);    
-%     else
-%         [~,position]    = min(abs(timevect - defaults.end));
-%         LIMO.data.end   = timevect(position);
-%         LIMO.data.trim2 =  position;
-%     end
-% 
-%     LIMO.data.tf_times  = timevect(LIMO.data.trim1:LIMO.data.trim2);
-% 
-%     % start
-%     if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
-%         LIMO.data.lowf = freqvect(1);
-%         LIMO.data.trim_lowf = 1;
-%     else
-%         [~,position] = min(abs(freqvect-defaults.lowf));
-%         LIMO.data.lowf = freqvect(position);
-%         LIMO.data.trim_lowf = position; 
-%     end
-%     
-%     % end
-%     if isempty(defaults.highf) || defaults.highf > freqvect(end)
-%         LIMO.data.highf = freqvect(end);
-%         LIMO.data.trim_highf = length(freqvect);
-%     else
-%         [~,position] = min(abs(freqvect-defaults.highf));
-%         LIMO.data.highf = freqvect(position);
-%         LIMO.data.trim_highf = position; 
-%     end
-%     
-%     LIMO.data.tf_freqs = freqvect(LIMO.data.trim_lowf:LIMO.data.trim_highf);
+elseif strcmp(defaults.analysis,'Frequency') 
+    
+    if ~isfield(EEGLIMO.etc,'freqspec')
+        disp('the fied EEG.etc.freqspec is missing - reloading single trials');
+        data     = load('-mat',EEGLIMO.etc.freqspec);
+        freqvect = data.freqs; clear data;
+    else
+        freqvect = EEGLIMO.etc.freqspec;
+    end
+
+    % start
+    if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
+        LIMO.data.start = freqvect(1);
+        LIMO.data.trim1 = 1;
+    else
+        [~,position]    = min(abs(freqvect-defaults.lowf));
+        LIMO.data.start = freqvect(position);
+        LIMO.data.trim1 = position; 
+    end
+    
+    % end
+    if isempty(defaults.highf) || defaults.highf > freqvect(end)
+        LIMO.data.end   = freqvect(end);
+        LIMO.data.trim2 = numel(freqvect);
+    else
+        [~,position]    = min(abs(freqvect-defaults.highf));
+        LIMO.data.end   = freqvect(position);
+        LIMO.data.trim2 = position; 
+    end
+    
+    LIMO.data.freqlist  = freqvect(LIMO.data.trim1:LIMO.data.trim2);
+
+elseif strcmp(defaults.analysis,'Time-Frequency')
+    
+    if ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
+        disp('ersp fied in EEG.etc absent or impcomplete, reloading the single trials')
+        data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
+        timevect = data.times;
+        freqvect = data.freqs;
+    else
+        timevect = EEGLIMO.etc.timeersp;
+        freqvect = EEGLIMO.etc.freqersp;
+    end
+       
+    % start
+    if isempty(defaults.start) || defaults.start < min(timevect)
+        LIMO.data.start = timevect(1);
+        LIMO.data.trim1 = 1;    
+    else
+        [~,position]    = min(abs(timevect - defaults.start));
+        LIMO.data.start = timevect(position);
+        LIMO.data.trim1 =  find(timevect == LIMO.data.start);
+    end
+    
+    % end
+    if isempty(defaults.end) || defaults.end > max(timevect)
+        LIMO.data.end   = timevect(end);
+        LIMO.data.trim2 = length(timevect);    
+    else
+        [~,position]    = min(abs(timevect - defaults.end));
+        LIMO.data.end   = timevect(position);
+        LIMO.data.trim2 =  position;
+    end
+
+    LIMO.data.tf_times  = timevect(LIMO.data.trim1:LIMO.data.trim2);
+
+    % start
+    if isempty(defaults.lowf) || defaults.lowf < freqvect(1)
+        LIMO.data.lowf = freqvect(1);
+        LIMO.data.trim_lowf = 1;
+    else
+        [~,position] = min(abs(freqvect-defaults.lowf));
+        LIMO.data.lowf = freqvect(position);
+        LIMO.data.trim_lowf = position; 
+    end
+    
+    % end
+    if isempty(defaults.highf) || defaults.highf > freqvect(end)
+        LIMO.data.highf = freqvect(end);
+        LIMO.data.trim_highf = length(freqvect);
+    else
+        [~,position] = min(abs(freqvect-defaults.highf));
+        LIMO.data.highf = freqvect(position);
+        LIMO.data.trim_highf = position; 
+    end
+    
+    LIMO.data.tf_freqs = freqvect(LIMO.data.trim_lowf:LIMO.data.trim_highf);
 end
 
 % deal with categorical and continuous regressors
