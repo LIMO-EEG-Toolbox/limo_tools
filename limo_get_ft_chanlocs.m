@@ -36,13 +36,16 @@ elseif israw||istimelock||isfreq||istimelock
     haselec = isfield(eeg_limo, 'elec');
     chanlocs = struct([]);
     if hasopto
-        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.opto, defaults));
+        tmp      = limo_get_ft_chanlocs(eeg_limo.opto, defaults);
+        chanlocs = cat(2, chanlocs, tmp.chanlocs);
     end
     if hasgrad
-        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.grad, defaults));
+        tmp      = limo_get_ft_chanlocs(eeg_limo.grad, defaults);
+        chanlocs = cat(2, chanlocs, tmp.chanlocs);
     end
     if haselec
-        chanlocs = cat(2, chanlocs, limo_get_ft_chanlocs(eeg_limo.elec, defaults));
+        tmp      = limo_get_ft_chanlocs(eeg_limo.elec, defaults);
+        chanlocs = cat(2, chanlocs, tmp.chanlocs);
     end
     eeg_limo.chanlocs = chanlocs;
     
@@ -68,5 +71,3 @@ elseif issource
     end
         
 end
-
-eeg_limo.chanlocs = convertlocs(eeg_limo.chanlocs,'cart2all');
