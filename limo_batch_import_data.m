@@ -62,8 +62,6 @@ elseif ~strcmp(ft_dataype(EEGLIMO,'unknown'))
             LIMO.Analysis = 'Time';
             LIMO.data.timevect = EEGLIMO.time*1000;
             LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
-           
-              
         case 'freq'
         case 'source'
         otherwise
