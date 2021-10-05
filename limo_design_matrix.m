@@ -148,8 +148,6 @@ if full_factorial == 1 && ~isempty(Cont)
     error('LIMO does not compute full factorial ANCOVAs with covariate(s), consider a factorial ANCOVA witout interaction')
 end
 
-cd(directory);
-
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
     check        = find(sum(isnan(Cat),2)==size(Cat,2));
@@ -295,7 +293,7 @@ if ~isempty(Cat)
             errordlg(sprintf('the design is too unbalanced to be corrected \n can''t run full factorial'))
             nb_interactions = 0; X = [full_design ones(size(Yr,3),1)];
             full_factorial = 0; LIMO.design.fullfactorial = 0;
-            save('LIMO.mat','LIMO')
+            save(fullfile(directory, 'LIMO.mat'),'LIMO')
         else
             nb_trials = sum(higher_interaction);
             if length(unique(nb_trials)) > 1
@@ -357,7 +355,7 @@ try
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
         R2 = NaN(size(Yr,1),size(Yr,2),3);
-        save('R2.mat','R2');
+        save(fullfile(directory, 'R2.mat'),'R2');
     end
     
     % these ones will be created in limo_eeg
@@ -373,10 +371,10 @@ try
         tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
     end
     
-    save('Yhat.mat','Yhat');   clear Yhat
-    save('Betas.mat','Betas'); clear Betas
-    save('Res.mat','Res');     clear Res
-    save('Yr.mat','Yr') ;      clear Yr R2
+    save(fullfile(directory, 'Yhat.mat'),'Yhat');   clear Yhat
+    save(fullfile(directory, 'Betas.mat'),'Betas'); clear Betas
+    save(fullfile(directory, 'Res.mat'),'Res');     clear Res
+    save(fullfile(directory, 'Yr.mat'),'Yr') ;      clear Yr R2
     
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end
