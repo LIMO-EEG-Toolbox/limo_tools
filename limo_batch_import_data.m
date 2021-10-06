@@ -62,7 +62,6 @@ elseif ~strcmp(ft_datatype(EEGLIMO),'unknown')
             LIMO.Analysis = 'Time';
             EEGLIMO.timevect = EEGLIMO.time*1000;
             LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
-           
         case 'freq'
           % check whether the data has a 'powspctrm' field
           if ~isfield(EEGLIMO, 'powspctrm')
