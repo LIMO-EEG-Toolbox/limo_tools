@@ -25,13 +25,13 @@ global EEGLIMO
 EEGLIMO                      = load('-mat',EEG_DATA);
 EEGLIMO                      = EEGLIMO.(cell2mat(fieldnames(EEGLIMO)));
 if ~isfield(EEGLIMO,'filepath')
-    [root,name,ext]              = fileparts(EEG_DATA);
-    EEGLIMO.filepath             = root;
-    EEGLIMO.filename             = [name ext];
+    [root,name,ext]          = fileparts(EEG_DATA);
+    EEGLIMO.filepath         = root;
+    EEGLIMO.filename         = [name ext];
 end
 LIMO.dir                     = defaults.name;
-LIMO.data.data               = [name ext];
-LIMO.data.data_dir           = root;
+LIMO.data.data               = EEGLIMO.filename;
+LIMO.data.data_dir           = EEGLIMO.filepath;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
 LIMO.design.method           = defaults.method;
@@ -42,7 +42,7 @@ LIMO.design.tfce             = defaults.tfce;
 LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
 
-if strcmp(ext,'.set') %EEGLAB
+if strcmp(LIMO.data.data(end-3:end),'.set') % EEGLAB
     LIMO.Analysis                = defaults.analysis;
     LIMO.data.sampling_rate      = EEGLIMO.srate;
 elseif ~strcmp(ft_datatype(EEGLIMO),'unknown')
