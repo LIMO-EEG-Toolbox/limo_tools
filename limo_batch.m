@@ -17,7 +17,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.cat_files: a cell array of categorial variable or variable files
 %       model.cont_files: a cell array of continuous variable or variable files
 %       model.defaults: specifiy the parameters to use for each subject
-%       model.defaults.type = 'Channels','Components','Sources'
+%       model.defaults.type = 'Channels' or 'Components'
 %       model.defaults.analysis 'Time' 'Frequency' or 'Time-Frequency'
 %       model.defaults.method 'WLS' 'IRLS' 'OLS'
 %       model.defaults.type_of_analysis 'univariate' or 'multivariate'
@@ -171,12 +171,6 @@ elseif nargin > 1
     end
 end
 
-if isfield(batch_contrast,'LIMO_files')
-  batch_contrast_size = size(batch_contrast.LIMO_files);
-else
-  batch_contrast_size = 0;
-end
-
 % check EEGLAB STUDY
 if nargin == 4
     STUDY = varargin{4}; clear varargin{4};
@@ -299,8 +293,8 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
-        if strcmp(option,'both') && batch_contrast_size==0
-            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+        if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
+                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
         end
 
@@ -437,7 +431,7 @@ else % parallel call to the pipeline
             % put the point brack where needed and call e.g.
             % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
             % limo_batch_design_matrix(pipeline(subject).design.files_in)
-            % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
+            % limo_eeg(4,fileparts(pipeline(subject).glm.files_in))
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
             report{subject} = ['subject ' num2str(subject) ' processed'];
