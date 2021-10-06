@@ -385,7 +385,8 @@ else
     LIMO.design.name = 'Mean';
 end
 LIMO.design.status = 'to do';
-save LIMO LIMO; clear Y
+save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO');
+clear Y
 
 % -------------------------------------------------------------------------
 function file_fullpath = rel2fullpath(studypath,filepath)
