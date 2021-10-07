@@ -160,10 +160,6 @@ switch type
         end
         clear tmp
         
-        if ~isfield(LIMO.design,'method')
-            LIMO.design.method = 'Trimmed Mean';
-        end
-        
         % ------------------------------------------------
         % make a one_sample file per parameter (channels, frames, [mean value, se, df, t, p])
         one_sample = NaN(size(data,1), size(data,2), 5);
@@ -177,10 +173,10 @@ switch type
                 one_sample(channel,:,:) = NaN;
             else
                 Y = tmp(1,:,find(~isnan(tmp(1,1,:))));
-                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                     [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
                         one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
-                elseif strcmpi(LIMO.design.method,'Mean')
+                elseif strcmpi(LIMO.design.method, 'Mean')
                     [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
                         one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
                     one_sample(channel,:,2) = sd./sqrt(n);
@@ -215,7 +211,7 @@ switch type
                 % create a boot one_sample file to store data under H0 and H1
                 H0_one_sample = NaN(size(data,1), size(data,2),2,LIMO.design.bootstrap); % stores T and p values for each boot under H0
                 % create centered data to estimate H0
-                if strcmpi(LIMO.design.method,'Trimmed Mean')
+                if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                     centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
                 elseif strcmpi(LIMO.design.method,'Mean')    
                     centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
@@ -230,7 +226,7 @@ switch type
                     fprintf('bootstrap: channel %g parameter %g \n',channel,parameter);
                     tmp = centered_data(channel,:,:);
                     Y   = tmp(1,:,find(~isnan(tmp(1,1,:))));
-                    if strcmpi(LIMO.design.method,'Trimmed Mean')
+                    if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~] = limo_trimci(Y(1,:,boot_table{channel}(:,b)));
                         end
@@ -318,9 +314,6 @@ switch type
         end
         clear tmp tmp2
         
-        if ~isfield(LIMO.design,'method')
-            LIMO.design.method = 'Trimmed Mean';
-        end
        % ------------------------------------------------
         % make a two_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         two_samples = NaN(size(data1,1), size(data1,2),5);
@@ -332,7 +325,7 @@ switch type
             fprintf('analyse parameter %g channel %g',parameter, channel); disp(' ');
             tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+            if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                 [two_samples(channel,:,4),two_samples(channel,:,1),two_samples(channel,:,2),...
                     ~,two_samples(channel,:,5),~,two_samples(channel,:,3)]=limo_yuen_ttest(Y1,Y2);
             else % if strcmpi(LIMO.design.method,'Mean')
@@ -368,7 +361,7 @@ switch type
                 % create a boot one_sample file to store data under H0
                 H0_two_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
-                if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                     data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
                 else % if strcmpi(LIMO.design.method,'Mean')
@@ -388,7 +381,7 @@ switch type
                     fprintf('bootstrapping channel %g/%g \n',e,size(array,1));
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                    if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
                         end
@@ -475,10 +468,6 @@ switch type
         end
         clear tmp tmp2
         
-        if ~isfield(LIMO.design,'method')
-            LIMO.design.method = 'Trimmed Mean';
-        end
-        
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
@@ -490,7 +479,7 @@ switch type
             fprintf('analyse parameter %s channel %g',num2str(parameter')', channel); disp(' ');
             tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
             tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+            if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                 [paired_samples(channel,:,4),paired_samples(channel,:,1),paired_samples(channel,:,2),...
                     ~,paired_samples(channel,:,5),~,paired_samples(channel,:,3)]=limo_yuend_ttest(Y1,Y2); 
             else % strcmpi(LIMO.design.method,'Mean')
@@ -524,7 +513,7 @@ switch type
                 % create a boot one_sample file to store data under H0
                 H0_paired_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
-                if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                     data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
                 else % if strcmpi(LIMO.design.method,'Mean')
@@ -542,7 +531,7 @@ switch type
                     fprintf('bootstrapping channel %g/%g parameter %s \n',e,size(array,1),num2str(parameter')');
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                    if strcmpi(LIMO.design.method, 'Yuen t-test (Trimmed means)')
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
                         end
@@ -1390,5 +1379,3 @@ switch type
         disp('Repeated Measures ANOVA done')
 end
 warning on
-
-
