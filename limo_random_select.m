@@ -46,6 +46,8 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                                    design will pop-up and user is asked
 %                                    to start the analysis, set to 'Yes' to
 %                                    skip this step
+%                'method' For t-tests can be 'Yuen t-test (Trimmed means)' 
+%                         or 'Mean'
 %
 % OUTPUT filepath is the Path to the LIMO structure.
 %        all files are created where the function is called (ie no directory as argument)
@@ -74,7 +76,7 @@ end
 
 tests = {'one sample t-test', 'two-samples t-test', 'paired t-test', ...
     'regression', 'N-Ways ANOVA', 'ANCOVA', 'Repeated Measures ANOVA'};
-if sum(strcmpi(stattest,tests)) == 0
+if ~ismember(lower(stattest), lower(tests))
     error('input argument error, stat test unknown')
 end
 
@@ -148,6 +150,25 @@ for in = 1:2:(nargin-2)
         LIMO.design.bootstrap = varargin{in+1};
     elseif strcmpi(varargin{in},'tfce')
         LIMO.design.tfce = varargin{in+1};
+    elseif strcmpi(varargin{in},'method')
+        LIMO.design.method = varargin{in+1};
+    end
+end
+
+
+% Make sure the method makes sense given the chosen test
+if isfield(LIMO.design, 'method')
+    if ismember(lower(stattest), {'one sample t-test', 'two-samples t-test', 'paired t-test'})
+        if ~ismember(lower(LIMO.design.method), {'yuen t-test (trimmed means)', 'mean'})
+            error('Unsupported method')
+        end
+    else % Unused argument for the other tests
+        warning('Using ''method'' is only supported for one sample, two samples or paired t-tests')
+        LIMO.design = rmfield(LIMO.design, 'method');
+    end
+else % Set default
+    if ismember(lower(stattest), {'one sample t-test', 'two-samples t-test', 'paired t-test'})
+        LIMO.design.method = 'Yuen t-test (Trimmed means)';
     end
 end
 
@@ -348,7 +369,6 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             Yr                 = tmp_data; clear tmp_data
             LIMO.design.name   = 'Robust one sample t-test';
             LIMO.design.X      = ones(size(data,4),1);
-            LIMO.design.method = 'Trimmed mean';
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
@@ -562,7 +582,7 @@ elseif strcmpi(stattest,'two-samples t-test')
 
     Y1r = tmp_data1; save Y1r Y1r, clear Y1r
     Y2r = tmp_data2; save Y2r Y2r, clear Y2r
-    LIMO.design.method = 'Yuen t-test (Trimmed means)'; save LIMO LIMO
+	save LIMO LIMO
     tmpname = limo_random_robust(2,tmp_data1,tmp_data2,parameters,LIMO);
     if nargout ~= 0
         LIMOPath = tmpname;
@@ -771,7 +791,6 @@ elseif strcmpi(stattest,'paired t-test')
         end
     end
 
-    LIMO.design.method = 'Yuen t-test (Trimmed means)';
     if strcmp(LIMO.Analysis,'Time-Frequency')
         LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
         LIMO.data.size4D = [size(tmp_data1,1) size(tmp_data1,2) size(tmp_data1,3) 5];
