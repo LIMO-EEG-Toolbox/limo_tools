@@ -70,6 +70,19 @@ if nargin == 3 || nargin == 4
     % ------------------------
     
     data = varargin{1};
+    if ischar(data)
+        if ~exist(data,'file')
+            error('cannot load %s',data)
+        else
+            try
+                data = load(data);
+                data = tmp.(cell2mat(fieldnames(data)));
+            catch
+                error('%s is not a matrix',data)
+            end
+        end
+    end
+    
     if ndims(data)<3 || ndims(data) >4 %#ok<*ISMAT>
         if ndims(data) == 2
             disp('for 2D data, try using limo_central_estimator.m');
