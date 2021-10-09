@@ -101,7 +101,7 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
-        if ~exist(erp,'file')  
+        if ~exist('erp','file')  
             % load from FieldTrip
             signal = permute(EEGLIMO.trial,[2,3,1]); % channels * time * trials
             % signal = cell2mat(permute(EEGLIMO.trial,[1,3,2]));
