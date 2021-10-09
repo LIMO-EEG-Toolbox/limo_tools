@@ -72,11 +72,11 @@ if nargin == 3 || nargin == 4
     data = varargin{1};
     if ischar(data)
         if ~exist(data,'file')
-            error('cannot load %s',data)
+            error('%s does not exist',data)
         else
             try
                 data = load(data);
-                data = tmp.(cell2mat(fieldnames(data)));
+                data = data.(cell2mat(fieldnames(data)));
             catch
                 error('%s is not a matrix',data)
             end
