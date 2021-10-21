@@ -38,21 +38,7 @@ if strcmp(LIMO.design.status,'to do')
         end
     end
     
-    if strcmpi(LIMO.design.method,'WLS') % only called 1st level - array(1) will work
-        try
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                limo_pcout(squeeze(Yr(array(1),1,:,:))');
-            else
-                limo_pcout(squeeze(Yr(array(1),:,:))');
-            end
-        catch pcout_error
-            if contains(pcout_error.message,'Principal Component Projection cannot be computed')
-                error('%s\n',pcout_error.message)
-            else
-                error('limo_pcout test failure - that''s a bug, raise an issue to the team \n%s',pcout_error.message)
-            end
-        end
-    elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
+    if strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
         N = size(Yr,numel(size(Yr)));
         if N < 50
             LIMO.design.method = 'OLS';
