@@ -180,6 +180,7 @@ end
 % not passed but in base workspace (case of batching contrast from GUI)
 if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
     STUDY = evalin('base', 'STUDY');
+    if ~isstruct(STUDY); clear STUDY; end
 end
 
 if exist('STUDY','var')
