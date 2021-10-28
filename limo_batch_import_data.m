@@ -62,11 +62,16 @@ end
 if strcmp(defaults.analysis,'Time') 
     
     if ~isfield(EEGLIMO.etc,'timeerp')
-        fprintf('the fied EEG.etc.timeerp is missing - looking for %s\n',EEGLIMO.data);
-        if exist(fullfile(EEGLIMO.filepath,EEGLIMO.data),'file')
-            data = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
-        else
-            data = load('-mat',fullfile(pwd,EEGLIMO.data));
+        try
+            data     = load('-mat',EEGLIMO.etc.timeerp);
+        catch erperr
+            warning(erperr.identifier,'no timerp %s, trying something else',erperr.message)
+            fprintf('the fied EEG.etc.timeerp is missing - looking for %s\n',EEGLIMO.data);
+            if exist(fullfile(EEGLIMO.filepath,EEGLIMO.data),'file')
+                data = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
+            else
+                data = load('-mat',fullfile(pwd,EEGLIMO.data));
+            end
         end
         timevect = data.times; clear data;
     else
@@ -98,8 +103,17 @@ if strcmp(defaults.analysis,'Time')
 elseif strcmp(defaults.analysis,'Frequency') 
     
     if ~isfield(EEGLIMO.etc,'freqspec')
-        disp('the fied EEG.etc.freqspec is missing - reloading single trials');
-        data     = load('-mat',EEGLIMO.etc.freqspec);
+        try
+            data     = load('-mat',EEGLIMO.etc.freqspec);
+        catch freqerr
+            warning(freqerr.identifier,'no freqspec %s, trying something else',freqerr.message)
+            fprintf('the fied EEG.etc.freqspec is missing - looking for %s\n',EEGLIMO.data);
+            if exist(fullfile(EEGLIMO.filepath,EEGLIMO.data),'file')
+                data = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
+            else
+                data = load('-mat',fullfile(pwd,EEGLIMO.data));
+            end
+        end
         freqvect = data.freqs; clear data;
     else
         freqvect = EEGLIMO.etc.freqspec;
@@ -130,8 +144,17 @@ elseif strcmp(defaults.analysis,'Frequency')
 elseif strcmp(defaults.analysis,'Time-Frequency')
     
     if ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
-        disp('ersp fied in EEG.etc absent or impcomplete, reloading the single trials')
-        data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
+        try
+            data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
+        catch timeferr
+            warning(timeferr.identifier,'error loading data %s\n, trying simeting else',timeferr.message)
+            fprintf('ersp fied in EEG.etc absent or impcomplete, - looking for %s\n',EEGLIMO.data);
+            if exist(fullfile(EEGLIMO.filepath,EEGLIMO.data),'file')
+                data = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
+            else
+                data = load('-mat',fullfile(pwd,EEGLIMO.data));
+            end
+        end
         timevect = data.times;
         freqvect = data.freqs;
     else
