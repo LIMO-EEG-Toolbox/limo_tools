@@ -63,7 +63,11 @@ if strcmp(defaults.analysis,'Time')
     
     if ~isfield(EEGLIMO.etc,'timeerp')
         fprintf('the fied EEG.etc.timeerp is missing - looking for %s\n',EEGLIMO.data);
-        data     = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
+        if exist(fullfile(EEGLIMO.filepath,EEGLIMO.data),'file')
+            data = load('-mat',fullfile(EEGLIMO.filepath,EEGLIMO.data));
+        else
+            data = load('-mat',fullfile(pwd,EEGLIMO.data));
+        end
         timevect = data.times; clear data;
     else
         timevect = EEGLIMO.etc.timeerp;
