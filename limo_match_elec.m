@@ -27,7 +27,8 @@ function out = limo_match_elec(c_elec,e_elec,a_beg,a_end,data)
 %
 % Guillaume Rousselet, Cyril Pernet v1 24-September-2009
 % Cyril Pernet May 2014, updates for time-freqency
-% ------------------------------
+% Cyril Pernet 2021 - fixed EEGLAB adding EEG in front of channels with just numbers as name
+% --------------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 if numel(size(data)) == 4
