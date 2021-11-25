@@ -1103,6 +1103,7 @@ switch type
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,1) = result.interaction.F';
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,2) = result.interaction.p';
                 end
+                
                 nb_effects = size(tmp_Rep_ANOVA,3);
                 clear tmp Y gp result
             end
