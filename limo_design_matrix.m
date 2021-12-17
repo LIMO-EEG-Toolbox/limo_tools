@@ -108,7 +108,7 @@ end
 % overall dimensions check
 if isempty(Cat) && ~isempty(Cont)
     if size(Y,3) ~= size(Cont,1)
-        error('The number of trials and the covariate(s) length are of different')
+        error('The number of trials and the covariate(s) length are different')
     end
 elseif isempty(Cont) && ~isempty(Cat)
     if size(Y,3) ~= size(Cat,1)

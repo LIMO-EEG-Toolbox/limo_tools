@@ -1,4 +1,4 @@
-function tfce_score = limo_tfce(varargin)
+function [tfce_score,thresholded_maps] = limo_tfce(varargin)
 
 % implementation of the Threshold-free cluster enhancement method
 % developped for fMRI by Smith & Nichols, NeuroImage 44(2009), 83-98
@@ -10,20 +10,26 @@ function tfce_score = limo_tfce(varargin)
 %       type = 1 for 1D data (one channel ERP or Power),
 %              2 for 2D data (ERP, Power, or a single freq*time map),
 %              3 for 3D data (ERSP)
-%       data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
-%       channeighbstructmat is the neighbourhood matrix for clustering - if empty for type 2, switch to bwlabel = freq*time map
+%       The first dimension must contain channels
+%       Data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
+%       channeighbstructmat is the neighbourhood matrix for clustering 
+%          - if empty for type 2, switch to bwlabel = freq*time map.
+%          - the size of this matrix is n_channel x n_channel indicating which channels
+%            are neighbords (1) or not neighbors (0)
 %       updatebar is a flag (default = 1) to produce a waitbar
 %       E, H and dh are the parameters of the tfce algorithm defaults are 0.5, 2, 0.1
 %
 %
-% OUPUT tfce_score is a map of scores (ie transformed t/F values)
+% OUPUTS tfce_score is a map of scores (ie transformed t/F values)
+%        thresholded_maps returns every tfce maps before integration
+%                         i.e. maps for each dh value in sum(extent(h)^E*height^H*dh) 
 %
 % References
 %
 % Pernet, C., Latinus, M., Nichols, T.E., & Rousselet, G.A. (2015)
 % Cluster-based computational methods for mass univariate analyses
 % of event-related brain potentials/fields: a simulation study
-% Journal Of Neuroscience Method 250, Pages 85–93
+% Journal Of Neuroscience Method 250, Pages 85â€“93
 % <10.1016/j.jneumeth.2014.08.003>
 %
 % Pernet, Cyril; Rousselet, Guillaume (2014): Type 1 error rate using TFCE for ERP.
@@ -61,9 +67,10 @@ elseif nargin > 8
     error('too many arguments')
 end
 
-type = varargin{1};
-data = varargin{2};
+type                = varargin{1};
+data                = varargin{2};
 channeighbstructmat = varargin{3};
+thresholded_maps    = [];
 clear varargin
 
 %% start tcfe
@@ -71,7 +78,7 @@ clear varargin
 switch type
     
     % ---------------------------------------------------------------------
-    case{1}  % 1D data -- needs to be updated (doesn't work)
+    case{1}  % 1D data -- needs to be checked a
         % ---------------------------------------------------------------------
         
         if isvector(data)
@@ -127,7 +134,11 @@ switch type
                     
                     % compute final score
                     tfce_score = nansum(tfce,3);
-                    try close(f); end
+                    try close(f); end %#ok<*TRYNC>
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -178,6 +189,13 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                   end
                 end
                 
                 
@@ -363,6 +381,10 @@ switch type
                     % compute final score
                     tfce_score = nansum(tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -423,6 +445,13 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,3)+nansum(neg_tfce,3);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                   end
                 end
                 
                 
@@ -621,6 +650,10 @@ switch type
                     % compute final score
                     tfce_score = nansum(tfce,4);
                     try close(f); end
+                    if nargout == 2
+                        thresholded_maps = tfce;
+                        thresholded_maps(:,:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
                     
                 else
                     
@@ -682,7 +715,14 @@ switch type
                     % compute final score
                     tfce_score = nansum(pos_tfce,4)+nansum(neg_tfce,4);
                     try close(f); end
-                end
+                    if nargout == 2
+                        thresholded_maps = NaN(size(pos_tfce,1),size(pos_tfce,2),...
+                            size(neg_tfce,3)+size(pos_tfce,3));
+                        thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
+                        thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                    end
+               end
                 
                 
             case{2}

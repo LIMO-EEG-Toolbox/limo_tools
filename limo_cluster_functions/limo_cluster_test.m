@@ -2,7 +2,7 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 
 % limo_cluster_test finds clusters of significant F values, computes the
 % sum of F values inside each cluster, and compares that sum to a threshold
-% sum of F values expected by chance.
+% sum of F values expected by chance (for t test - use t^2).
 %
 % FORMAT: [mask, pval, L, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
 %
@@ -44,6 +44,7 @@ if n~=0
     sort_clustermax = [NaN(n,1); sort_clustermax];
 end
 maxclustersum_th = sort_clustermax(round((1-alphav)*nboot));
+fprintf('cluster mass threshold: %g\n',maxclustersum_th)
 
 % compute the mask: for each cluster do the sum and set significant if > maxclustersum_th
 mask = zeros(size(ori_f));
@@ -67,8 +68,8 @@ mask2  = logical(mask); % logical - faster for masking
 
 % compute corrected p-values: number of times observed mass > bootstrap
 pval = NaN(size(mask));
-if sum(mask2(:))>0
-    L       = posclusterslabelmat.*mask2; % remove non significant clusters
+if any(mask2(:))
+    L       = posclusterslabelmat(mask2); % remove non significant clusters
     CL_list = setdiff(unique(L),0);
     for CL=1:length(CL_list)
         p = 1-(sum(sum(ori_f(L==CL_list(CL)))>=boot_maxclustersum)./nboot);

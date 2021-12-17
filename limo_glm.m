@@ -57,7 +57,7 @@ function model = limo_glm(varargin)
 % - Each effect is accounted for given the other effects; this means that one
 % can have a different number of trials per conditions/factors
 % provided there is no interactions. For interaction models (typically for
-% single subject anayses), this is not directly possible and no correction
+% single subject analyses), this is not directly possible and no correction
 % is provided. Instead, with a design created using limo_design_matrix, data
 % would have been sampled to make sure the number of trials or subjects is
 % identical across interaction terms.
@@ -78,9 +78,15 @@ function model = limo_glm(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
+%% default
+% not documented in the help but the value for that key can be passed as the last argument
+variance_estimates = 'standard'; % vs 'HC4'
+
 %% varagin
 
-if nargin == 2
+if nargin == 1
+    error('not enough arguments in')
+elseif nargin <=3
     Y               = varargin{1};
     X               = varargin{2}.design.X;
     nb_conditions   = varargin{2}.design.nb_conditions;
@@ -95,6 +101,10 @@ if nargin == 2
         n_freqs = varargin{2}.data.size4D(2);
         n_times = varargin{2}.data.size4D(3);
     end
+    % undocumented
+    if nargin == 3
+        variance_estimates = varargin{3};
+    end
     clear varargin
 elseif nargin >= 7
     Y               = varargin{1};
@@ -108,8 +118,10 @@ elseif nargin >= 7
         n_freqs     = varargin{8};
         n_times     = varargin{9};
     end
-else
-    error('varargin error')
+    % undocumented
+    if nargin == 10
+        variance_estimates = varargin{10};
+    end
 end
 
 if isempty(nb_conditions);   nb_conditions   = 0; end
@@ -210,17 +222,35 @@ switch method
         % --------------------------------------------------------------
         T   = (Y-repmat(mean(Y),size(Y,1),1))'*(Y-repmat(mean(Y),size(Y,1),1));  % SS Total (the data)
         R   = eye(size(Y,1)) - WX*pinv(WX);                                      % Projection onto E
-        E   = Y'*R*Y;                                                            % SS Error
+        
+        % covariance stuff
+        % -----------------
+        HM    = WX*pinv(WX);               % Hat matrix, projection onto X
+        h     = diag(WX*pinv(WX'*WX)*WX'); % leverage
+        d     = min(4,h/mean(h));          % power of the variance stabilizer E4
+        if strcmpi(variance_estimates,'HC4')
+            HC4 = (R*Y).^2./((1-h).^d);      % Cribari-Neto (2004)
+            E   = (vecnorm((R*Y)./((1-h).^d)).^2)';
+        else
+            E = diag(Y'*R*Y);              % SS Error => vecnorm(R*Y).^2
+        end
+        
+        if any(E<0)
+            warning on
+            warning('data and model are too close! negative MSE inverted\n')
+            E = abs(E); warning off
+        end
         
         % degrees of freedom
         % -------------------
-        df = rank(WX)-1;
-        if strcmp(method,'OLS')
+       df  = rank(WX)-1;
+       if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
-        else
+       else
             % Satterthwaite approximation minus the number of dimensions removed by pcout to get W
-            HM  = WX*pinv(WX); % Hat matrix, projection onto X
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1);   
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); 
+            % df = trace(HM'*HM).^2/trace(HM'*HM*HM'*HM); 
+            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
         end
         
         % model R^2
@@ -238,18 +268,21 @@ switch method
             H              = (Betas'*X'*M*X*Betas);          % SS Effects (X'*M*X is weighted)
         end
         Rsquare            = diag(H)./diag(T);               % Variance explained
-        F_Rsquare          = (diag(H)./df) ./ (diag(E)/dfe);
+        F_Rsquare          = (diag(H)./df) ./ (E/dfe);       % unconstrained error 
         p_Rsquare          = 1 - fcdf(F_Rsquare, df, dfe);
         
         % update the model structure
         % ----------------------------
-        
         model.W                 = W;
         model.betas             = Betas;
         model.betas_se          = Betas;
         for t=1:size(Y,2)
-            model.betas_se(:,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX'*WX)));
-                                  % same as sqrt(E(t,t)/dfe)./ sqrt(sum(sum((WX-mean(WX)).^2)));
+            if strcmpi(variance_estimates,'HC4')
+                model.betas_se(:,t) = diag((pinv(WX'*WX))*WX'*diag(HC4(:,t))*WX*(pinv(WX'*WX)));
+            else
+               model.betas_se(:,t) =  sqrt(E(t)/dfe)./ sqrt(sum(sum((WX-mean(WX)).^2)));
+                                    %  sqrt(diag((E(t,t)/dfe)*pinv(WX'*WX)));
+            end
         end
         model.R2_univariate     = Rsquare;
         model.F                 = F_Rsquare;
@@ -279,7 +312,7 @@ switch method
                 M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
                 H                                = (Betas'*X'*M*X*Betas);
                 df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
-                F_conditions                     = (diag(H)/df_conditions) ./ (diag(E)/dfe);
+                F_conditions                     = (diag(H)/df_conditions) ./ (E/dfe);
                 pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
             end
             
@@ -314,7 +347,7 @@ switch method
                 M                    = R0 - R; % hat matrix for factor f
                 H                    = (Betas'*X'*M*X*Betas);
                 df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
+                F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (E/dfe);
                 pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                 
                 % update factors
@@ -376,7 +409,7 @@ switch method
                 M                    = R0 - R;
                 H(f,:)               = diag((betas'*x'*M*x*betas));
                 df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
+                F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (E./dfe)'; % note dfe from full model
                 pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                 
                 % update factors
@@ -398,9 +431,9 @@ switch method
             % ---------------------------
             
             if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-                HI                 = diag(T)' - H(1,:) - H(2,:) - diag(E)';
+                HI                 = diag(T)' - H(1,:) - H(2,:) - E';
                 df_interactions    = prod(df_conditions);
-                F_interactions     = (HI./df_interactions) ./ (diag(E)/dfe)';
+                F_interactions     = (HI./df_interactions) ./ (E/dfe)';
                 pval_interactions  = 1 - fcdf(F_interactions, df_interactions, dfe);
                 
             else % run through each interaction
@@ -453,7 +486,7 @@ switch method
                     M                      = R0 - R;
                     HI(f,:)                = diag((betas'*x'*M*x*betas))';
                     df_interactions(f)     = prod(df_conditions(interaction{f}));
-                    F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
+                    F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (E/dfe)';
                     pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
                     Istart                 = Istart+nb_interactions(f);
                 end
@@ -493,7 +526,7 @@ switch method
                     M                                = R0 - R; % hat matrix for regressor of interest
                     H                                = Betas'*X'*M*X*Betas;
                     df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
-                    F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
+                    F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (E/dfe);
                     pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                 end
                 
@@ -519,13 +552,31 @@ switch method
             
             T   = (squeeze(Y(freq,:,:))-repmat(mean(squeeze(Y(freq,:,:))),size(Y,2),1))'*(squeeze(Y(freq,:,:))-repmat(mean(squeeze(Y(freq,:,:))),size(Y,2),1));  % SS Total (the data)
             R   = eye(size(Y,2)) - WX{freq}*pinv(WX{freq});
-            E   = squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:));
+            
+            % covariance stuff
+            % -----------------
+            HM    = WX{freq}*pinv(WX{freq});    
+            if strcmpi(variance_estimates,'HC4')
+                h   = diag(WX{freq}*pinv(WX{freq}'*WX{freq})*WX{freq}');
+                d   = min(4,h/mean(h));
+                HC4 = (R*squeeze(Y(freq,:,:))).^2./((1-h).^d);
+                E   = (vecnorm((R*squeeze(Y(freq,:,:)))./((1-h).^d)).^2)';
+            else
+                E   = diag(squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:)));             
+            end
+            
+            if any(E<0)
+                warning on
+                warning('data and model are too close! negative MSE inverted - freq%g\n',freq)
+                E = abs(E); warning off
+            end
             
             % degrees of freedom
             % -------------------
             df  = rank(WX{freq})-1;
             HM  = WX{freq}*pinv(WX{freq}); % Hat matrix, projection onto X
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
+            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
 
             % model R^2
             % -----------
@@ -537,14 +588,18 @@ switch method
             M              = R0 - R;
             H              = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
             Rsquare        = diag(H)./diag(T);
-            F_Rsquare      = (diag(H)./df) ./ (diag(E)/dfe);
+            F_Rsquare      = (diag(H)./df) ./ (E/dfe);
             p_Rsquare      = 1 - fcdf(F_Rsquare, df, dfe);
            
             % update the model structure
             % ----------------------------
             
             for t=1:size(Y,3)
-                model.betas_se(:,freq,t) = sqrt(diag((E(t,t)/dfe)*pinv(WX{freq}'*WX{freq})));
+                if strcmpi(variance_estimates,'HC4')
+                    model.betas_se(:,freq,t) = diag((pinv(WX{freq}'*WX{freq}))*WX'*diag(HC4(:,t))*WX{freq}*(pinv({freq}'*{freq})));
+                else
+                    model.betas_se(:,freq,t) =  sqrt(E(t)/dfe)./ sqrt(sum(sum((WX{freq}-mean(WX{freq})).^2)));
+                end
             end
             model.R2_univariate(freq,:)  = Rsquare;
             model.F(freq,:)              = F_Rsquare;
@@ -573,7 +628,7 @@ switch method
                     M                                = R0 - R; % hat matrix for all categorical regressors (1 factor)
                     H                                = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
                     df_conditions                    = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS; same as tr(M)?
-                    F_conditions                     = (diag(H)/df_conditions) ./ (diag(E)/dfe);
+                    F_conditions                     = (diag(H)/df_conditions) ./ (E/dfe);
                     pval_conditions                  = 1 - fcdf(F_conditions(:), df_conditions, dfe);
                 end
                 
@@ -608,7 +663,7 @@ switch method
                     M                    = R0 - R; % hat matrix for factor f
                     H                    = (squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:)));
                     df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                    F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (diag(E)/dfe);
+                    F_conditions(f,:)    = (diag(H)/df_conditions(f)) ./ (E/dfe);
                     pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                     
                     % update factors
@@ -670,7 +725,7 @@ switch method
                     M                    = R0 - R;
                     H(f,:)               = diag((betas'*x'*M*x*betas));
                     df_conditions(f)     = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C)-1 if OLS;
-                    F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (diag(E)./dfe)'; % note dfe from full model
+                    F_conditions(f,:)    = (H(f,:)./df_conditions(f)) ./ (E./dfe)'; % note dfe from full model
                     pval_conditions(f,:) = 1 - fcdf(F_conditions(f,:), df_conditions(f), dfe);
                     
                     % update factors
@@ -692,9 +747,9 @@ switch method
                 % ---------------------------
                 
                 if nb_factors == 2 && nb_continuous == 0 % the quick way with only one interaction
-                    HI                 = diag(T)' - H(1,:) - H(2,:) - diag(E)';
+                    HI                 = diag(T)' - H(1,:) - H(2,:) - E4';
                     df_interactions    = prod(df_conditions);
-                    F_interactions     = (HI./df_interactions) ./ (diag(E)/dfe)';
+                    F_interactions     = (HI./df_interactions) ./ (E/dfe)';
                     
                 else % run through each interaction
                     
@@ -746,7 +801,7 @@ switch method
                         M                      = R0 - R;
                         HI(f,:)                = diag((betas'*x'*M*x*betas))';
                         df_interactions(f)     = prod(df_conditions(interaction{f}));
-                        F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (diag(E)/dfe)';
+                        F_interactions(f,:)    = (HI(f,:)./df_interactions(f)) ./ (E/dfe)';
                         pval_interactions(f,:) = 1 - fcdf(F_interactions(f,:), df_interactions(f), dfe);
                         Istart                 = Istart+nb_interactions(f);
                     end
@@ -784,7 +839,7 @@ switch method
                         M                                = R0 - R; % hat matrix for regressor of interest
                         H                                = squeeze(Betas(:,freq,:))'*X'*M*X*squeeze(Betas(:,freq,:));
                         df_continuous(n)                 = trace(M'*M)^2/trace((M'*M)*(M'*M)); % same as rank(C) if OLS;
-                        F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (diag(E)/dfe);
+                        F_continuous(n,:)                = (diag(H)./(df_continuous(n))) ./ (E/dfe);
                         pval_continuous(n,:)             = 1 - fcdf(F_continuous(n,:), 1, dfe); % dfe same as size(Y,1)-rank(X) if OLS
                    end
                     
@@ -900,6 +955,11 @@ switch method
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
+            if E<0
+                warning on
+                warning('data and model are too close! negative MSE inverted - frame %g\n',frame)
+                E = abs(E); warning off
+            end
             % The number of degrees of freedom can be defined as the minimum number of
             % independent coordinates that can specify the position of the system completely.
             % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
@@ -910,7 +970,7 @@ switch method
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
             % MSE adjustment, E cannot be smaller than OLS since the
             % hyperplane we fit is farther away from some observations
-            if E < E_ols
+            if E < abs(E_ols)
                 n = size(X,1); p = rank(X);
                 sigmar = E/(n-p); sigmals = E_ols/(n-p);
                 MSE = (n*sigmar + p^2*sigmals) / (n+p^2);

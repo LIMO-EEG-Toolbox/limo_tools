@@ -12,13 +12,19 @@ current_dir = pwd;
 if nargin == 0
     error('expected chanlocs expected as input')
 else
-    load(expected_chanlocs)
+    expected_chanlocs = load(expected_chanlocs);
+    allfields         = fieldnames(expected_chanlocs);
+    chanlocs          = find(arrayfun(@(x) isstruct(expected_chanlocs.(cell2mat(x))),allfields));
+    expected_chanlocs = expected_chanlocs.(cell2mat(allfields(chanlocs)));
 end
-
 
 % select data
 % -----------
-[Names,Paths,Files] = limo_get_files;
+if nargin == 2
+    
+else
+    [Names,Paths] = limo_get_files;
+end
 
 % check it's Betas.mat files and which param to test
 % --------------------------------------------------

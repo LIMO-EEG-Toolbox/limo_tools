@@ -3,8 +3,8 @@ function [est,HDI,Outliers,KDE]=data_plot(Data,varargin)
 % plots the data split by groups showing each data points with the
 % distribution and a summary statistics estimator with 95&% Bayes boot HDI
 %
-% FORMAT: [est,HDI]= rst_data_plot(Data,options)
-%         [est,HDI]= rst_data_plot(Data,'between',0.25,'within',0.025,'pointsize',50,'estimator','median','coverage',0.95)
+% FORMAT: [est,HDI,Outliers,KDE]= rst_data_plot(Data,options)
+%         [est,HDI,Outliers,KDE]= rst_data_plot(Data,'between',0.25,'within',0.025,'pointsize',50,'estimator','median','coverage',0.95)
 %
 % INPUT: Data is a matrix, data are plotted colmun-wise
 %        options are
@@ -13,6 +13,8 @@ function [est,HDI,Outliers,KDE]=data_plot(Data,varargin)
 %                'point_size' the size of data points
 %                'estimator' can be 'median', 'mean', 'trimmed mean'
 %                'coverage' indicate the probability coverage of the HDI
+%                'figure' is 'on', 'new', 'off'
+%
 % OUTPUT: est is the summary statistics
 %         HDI the 95% High Density Interval (Bayes bootstrap)
 %         Ouliers is a binary matrix indicating S-outliers
@@ -50,15 +52,16 @@ disp(' ')
 %% Defaults
 
 % hard coded
-Nb = 1000;      % number of bootstrap samples, no need more really
+Nb       = 1000;      % number of bootstrap samples, no need more really
 trimming = 20;  % 20% trimming is the standard approach
-decile = .5;    % Median is estimated using the 5th decile of Harell Davis
+decile   = .5;    % Median is estimated using the 5th decile of Harell Davis
 
 % soft coded, see options
 between_gp_dispersion = 0.25;
-within_gp_dispersion = 0.025;
-point_size = 50;
-prob_coverage = 95/100; % prob coverage of the HDI
+within_gp_dispersion  = 0.025;
+point_size            = 50;
+prob_coverage         = 95/100; % prob coverage of the HDI
+fig                   = 'new';
 
 % check inputs
 if ~exist('Data','var')
@@ -89,6 +92,8 @@ else
             within_gp_dispersion = cell2mat(varargin(n+1));
         elseif strcmpi(varargin(n),'point_size')
             point_size = cell2mat(varargin(n+1));
+        elseif strcmpi(varargin(n),'figure')
+            fig = varargin(n+1);
         elseif strcmpi(varargin(n),'estimator')
             if ~strcmpi(varargin(n+1),'median') && ...
                     ~strcmpi(varargin(n+1),'mean') && ...
@@ -120,11 +125,11 @@ end
 %% Compute High Density Intervals (Bayesian Bootstrap)
 % sample with replcaement from Dirichlet
 % sampling = number of observations, e.g. participants
-n=size(Data,1);
+n  = size(Data,1);
 bb = zeros(Nb,grouping);
 for boot=1:Nb % bootstrap loop
-    theta = exprnd(1,[n,1]);
-    weigths = theta ./ repmat(sum(theta),n,1);
+    theta    = exprnd(1,[n,1]);
+    weigths  = theta ./ repmat(sum(theta),n,1);
     resample = (datasample(Data,n,'Replace',true,'Weights',weigths));
 
     % compute the estimator
@@ -137,19 +142,25 @@ for boot=1:Nb % bootstrap loop
     end
 end
 
-sorted_data = sort(bb,1); % sort bootstrap estimates
+sorted_data   = sort(bb,1); % sort bootstrap estimates
 upper_centile = floor(prob_coverage*size(sorted_data,1)); % upper bound
-nCIs = size(sorted_data,1) - upper_centile;
-HDI = zeros(2,grouping);
+nCIs          = size(sorted_data,1) - upper_centile;
+HDI           = zeros(2,grouping);
 
 %% outliers
-Outliers = S_outliers(Data);
+Outliers     = S_outliers(Data);
 
 %% start
-figure; hold on
-
-% select color scheme
-color_scheme = select_colours(grouping);
+if strcmpi(fig,'on') || strcmpi(fig,'new')
+    
+    if strcmpi(fig,'new')
+        figure('Name','data plot')
+    end
+    hold on
+    
+    % select color scheme
+    color_scheme = select_colours(grouping);
+end
 
 % iterate per group/condition
 for u=1:grouping
@@ -181,11 +192,13 @@ for u=1:grouping
     end
     X = repmat([gp_index(u)-(within_gp_dispersion/2) gp_index(u)+(within_gp_dispersion/2)],[length(tmp),1]);
     X(isnan(Y)) = NaN;
-    for p=1:size(Y,2)
-        scatter(X(:,p),Y(:,p),point_size,color_scheme(u,:));
-        scatter(X(outliers,p),Y(outliers,p),point_size,color_scheme(u,:),'filled');
+    if strcmpi(fig,'on') || strcmpi(fig,'new')
+        for p=1:size(Y,2)
+            scatter(X(:,p),Y(:,p),point_size,color_scheme(u,:));
+            scatter(X(outliers,p),Y(outliers,p),point_size,color_scheme(u,:),'filled');
+        end
     end
-
+    
     %% Get the kernel density estimate
     [bc,K]=RASH(tmp,100);
     KDE{u} = [bc',K'];
@@ -196,73 +209,78 @@ for u=1:grouping
     high=(K/2); low=(-high);
 
     % plot contours
-    y1 = plot(high+gp_index(u),bc); set(y1,'Color',color_scheme(u,:)); hold on
-    y2 = plot(low+gp_index(u),bc); set(y2,'Color',color_scheme(u,:));
-    if isnumeric(y1)
-        y1 = get(y1); y2 = get(y2); % old fashion matlab
+    if strcmpi(fig,'on') || strcmpi(fig,'new')
+        y1 = plot(high+gp_index(u),bc); set(y1,'Color',color_scheme(u,:)); hold on
+        y2 = plot(low+gp_index(u),bc); set(y2,'Color',color_scheme(u,:));
+        if isnumeric(y1)
+            y1 = get(y1); y2 = get(y2); % old fashion matlab
+        end
+        % fill
+        xpoints=[y2.XData',y1.XData']; filled=[y2.YData',y1.YData'];
+        % check that we have continuous data, otherwise 0 pad
+        if diff(xpoints(1,:)) > 0.001*(range(xpoints(:,1)))
+            xtmp = NaN(size(xpoints,1)+1,size(xpoints,2));
+            xtmp(1,:) = [gp_index(u) gp_index(u)];
+            xtmp(2:end,:) = xpoints;
+            xpoints = xtmp; clear xtmp
+            ytmp = NaN(size(filled,1)+1,size(filled,2));
+            ytmp(1,:) = filled(1,:);
+            ytmp(2:end,:) = filled;
+            filled = ytmp; clear ytmp
+        end
+        
+        if diff(xpoints(end,:)) > 0.001*(range(xpoints(:,1)))
+            xpoints(end+1,:) = [gp_index(u) gp_index(u)];
+            filled(end+1,:)  = filled(end,:);
+        end
+        hold on; fillhandle=fill(xpoints,filled,color_scheme(u,:));
+        set(fillhandle,'LineWidth',2,'EdgeColor',color_scheme(u,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
+        
+        %% add IQR - using again Harell-Davis Q
+        ql = harelldavis(tmp,0.25);
+        [~,position] = min(abs(filled(:,1) - ql));
+        plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
+        
+        if  strcmpi(estimator,'median')
+            qm = est(u);
+        else
+            qm = harelldavis(tmp,0.5);
+        end
+        [~,position] = min(abs(filled(:,1) - qm));
+        plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
+        qu = harelldavis(tmp,0.75);
+        [~,position] = min(abs(filled(:,1) - qu));
+        plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
+        clear xpoints filled
+        
+        %% Add the High Density Intervals
+        tmp = sorted_data(:,u);
+        ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
+        [~,index]=find(ciWidth == min(ciWidth)); % densest centile
+        if length(index) > 1; index = index(1); end % many similar values
+        HDI(1,u) = tmp(index);
+        HDI(2,u) = tmp(index+upper_centile);
+        
+        % plot this with a rectangle
+        X = (gp_index(u)-0.3):0.1:(gp_index(u)+0.3);
+        plot(X(3:5),repmat(est(u),[1,length(X(3:5))]),'LineWidth',6,'Color',color_scheme(u,:));
+        rectangle('Position',[X(3),HDI(1,u),X(5)-X(3),HDI(2,u)-HDI(1,u)],'Curvature',[0.4 0.4],'LineWidth',3,'EdgeColor',color_scheme(u,:))
     end
-    % fill
-    xpoints=[y2.XData',y1.XData']; filled=[y2.YData',y1.YData'];
-    % check that we have continuous data, otherwise 0 pad
-    if diff(xpoints(1,:)) > 0.001*(range(xpoints(:,1)))
-        xtmp = NaN(size(xpoints,1)+1,size(xpoints,2));
-        xtmp(1,:) = [gp_index(u) gp_index(u)];
-        xtmp(2:end,:) = xpoints;
-        xpoints = xtmp; clear xtmp
-        ytmp = NaN(size(filled,1)+1,size(filled,2));
-        ytmp(1,:) = filled(1,:);
-        ytmp(2:end,:) = filled;
-        filled = ytmp; clear ytmp
-    end
-
-    if diff(xpoints(end,:)) > 0.001*(range(xpoints(:,1)))
-        xpoints(end+1,:) = [gp_index(u) gp_index(u)];
-        filled(end+1,:)  = filled(end,:);
-    end
-    hold on; fillhandle=fill(xpoints,filled,color_scheme(u,:));
-    set(fillhandle,'LineWidth',2,'EdgeColor',color_scheme(u,:),'FaceAlpha',0.2,'EdgeAlpha',0.8);%set edge color
-
-    %% add IQR - using again Harell-Davis Q
-    ql = harelldavis(tmp,0.25);
-    [~,position] = min(abs(filled(:,1) - ql));
-    plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
-    if  strcmpi(estimator,'median')
-        qm = est(u);
-    else
-        qm = harelldavis(tmp,0.5);
-    end
-    [~,position] = min(abs(filled(:,1) - qm));
-    plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
-    qu = harelldavis(tmp,0.75);
-    [~,position] = min(abs(filled(:,1) - qu));
-    plot(xpoints(position,:),filled(position,:),'Color',color_scheme(u,:));
-    clear xpoints filled
-
-    %% Add the High Density Intervals
-    tmp = sorted_data(:,u);
-    ci = 1:nCIs; ciWidth = tmp(ci+upper_centile) - tmp(ci); % all centile distances
-    [~,index]=find(ciWidth == min(ciWidth)); % densest centile
-    if length(index) > 1; index = index(1); end % many similar values
-    HDI(1,u) = tmp(index);
-    HDI(2,u) = tmp(index+upper_centile);
-
-    % plot this with a rectangle
-    X = (gp_index(u)-0.3):0.1:(gp_index(u)+0.3);
-    plot(X(3:5),repmat(est(u),[1,length(X(3:5))]),'LineWidth',6,'Color',color_scheme(u,:));
-    rectangle('Position',[X(3),HDI(1,u),X(5)-X(3),HDI(2,u)-HDI(1,u)],'Curvature',[0.4 0.4],'LineWidth',3,'EdgeColor',color_scheme(u,:))
 end
 
 %% finish off the figure
-cst = max(abs(diff(Data(:)))) * 0.1;
-axis([0.3 gp_index(grouping)+0.7 min(Data(:))-cst max(Data(:))+cst])
-
-if size(Data,1) == 1
-    title(sprintf('Data distribution with %s and 95%% Highest Density Interval',estimator),'FontSize',16);
-else
-    title(sprintf('Data distributions with %ss and 95%% Highest Density Intervals',estimator),'FontSize',16);
+if strcmpi(fig,'on') || strcmpi(fig,'new')
+    cst = max(abs(diff(Data(:)))) * 0.1;
+    axis([0.3 gp_index(grouping)+0.7 min(Data(:))-cst max(Data(:))+cst])
+    
+    if size(Data,1) == 1
+        title(sprintf('Data distribution with %s and 95%% Highest Density Interval',estimator),'FontSize',16);
+    else
+        title(sprintf('Data distributions with %ss and 95%% Highest Density Intervals',estimator),'FontSize',16);
+    end
+    grid on ; box on; drawnow
 end
-grid on ; box on; drawnow
-
+    
 % add an output if not specified during the call
 if nargout == 0
     S = questdlg('Save computed data?','Save option','Yes','No','No');

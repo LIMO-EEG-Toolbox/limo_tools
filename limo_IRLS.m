@@ -36,7 +36,7 @@ function [b, w] = limo_IRLS(varargin)
 %  Copyright (C) LIMO Team 2019
 
 if  nargin < 2      
-    error(message('Too Few Inputs'));   
+    error('Too Few Inputs');   
 else
     X    = varargin{1};
     Y    = varargin{2};
@@ -94,9 +94,9 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    r= resadj ./ repmat(tune.*re, size(Y,1),1);
    
    % Compute new weights 
-   w = (abs(r)<1) .* (1 - r.^2).^2;
+   w  = (abs(r)<1) .* (1 - r.^2).^2;
+   w  = sqrt(w);
    yw = Y .* w;
-   w = sqrt(w);
    
    for i= 1: size(Y,2)
        xw = X .* repmat(w(:,i), 1, size(X,2));
