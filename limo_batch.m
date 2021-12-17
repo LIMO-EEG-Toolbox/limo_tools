@@ -181,6 +181,10 @@ if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
     STUDY = evalin('base', 'STUDY');
 end
 
+if isempty(STUDY)
+    clear STUDY
+end
+
 if exist('STUDY','var')
     if isempty(STUDY.filepath)
         STUDY.filepath =pwd;
