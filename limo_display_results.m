@@ -71,9 +71,9 @@ end
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
 % see limo_stat_values - discontinuated empirical threshold (misleading)
 
+% Load LIMO structure if a path was provided
 if ischar(LIMO)
-    LIMO = load(LIMO);
-    LIMO = LIMO.LIMO;
+    load(LIMO, 'LIMO');
 end
 
 if LIMO.design.bootstrap == 0

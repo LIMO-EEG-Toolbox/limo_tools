@@ -1188,7 +1188,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
         if any(isbeta(:)) && any(iscon(:))
             error('input data mix Beta and con files - not supported')
-        elseif sum(isbeta(:)) == 0 && sum(iscon(:)) == 0 % maybe it's a custum file name
+        elseif sum(isbeta(:)) == 0 && sum(iscon(:)) == 0 % maybe it's a custom file name
             for gp = gp_nb:-1:1
                 all_files  = limo_get_files([],[],[],LIMO.data.data{gp});
                 isbeta(gp) = mean(cellfun(@(x) contains(x,'Beta'),all_files));
@@ -1424,6 +1424,14 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     end
 
     % last re-check dimensions
+    if sum(single(isnan(data(:)))) == numel(data)
+        if exist('errordlg2','file')
+            errordlg2('the data matrix is empty! either betas.mat/con.mat files are empty or there is a bug'); return
+        else
+            errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
+        end
+    end
+    
     if gp_nb ==1 && size(data,numel(size(data))-1) <= 2
         warning('the concatenated data have %g repeated measures, consider using a t-test',size(data,numel(size(data))-1))
         return

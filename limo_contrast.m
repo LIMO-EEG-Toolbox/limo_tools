@@ -742,22 +742,22 @@ switch type
                     g = floor((20/100)*n);
                 end
                 
-                for time=1:size(Y,1)
-                    [v,indices]          = sort(squeeze(Y(time,:,:))); % sorted data
-                    TD(time,:,:)         = v((g+1):(n-g),:);           % trimmed data
-                    ess(channel,time,1)  = nanmean(C(1:size(TD,3))*squeeze(TD(time,:,:))',2);
+                for frame=1:size(Y,1)
+                    [v,indices]          = sort(squeeze(Y(frame,:,:))); % sorted data
+                    TD(frame,:,:)         = v((g+1):(n-g),:);           % trimmed data
+                    ess(channel,frame,1)  = nanmean(C(1:size(TD,3))*squeeze(TD(frame,:,:))',2);
                     I                    = zeros(1,1,n); 
-                    I(1,1,:)             = (C(1:size(TD,3))*squeeze(Y(time,:,:))')'; % interaction
-                    ess2(channel,time,1) = limo_trimmed_mean(I);
+                    I(1,1,:)             = (C(1:size(TD,3))*squeeze(Y(frame,:,:))')'; % interaction
+                    ess2(channel,frame,1) = limo_trimmed_mean(I);
                     v(1:g+1,:)           = repmat(v(g+1,:),g+1,1);
                     v(n-g:end,:)         = repmat(v(n-g,:),g+1,1);      % winsorized data
                     [~,reorder]          = sort(indices);
                     for j = 1:size(Y,3)
                         SD(:,j) = v(reorder(:,j),j); % restore the order of original data
                     end 
-                    S(time,:,:)          = cov(SD);  % winsorized covariance
-                    ess(channel,time,2)  = sqrt(C(1:size(TD,3))*squeeze(S(time,:,:))*C(1:size(TD,3))');
-                    ess2(channel,time,2) = NaN;
+                    S(frame,:,:)          = cov(SD);  % winsorized covariance
+                    ess(channel,frame,2)  = sqrt(C(1:size(TD,3))*squeeze(S(frame,:,:))*C(1:size(TD,3))');
+                    ess2(channel,frame,2) = NaN;
                 end
                 df  = rank(C); dfe = n-df;
                 ess(channel,:,3) = dfe;

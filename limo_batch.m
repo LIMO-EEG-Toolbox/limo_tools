@@ -34,7 +34,8 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
-%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects)
+%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects, rows are contrasts, 
+%                     columns are variables in the GLM including the constant)
 %       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
 %
 % OUTPUT  
@@ -179,6 +180,7 @@ end
 % not passed but in base workspace (case of batching contrast from GUI)
 if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
     STUDY = evalin('base', 'STUDY');
+    if ~isstruct(STUDY); clear STUDY; end
 end
 
 if isempty(STUDY)
@@ -522,15 +524,10 @@ if exist('STUDY','var')
 end
 
 cd(current); 
-WLS_error = 0;
 failed = zeros(1,N);
 for subject=1:N
     if strfind(report{subject},'failed')
         failed(subject) = 1;
-        test = psom_pipeline_visu([LIMO_files.LIMO filesep 'limo_batch_report' filesep glm_name filesep 'subject' num2str(subject) filesep],'log','glm');
-        if contains(test,'Principal Component Projection cannot be computed')
-            WLS_error = WLS_error+1;
-        end
     end
 end
 
@@ -538,17 +535,9 @@ if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
     if sum(failed) == N % all subjects
-        if WLS_error == N
-            error('%s\n%s','LIMO batch done, all subjects failed when using WLS estimation','downsampling the data/restricting frames or using OLS usually solves this issue')
-        else
-            warning('LIMO batch done but all subjects failed')
-        end
+        warning('LIMO batch done but all subjects failed')
     else
-        if WLS_error ~=0
-            warning('%g subjects could not be processed using WLS, not enough trials \ncheck limo batch report',WLS_error)
-        else
-            warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
-        end
+        warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
     end
 end
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
