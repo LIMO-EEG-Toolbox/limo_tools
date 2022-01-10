@@ -1499,7 +1499,7 @@ elseif LIMO.Level == 2
                     reg_values(remove,:)   = [];
                 end
                 
-            elseif contains(['Modelled','Modeled'],extra,'Ignorecase',true)
+            elseif contains(extra,{'Modelled','Modeled'},'Ignorecase',true)
                 if exist('Betas.mat','file') % OLS & IRLS GLM
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         Betas = load('Betas.mat');
