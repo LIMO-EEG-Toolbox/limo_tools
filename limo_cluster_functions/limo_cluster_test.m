@@ -39,7 +39,9 @@ n                                  = sum(isnan(sort_clustermax));
 
 % NaN present if there was no clusters under H0 - just warp around
 % should not happen if using limo_getclustersum as it returns 0 in that case
-if n~=0 
+if n == nboot
+    error('no cluster max value found - check boot_maxclustersum parameter')
+else
     sort_clustermax(isnan(sort_clustermax))=[];
     sort_clustermax = [NaN(n,1); sort_clustermax];
 end
@@ -50,7 +52,7 @@ fprintf('cluster mass threshold: %g\n',maxclustersum_th)
 mask = zeros(size(ori_f));
 cluster_label = 1; 
 if nposclusters~=0
-    for C = 1:nposclusters % compute cluster sums & compare to bootstrap threshold
+    for C = nposclusters:-1:1 % compute cluster sums & compare to bootstrap threshold
         maxval(C) = sum(ori_f(posclusterslabelmat==C));
         if  maxval(C)>= maxclustersum_th
             mask(posclusterslabelmat==C)= cluster_label; % flag clusters above threshold
@@ -59,25 +61,34 @@ if nposclusters~=0
     end
 end
 
+% compute corrected p-values: number of times observed mass > bootstrap
+mask2 = logical(mask); % logical - faster for masking
+pval  = ones(size(mask));
+if any(mask2(:)) % sum(mask2(:))>0
+    L       = posclusterslabelmat.*mask2; % remove non significant clusters
+    CL_list = setdiff(unique(L),0);       % don't care about 0
+    for CL=1:length(CL_list)
+        % sort_clustermax
+        cluster_mass = sum(ori_f(L==CL_list(CL)));
+        if any(cluster_mass == maxval)
+            p = 1-sum(cluster_mass>=sort_clustermax)./nboot;
+            if p ==0
+                p = 1/nboot; % never 0
+            end
+            tmp  = ones(size(mask));
+            tmp(L==CL_list(CL)) = p; % set p-values for many cells
+            pval = pval.*tmp; % tmp is never at the same location so we can just 'add' values
+        else
+            error('cannot find the cluster mass for p-value? while found for the mask?? something is seriously wrong')
+        end
+    end
+end
+pval = pval.*mask; % set the ones to NaN 
+
+% just for output
 if exist('maxval','var')
      maxval = max(maxval);   % biggest cluster
 else
      maxval = 0;
 end
-mask2  = logical(mask); % logical - faster for masking
-
-% compute corrected p-values: number of times observed mass > bootstrap
-pval = NaN(size(mask));
-if any(mask2(:))
-    L       = posclusterslabelmat(mask2); % remove non significant clusters
-    CL_list = setdiff(unique(L),0);
-    for CL=1:length(CL_list)
-        p = 1-(sum(sum(ori_f(L==CL_list(CL)))>=boot_maxclustersum)./nboot);
-        if p ==0
-            p = 1/nboot; % never 0
-        end
-        pval(L==CL_list(CL)) = p;
-    end
-end
-
 
