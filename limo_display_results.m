@@ -554,11 +554,12 @@ if LIMO.Level == 1
             if isempty(regressor); disp('selection aborded'); return; end
             regressor = cell2mat(regressor);
             if isempty(regressor); disp('selection aborded'); return; end
+            if ~contains(regressor,'['); regressor=['[' regressor ']']; end
+            if ischar(regressor); regressor=str2num(regressor); end %#ok<ST2NM>
+            regressor = sort(regressor);
             
-            try regressor = sort(str2double(regressor));
-                if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
-            catch ME
-                error('can''t select this regressor: %s',ME.message);
+            if max(regressor) > size(LIMO.design.X,2)
+                errordlg('invalid regressor number'); 
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
