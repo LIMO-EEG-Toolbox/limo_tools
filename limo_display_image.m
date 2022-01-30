@@ -443,14 +443,18 @@ if dynamic == 1
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         if ~isnan(p_values(yframe,frame))
                             fprintf('Stat value: %g, p_value %g \n',toplot(yframe,frame),p_values(yframe,frame));
+                        else
+                            fprintf('Stat value: %g, p_value is a NaN? \n',toplot(yframe,frame));
                         end
                     else
                         if ~isnan(p_values(round(y),frame))
                             fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
+                        else
+                            fprintf('Stat value: %g, p_value is a NaN? \n',toplot(round(y),frame));
                         end
                     end
                 catch pvalerror
-                    fprintf('couldn''t figure the p value?? %s \n',pvalerror.message)
+                    fprintf('couldn''t figure the stats values?? %s \n',pvalerror.message)
                 end
             end
         end
