@@ -118,6 +118,7 @@ else
     end
 end
 
+
 %% start
 
 switch type
@@ -200,7 +201,7 @@ switch type
         % ------------------------------------------------
         % Bootstrap
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -353,7 +354,7 @@ switch type
         % ------------------------------------------------
         % compute the null
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -509,7 +510,7 @@ switch type
         
         % ------------------------------------------------
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -1182,6 +1183,7 @@ switch type
         % now do the bootstrap
         % ---------------------
         if LIMO.design.bootstrap > 0
+            limo_check_ppool
             boot_files = dir(fullfile(LIMO.dir,'H0'));
             if ~isempty(boot_files) && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');

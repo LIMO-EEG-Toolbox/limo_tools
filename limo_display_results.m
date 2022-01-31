@@ -163,9 +163,9 @@ if LIMO.Level == 1
                         if strcmpi(FileName,'R2.mat') && size(LIMO.design.X,2)==1
                             mask = ones(size(mask)); LIMO.cache.fig.mask = mask;
                             mytitle = 'R^2 Coef unthresholded'; LIMO.cache.fig.title = mytitle;
-                            save LIMO LIMO
+                            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                         else
-                            save LIMO LIMO
+                            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                             return
                         end
                     else
@@ -234,7 +234,7 @@ if LIMO.Level == 1
                         LIMO.cache.fig.pval       = M;
                         LIMO.cache.fig.mask       = mask;
                         LIMO.cache.fig.title      = mytitle;
-                        save LIMO LIMO
+                        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                     end
                     
                     if ndims(toplot)==3
@@ -554,11 +554,12 @@ if LIMO.Level == 1
             if isempty(regressor); disp('selection aborded'); return; end
             regressor = cell2mat(regressor);
             if isempty(regressor); disp('selection aborded'); return; end
+            if ~contains(regressor,'['); regressor=['[' regressor ']']; end
+            if ischar(regressor); regressor=str2num(regressor); end %#ok<ST2NM>
+            regressor = sort(regressor);
             
-            try regressor = sort(str2double(regressor));
-                if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
-            catch ME
-                error('can''t select this regressor: %s',ME.message);
+            if max(regressor) > size(LIMO.design.X,2)
+                errordlg('invalid regressor number'); 
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
@@ -992,7 +993,7 @@ if LIMO.Level == 1
                 end
                 LIMO.cache.ERPplot.ci        = ci;
                 LIMO.cache.ERPplot.title     = mytitle;
-                save LIMO LIMO
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                 
             else
                 for i=1:size(continuous,1)
@@ -1028,7 +1029,7 @@ if LIMO.Level == 1
                     LIMO.cache.ERPplot.frequency = frequency;
                 end
                 LIMO.cache.ERPplot.title      = mytitle;
-                save LIMO LIMO
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
             end
             
     end % closes switch
@@ -1152,7 +1153,7 @@ elseif LIMO.Level == 2
             LIMO.cache.fig.pval       = squeeze(M);
             LIMO.cache.fig.mask       = squeeze(mask);
             LIMO.cache.fig.title      = mytitle;
-            save LIMO LIMO
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
         end
         
         % image all results
