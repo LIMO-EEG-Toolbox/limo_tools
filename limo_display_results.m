@@ -654,7 +654,7 @@ if LIMO.Level == 1
                 channel = eval(cell2mat(channel));
                 if size(channel) > 1
                     errordlg('invalid channel choice'); return
-                elseif channel > size(LIMO.data.chanlocs,1) || channel < 1
+                elseif channel > size(LIMO.data.chanlocs,2) || channel < 1
                     errordlg('invalid channel number'); return
                 end
                 
