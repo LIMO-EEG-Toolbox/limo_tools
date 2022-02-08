@@ -518,13 +518,12 @@ elseif nargin == 1
             if isempty(parameters)
                 return
             else
-                try
+                parameters = eval(cell2mat(parameters));
+                if isnan(parameters)
                     parameters = str2double(cell2mat(parameters));
-                catch
-                    parameters = eval(cell2mat(parameters));
                 end
             end
-            
+        
         else
             errordlg('file selection failed, only LIMO.mat files are supported'); return
         end
