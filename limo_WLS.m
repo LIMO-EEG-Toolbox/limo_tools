@@ -51,8 +51,8 @@ H      = diag(X*pinv(X'*X)*X');
 H(H>1) = 1; % numerical error instead of H=1 we can obtain 1.000000..... because of pinv
 
 % Adjustment factor
-adjfactor = 1 ./ sqrt(1-H);
-
+adjfactor                   = 1 ./ sqrt(1-H);
+adjfactor(isinf(adjfactor)) = 1; % if H = 1, no adjustment
 
 % OLS solution
 b = pinv(X)*Y;
