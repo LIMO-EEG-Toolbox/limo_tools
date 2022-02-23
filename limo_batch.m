@@ -194,7 +194,7 @@ if exist('STUDY','var')
     cd(STUDY.filepath); % go to study
     current = pwd; 
     if isempty(strfind(STUDY.filepath,'derivatives'))
-        % derivatives would have been created by std_limo if not in the path
+        % derivatives should have been created by std_limo if not already in the path
         if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
             mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]);
         end
@@ -211,7 +211,10 @@ if exist('STUDY','var')
         end
         LIMO_files.LIMO = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     end
-else
+else % if not part of a EEGLAB STUDY - e.g. run locally or FieldTrip
+    if ~contains(pwd,'derivatives') % make a derivatives folder
+         mkdir('derivatives'); cd derivatives
+    end
     current = pwd;
     mkdir('limo_batch_report')
     if isempty(LIMO_files)
@@ -273,12 +276,14 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                 root = STUDY.datasetinfo(subject).filepath;
             end
             
-            % if session - make subdir
+            % if session and data are not in a derivatives/sess, make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
-                if ischar(STUDY.datasetinfo(subject).session)
-                    root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
-                else
-                    root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                if ~contains(root,'ses-')
+                    if ischar(STUDY.datasetinfo(subject).session)
+                        root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
+                    else
+                        root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                    end
                 end
             end
             
