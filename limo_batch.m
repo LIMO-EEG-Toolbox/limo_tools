@@ -427,6 +427,7 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         procstatus(subject) = 1;
     end
 else % parallel call to the pipeline
+    limo_check_ppool
     parfor subject = 1:N
         disp('--------------------------------')
         fprintf('processing subject %g/%g \n',subject,N)
