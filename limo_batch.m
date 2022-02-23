@@ -272,11 +272,11 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         
         if nargin == 4
-            if ~contains(STUDY.datasetinfo(subject).subject,{'sub-'}) && ...
-                    ~contains(STUDY.datasetinfo(subject).subject,{'_task-'}) % not bids
+            if ~contains(STUDY.datasetinfo(subject).filename,{'sub-'}) && ...
+                    ~contains(STUDY.datasetinfo(subject).filename,{'_task-'}) % not bids
                 root = [LIMO_files.LIMO filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
-                root = STUDY.datasetinfo(subject).filepath;
+                root = [LIMO_files.LIMO filesep STUDY.datasetinfo(subject).subject]; % still in derivatives via LIMO_files.LIMO
             end
             
             % if session and data are not in a derivatives/sess, make subdir
@@ -303,6 +303,10 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
+            for l=min(length(LIMO_files.LIMO),length(root)):-1:1
+                common(l) = root(l) == LIMO_files.LIMO(l);
+            end
+            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); %#ok<MXFND>
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
