@@ -335,7 +335,7 @@ switch type
                         C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
                         if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
                             if isfield(LIMO.design,'weights')
-                                WX = X.*repmat(LIMO.design.weights(channel,:),1,size(X,2));
+                                WX = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
                             else
                                 WX = X;
                             end
