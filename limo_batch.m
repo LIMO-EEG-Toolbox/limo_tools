@@ -270,13 +270,12 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             pipeline(subject).import.opt.defaults.type_of_analysis = 'Mass-univariate';
         end
         
-        
-        if nargin == 4
+        if exist('STUDY','var')
             if ~contains(STUDY.datasetinfo(subject).filename,{'sub-'}) && ...
                     ~contains(STUDY.datasetinfo(subject).filename,{'_task-'}) % not bids
-                root = [LIMO_files.LIMO filesep 'sub-' STUDY.datasetinfo(subject).subject];
+                root = [fileparts(LIMO_files.LIMO) filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
-                root = [LIMO_files.LIMO filesep STUDY.datasetinfo(subject).subject]; % still in derivatives via LIMO_files.LIMO
+                root = [fileparts(LIMO_files.LIMO) filesep STUDY.datasetinfo(subject).subject]; % still in derivatives via LIMO_files.LIMO
             end
             
             % if session and data are not in a derivatives/sess, make subdir
@@ -573,14 +572,20 @@ if exist('STUDY','var')
                     
                     if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
                         if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
-                            cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
-                            cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
+                            if any(subset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
+                            end
                         elseif length(STUDY.group) == 1 && length(sesvalues) > 1 % only sessions
-                            cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.mat(sesset));
-                            cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.Beta(sesset));
+                            if any(sesset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.mat(sesset));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.Beta(sesset));
+                            end
                         else % groups and sessions
-                            cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(logical(subset.*sesset)));
-                            cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(logical(subset.*sesset)));
+                            if any(subset.*sesset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(logical(subset.*sesset)));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(logical(subset.*sesset)));
+                            end
                         end
                     end
                     
@@ -603,7 +608,7 @@ if exist('STUDY','var')
                             end
                         else
                             tmpcell = LIMO_files.con(logical(subset.*sesset));
-                            if ~isempty(tmpcell{1})
+                            if ~isempty(tmpcell)
                                 for c=1:length(tmpcell{1})
                                     [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
                                     cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
@@ -616,9 +621,9 @@ if exist('STUDY','var')
         end
     catch writtingerr
         if sum(failed) == 0
-            warning(fprintf('all LIMO files created but failing to write some metadata txt files %g\n ',writtingerr.message))
+            warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
         else
-            warning(fprintf('also failing to write some metadata txt files %g\n ',writtingerr.message))
+            warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
         end
     end
 end
