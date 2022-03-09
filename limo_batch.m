@@ -298,6 +298,10 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                             root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
                         end
                     end
+                    % eeg-bids
+                    if exist(fullfile(root,'eeg'),'dir')
+                        root = fullfile(root,'eeg');
+                    end
                 end
             end
             
@@ -309,7 +313,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             if strfind(design_name,'STUDY.') %#ok<STRIFCND>
                 design_name = design_name(7:end);
             end
-            glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
+            glm_name = [STUDY.filename(1:end-6) '_' design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
