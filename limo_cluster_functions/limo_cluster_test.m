@@ -83,9 +83,10 @@ if any(mask2(:)) % sum(mask2(:))>0
         end
     end
 end
+pval(pval==1)=NaN;
 
 % check again corrected p values are correct
-if any(pval(pval~=1) > alphav)
+if any(pval > alphav)
    error('some corrected p-values are above the set alpha value, which should not happen - this is a bug, please contact the LIMO team') 
 end
 
