@@ -282,9 +282,21 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             if ~isempty(STUDY.datasetinfo(subject).session)
                 if ~contains(root,'ses-')
                     if ischar(STUDY.datasetinfo(subject).session)
-                        root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
+                        reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
+                        if ~isempty(reuse)
+                            index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
+                            root = fullfile(reuse(index).folder,reuse(index).name);
+                        else
+                            root  = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
+                        end
                     else
-                        root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                        reuse = dir(fullfile(root,['ses-*' num2str(STUDY.datasetinfo(subject).session)]));
+                        if ~isempty(reuse)
+                            index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
+                            root = fullfile(reuse(index).folder,reuse(index).name);
+                        else
+                            root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                        end
                     end
                 end
             end
