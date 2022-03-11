@@ -67,6 +67,11 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                                  model.set_files{n} = 'D:\EEG\mysuperdataset\sub-001\sub-001_task_dostuff.set';
 %                            contrast.mat = [1 0 -1 0 0 ; 0 1 0 -1 0];
 %
+%          limo_batch('contrast only',[],contrast,STUDY);
+%                            contrast.LIMO_files: {n×1 cell}
+%                                  contrast.LIMO_files{n} = 'D:\EEG\mysuperdataset\sub-001\GLM\LIMO.mat';
+%                            contrast.mat: [1 1 -1 -1]
+%
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf
 % see also psom in external folder
 %
