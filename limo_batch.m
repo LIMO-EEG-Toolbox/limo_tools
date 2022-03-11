@@ -196,6 +196,17 @@ elseif nargin > 1
     % batch_contrast
     if strcmp(option,'contrast only') || strcmp(option,'both')
         batch_contrast = varargin{3};
+        
+        if isfield(batch_contrast,'LIMO_files')
+            if ~iscell(batch_contrast.LIMO_files)
+                if strcmpi(batch_contrast.LIMO_files(end-3:end),'.txt')
+                    batch_contrast.LIMO_files = importdata(batch_contrast.LIMO_files);
+                else
+                   error('contrast.LIMO_files must be either the path to a txt file or a cell array of file(s)') 
+                end
+            end
+        end
+
         if ~isfield(batch_contrast,'mat')
             errordlg('the field batch_contrast.mat is missing'); return
         end
