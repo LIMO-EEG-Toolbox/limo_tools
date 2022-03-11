@@ -11,8 +11,8 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % limo_batch(option,model,contrast,eeglab_study)
 %
 % INPUT if empty uses GUI
-%       option should be 'model specification' 'contrast only' or 'both'
-%       model is a structure that specifiy information to build a model
+%       - option should be 'model specification', 'contrast only' or 'both'
+%       - model is a structure that specifiy information to build a model
 %       model.set_files: a cell array of EEG.set (full path) for the different subjects
 %       model.cat_files: a cell array of categorial variable or variable files
 %       model.cont_files: a cell array of continuous variable or variable files
@@ -30,13 +30,12 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
-%
-%       contrast is a structure that specify which contrasts to run for which subject
+%       - contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
 %       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects, rows are contrasts,
 %                     columns are variables in the GLM including the constant)
-%       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ...
+%       - eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ...
 %
 % OUTPUT
 % LIMO_files  - A cell array of LIMO.mat (info about subjects' GLM)
@@ -44,6 +43,29 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %               create a log file directory with the pipleine and logs
 % procstatus  - [1 x Number of subjects] binary vector. Status of the LIMO computations for each of the N subjects.
 %               [0] Failed, [1] Processed.
+%
+%
+% Example: limo_batch('both',model,contrast,STUDY);
+%                            model.defaults.datatype= 'erp'
+%                            model.defaults.type= 'Channels'
+%                            model.defaults.analysis= 'Time'
+%                            model.defaults.start= -1000
+%                            model.defaults.end= 1996
+%                            model.defaults.lowf= []
+%                            model.defaults.highf= []
+%                            model.defaults.fullfactorial= 0
+%                            model.defaults.zscore= 1
+%                            model.defaults.bootstrap= 0
+%                            model.defaults.tfce= 0
+%                            model.defaults.method= 'WLS'
+%                            model.defaults.Level= 1
+%                            model.defaults.type_of_analysis= 'Mass-univariate'
+%                            model.cat_files: {n×1 cell};
+%                                  model.cat_files{n}' = [1 1 1 2 2 3 4 4 2 3 ....];
+%                            model.cont_files: []
+%                            model.set_files: {n×1 cell}
+%                                  model.set_files{n} = 'D:\EEG\mysuperdataset\sub-001\sub-001_task_dostuff.set';
+%                            contrast.mat = [1 0 -1 0 0 ; 0 1 0 -1 0];
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf
 % see also psom in external folder
@@ -59,7 +81,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
 % ----------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2022
 
 % programmer help
 % ---------------
