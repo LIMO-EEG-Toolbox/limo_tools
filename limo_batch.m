@@ -508,14 +508,23 @@ else % parallel call to the pipeline
             % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
-            [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS,PFTUSW>
+            if strcmp(option,'contrast only')
+                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+            else
+                [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS,PFTUSW>
+            end
             sub = min(strfind(name,'sub-'));
             ses = min(strfind(name,'ses-'));
             und = strfind(name,'_');
+            
             if ~isempty(sub) && ~isempty(ses) && ~isempty(und)
                 try
                     sub_und = und(und>sub); ses_und = und(und>ses);
-                    report{subject} = ['subject ' name(sub+4:sub+min(abs(sub_und-sub))-1) ' session ' name(ses+4:ses+min(abs(ses_und-ses))-1) ' processed'];
+                    if strcmp(option,'contrast only')
+                        report{subject} = ['subject ' name(sub:sub+min(abs(sub_und-sub))-1) ' processed'];
+                    else
+                        report{subject} = ['subject ' name(sub+4:sub+min(abs(sub_und-sub))-1) ' session ' name(ses+4:ses+min(abs(ses_und-ses))-1) ' processed'];
+                    end
                 catch
                     report{subject} = ['subject ' num2str(subject) ' processed'];
                 end
