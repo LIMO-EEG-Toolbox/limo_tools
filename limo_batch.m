@@ -68,8 +68,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            contrast.mat = [1 0 -1 0 0 ; 0 1 0 -1 0];
 %
 %          limo_batch('contrast only',[],contrast,STUDY);
-%                            contrast.LIMO_files: {n×1 cell}
-%                                  contrast.LIMO_files{n} = 'D:\EEG\mysuperdataset\sub-001\GLM\LIMO.mat';
+%                            contrast.LIMO_files: 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
 %                            contrast.mat: [1 1 -1 -1]
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf
@@ -624,14 +623,21 @@ if exist('STUDY','var')
         
         if ~isempty(STUDY.datasetinfo(subject).session)
             sesvalues = unique(arrayfun(@(x) x.session, STUDY.datasetinfo));
+        else
+            sesvalues = 1;
         end
         
         % split txt files if more than 1 group or session
         if length(STUDY.group) > 1 || length(sesvalues)>1
             for s=1:length(sesvalues)
                 for g= 1:length(STUDY.group)
-                    subset = arrayfun(@(x)(strcmpi(x.group,STUDY.group{g})), STUDY.datasetinfo);
-                    sesset = arrayfun(@(x) x.session==s, STUDY.datasetinfo);
+                    if length(STUDY.group) > 1
+                        subset = arrayfun(@(x)(strcmpi(x.group,STUDY.group{g})), STUDY.datasetinfo);
+                    end
+                    
+                    if length(sesvalues) > 1
+                        sesset = arrayfun(@(x) x.session==s, STUDY.datasetinfo);
+                    end
                     
                     if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
                         if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
