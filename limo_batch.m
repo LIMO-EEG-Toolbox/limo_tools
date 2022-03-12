@@ -317,7 +317,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             
             % if session and data are not in a derivatives/sess, make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
-                if ~contains(root,'ses-')
+                if ~contains(root,'ses-') && length(STUDY.datasetinfo(subject).session)>1
                     if ischar(STUDY.datasetinfo(subject).session)
                         reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
                         if ~isempty(reuse)
@@ -335,13 +335,14 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                             root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
                         end
                     end
-                    % eeg-bids
-                    if exist(fullfile(root,'eeg'),'dir')
-                        root = fullfile(root,'eeg');
-                    end
                 end
             end
             
+            % [root filesep eeg] - case of bids without ses-
+            if exist(fullfile(root,'eeg'),'dir')
+                root = fullfile(root,'eeg');
+            end
+
             if exist(root,'dir') ~= 7
                 mkdir(root);
             end
