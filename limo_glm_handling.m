@@ -138,13 +138,13 @@ if strcmp(LIMO.design.status,'to do')
             
             % remove cell as sizes are identical for a given method
             if e == size(array,1)
-                tmp = cell2mat(LIMO.model.model_df)';
+                tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
                 df  = tmp(1:2:end,1); % a single value over time
                 dfe = tmp(2:2:end,:); % could be different over time
                 LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)';
+                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * nb_conditions
                     df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
                     LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
