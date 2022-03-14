@@ -138,26 +138,44 @@ if strcmp(LIMO.design.status,'to do')
             
             % remove cell as sizes are identical for a given method
             if e == size(array,1)
-                tmp = cell2mat(LIMO.model.model_df)';
+                tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
+                if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
+                   tmp = tmp'; 
+                end
                 df  = tmp(1:2:end,1); % a single value over time
                 dfe = tmp(2:2:end,:); % could be different over time
                 LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
+                
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)';
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * nb_conditions
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_interactions ~=0
-                    tmp =  cell2mat(LIMO.model.interactions_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp =  cell2mat(LIMO.model.interactions_df)';
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_continuous ~=0
-                    tmp = cell2mat(LIMO.model.continuous_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.continuous_df)';
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'continuous_df');
                     LIMO.model.continuous_df = [df dfe]; clear tmp
                 end

@@ -44,4 +44,23 @@ references:
     number-volumes: 250
     pages: 85-93
     doi: 10.1016/j.jneumeth.2014.08.003
-
+  - type: article
+    authors:
+      - family-names: "Pernet"
+        given names: "Cyril"
+      - family-names: "Suay Mas"
+        given names: "Ignacio"
+      - family-names: "Rousselet"
+        given names: "Guillaume"
+      - family-names: "Martinez"
+        given names: "Ramon"
+      - family-names: "Wilcox"
+        given names: "Rand"   
+      - family-names: "Delorme"
+        given names: "Arnaud"
+    title: "Electroencephalography robust statistical linear modelling 
+          using a single weight per trial"
+    journal: "Aperture Neuro"
+    date-published: 2022
+    number-volumes: 1(7)
+    pages: 1-19

@@ -574,10 +574,10 @@ if LIMO.Level == 1
                 errordlg2('you can''t plot categorical and continuous regressors together'); return
             end
             
-            % which ERP to make
-            % ------------------
+            % which data type to make
+            % ------------------------
             if isempty(g.plot3type) && ~any(strcmpi(g.plot3type,{'Original','Modelled','Adjusted'}))
-                extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+                extra = questdlg('Which data type to plot?','Options','Original','Modelled','Adjusted','Adjusted');
             else
                 extra = g.plot3type;
             end
@@ -654,7 +654,7 @@ if LIMO.Level == 1
                 channel = eval(cell2mat(channel));
                 if size(channel) > 1
                     errordlg('invalid channel choice'); return
-                elseif channel > size(LIMO.data.chanlocs,1) || channel < 1
+                elseif channel > size(LIMO.data.chanlocs,2) || channel < 1
                     errordlg('invalid channel number'); return
                 end
                 
@@ -677,42 +677,42 @@ if LIMO.Level == 1
             if isfield(LIMO,'cache')
                 if strcmpi(LIMO.Analysis,'Time-Frequency') && isfield(LIMO.cache,'ERPplot')
                     
-                    if mean([LIMO.cache.ERPplot.channel == channel ...
-                            LIMO.cache.ERPplot.regressor == regressor ...
-                            LIMO.cache.ERPplot.frequency == frequency]) == 1 ...
-                            && strcmpi('LIMO.cache.ERPplot.extra',extra)
+                    if mean([LIMO.cache.Courseplot.channel == channel ...
+                            LIMO.cache.Courseplot.regressor == regressor ...
+                            LIMO.cache.Courseplot.frequency == frequency]) == 1 ...
+                            && strcmpi('LIMO.cache.Courseplot.extra',extra)
                         
                         if sum(regressor <= categorical) == length(regressor)
-                            average = LIMO.cache.ERPplot.average;
-                            ci = LIMO.cache.ERPplot.ci;
-                            mytitle = LIMO.cache.ERPplot.title;
+                            average = LIMO.cache.Courseplot.average;
+                            ci = LIMO.cache.Courseplot.ci;
+                            mytitle = LIMO.cache.Courseplot.title;
                             disp('using cached data');
                             data_cached = 1;
                         else
-                            continuous = LIMO.cache.ERPplot.continuous;
-                            mytitle = LIMO.cache.ERPplot.title;
+                            continuous = LIMO.cache.Courseplot.continuous;
+                            mytitle = LIMO.cache.Courseplot.title;
                             disp('using cached data');
                             data_cached = 1;
                         end
                     end
                     
-                elseif strcmpi(LIMO.Analysis,'Time') && isfield(LIMO.cache,'ERPplot') || ...
-                        strcmpi(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'ERPplot')
+                elseif strcmpi(LIMO.Analysis,'Time') && isfield(LIMO.cache,'Courseplot') || ...
+                        strcmpi(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'Courseplot')
                     
-                    if length(LIMO.cache.ERPplot.regressor) == length(channel)
-                        if mean([LIMO.cache.ERPplot.channel == channel ...
-                                LIMO.cache.ERPplot.regressor == regressor]) == 1  ...
-                                && strcmpi('LIMO.cache.ERPplot.extra',extra)
+                    if length(LIMO.cache.Courseplot.regressor) == length(channel)
+                        if mean([LIMO.cache.Courseplot.channel == channel ...
+                                LIMO.cache.Courseplot.regressor == regressor]) == 1  ...
+                                && strcmpi('LIMO.cache.Courseplot.extra',extra)
                             
                             if sum(regressor <= categorical) == length(regressor)
-                                average = LIMO.cache.ERPplot.average;
-                                ci = LIMO.cache.ERPplot.ci;
-                                mytitle = LIMO.cache.ERPplot.title;
+                                average = LIMO.cache.Courseplot.average;
+                                ci = LIMO.cache.Courseplot.ci;
+                                mytitle = LIMO.cache.Courseplot.title;
                                 disp('using cached data');
                                 data_cached = 1;
                             else
-                                continuous = LIMO.cache.ERPplot.continuous;
-                                mytitle = LIMO.cache.ERPplot.title;
+                                continuous = LIMO.cache.Courseplot.continuous;
+                                mytitle = LIMO.cache.Courseplot.title;
                                 disp('using cached data');
                                 data_cached = 1;
                             end
@@ -984,15 +984,15 @@ if LIMO.Level == 1
                     ylabel('Amplitude in {\mu}V','FontSize',16)
                 end
                 
-                LIMO.cache.ERPplot.extra     = extra;
-                LIMO.cache.ERPplot.average   = average;
-                LIMO.cache.ERPplot.channel   = channel;
-                LIMO.cache.ERPplot.regressor = regressor;
+                LIMO.cache.Courseplot.extra     = extra;
+                LIMO.cache.Courseplot.average   = average;
+                LIMO.cache.Courseplot.channel   = channel;
+                LIMO.cache.Courseplot.regressor = regressor;
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    LIMO.cache.ERPplot.frequency = frequency;
+                    LIMO.cache.Courseplot.frequency = frequency;
                 end
-                LIMO.cache.ERPplot.ci        = ci;
-                LIMO.cache.ERPplot.title     = mytitle;
+                LIMO.cache.Courseplot.ci        = ci;
+                LIMO.cache.Courseplot.title     = mytitle;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                 
             else
@@ -1022,13 +1022,13 @@ if LIMO.Level == 1
                     end
                 end
                 
-                LIMO.cache.ERPplot.continuous = continuous;
-                LIMO.cache.ERPplot.channel    = channel;
-                LIMO.cache.ERPplot.regressor  = regressor;
+                LIMO.cache.Courseplot.continuous = continuous;
+                LIMO.cache.Courseplot.channel    = channel;
+                LIMO.cache.Courseplot.regressor  = regressor;
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    LIMO.cache.ERPplot.frequency = frequency;
+                    LIMO.cache.Courseplot.frequency = frequency;
                 end
-                LIMO.cache.ERPplot.title      = mytitle;
+                LIMO.cache.Courseplot.title      = mytitle;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
             end
             
@@ -1069,7 +1069,7 @@ elseif LIMO.Level == 2
                     mask        = LIMO.cache.fig.mask;
                     mytitle     = LIMO.cache.fig.title;
                     data_cached = 1;
-                    assignin('base','stat_values',M)
+                    assignin('base','stat_values',toplot)
                     assignin('base','p_values',M)
                     assignin('base','mask',mask)
                 end
