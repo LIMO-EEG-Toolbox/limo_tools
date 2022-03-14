@@ -68,8 +68,8 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            contrast.mat = [1 0 -1 0 0 ; 0 1 0 -1 0];
 %
 %          limo_batch('contrast only',[],contrast,STUDY);
-%                            contrast.LIMO_files: 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
-%                            contrast.mat: [1 1 -1 -1]
+%                            contrast.LIMO_files = 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
+%                            contrast.mat = [0 1 0 1 ; 1 0 1 0; 1 -1 1 -1];
 %
 % see also limo_eeg limo_import_t limo_import_f limo_import_tf
 % see also psom in external folder
@@ -318,7 +318,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             % if session and data are not in a derivatives/sess, make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
                 nsess = sum(strcmp(STUDY.datasetinfo(subject).subject,{STUDY.datasetinfo.subject}));
-                if ~contains(root,'ses-') && nsess>1
+                if ~contains(root,'ses-') && nsess>=1
                     if ischar(STUDY.datasetinfo(subject).session)
                         reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
                         if ~isempty(reuse)
@@ -502,7 +502,7 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
     end
 else % parallel call to the pipeline
     limo_check_ppool
-    parfor subject = 1:N %#ok<PFUIXW>
+    parfor subject = 1:N 
         disp('--------------------------------')
         fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
@@ -523,7 +523,7 @@ else % parallel call to the pipeline
             if strcmp(option,'contrast only')
                 name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
             else
-                [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS,PFTUSW>
+                [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
             end
             sub = min(strfind(name,'sub-'));
             ses = min(strfind(name,'ses-'));
