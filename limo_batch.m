@@ -317,7 +317,8 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             
             % if session and data are not in a derivatives/sess, make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
-                if ~contains(root,'ses-') && length(STUDY.datasetinfo(subject).session)>1
+                nsess = sum(strcmp(STUDY.datasetinfo(subject).subject,{STUDY.datasetinfo.subject}));
+                if ~contains(root,'ses-') && nsess>1
                     if ischar(STUDY.datasetinfo(subject).session)
                         reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
                         if ~isempty(reuse)
