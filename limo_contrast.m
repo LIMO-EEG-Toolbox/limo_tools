@@ -64,8 +64,17 @@ if type == 1 || type == 2
         Betas = load(varargin{2});
         Betas = Betas.(cell2mat(fieldnames(Betas)));
         if type == 2 && size(Betas,numel(size(Betas))) < 101
-            warning('input Betas file is not a H0 one, no boostraps detected')
-            return
+            warning('input Betas file is not a H0 one, checking for a H0 boostraps file')
+            if exist(fullfile(fileparts(varargin{2}),['H0' filesep 'H0_Betas.mat']),'file')
+                Betas = load(fullfile(fileparts(varargin{2}),['H0' filesep 'H0_Betas.mat']));
+                Betas = Betas.(cell2mat(fieldnames(Betas)));    
+                if size(Betas,numel(size(Betas))) < 101
+                    error('loading H0_Betas.mat but this seems to have less than 101 bootstraps?')
+                end
+            else
+                warning('contrast with boostrap aborded no H0 file found')
+                return
+            end
         end
     end
     
