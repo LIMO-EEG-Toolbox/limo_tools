@@ -37,10 +37,10 @@ function result = limo_contrast(varargin)
 
 
 %% nargin stuff
-if nargin == 4 || nargin == 6
-    type = varargin{end-1};
-else
-    type = varargin{end};
+if nargin == 5 || nargin == 6
+    type = varargin{5};
+elseif nargin == 4
+    type = varargin{3};
 end
 
 %% default
