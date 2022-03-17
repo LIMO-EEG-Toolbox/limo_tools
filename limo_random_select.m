@@ -288,7 +288,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             else
                 errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
             end
-        elseif sum(sum(isnan(X),2)) ~= 0
+        elseif sum(isnan(X(:))) ~= 0
             if sum(sum(isnan(X),2)) == 1
                 warning('loaded regressor(s) include a NaN and the corresponding subject is removed')
             else
