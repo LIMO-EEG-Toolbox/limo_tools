@@ -455,7 +455,7 @@ if LIMO.design.bootstrap ~=0
             
             for e = 1:length(array)
                 channel = array(e);
-                waitbar(e/size(array,1))
+                waitbar(e/size(array,2))
                 fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -608,8 +608,8 @@ if LIMO.design.bootstrap ~=0
                                 tmp_H0_Covariates(channel,:,1,2,B) = model.continuous.p{B};
                             else
                                 for i=1:LIMO.design.nb_continuous
-                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
-                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(i,:);
+                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(i,:);
                                 end
                             end
                         end
