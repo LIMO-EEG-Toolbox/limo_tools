@@ -35,13 +35,17 @@ function [b, w] = limo_IRLS(varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
+%% default
+iterlim = 100;    % set a 100 iteration max
+fig     = 'off';  % if one going to play with itermlim, you may as well make a figure to see what is going on
+
+%% check inputs
 if  nargin < 2      
     error('Too Few Inputs');   
 else
     X    = varargin{1};
     Y    = varargin{2};
     tune = 4.685; % tuning function for the bisquare
-    fig  = 'off';
 end 
 
 if nargin > 2
@@ -59,6 +63,8 @@ if (rows <= cols)
    error('IRLS cannot be computed, there is not enough trials for this design');     
 end
 
+%% solve
+
 % Find Ordinary Least Squares
 b = pinv(X)*Y;
 
@@ -69,7 +75,7 @@ H = diag(X*pinv(X'*X)*X');
 adjfactor = 1 ./ sqrt(1-H);
 adjfactor(adjfactor==Inf) = 1; % when H=1 do nothing
 
-numiter = 0; iterlim = 100; % set a 100 iteration max
+numiter = 0; 
 oldRes=1; newRes=10;
 
 while(max(abs(oldRes-newRes)) > (1E-4))
@@ -78,7 +84,7 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    oldRes  = newRes;
    
    if (numiter>iterlim)
-      warning('limo_IRLS could not converge');
+      warning('limo_IRLS could not converge after %g iterations \niteration limit can be adjusted line 39 (no warranty it makes things better)',iterlim);
       break;
    end
    
@@ -108,17 +114,20 @@ while(max(abs(oldRes-newRes)) > (1E-4))
    
    % figure
    if strcmpi(fig,'on')
-       if numiter == 1
+       if numiter == 2
            figure('Name','Residual Mean Squares ');
-           hold on; xx = NaN(iterlim,1);
+           hold on; xx = NaN(iterlim,1); 
        end
-       plot(numiter,newRes,'ro','LineWidth',3); 
-       xx(numiter) = newRes;
-       axis([0.5 numiter+0.5 min(xx)-0.1*min(xx) max(xx)+0.1*max(xx)]); 
-       if numiter > 1
-           title(sprintf('iteration %g convergence %g',numiter,xx(numiter)-xx(1)))
+       plot(numiter,abs(oldRes-newRes),'ro','LineWidth',3); 
+       xx(numiter) = abs(oldRes-newRes);
+       axis([1 iterlim+0.5 -0.1 max(xx)+0.1*min(xx)]); 
+       if numiter > 2
+           title(sprintf('iteration %g convergence %g',numiter,xx(numiter)))
        end
        grid on; drawnow
+       if numiter == iterlim % resale visually
+           axis([1 iterlim+0.5 -0.1*max(xx) max(xx)+0.1*min(xx)]);
+       end
    end  
 end
 
