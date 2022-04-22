@@ -1,13 +1,20 @@
 function model = limo_glm_boot(varargin)
 
 % Boostrap under the null for limo_glm
-% Importantly call this function for one channel - it will then run N bootstraps 
+% Importantly call this works for one channel only, runing N bootstraps 
 % to obtain the distributon of F and associated p values under H0.
 %
 % H0 is obtained by centered data (categorical designs) and resampling them
 % but leaving X intact, i.e. breaking the link between Y and X (centering
 % is a little over-kill but that way we can make sure that even if random 
 % sampling end-up recreating conditions the null is true).
+%
+% For WLS and IRLS, Weights are passed along and used - at each bootsrap
+% associating W and X. This turns out to be the closest option to be at the
+% nominal alpha level. During the estimation X reduces the variances of
+% residuals and thus we keep that correction. Recomputing breaking the link
+% between X and Y leads to W that doesn't reduce the variance in the
+% observed data, nor does it estimates properly the null of WY.
 %
 % FORMAT:
 % model = limo_glm_boot(Y,LIMO,boot_table,channel)
