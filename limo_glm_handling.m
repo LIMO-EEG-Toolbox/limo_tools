@@ -608,8 +608,13 @@ if LIMO.design.bootstrap ~=0
                                 tmp_H0_Covariates(channel,:,1,2,B) = model.continuous.p{B};
                             else
                                 for i=1:LIMO.design.nb_continuous
-                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
-                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    if size(suqeeze(tmp_H0_Covariates(channel,:,i,1,B))) == size(squeeze(model.continuous.F{B}(:,i)))
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    else
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(i,:);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(i,:);
+                                    end
                                 end
                             end
                         end
