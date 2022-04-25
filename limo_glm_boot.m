@@ -457,6 +457,7 @@ switch method
         %% ---------------------------------------------------------------------
     case 'IRLS'
 
+        fprintf('... be patient IRLS is slow - running %g bootstraps\n',nboot)
         parfor B = 1:nboot
             % compute passing resampled centered_y and W
             [BETASB{B},MODELR2{B}, MODELF{B},MODELp{B},...
