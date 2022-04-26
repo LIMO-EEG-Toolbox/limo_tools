@@ -480,7 +480,6 @@ switch type
             warning off;
             for e = 1:length(array)
                 channel = array(e);
-                fprintf('compute bootstrap channel %g ... \n',channel)
                 for B = 1:nboot
                     if ~iscell(boot_table)
                         resampling_index = boot_table(:,B); % 1st level boot_table all the same
@@ -492,6 +491,7 @@ switch type
                     Y = squeeze(centered_data(channel,:,resampling_index))';
                     
                     if strcmp(LIMO.design.method,'OLS') || strcmp(LIMO.design.method,'WLS')
+                        fprintf('compute bootstrap channel %g ... \n',channel)
                         trials_to_keep = ~isnan(Y(:,1));
                         Y              = Y(trials_to_keep,:);
                         X              = design(trials_to_keep,:); % do not resample X
@@ -540,11 +540,13 @@ switch type
                         
                     else % -------- IRLS ------------
                         for frame = 1:size(Y,2)
+                           fprintf('compute bootstrap channel %g frame %g/%g ... \n',channel, frame,size(Y,2))
                             X = design; % do not resample X
-                            W = LIMO.design.weights(channel,frame,~isnan(Y(:,1)))';
-                            if isnan(Y(:,1))
+                            W = squeeze(LIMO.design.weights(channel,frame,~isnan(Y(:,1))));
+                            if any(isnan(Y(:,1)))
                                 Y = Y(~isnan(Y(:,1)),:);
                                 X = X(~isnan(Y(:,1)),:);
+                                W = W(~isnan(Y(:,1)),:);
                                 if LIMO.design.nb_continuous ~= 0 && LIMO.design.zscore == 1 % rezscore the covariates
                                     N = LIMO.design.nb_conditions + LIMO.design.nb_interactions;
                                     if N==0
@@ -568,7 +570,7 @@ switch type
                             % -----------
                             if Test == 0
                                 var   = ((R*Y(:,frame))'*(R*Y(:,frame))) / dfe; % error of H0 data
-                                H0_con(channel,frame,1,B) = (C*squeeze(Betas(channel,frame,:,B))') ./ sqrt(diag(var)'.*(C*pinv(X'*X)*C')); % T value
+                                H0_con(channel,frame,1,B) = (C*squeeze(Betas(channel,frame,:,B))) ./ sqrt(var.*(C*pinv(X'*X)*C')); % T value
                                 H0_con(channel,frame,2,B) = 1-tcdf(squeeze(H0_con(channel,frame,2,B)), dfe); % p value
                                 
                                 % F contrast
@@ -583,7 +585,7 @@ switch type
                                 X0 = WX*C0;
                                 R0 = eye(size(Y,1)) - (X0*pinv(X0));
                                 M = R0 - R;
-                                H = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
+                                H = squeeze(Betas(channel,frame,:,B))'*X'*M*X*squeeze(Betas(channel,frame,:,B));
                                 df = rank(c) - 1;
                                 if df == 0
                                     df = 1;
