@@ -29,7 +29,7 @@ function result = limo_contrast(varargin)
 % these files are of dimension [nb of channels, time/freq, C*Beta/se/df/t/p]
 %
 % *****************************************************
-% See also limo_glm, limo_results, limo_contrast_manager
+% See also limo_contrast_checking, limo_glm, limo_results, limo_contrast_manager
 %
 % Cyril Pernet
 % ------------------------------
@@ -128,14 +128,18 @@ if type == 1 || type == 2
            error('invalid contrast ass input') 
         end
     elseif nargin == 6 && type == 2 % <---- find the index of the contrast to bootstrap
-            allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
-            contrast_nb = max(cellfun(@(x) all(x==varargin{6}), allC));
-            if contrast_nb == 0
-               warning('analysis type = 2; no constrast to boostrap found like the one as input')
-               return
-            end
+        allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
+        contrast_nb = max(cellfun(@(x) all(x==varargin{6}), allC));
+        if contrast_nb == 0
+            warning('analysis type = 2; no constrast to boostrap found like the one as input')
+            return
+        end
     elseif nargin == 5 %<--- nothing specifed = bootstrap the last one
-        contrast_nb = size(LIMO.contrast,2);     
+        contrast_nb = size(LIMO.contrast,2);
+        go = limo_contrast_checking(LIMO.contrast{contrast_nb}.C,LIMO.design.X);
+        if go ==0
+            error('the analysis of the %g contrast in LIMO.contrast failed, invalid contrast',contrast_nb)
+        end
     end
     C       = LIMO.contrast{contrast_nb}.C;
     Method  = LIMO.design.type_of_analysis;
