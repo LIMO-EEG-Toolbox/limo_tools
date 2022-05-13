@@ -48,6 +48,25 @@ references:
     authors:
       - family-names: "Pernet"
         given names: "Cyril"
+      - family-names: "Martinez-Cancino
+        given names: "Ramon"
+      - family-names: "Truong"
+        given names: "Dung"
+      - family-names: "Makeig"
+        given names: "Scott"
+      - family-names: "Delorme"
+        given names: "Arnaud"        
+    title: "From BIDS-Formatted EEG Data to Sensor-Space Group Results: A Fully Reproducible 
+          Workflow With EEGLAB and LIMO EEG"
+    journal: "Frontiers in Neuroscience"
+    date-published: 2021
+    number-volumes: 14
+    pages: 610388
+    doi: 10.3389/fnins.2020.610388
+  - type: article
+    authors:
+      - family-names: "Pernet"
+        given names: "Cyril"
       - family-names: "Suay Mas"
         given names: "Ignacio"
       - family-names: "Rousselet"
@@ -64,3 +83,4 @@ references:
     date-published: 2022
     number-volumes: 1(7)
     pages: 1-19
+    doi: 10.52294/2e69f7cc-f061-40ad-ad77-017110464dfd
