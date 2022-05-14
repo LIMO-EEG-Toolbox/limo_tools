@@ -5,7 +5,7 @@ function [tfce_score,thresholded_maps] = limo_tfce_handling(varargin)
 % FORMAT  [tfce_score,thresholded_maps] = limo_tfce_handling(filename,'checkfile','yes')
 %
 % INPUTS filename is the stat file that need to be tfced (if H0 exist it is done too)
-%        'checkfile' is 'yes' by default - if 'no' anf tfce files already exist,
+%        'checkfile' is 'yes' by default - if 'no' and tfce files already exist,
 %                     it overwrites without asking otherwise user is prompted
 %
 % OUTPUTS tfce_* files are saved on the drive in a tfce folder
