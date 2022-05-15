@@ -312,7 +312,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                     ~contains(STUDY.datasetinfo(subject).filename,{'_task-'}) % not bids
                 root = [fileparts(LIMO_files.LIMO) filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
-                root = [fileparts(LIMO_files.LIMO) filesep STUDY.datasetinfo(subject).subject]; % still in derivatives via LIMO_files.LIMO
+                subname = STUDY.datasetinfo(subject).subject;
+                extra = STUDY.datasetinfo(subject).filepath(strfind(STUDY.datasetinfo(subject).filepath,subname)+length(subname):end);
+                root = [fileparts(LIMO_files.LIMO) filesep subname extra]; % still in derivatives via LIMO_files.LIMO
             end
             
             % if session and data are not in a derivatives/sess, make subdir
