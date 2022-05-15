@@ -30,6 +30,9 @@ function result = limo_contrast(varargin)
 % con/ess maps saved on disk
 % these files are of dimension [nb of channels, time/freq, C*Beta/se/df/t/p]
 %
+% Example limo_contrast('Yr.mat', 'Betas.mat', 'LIMO.mat', 'T', 1, [1 0])
+%         limo_contrast('Yr.mat', 'LIMO.mat', 3, [1 0])
+%
 % *****************************************************
 % See also limo_contrast_checking, limo_glm, limo_results, limo_contrast_manager
 %
