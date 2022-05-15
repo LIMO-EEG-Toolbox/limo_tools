@@ -1,4 +1,4 @@
-function [channel_vector,urchan_vector] = limo_best_electrodes(varargin)
+function [channel_vector,urchan_vector,freqmap] = limo_best_electrodes(varargin)
 
 % This function finds the channel with the maximum F value in each subject.
 % The function works on files R2.mat, Condition_effect.mat, Continuous.mat. 
@@ -104,8 +104,8 @@ if nargout == 0
     if isempty(name)
         return
     else
-        save ([name],'channel_vector')
-        assignin('base',[name],channel_vector)
+        save (name,'channel_vector')
+        assignin('base',name,channel_vector)
         save ([name '_urchan'],'urchan_vector')
         assignin('base',[name '_urchan'],urchan_vector)
     end
@@ -117,7 +117,7 @@ clear data
 if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
         sum(isnan(channel_vector)) == 0 && nargin ==2
     
-    if nargin == 0
+    if nargin <= 1
         [p,f,filt]=uigetfile('*.mat','load expected chanlocs to check channel positions');
         if filt == 0
             return
