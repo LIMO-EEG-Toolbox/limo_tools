@@ -8,7 +8,9 @@ function result = limo_contrast(varargin)
 %
 % FORMATS:
 % result = limo_contrast(Y, Betas, LIMO, contrast type, analysis type ,contrast)
+%          --> applies to 1st level, 2nd level regressions and 2nd level ANOVA/ANCOVA
 % result = limo_contrast(Yr,LIMO, analysis type ,contrast);
+%          --> applies to 2nd level repeated measures ANOVA
 %
 % INPUT:
 % Y              = the data as matrix or file name
@@ -83,6 +85,7 @@ if type == 1 || type == 2
         LIMO = load(varargin{3});
         LIMO = LIMO.LIMO;
     end
+    
     if contains(LIMO.design.name,'Repeated','IgnoreCase',true)
         error('2nd level Repeated measure Analysis detected ; switch analysis type');
     end
@@ -106,7 +109,7 @@ if type == 1 || type == 2
         end
         out = limo_contrast_checking(LIMO.dir,LIMO.design.X,varargin{6}); % add zeros if needed
         
-        if limo_contrast_checking(LIMO.design.X,varargin{6}) % if contrast if valid
+        if limo_contrast_checking(out,LIMO.design.X) % if contrast is valid
             if varargin{4} == 1 || strcmpi(varargin{4},'T')
                 if size(out,1) == 1
                     LIMO.contrast{contrast_nb}.V = 'T';
@@ -128,12 +131,20 @@ if type == 1 || type == 2
            error('invalid contrast ass input') 
         end
     elseif nargin == 6 && type == 2 % <---- find the index of the contrast to bootstrap
-        allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
-        contrast_nb = max(cellfun(@(x) all(x==varargin{6}), allC));
+        if ~isfield(LIMO,'contrast')
+            warning('analysis type = 2; no constrast to boostrap found like the one as input')
+            return
+        else
+            allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
+            out   = limo_contrast_checking(LIMO.dir,LIMO.design.X,varargin{6});
+            contrast_nb = max(cellfun(@(x) all(x==out), allC));
+        end
+        
         if contrast_nb == 0
             warning('analysis type = 2; no constrast to boostrap found like the one as input')
             return
         end
+        
     elseif nargin == 5 %<--- nothing specifed = bootstrap the last one
         contrast_nb = size(LIMO.contrast,2);
         go = limo_contrast_checking(LIMO.contrast{contrast_nb}.C,LIMO.design.X);
@@ -155,7 +166,7 @@ if type == 1 || type == 2
     
 elseif type == 3 || type == 4
     % ---------------------------------------------------------------------
-    %                  2nd level repreated measures ANOVA
+    %                  2nd level repeated measures ANOVA
     % ---------------------------------------------------------------------
     Yr         = varargin{1};
     if ischar(Yr)
