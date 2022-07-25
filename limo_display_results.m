@@ -1153,7 +1153,11 @@ elseif LIMO.Level == 2
             LIMO.cache.fig.pval       = squeeze(M);
             LIMO.cache.fig.mask       = squeeze(mask);
             LIMO.cache.fig.title      = mytitle;
-            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            if exist(LIMO.dir,'dir')
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            else
+                disp('Cached data in LIMO.mat cannot be updated - LIMO dir doesn''t exist (likely moved files)')
+            end
         end
         
         % image all results

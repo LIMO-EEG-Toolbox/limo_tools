@@ -81,7 +81,9 @@ if strcmpi(LIMO.Analysis,'Time')
     if size(timevect,2) ~= size(toplot,2)
         timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
         LIMO.data.timevect =  timevect;
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+        if exist(LIMO.dir,'dir')
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+        end
     end
     
     ratio =  abs(timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
