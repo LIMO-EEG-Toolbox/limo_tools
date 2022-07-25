@@ -70,9 +70,16 @@ if strcmpi(checkfile,'yes')
         end
     else
         LIMO.design.tfce = 1;
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
-        if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
-            mkdir(fullfile(LIMO.dir,'tfce'));
+        if exist(LIMO.dir,'dir')
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
+                mkdir(fullfile(LIMO.dir,'tfce'));
+            end
+        else
+            save(fullfile(pwd,'LIMO.mat'),'LIMO','-v7.3')
+            if ~exist(fullfile(pwd,'tfce'),'dir')
+                mkdir(fullfile(pwd,'tfce'));
+            end
         end
     end
 end
