@@ -25,6 +25,8 @@ function go = limo_contrast_checking(varargin)
 if nargin == 0
     help limo_contrast_checking
     return
+else
+    warning on
 end
 
 %% update the contrast with 0s
@@ -33,7 +35,8 @@ if nargin == 1 || nargin == 3
 
     limo_path = varargin{:,1};
     if ~exist(limo_path,'dir') 
-        error('%s doesn''t exist',limo_path)
+        warning('%s doesn''t exist, updating to local dir',limo_path)
+        limo_path = pwd;
     end
     
     if nargin == 1
@@ -73,7 +76,7 @@ if nargin == 1 || nargin == 3
     if nargin == 1
         LIMO = LIMO.LIMO;
         LIMO.LIMO.contrast{end}.C = C;
-        save(fullfile(limo_path,'LIMO.mat'),'LIMO');
+        save(fullfile(limo_path,'LIMO.mat'),'LIMO','-v7.3')
     end
    
     
