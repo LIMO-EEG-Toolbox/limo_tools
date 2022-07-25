@@ -256,7 +256,9 @@ if previous_con ~=0
     end
     set(hObject,'String',contrasts);
     display_matrix_CreateFcn(hObject, eventdata, handles)
-    handles.C = LIMO.contrast{1}.C;
+    if isfield(LIMO,'contrast')
+        handles.C = LIMO.contrast{1}.C;
+    end
     % contrast_CreateFcn(hObject, eventdata, handles)
 else
     contrasts = {'none'};
