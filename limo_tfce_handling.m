@@ -266,9 +266,12 @@ else % anything else last dimension is F and p
                 end
             end
         end
+        save(H0_tfce_file,'tfce_H0_score','-v7.3'); clear H0_Fval tfce_H0_score
     end
-    save(H0_tfce_file,'tfce_H0_score','-v7.3'); clear H0_Fval tfce_H0_score
+    
     tmp                 = thresholded_maps;     clear thresholded_maps;
     thresholded_maps{1} = tmp;                  clear tmp
-    thresholded_maps{2} = tfce_H0_thmaps;       clear tfce_H0_thmaps;
+    if exist('tfce_H0_thmaps','var') % no bootstrap
+        thresholded_maps{2} = tfce_H0_thmaps;       clear tfce_H0_thmaps;
+    end
 end
