@@ -6,5 +6,6 @@ function limo_check_ppool
 
 p = gcp('nocreate');
 if isempty(p) % i.e. it's not on
-    parpool(feature('numcores')-1);
+    parpool(getenv('NUMBER_OF_PROCESSORS')-1); % logical
+    % parpool(feature('numcores')-1); only physical
 end

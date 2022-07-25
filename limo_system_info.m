@@ -14,11 +14,11 @@ if new % fresh install
     [~,system_info.max_elements] = computer;
     system_info.max_cores = feature('numCores');
     if ispc
-        how_much_ram = memory;
+        how_much_ram       = memory;
         number_of_elements = how_much_ram.MaxPossibleArrayBytes / 8; % store data as double
         memory_available   = how_much_ram.MemAvailableAllArrays;
     elseif isunix
-        [r,w] = unix('free | grep Mem');
+        [~,w] = unix('free | grep Mem');
         stats = str2double(regexp(w, '[0-9]*', 'match'));
         memsize = stats(1)/1e6;
         freemem = (stats(3)+stats(end))/1e6;
