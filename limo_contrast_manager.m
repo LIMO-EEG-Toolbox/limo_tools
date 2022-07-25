@@ -357,16 +357,14 @@ if ~isempty(handles.C)
                             data = load(fullfile(pwd,'Yr.mat')); LIMO.dir = pwd;
                         end
                         
-                        param = (num2str((find(handles.C ~= 0))));
-                        param(strfind(param,' ')) = [];
                         if strcmp(LIMO.Analysis ,'Time-Frequency')
                             limo_random_robust(2,data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == 1))),...
                                 data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == -1))),...
-                                eval(param),LIMO);
+                                find(handles.C ~= 0),LIMO);
                         else
                             limo_random_robust(2,data.Yr(:,:,find(LIMO.design.X(:,handles.C == 1))),...
                                 data.Yr(:,:,find(LIMO.design.X(:,handles.C == -1))),...
-                                eval(param),LIMO);
+                                find(handles.C ~= 0),LIMO);
                         end
                     end
                 else % standard GLM type ANOVA/ANCOVA
