@@ -1,4 +1,4 @@
-function limo_check_ppool
+function spmup_check_ppool
 
 % routine to make sure the parallel pool is working
 % ------------------------------
