@@ -5,12 +5,11 @@ function version = eegplugin_limo(fig,try_strings,catch_strings)
 % Multiple choices are available depending on the type
 % of analysis
 % 
-% Nicolas Chauveau - Cyril Pernet v1 13/03/2009
-% Cyril Pernet v2 22-06-2013
-% -----------------------------
-%  Copyright (C) LIMO Team 2019
+% Nicolas Chauveau,Cyril Pernet, Arnaud Delorme
+% ---------------------------------------------
+%  Copyright (C) LIMO Team 2022
 
-version ='LIMO EEG 3.2';
+version ='LIMO EEG 3.3';
 if nargin < 3
     error('eegplugin_limo requires 3 arguments');
 end
@@ -49,7 +48,7 @@ if isempty(vnum) || vnum >= 15
     cb_limoruncomp = [ nocheck '[STUDYTMP LASTCOM]= pop_limo(STUDY, ALLEEG,''ica'');' e_plot_study];
 %     cb_limoreschan = [ nocheck 'pop_limoresults(STUDY,''dat'');' e_hist];
 %     cb_limorescomp = [ nocheck 'pop_limoresults(STUDY,''ica'');' e_hist];
-    limo_eeg = uimenu(menu,'Label','LInear MOdeling of EEG Data (BETA)' , 'userdata', onstudy,'Tag','limoeeg','separator', 'on');
+    limo_eeg = uimenu(menu,'Label','LInear MOdeling of EEG Data' , 'userdata', onstudy,'Tag','limoeeg','separator', 'on');
     uimenu( limo_eeg, 'Label', 'Estimate Model Parameters (channel)'        , 'userdata', onstudy, 'CallBack', cb_limorunchan);
     uimenu( limo_eeg, 'Label', 'Estimate Model Parameters (components)'     , 'userdata', onstudy, 'CallBack', cb_limoruncomp);
     uimenu( limo_eeg, 'Label', '2nd level analysis','callback','limo_random_effect', 'userdata', onstudy,'separator', 'on');
