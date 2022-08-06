@@ -31,9 +31,9 @@ if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "Unifo
             % go
             % --
             parpool(N-1);
-        else
-            parpool(N);
         end
+    else
+        parpool(N);
     end
     
 else
