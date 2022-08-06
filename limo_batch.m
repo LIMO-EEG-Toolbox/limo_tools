@@ -481,12 +481,17 @@ end
 
 limo_settings_script;
 if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial analysis
+    
     for subject = 1:N % if bootstrap, it will use parallel mode for that
         disp('--------------------------------')
         fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
         psom_pipeline_debug(pipeline(subject));
-        [~,name]=fileparts(model.set_files{subject});
+        if strcmp(option,'contrast only')
+            name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+        else
+            [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
+        end
         sub = min(strfind(name,'sub-'));
         ses = min(strfind(name,'ses-'));
         und = strfind(name,'_');
@@ -502,6 +507,7 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         end
         procstatus(subject) = 1;
     end
+    
 else % parallel call to the pipeline
     limo_check_ppool
     parfor subject = 1:N 
