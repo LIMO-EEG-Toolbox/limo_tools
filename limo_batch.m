@@ -313,8 +313,8 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                 root = [fileparts(LIMO_files.LIMO) filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
                 subname = STUDY.datasetinfo(subject).subject;
-                extra = STUDY.datasetinfo(subject).filepath(strfind(STUDY.datasetinfo(subject).filepath,subname)+length(subname):end);
-                root = [fileparts(LIMO_files.LIMO) filesep subname extra]; % still in derivatives via LIMO_files.LIMO
+                extra   = STUDY.datasetinfo(subject).filepath(strfind(STUDY.datasetinfo(subject).filepath,subname)+length(subname):end);
+                root    = [fileparts(LIMO_files.LIMO) filesep subname extra]; % still in derivatives via LIMO_files.LIMO
             end
             
             % if session and data are not in a derivatives/sess, make subdir
@@ -486,6 +486,7 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         disp('--------------------------------')
         fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
+        
         psom_pipeline_debug(pipeline(subject));
         if strcmp(option,'contrast only')
             name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
@@ -525,7 +526,7 @@ else % parallel call to the pipeline
             % put the point brack where needed and call e.g.
             % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
             % limo_batch_design_matrix(pipeline(subject).design.files_in)
-            % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
+            % limo_eeg(4,fileparts(pipeline(subject).glm.files_in))
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
             if strcmp(option,'contrast only')
@@ -572,8 +573,10 @@ end
 cd(LIMO_files.LIMO)
 
 if strcmp(option,'model specification') || strcmp(option,'both')
-    cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
-    cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
+    if ~all(remove_limo)
+        cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
+        cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
+    end
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
