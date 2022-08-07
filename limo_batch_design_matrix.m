@@ -216,7 +216,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
-    disp('Time-Frequency implementation - checking tf data, be patient ...');
+    disp('Checking Time-Frequency data, be patient ...');
     
     if strcmp(LIMO.Type,'Components')
         if ~iscell(EEGLIMO.etc.datafiles.datspec) && isfield(EEGLIMO.etc.datafiles,'icatimef')
