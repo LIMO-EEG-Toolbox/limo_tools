@@ -124,19 +124,22 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
+        
         elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
+            
+            % store temporarily as cell everything
             LIMO.model.model_df{channel} = model.df;          
             if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df{channel}  = model.conditions.df;
+                LIMO.model.conditions_df{channel}  = squeeze(model.conditions.df);
             end
             if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df{channel}  = model.interactions.df;
+                LIMO.model.interactions_df{channel}  = squeeze(model.interactions.df);
             end
             if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df{channel}  = model.continuous.df;
+                LIMO.model.continuous_df{channel}  = squeeze(model.continuous.df);
             end
-            
-            % remove cell as sizes are identical for a given method
+
+            % 1 cell per channel 
             if e == size(array,1)
                 tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
                 if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
@@ -148,7 +151,7 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.model_df = [df dfe]; clear tmp
                 
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * nb_conditions
+                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
                     if size(tmp,1) == size(Yr,1)*2 
                         df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
                     elseif size(tmp,1) == size(Yr,1)
@@ -159,7 +162,7 @@ if strcmp(LIMO.design.status,'to do')
                 end
                 
                 if LIMO.design.nb_interactions ~=0
-                    tmp =  cell2mat(LIMO.model.interactions_df)';
+                    tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
                     if size(tmp,1) == size(Yr,1)*2 
                         df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
                     elseif size(tmp,1) == size(Yr,1)
@@ -170,7 +173,7 @@ if strcmp(LIMO.design.status,'to do')
                 end
                 
                 if LIMO.design.nb_continuous ~=0
-                    tmp = cell2mat(LIMO.model.continuous_df)';
+                    tmp = cell2mat(LIMO.model.continuous_df)'; % dim (elec*[df dfe]) * n
                     if size(tmp,1) == size(Yr,1)*2 
                         df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
                     elseif size(tmp,1) == size(Yr,1)
