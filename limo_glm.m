@@ -169,8 +169,8 @@ if strcmp(method,'OLS')
     end
     
 elseif strcmp(method,'WLS')
-    [Betas,W,rf] = limo_WLS(X,Y);
-    WX           = X.*repmat(W,1,size(X,2));
+    [Betas,W] = limo_WLS(X,Y);
+    WX        = X.*repmat(W,1,size(X,2));
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -247,10 +247,8 @@ switch method
        if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
        else
-            % Satterthwaite approximation minus the number of dimensions removed by pcout to get W
+            % Satterthwaite approximation 
             dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); 
-            % df = trace(HM'*HM).^2/trace(HM'*HM*HM'*HM); 
-            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
         end
         
         % model R^2
@@ -546,7 +544,7 @@ switch method
         model.dfe           = NaN(n_freqs,2);
         model.conditions.df = squeeze(NaN(nb_factors,n_freqs,2));
         
-        % iterate per freqency band
+        % iterate per frequency band
         % ---------------------------
         for freq=n_freqs:-1:1
             
@@ -555,7 +553,6 @@ switch method
             
             % covariance stuff
             % -----------------
-            HM    = WX{freq}*pinv(WX{freq});    
             if strcmpi(variance_estimates,'HC4')
                 h   = diag(WX{freq}*pinv(WX{freq}'*WX{freq})*WX{freq}');
                 d   = min(4,h/mean(h));
@@ -576,7 +573,6 @@ switch method
             df  = rank(WX{freq})-1;
             HM  = WX{freq}*pinv(WX{freq}); % Hat matrix, projection onto X
             dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
 
             % model R^2
             % -----------
@@ -825,8 +821,8 @@ switch method
                 else % ANCOVA type of designs
                     
                     % pre-allocate space
-                    df_continuous   = zeros(nb_continuous,size(Y,3));
-                    F_continuous    = zeros(nb_continuous,size(Y,3));
+                    df_continuous   = zeros(nb_continuous,1);
+                    F_continuous    = zeros(nb_continuous,n_times);
                     
                     % compute
                     N_conditions = sum(nb_conditions) + sum(nb_interactions);
