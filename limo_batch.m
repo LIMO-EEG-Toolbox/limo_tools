@@ -482,7 +482,7 @@ end
 limo_settings_script;
 if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial analysis
     
-    for subject = 1:N % if bootstrap, it will use parallel mode for that
+    for subject = 1:N 
         disp('--------------------------------')
         fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
