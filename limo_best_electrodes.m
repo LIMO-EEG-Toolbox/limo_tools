@@ -8,11 +8,11 @@ function [channel_vector,urchan_vector,freqmap] = limo_best_electrodes(varargin)
 % FORMAT [channel_vector,urchan_vector] = limo_best_electrodes(NameOfListOfFiles,expected_chanlocs)
 %
 % INPUT if empty user is prompted overwise the name of a file listing LIMO/R2/etc.. files
-%       must be provided followed by an a channel location file
+%       when a channel location file if also provided, allows making a frequency map
 %
 % OUTPUTS channel_vector the indices of which electrodes had the strongest F values
 %         urchan_vector the value read from the urchan field (if present)
-%         a frequency map is also presented as graphical output
+%         a frequency map (also as figure)
 %
 % ------------------------------
 %  Copyright (C) LIMO Team 2021
@@ -48,7 +48,7 @@ if FilterIndex ~= 0
         name = importdata(fullfile(pathname,name));
     elseif strcmp(name(end-3:end),'.mat')
         name = load(fullfile(pathname,name));
-        name = getfield(name,cell2mat(fieldnames(name)));
+        name = name.(cell2mat(fieldnames(name)));
     end
     
     for f=1:size(name,1)
@@ -128,37 +128,41 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
         else
             expected_chanlocs = load([f filesep p]);
         end
-    else
+    elseif nargin > 1 && nargout == 3
         expected_chanlocs = varargin{2};
         if ischar(expected_chanlocs)
             expected_chanlocs = load(expected_chanlocs);
         end
     end
     
-    structnames = fieldnames(expected_chanlocs);
-    if ~isempty(structnames)
-        expected_chanlocs = expected_chanlocs.(cell2mat(structnames(structfun(@isstruct,expected_chanlocs))));
-    end
-    data = zeros(1,length(expected_chanlocs));
-    
-    for S=1:Ns
-        data(channel_vector(S)) = data(channel_vector(S))+1;
-    end
-    
-    % create the frequency map
-    figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
-    [h grid_or_val plotrad_or_grid, xmesh, ymesh]= ...
-        topoplot(data,expected_chanlocs,'style','both','electrodes','off','hcolor','none','numcontour',0,'whitebk','on','noplot','on','conv','on');
-    freqmap = grid_or_val(end:-1:1,:); % reverse row order to get back of the head at the bottom of the image
-    freqmap(34,67)=NaN;freqmap(67,34)=NaN;freqmap(34,1)=NaN;freqmap(1,34)=NaN;
-    if min(freqmap(:))<0
-        freqmap = freqmap + abs(min(freqmap(:)));
+    if exist('expected_chanlocs','var')
+        structnames = fieldnames(expected_chanlocs);
+        if ~isempty(structnames)
+            expected_chanlocs = expected_chanlocs.(cell2mat(structnames(structfun(@isstruct,expected_chanlocs))));
+        end
+        data = zeros(1,length(expected_chanlocs));
+        
+        for S=1:Ns
+            data(channel_vector(S)) = data(channel_vector(S))+1;
+        end
+        
+        % create the frequency map
+        [h grid_or_val plotrad_or_grid, xmesh, ymesh]= ...
+            topoplot(data,expected_chanlocs,'style','both','electrodes','off','hcolor','none','numcontour',0,'whitebk','on','noplot','on','conv','on');
+        freqmap = grid_or_val(end:-1:1,:); % reverse row order to get back of the head at the bottom of the image
+        freqmap(34,67)=NaN;freqmap(67,34)=NaN;freqmap(34,1)=NaN;freqmap(1,34)=NaN;
+        if min(freqmap(:))<0
+            freqmap = freqmap + abs(min(freqmap(:)));
+        end
     end
     
     % make the figure
-    imagesc(freqmap,[0 max(freqmap(:))])
-    axis tight;axis square;axis off
-    colormap(limo_color_images(freqmap));
-    cd(current_dir)
+    if nargout == 3 && exist('freqmap','var')
+        figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
+        imagesc(freqmap,[0 max(freqmap(:))])
+        axis tight;axis square;axis off
+        colormap(limo_color_images(freqmap));
+        cd(current_dir)
+    end
 end
 
