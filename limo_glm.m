@@ -243,12 +243,16 @@ switch method
         
         % degrees of freedom
         % -------------------
-       df  = rank(WX)-1;
-       if strcmp(method,'OLS')
+        df  = rank(WX)-1;
+        if df == 0
+            df = 1; % case of just the mean
+        end
+        
+        if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
-       else
-            % Satterthwaite approximation 
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); 
+        else
+            % Satterthwaite approximation
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
         end
         
         % model R^2
