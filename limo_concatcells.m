@@ -30,8 +30,8 @@ if strcmpi(type,'num')
     end
     
     % check consistency of matrices
-    n = length(in);
-    ref = size(in{1});
+    n        = length(in);
+    ref      = size(in{1});
     last_dim = numel(ref);
     for data=2:n
         if sum(size(in{data}) == ref) ~= (last_dim-1)
