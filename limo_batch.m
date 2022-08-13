@@ -7,8 +7,8 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % <https://github.com/PSOM>
 %
 % FORMAT limo_batch
-% limo_batch(option,model,contrast)
-% limo_batch(option,model,contrast,eeglab_study)
+% [LIMO_files, procstatus] = limo_batch(option,model,contrast)
+% [LIMO_files, procstatus] = limo_batch(option,model,contrast,eeglab_study)
 %
 % INPUT if empty uses GUI
 %       - option should be 'model specification', 'contrast only' or 'both'
