@@ -1,18 +1,20 @@
 function [channel_vector,urchan_vector,freqmap] = limo_best_electrodes(varargin)
 
-% This function finds the channel with the maximum F value in each subject.
+% This function finds the channel with the maximum value in each subject map.
 % The function works on files R2.mat, Condition_effect.mat, Continuous.mat. 
-% The function returns a map of frequency showing how often an electrode is
-% selected across subjects. The default list of LIMO.mat can be used for R2.
+% (also takes LIMO.mat and maps R2).
+% The function also returns a map of frequency showing how often an electrode is
+% selected across subjects, if no output or nargout == 3.
 %
-% FORMAT [channel_vector,urchan_vector] = limo_best_electrodes(NameOfListOfFiles,expected_chanlocs)
+% FORMAT limo_best_electrodes
+%        [channel_vector,urchan_vector] = limo_best_electrodes(NameOfListOfFiles,expected_chanlocs)
 %
 % INPUT if empty user is prompted overwise the name of a file listing LIMO/R2/etc.. files
 %       when a channel location file if also provided, allows making a frequency map
 %
 % OUTPUTS channel_vector the indices of which electrodes had the strongest F values
 %         urchan_vector the value read from the urchan field (if present)
-%         a frequency map (also as figure)
+%         a frequency map (if requested will also pop a figure)
 %
 % ------------------------------
 %  Copyright (C) LIMO Team 2021
@@ -105,9 +107,7 @@ end
 if nargout == 0
     cd(current_dir)
     name = cell2mat(inputdlg('Save electrode vector as','Name'));
-    if isempty(name)
-        return
-    else
+    if ~isempty(name)
         save (name,'channel_vector')
         assignin('base',name,channel_vector)
         save ([name '_urchan'],'urchan_vector')
@@ -128,7 +128,7 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
         else
             expected_chanlocs = load([f filesep p]);
         end
-    elseif nargin > 1 && nargout == 3
+    elseif nargin > 1 
         expected_chanlocs = varargin{2};
         if ischar(expected_chanlocs)
             expected_chanlocs = load(expected_chanlocs);
@@ -157,7 +157,8 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
     end
     
     % make the figure
-    if nargout == 3 && exist('freqmap','var')
+    if nargout == 3 && exist('freqmap','var') || ...
+        nargout == 0 && exist('freqmap','var')
         figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
         imagesc(freqmap,[0 max(freqmap(:))])
         axis tight;axis square;axis off
