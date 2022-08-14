@@ -96,7 +96,7 @@ end
 % -------------------      LEVEL 1     ------------------------------------
 % -------------------  SINGLE SUBJECT  ------------------------------------
 % -------------------------------------------------------------------------
-if LIMO.Level == 1
+if LIMO.Level == 1 
     
     switch Type
         
@@ -1097,7 +1097,8 @@ elseif LIMO.Level == 2
         end
         
         if strcmpi(LIMO.Analysis,'Time-Frequency') || strcmpi(LIMO.Analysis,'ITC')
-            if contains(FileName,'R2')
+            if contains(FileName,'R2') || ...
+                    contains(FileName,'semi_partial')
                 toplot = squeeze(toplot(:,:,:,1));
             elseif contains(FileName,'ttest','IgnoreCase',true) || ...
                     contains(FileName,'LI_Map','IgnoreCase',true)
@@ -1117,7 +1118,8 @@ elseif LIMO.Level == 2
                 disp('file no supported'); return
             end
         else
-            if contains(FileName,'R2')
+            if contains(FileName,'R2') || ...
+                    contains(FileName,'semi_partial')
                 toplot = squeeze(toplot(:,:,1));
             elseif contains(FileName,'ttest','IgnoreCase',true) || ...
                     contains(FileName,'LI_Map','IgnoreCase',true)
