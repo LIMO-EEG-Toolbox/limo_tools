@@ -113,7 +113,7 @@ function result = limo_rep_anova(varargin)
 % GAR April 2013: updated help & comments; added name output
 % Cyril Pernet 2022 added df,dfe in the result structure
 % ------------------------------
-%  Copyright (C) LIMO Team 2020
+%  Copyright (C) LIMO Team 2022
 
 
 %% input stuff
