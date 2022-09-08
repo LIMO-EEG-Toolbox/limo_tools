@@ -310,9 +310,10 @@ switch type
        for frame=1:f
            I = (C*squeeze(Data(frame,:,:))')';
            [result.interaction.F(frame), result.interaction.p(frame),...
-               result.interaction.df(frame),result.interaction.dfe(frame)] = ...
-               local_glm(I,X,k,sum(X(:,1:k),1),2);
+               df(frame),dfe(frame)] = local_glm(I,X,k,sum(X(:,1:k),1),2);
        end
+       result.interaction.df  = unique(df); % has a be length = 1 because frames have the same n
+       result.interaction.dfe = unique(dfe);
        
         % -----------------------------------------------------------------
     case{4} % several within and 1 between factors
@@ -392,9 +393,10 @@ switch type
                for frame=1:f
                    I = (c*squeeze(Data(frame,:,:))')';
                    [result.interaction.F(effect,frame), result.interaction.p(effect,frame),...
-                       result.interaction.df(effect,frame), result.interaction.dfe(effect,frame)]= ...
-                       local_glm(I,X,k,sum(X(:,1:k),1),2);
+                       df(frame), dfe(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
                end
+               result.interaction.df(effect,c)  = unique(df); 
+               result.interaction.dfe(effect,c) = unique(dfe);
            end
        else
            for frame=1:f
@@ -453,5 +455,7 @@ if flag == 2
 else
     F    = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
     p    = 1 - fcdf(F, (rank(X)-1), (size(Y,1)-rank(X)));
+    df_Hotelling  = rank(X)-1;
+    dfe_Hotelling = size(Y,1)-rank(X); % actually not hotelling, just named for consistant function output
 end
 end

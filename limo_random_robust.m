@@ -765,10 +765,13 @@ switch type
                 end
                 Yhat             = NaN(size(data));
                 Condition_effect = NaN(size(data,1),size(data,2),2);
+                LIMO.design.df    = NaN(size(data,1),1);
+                LIMO.design.dfe   = NaN(size(data,1),size(data,2));
                 array            = find(~isnan(data(:,1,1)));
                 for e=1:size(array,1)
-                    channel = array(e); fprintf('processing channel %g \n,',channel);
-                    [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
+                    channel = array(e); fprintf('processing channel %g \n',channel);
+                    [Condition_effect(channel,:,1), Condition_effect(channel,:,2),...
+                        Yhat(channel,:,:), LIMO.design.df(channel),LIMO.design.dfe(channel,:)] = ...
                         limo_robust_1way_anova(squeeze(data(channel,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
                 end
                 delete(fullfile(LIMO.dir,'Betas.mat')); % no betas here
@@ -1092,8 +1095,8 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,1,1)                   = result.repeated_measure.F;
                     tmp_Rep_ANOVA(channel,:,1,2)                   = result.repeated_measure.p;
-                    LIMO.design.df(channel)                        = result.df;
-                    LIMO.design.dfe(channel)                       = result.dfe;
+                    LIMO.design.df(channel)                        = result.repeated_measure.df;
+                    LIMO.design.dfe(channel)                       = result.repeated_measure.dfe;
                     Rep_ANOVA_Gp_effect(channel,:,1)               = result.gp.F;
                     Rep_ANOVA_Gp_effect(channel,:,2)               = result.gp.p;
                     LIMO.design.group.df(channel)                  = result.gp.df;
@@ -1110,8 +1113,8 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,:,1)                     = result.repeated_measure.F';
                     tmp_Rep_ANOVA(channel,:,:,2)                     = result.repeated_measure.p';
-                    LIMO.design.df(channel,:)                        = result.df;
-                    LIMO.design.dfe(channel,:)                       = result.dfe;
+                    LIMO.design.df(channel,:)                        = result.repeated_measure.df;
+                    LIMO.design.dfe(channel,:)                       = result.repeated_measure.dfe;
                     Rep_ANOVA_Gp_effect(channel,:,1)                 = result.gp.F;
                     Rep_ANOVA_Gp_effect(channel,:,2)                 = result.gp.p;
                     LIMO.design.group.df(channel)                    = result.gp.df;
