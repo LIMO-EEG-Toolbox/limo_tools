@@ -7,12 +7,12 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % <https://github.com/PSOM>
 %
 % FORMAT limo_batch
-% limo_batch(option,model,contrast)
-% limo_batch(option,model,contrast,eeglab_study)
+% [LIMO_files, procstatus] = limo_batch(option,model,contrast)
+% [LIMO_files, procstatus] = limo_batch(option,model,contrast,eeglab_study)
 %
 % INPUT if empty uses GUI
-%       option should be 'model specification' 'contrast only' or 'both'
-%       model is a structure that specifiy information to build a model
+%       - option should be 'model specification', 'contrast only' or 'both'
+%       - model is a structure that specifiy information to build a model
 %       model.set_files: a cell array of EEG.set (full path) for the different subjects
 %       model.cat_files: a cell array of categorial variable or variable files
 %       model.cont_files: a cell array of continuous variable or variable files
@@ -30,22 +30,48 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
-%
-%       contrast is a structure that specify which contrasts to run for which subject
+%       - contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
-%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects, rows are contrasts, 
+%       contrast.mat: a matrix of contrasts to run (assumes the same for all subjects, rows are contrasts,
 %                     columns are variables in the GLM including the constant)
-%       eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ... 
+%       - eeglab_study is the STUDY structure allowing to create multiple design with consistant names etc ...
 %
-% OUTPUT  
+% OUTPUT
 % LIMO_files  - A cell array of LIMO.mat (info about subjects' GLM)
 %               create a directory per subject with GLM results in it
 %               create a log file directory with the pipleine and logs
 % procstatus  - [1 x Number of subjects] binary vector. Status of the LIMO computations for each of the N subjects.
 %               [0] Failed, [1] Processed.
 %
-% see also limo_eeg limo_import_t limo_import_f limo_import_tf 
+%
+% Example: limo_batch('both',model,contrast,STUDY);
+%                            model.defaults.datatype= 'erp'
+%                            model.defaults.type= 'Channels'
+%                            model.defaults.analysis= 'Time'
+%                            model.defaults.start= -1000
+%                            model.defaults.end= 1996
+%                            model.defaults.lowf= []
+%                            model.defaults.highf= []
+%                            model.defaults.fullfactorial= 0
+%                            model.defaults.zscore= 1
+%                            model.defaults.bootstrap= 0
+%                            model.defaults.tfce= 0
+%                            model.defaults.method= 'WLS'
+%                            model.defaults.Level= 1
+%                            model.defaults.type_of_analysis= 'Mass-univariate'
+%                            model.cat_files: {n×1 cell};
+%                                  model.cat_files{n}' = [1 1 1 2 2 3 4 4 2 3 ....];
+%                            model.cont_files: []
+%                            model.set_files: {n×1 cell}
+%                                  model.set_files{n} = 'D:\EEG\mysuperdataset\sub-001\sub-001_task_dostuff.set';
+%                            contrast.mat = [1 0 -1 0 0 ; 0 1 0 -1 0];
+%
+%          limo_batch('contrast only',[],contrast,STUDY);
+%                            contrast.LIMO_files = 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
+%                            contrast.mat = [0 1 0 1 ; 1 0 1 0; 1 -1 1 -1];
+%
+% see also limo_eeg limo_import_t limo_import_f limo_import_tf
 % see also psom in external folder
 %
 % Reference for pipeline engine
@@ -59,7 +85,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
 % ----------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2022
 
 % programmer help
 % ---------------
@@ -110,7 +136,8 @@ if nargin <= 1
                 batch_contrast.mat = importdata(FileName);
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
-                batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
+                % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
+                batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
             end
         else
             disp('limo batch aborded'); return
@@ -134,7 +161,8 @@ if nargin <= 1
                 batch_contrast.LIMO_files = importdata(fullfile(PathName, FileName));
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
-                batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
+                % batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
+                batch_contrast.LIMO_files = FileName.(cell2mat(fieldnames(FileName)));
             end
             LIMO_files.LIMO = PathName;
         else
@@ -149,7 +177,8 @@ if nargin <= 1
                 batch_contrast.mat = importdata(FileName);
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
-                batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
+                % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
+                batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
             end
         else
             disp('limo batch aborded'); return
@@ -166,6 +195,17 @@ elseif nargin > 1
     % batch_contrast
     if strcmp(option,'contrast only') || strcmp(option,'both')
         batch_contrast = varargin{3};
+        
+        if isfield(batch_contrast,'LIMO_files')
+            if ~iscell(batch_contrast.LIMO_files)
+                if strcmpi(batch_contrast.LIMO_files(end-3:end),'.txt')
+                    batch_contrast.LIMO_files = importdata(batch_contrast.LIMO_files);
+                else
+                   error('contrast.LIMO_files must be either the path to a txt file or a cell array of file(s)') 
+                end
+            end
+        end
+
         if ~isfield(batch_contrast,'mat')
             errordlg('the field batch_contrast.mat is missing'); return
         end
@@ -192,9 +232,9 @@ if exist('STUDY','var')
         STUDY.filepath =pwd;
     end
     cd(STUDY.filepath); % go to study
-    current = pwd; 
+    current = pwd;
     if isempty(strfind(STUDY.filepath,'derivatives'))
-        % derivatives would have been created by std_limo if not in the path
+        % derivatives should have been created by std_limo if not already in the path
         if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
             mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]);
         end
@@ -211,7 +251,10 @@ if exist('STUDY','var')
         end
         LIMO_files.LIMO = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     end
-else
+else % if not part of a EEGLAB STUDY - e.g. run locally or FieldTrip
+    if ~contains(pwd,'derivatives') % make a derivatives folder
+        mkdir('derivatives'); cd derivatives
+    end
     current = pwd;
     mkdir('limo_batch_report')
     if isempty(LIMO_files)
@@ -236,7 +279,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             error('the number of set and cat files disagree')
         end
     end
-        
+    
     % build the pipelines
     for subject = 1:size(model.set_files,1)
         
@@ -245,7 +288,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).import.command = command; %#ok<*AGROW>
         pipeline(subject).import.files_in = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
-
+        
         if isfield(model.defaults,'type')
             pipeline(subject).import.opt.defaults.type = model.defaults.type;
         else
@@ -264,46 +307,71 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             pipeline(subject).import.opt.defaults.type_of_analysis = 'Mass-univariate';
         end
         
-        
-        if nargin == 4
-            if ~contains(STUDY.datasetinfo(subject).subject,{'sub-'}) && ...
-                    ~contains(STUDY.datasetinfo(subject).subject,{'_task-'}) % not bids
-                root = [LIMO_files.LIMO filesep 'sub-' STUDY.datasetinfo(subject).subject];
+        if exist('STUDY','var')
+            if ~contains(STUDY.datasetinfo(subject).filename,{'sub-'}) && ...
+                    ~contains(STUDY.datasetinfo(subject).filename,{'_task-'}) % not bids
+                root = [fileparts(LIMO_files.LIMO) filesep 'sub-' STUDY.datasetinfo(subject).subject];
             else
-                root = STUDY.datasetinfo(subject).filepath;
+                subname = STUDY.datasetinfo(subject).subject;
+                extra   = STUDY.datasetinfo(subject).filepath(strfind(STUDY.datasetinfo(subject).filepath,subname)+length(subname):end);
+                root    = [fileparts(LIMO_files.LIMO) filesep subname extra]; % still in derivatives via LIMO_files.LIMO
             end
             
-            % if session - make subdir
+            % if session and data are not in a derivatives/sess, make subdir
             if ~isempty(STUDY.datasetinfo(subject).session)
-                if ischar(STUDY.datasetinfo(subject).session)
-                    root = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
-                else
-                    root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                nsess = sum(strcmp(STUDY.datasetinfo(subject).subject,{STUDY.datasetinfo.subject}));
+                if ~contains(root,'ses-') && nsess>=1
+                    if ischar(STUDY.datasetinfo(subject).session)
+                        reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
+                        if ~isempty(reuse)
+                            index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
+                            root = fullfile(reuse(index).folder,reuse(index).name);
+                        else
+                            root  = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
+                        end
+                    else
+                        reuse = dir(fullfile(root,['ses-*' num2str(STUDY.datasetinfo(subject).session)]));
+                        if ~isempty(reuse)
+                            index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
+                            root = fullfile(reuse(index).folder,reuse(index).name);
+                        else
+                            root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                        end
+                    end
                 end
             end
             
+            % [root filesep eeg] - case of bids without ses-
+            if exist(fullfile(root,'eeg'),'dir')
+                root = fullfile(root,'eeg');
+            end
+
             if exist(root,'dir') ~= 7
                 mkdir(root);
             end
-            design_name = STUDY.design(STUDY.currentdesign).name; 
+            design_name = STUDY.design(STUDY.currentdesign).name;
             design_name(isspace(design_name)) = [];
-            if findstr(design_name,'STUDY.')
+            if strfind(design_name,'STUDY.') %#ok<STRIFCND>
                 design_name = design_name(7:end);
             end
-            glm_name = [design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
-            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat']; 
+            glm_name = [STUDY.filename(1:end-6) '_' design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
+            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
             [root,~,~] = fileparts(model.set_files{subject});
-            glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];    
+            for l=min(length(LIMO_files.LIMO),length(root)):-1:1
+                common(l) = root(l) == LIMO_files.LIMO(l);
+            end
+            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); %#ok<MXFND>
+            glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
         
         if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
-                batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
+            batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
         end
-
+        
         if ~isempty(model.cat_files)
             pipeline(subject).import.opt.cat = model.cat_files{subject};
         else
@@ -317,7 +385,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
         LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
-       
+        
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
         pipeline(subject).design.command = command;
@@ -334,7 +402,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
-  
+    
     if ~exist('model','var')
         model.defaults.bootstrap = 0;
         model.defaults.tfce      = 0;
@@ -395,7 +463,7 @@ end
 % ----------------------
 %% Save pipeline
 % useful to re-run, simply calling psom_run_pipeline
-if ~exist('glm_name','var') && strcmp(option,'contrast only') 
+if ~exist('glm_name','var') && strcmp(option,'contrast only')
     [~,glm_name]=fileparts(fileparts(pipeline(1).n_contrast.files_in));
 end
 
@@ -413,18 +481,39 @@ end
 
 limo_settings_script;
 if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial analysis
-    for subject = 1:N % if bootstrap, it will use parallel mode for that
+    
+    for subject = 1:N 
         disp('--------------------------------')
-        fprintf('processing subject %g/%g \n',subject,N)
+        fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
+        
         psom_pipeline_debug(pipeline(subject));
-        report{subject} = ['subject ' num2str(subject) ' processed'];
+        if strcmp(option,'contrast only')
+            name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+        else
+            [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
+        end
+        sub = min(strfind(name,'sub-'));
+        ses = min(strfind(name,'ses-'));
+        und = strfind(name,'_');
+        if ~isempty(sub) && ~isempty(ses) && ~isempty(und)
+            try
+                sub_und = und(und>sub); ses_und = und(und>ses);
+                report{subject} = ['subject ' name(sub+4:sub+min(abs(sub_und-sub))-1) ' session ' name(ses+4:ses+min(abs(ses_und-ses))-1) ' processed'];
+            catch
+                report{subject} = ['subject ' num2str(subject) ' processed'];
+            end
+        else
+            report{subject} = ['subject ' num2str(subject) ' processed'];
+        end
         procstatus(subject) = 1;
     end
+    
 else % parallel call to the pipeline
-    parfor subject = 1:N
+    limo_check_ppool
+    parfor subject = 1:N 
         disp('--------------------------------')
-        fprintf('processing subject %g/%g \n',subject,N)
+        fprintf('processing model %g/%g \n',subject,N)
         disp('--------------------------------')
         
         try
@@ -437,10 +526,32 @@ else % parallel call to the pipeline
             % put the point brack where needed and call e.g.
             % limo_batch_import_data(pipeline(subject).import.files_in,pipeline(subject).import.opt.cat,pipeline(subject).import.opt.cont,pipeline(subject).import.opt.defaults)
             % limo_batch_design_matrix(pipeline(subject).design.files_in)
-            % cd(fileparts(pipeline(subject).glm.files_in)); limo_eeg(4)
+            % limo_eeg(4,fileparts(pipeline(subject).glm.files_in))
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
-            report{subject} = ['subject ' num2str(subject) ' processed'];
+            if strcmp(option,'contrast only')
+                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+            else
+                [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
+            end
+            sub = min(strfind(name,'sub-'));
+            ses = min(strfind(name,'ses-'));
+            und = strfind(name,'_');
+            
+            if ~isempty(sub) && ~isempty(ses) && ~isempty(und)
+                try
+                    sub_und = und(und>sub); ses_und = und(und>ses);
+                    if strcmp(option,'contrast only')
+                        report{subject} = ['subject ' name(sub:sub+min(abs(sub_und-sub))-1) ' processed'];
+                    else
+                        report{subject} = ['subject ' name(sub+4:sub+min(abs(sub_und-sub))-1) ' session ' name(ses+4:ses+min(abs(ses_und-ses))-1) ' processed'];
+                    end
+                catch
+                    report{subject} = ['subject ' num2str(subject) ' processed'];
+                end
+            else
+                report{subject} = ['subject ' num2str(subject) ' processed'];
+            end
             procstatus(subject) = 1;
         catch ME
             report{subject} = sprintf('subject %g failed: %s',subject,ME.message');
@@ -462,8 +573,10 @@ end
 cd(LIMO_files.LIMO)
 
 if strcmp(option,'model specification') || strcmp(option,'both')
-    cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
-    cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
+    if ~all(remove_limo)
+        cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
+        cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
+    end
 end
 
 if strcmp(option,'contrast only') || strcmp(option,'both')
@@ -495,35 +608,7 @@ end
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
 
-% if EEGLAB STUDY check for groups
-if exist('STUDY','var')
-    
-    if isfield(model, 'set_files')
-        cell2csv([LIMO_files.LIMO filesep 'EEGLAB_set_' glm_name '.txt'],model.set_files)
-    end
-    
-    % split txt files if more than 1 group
-    if length(STUDY.group) > 1
-        for g= 1:length(STUDY.group)
-            subset = arrayfun(@(x)(strcmpi(x.group,STUDY.group{g})), STUDY.datasetinfo);
-            
-            if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
-                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
-                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
-            end
-            
-            if isfield(LIMO_files,'con')
-                tmpcell = LIMO_files.con(subset);
-                for c=1:length(tmpcell{1})
-                    [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
-                    cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_Gp' STUDY.group{g} '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
-                end
-            end
-        end
-    end
-end
-
-cd(current); 
+cd(current);
 failed = zeros(1,N);
 for subject=1:N
     if strfind(report{subject},'failed')
@@ -540,5 +625,90 @@ else
         warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
     end
 end
+
+% if EEGLAB STUDY check for groups and sessions 
+% and further export txt files
+if exist('STUDY','var')
+    try
+        if isfield(model, 'set_files')
+            cell2csv([LIMO_files.LIMO filesep 'EEGLAB_set_' glm_name '.txt'],model.set_files)
+        end
+        
+        if ~isempty(STUDY.datasetinfo(subject).session)
+            sesvalues = unique(arrayfun(@(x) x.session, STUDY.datasetinfo));
+        else
+            sesvalues = 1;
+        end
+        
+        % split txt files if more than 1 group or session
+        if length(STUDY.group) > 1 || length(sesvalues)>1
+            for s=1:length(sesvalues)
+                for g= 1:length(STUDY.group)
+                    if length(STUDY.group) > 1
+                        subset = arrayfun(@(x)(strcmpi(x.group,STUDY.group{g})), STUDY.datasetinfo);
+                    end
+                    
+                    if length(sesvalues) > 1
+                        sesset = arrayfun(@(x) x.session==s, STUDY.datasetinfo);
+                    end
+                    
+                    if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
+                        if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
+                            if any(subset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
+                            end
+                        elseif length(STUDY.group) == 1 && length(sesvalues) > 1 % only sessions
+                            if any(sesset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.mat(sesset));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_' glm_name '.txt']), LIMO_files.Beta(sesset));
+                            end
+                        else % groups and sessions
+                            if any(subset.*sesset)
+                                cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(logical(subset.*sesset)));
+                                cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(logical(subset.*sesset)));
+                            end
+                        end
+                    end
+                    
+                    if isfield(LIMO_files,'con')
+                        if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
+                            tmpcell = LIMO_files.con(subset);
+                            if ~isempty(tmpcell{1})
+                                for c=1:length(tmpcell{1})
+                                    [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
+                                    cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_Gp-' STUDY.group{g} '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
+                                end
+                            end
+                        elseif length(STUDY.group) == 1 && length(sesvalues) > 1 % only sessions
+                            tmpcell = LIMO_files.con(sesset);
+                            if ~isempty(tmpcell{1})
+                                for c=1:length(tmpcell{1})
+                                    [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
+                                    cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_ses-' num2str(s) '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
+                                end
+                            end
+                        else
+                            tmpcell = LIMO_files.con(logical(subset.*sesset));
+                            if ~isempty(tmpcell)
+                                for c=1:length(tmpcell{1})
+                                    [~,con_name,~] = fileparts(LIMO_files.con{1}{c});
+                                    cell2csv(fullfile(LIMO_files.LIMO, [con_name '_files_ses-' num2str(s) '_Gp-' STUDY.group{g} '_' glm_name '.txt']),cellfun(@(x) x(c), tmpcell));
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    catch writtingerr
+        if sum(failed) == 0
+            warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+        else
+            warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+        end
+    end
+end
+
 disp('LIMO batch works thanks to PSOM by Bellec et al. (2012)')
 disp('The Pipeline System for Octave and Matlab. Front. Neuroinform. 6:7')

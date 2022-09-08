@@ -55,13 +55,20 @@ disp('------------------------------------------')
 disp('Starting semi_partial_coefficient analyses')
 disp('------------------------------------------')
 
-cd (LIMO.dir);
+if exist(LIMO.dir,'dir')
+    cd(LIMO.dir);
+else
+    sprintf('%s not found,\ntrying to workd from %s',LIMO.dir,pwd)
+    if ~exist('Yr.mat','file')
+        error('Analysis failed to find data, update LIMO.dir')
+    end
+end
 
 % do the computation
 % -----------------------
 if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
-    load Yr; load R2;
-    tmp = compute(LIMO,Yr,R2,1);
+    Yr = load('Yr.mat'); R2 = load('R2.mat');
+    tmp = compute(LIMO,Yr.Yr,R2.R2,1);
     clear R2
     
     for i=1:size(tmp,3)
@@ -73,9 +80,9 @@ if strcmp(LIMO.Analysis,'Time') || strcmp(LIMO.Analysis,'Frequency')
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
     
     disp('loading 4D data - be patient')
-    load Yr; load R2;
-    Yr = limo_tf_4d_reshape(Yr);
-    R2 = limo_tf_4d_reshape(R2);
+    Yr = load('Yr.mat'); R2 = load('R2.mat');
+    Yr = limo_tf_4d_reshape(Yr.Yr);
+    R2 = limo_tf_4d_reshape(R2.R2);
     tmp = compute(LIMO,Yr,R2,1);
     clear R2
     
@@ -169,7 +176,6 @@ end
 
 clear Yr
 disp('semi-partial coefficent analysis done ...')
-cd(LIMO.dir)
 
 end
 
@@ -270,9 +276,7 @@ for r=1:length(regressors)
             df_reduced            = rank(WX)-1;
             dfe                   = (df-df_reduced);
             Partial_coef(i,:,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,:,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,:,1)))); % --> F
-            if strcmp(LIMO.design.method,'OLS') 
-                Partial_coef(i,:,r,3) = 1 - fcdf(squeeze(Partial_coef(i,:,r,2)), df, dfe); % --> p
-            end
+            Partial_coef(i,:,r,3) = 1 - fcdf(squeeze(Partial_coef(i,:,r,2)), df, dfe); % --> p
         end
         
     else % IRLS
@@ -283,9 +287,9 @@ for r=1:length(regressors)
             end
             % got to iterate for each cell
             for j=1:size(Yr,2)
-                Y                     = squeeze(Yr(i,j,:))';
+                Y                     = squeeze(Yr(i,j,:));
                 T                     = (Y-mean(Y))'*(Y-mean(Y));
-                WX                    = [X(:,1:end-1).*repmat(LIMO.design.weights(i,j,:),1,size(X,2)-1) X(:,end)];
+                WX                    = [X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(i,j,:)),1,size(X,2)-1) X(:,end)];
                 R                     = eye(size(Y,1)) - (WX*pinv(WX));
                 C                     = eye(size(X,2));
                 C(:,size(X,2))        = 0;
@@ -293,17 +297,16 @@ for r=1:length(regressors)
                 X0                    = WX*C0;
                 R0                    = eye(size(Y,1)) - (X0*pinv(X0));
                 M                     = R0 - R;
-                Betas                 = pinv(WX)*(Y.*LIMO.design.weights(i,j,:)');
+                Betas                 = pinv(WX)*(Y.*squeeze(LIMO.design.weights(i,j,:)));
                 H                     = (Betas'*X'*M*X*Betas);
                 R2_reduced            = H./T;  % dim [freq/time]
-                Partial_coef(i,j,r,1) = squeeze(R2(i,j,1)) -  R2_reduced';  % dim electrode i * [freq/time] * regressor r -->R2
+                Partial_coef(i,j,r,1) = squeeze(R2(i,j,1)) -  R2_reduced;  % dim electrode i * [freq/time] * regressor r -->R2
                 
+                df                    = rank(LIMO.design.X(:,1:end-1).*repmat(squeeze(LIMO.design.weights(i,j,:)),1,size(LIMO.design.X,2)-1))-1;
                 df_reduced            = rank(WX)-1;
                 dfe                   = (df-df_reduced);
                 Partial_coef(i,j,r,2) = ((size(Yr,3)-df-1).*squeeze(Partial_coef(i,j,r,1))) ./ ((df-df_reduced).*(1-squeeze(R2(i,j,1)))); % --> F
-                if strcmp(LIMO.design.method,'OLS')
-                    Partial_coef(i,j,r,3) = 1 - fcdf(squeeze(Partial_coef(i,j,r,2)), df, dfe); % --> p
-                end
+                Partial_coef(i,j,r,3) = 1 - fcdf(squeeze(Partial_coef(i,j,r,2)), df, dfe); % --> p
             end
         end
     end

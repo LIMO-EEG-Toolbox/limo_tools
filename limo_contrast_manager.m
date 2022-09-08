@@ -25,7 +25,7 @@ function varargout = limo_contrast_manager(varargin)
 % -------------------------
 % Begin initialization code
 % -------------------------
-warning off
+warning on
 global limofile
 
 gui_Singleton = 1;
@@ -227,7 +227,7 @@ global LIMO
 
 if isempty(LIMO)
     display_matrix_CreateFcn(hObject, eventdata, handles)
-    handles.limofile = [LIMO.dir filesep 'LIMO.mat'];
+    handles.limofile = [pwd filesep 'LIMO.mat'];
 end
 
 if isfield(LIMO,'contrast')
@@ -256,7 +256,9 @@ if previous_con ~=0
     end
     set(hObject,'String',contrasts);
     display_matrix_CreateFcn(hObject, eventdata, handles)
-    handles.C = LIMO.contrast{1}.C;
+    if isfield(LIMO,'contrast')
+        handles.C = LIMO.contrast{1}.C;
+    end
     % contrast_CreateFcn(hObject, eventdata, handles)
 else
     contrasts = {'none'};
@@ -304,7 +306,8 @@ if ~isempty(handles.C)
     if handles.go == 1
         disp('executing contrast')
         
-        if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir')
+        if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir') && ...
+                ~contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
             choice = questdlg('(re)compute contrast bootstrap?','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
         else
             choice = 'don''t compute any bootstraps';
@@ -334,7 +337,10 @@ if ~isempty(handles.C)
             else
                 LIMO.contrast{index}.V = 'F';
             end
-            save LIMO LIMO
+            
+            if exist(LIMO.dir,'dir')
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            end
             
             % -------------------------------------------------------
             if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
@@ -342,18 +348,37 @@ if ~isempty(handles.C)
                 
                 if contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
                         contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
-                    warndlg(sprintf('no contrasts for Generalized Welch''s method ANOVA,\nusing robust t-tests for sub-groups comparison'),'Robust ANOVA info')
-                    data   = load(fullfile(LIMO.dir,'Yr.mat'));
-                    limo_random_robust(2,data.Yr(:,:,:,find(LIMO.design.X(:,handles.C < 0))),...
-                        data.Yr(:,:,:,find(LIMO.design.X(:,handles.C > 0))),...
-                        [sum(find(handles.C<0)) sum(find(handles.C>0))],LIMO);
+                    if handles.F == 1
+                        warndlg(sprintf('there is no F contrast possible for Generalized Welch''s method ANOVA'),'Robust ANOVA info')
+                    else
+                        warndlg(sprintf('no T contrasts for Generalized Welch''s method ANOVA,\nswitching to robust t-tests for sub-groups comparison'),'Robust ANOVA info')
+                        if exist(LIMO.dir,'dir')
+                            data = load(fullfile(LIMO.dir,'Yr.mat'));
+                        else
+                            warning('%s doesn''t exist, pulling data from the local dir',LIMO.dir)
+                            data = load(fullfile(pwd,'Yr.mat')); LIMO.dir = pwd;
+                        end
+                        
+                        if strcmp(LIMO.Analysis ,'Time-Frequency')
+                            limo_random_robust(2,data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == 1))),...
+                                data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == -1))),...
+                                find(handles.C ~= 0),LIMO);
+                        else
+                            limo_random_robust(2,data.Yr(:,:,find(LIMO.design.X(:,handles.C == 1))),...
+                                data.Yr(:,:,find(LIMO.design.X(:,handles.C == -1))),...
+                                find(handles.C ~= 0),LIMO);
+                        end
+                    end
+                else % standard GLM type ANOVA/ANCOVA
 
-                else
+                    if ~exist(LIMO.dir,'dir')
+                        LIMO.dir = pwd;
+                    end
                     limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
-                    
-                    if LIMO.design.bootstrap ~= 0
-                        Yr = fullfile(LIMO.dir,'Yr.mat'); Yr = Yr.Yr;
-                        H0_Betas = load(fullfile(LIMO.dir,['H0' fliesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
+
+                    if LIMO.design.bootstrap ~= 0 && strcmpi('choice','compute bootstrap contrast')
+                        Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
+                        H0_Betas = load(fullfile(LIMO.dir,['H0' filesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
                         if strcmp(LIMO.Analysis ,'Time-Frequency')
                             disp('preparing Time-Frequency H0 data matrix');
                             tmp = zeros(size(H0_Betas,1), size(H0_Betas,2)*size(H0_Betas,3), size(H0_Betas,4), size(H0_Betas,5));
@@ -375,8 +400,11 @@ if ~isempty(handles.C)
             % -------------------------------------------------------
                 
                 LIMO.contrast = handles.F;
-                save LIMO LIMO
                 limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
+                if exist(LIMO.dir,'dir')
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3');
+                end
+
             end
             clear Yr Betas
             
@@ -398,7 +426,9 @@ if ~isempty(handles.C)
             
             % create ess files and call limo_rep_anova adding C
             Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr; 
-            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+            if exist(LIMO.dir,'dir')
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            end
             limo_contrast(Yr,LIMO,3);
             
             if strcmpi(choice,'compute bootstrap contrast')
@@ -442,5 +472,4 @@ if isempty(handles.limofile)
 end
 
 clearvars LIMO limofile
-clear global LIMO
 return

@@ -5,7 +5,7 @@ function [tfce_score,thresholded_maps] = limo_tfce_handling(varargin)
 % FORMAT  [tfce_score,thresholded_maps] = limo_tfce_handling(filename,'checkfile','yes')
 %
 % INPUTS filename is the stat file that need to be tfced (if H0 exist it is done too)
-%        'checkfile' is 'yes' by default - if 'no' anf tfce files already exist,
+%        'checkfile' is 'yes' by default - if 'no' and tfce files already exist,
 %                     it overwrites without asking otherwise user is prompted
 %
 % OUTPUTS tfce_* files are saved on the drive in a tfce folder
@@ -70,9 +70,16 @@ if strcmpi(checkfile,'yes')
         end
     else
         LIMO.design.tfce = 1;
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
-        if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
-            mkdir(fullfile(LIMO.dir,'tfce'));
+        if exist(LIMO.dir,'dir')
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
+                mkdir(fullfile(LIMO.dir,'tfce'));
+            end
+        else
+            save(fullfile(pwd,'LIMO.mat'),'LIMO','-v7.3')
+            if ~exist(fullfile(pwd,'tfce'),'dir')
+                mkdir(fullfile(pwd,'tfce'));
+            end
         end
     end
 end
@@ -266,9 +273,12 @@ else % anything else last dimension is F and p
                 end
             end
         end
+        save(H0_tfce_file,'tfce_H0_score','-v7.3'); clear H0_Fval tfce_H0_score
     end
-    save(H0_tfce_file,'tfce_H0_score','-v7.3'); clear H0_Fval tfce_H0_score
+    
     tmp                 = thresholded_maps;     clear thresholded_maps;
     thresholded_maps{1} = tmp;                  clear tmp
-    thresholded_maps{2} = tfce_H0_thmaps;       clear tfce_H0_thmaps;
+    if exist('tfce_H0_thmaps','var') % no bootstrap
+        thresholded_maps{2} = tfce_H0_thmaps;       clear tfce_H0_thmaps;
+    end
 end

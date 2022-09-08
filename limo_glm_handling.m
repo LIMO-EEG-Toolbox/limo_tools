@@ -124,40 +124,61 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
+        
         elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
+            
+            % store temporarily as cell everything
             LIMO.model.model_df{channel} = model.df;          
             if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df{channel}  = model.conditions.df;
+                LIMO.model.conditions_df{channel}  = squeeze(model.conditions.df);
             end
             if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df{channel}  = model.interactions.df;
+                LIMO.model.interactions_df{channel}  = squeeze(model.interactions.df);
             end
             if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df{channel}  = model.continuous.df;
+                LIMO.model.continuous_df{channel}  = squeeze(model.continuous.df);
             end
-            
-            % remove cell as sizes are identical for a given method
+
+            % 1 cell per channel 
             if e == size(array,1)
-                tmp = cell2mat(LIMO.model.model_df)';
+                tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
+                if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
+                   tmp = tmp'; 
+                end
                 df  = tmp(1:2:end,1); % a single value over time
                 dfe = tmp(2:2:end,:); % could be different over time
                 LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
+                
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)';
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_interactions ~=0
-                    tmp =  cell2mat(LIMO.model.interactions_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_continuous ~=0
-                    tmp = cell2mat(LIMO.model.continuous_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.continuous_df)'; % dim (elec*[df dfe]) * n
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'continuous_df');
                     LIMO.model.continuous_df = [df dfe]; clear tmp
                 end
@@ -437,7 +458,7 @@ if LIMO.design.bootstrap ~=0
             
             for e = 1:length(array)
                 channel = array(e);
-                waitbar(e/size(array,1))
+                waitbar(e/size(array,2))
                 fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -590,8 +611,14 @@ if LIMO.design.bootstrap ~=0
                                 tmp_H0_Covariates(channel,:,1,2,B) = model.continuous.p{B};
                             else
                                 for i=1:LIMO.design.nb_continuous
-                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
-                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    if all(size(squeeze(tmp_H0_Covariates(channel,:,i,1,B))) == size(squeeze(model.continuous.F{B}(:,i)))) || ...
+                                            all(size(squeeze(tmp_H0_Covariates(channel,:,i,1,B))) == size(squeeze(model.continuous.F{B}(:,i))'))
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    else
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(i,:);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(i,:);
+                                    end
                                 end
                             end
                         end

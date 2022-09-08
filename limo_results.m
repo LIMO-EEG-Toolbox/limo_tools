@@ -275,7 +275,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
         if ~exist([filepath filesep 'H0' filesep 'H0_' filename ext],'file')
             if handles.LIMO.Level == 1
                 if strncmp(filename,'con',3) || strncmp(filename,'ess',3)
-                    warndlg2(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                    if exist('warndlg2','file')
+                        warndlg2(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                    else
+                        warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                    end
                 else
                     if strcmp(questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
                         LIMO                  = handles.LIMO;
@@ -298,7 +302,9 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                         limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
                             fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'Covariate_effect') && contains(handles.LIMO.design.name,'Regression') 
-                       disp('to do')
+                    LIMO = handles.LIMO; LIMO.design.bootstrap = 1000;
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 
+                    handles.LIMO = LIMO; limo_eeg(4,handles.LIMO.dir); clear LIMO
                 elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
                         limo_random_robust(5,fullfile(handles.LIMO.dir,'Yr.mat'),...
                             handles.LIMO.data.Cat,handles.LIMO.data.Cont,handles.LIMO,'go','yes');

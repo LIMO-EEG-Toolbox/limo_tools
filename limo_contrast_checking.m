@@ -25,6 +25,8 @@ function go = limo_contrast_checking(varargin)
 if nargin == 0
     help limo_contrast_checking
     return
+else
+    warning on
 end
 
 %% update the contrast with 0s
@@ -33,7 +35,8 @@ if nargin == 1 || nargin == 3
 
     limo_path = varargin{:,1};
     if ~exist(limo_path,'dir') 
-        error('%s doesn''t exist',limo_path)
+        warning('%s doesn''t exist, updating to local dir',limo_path)
+        limo_path = pwd;
     end
     
     if nargin == 1
@@ -73,7 +76,7 @@ if nargin == 1 || nargin == 3
     if nargin == 1
         LIMO = LIMO.LIMO;
         LIMO.LIMO.contrast{end}.C = C;
-        save(fullfile(limo_path,'LIMO.mat'),'LIMO');
+        save(fullfile(limo_path,'LIMO.mat'),'LIMO','-v7.3')
     end
    
     
@@ -97,9 +100,9 @@ elseif nargin == 2
         elseif ~all(int16(C(C~=0) - N/sum(N))) 
             go =1; % also a sum but equal 0 weighted by total number of observations
         else
-            P      = X*pinv(X); % projection
-            lambda = X*C'; % contrast
-            check  = int16(P*lambda); % contrast onto X
+            P      = X*pinv(X);                % projection
+            lambda = X*C';                     % contrast
+            check  = int16(P*lambda);          % contrast onto X
             check  = (check == int16(lambda)); % it is invariant
             if sum(check) ~= size(X,1)
                 go = 0; % if contrast invariant
@@ -107,6 +110,14 @@ elseif nargin == 2
                 go = 1;
             end
         end
+        
+        % check if the contrast includes the constant 
+        % if could results into lambda = P*lambda, but still
+        % no real life test include this term
+        if C(end) ~= 0
+            disp('the contrast requested include the constant term, which LIMO consider as faulty')
+            error('contrast not allowed in LIMO eeg (edit this error break to allow)')
+        end        
     end
 else
     error('the number of arguments must be 2 or 3 ; error in limo_contrast_checking')
