@@ -129,7 +129,7 @@ if contains(filename,'R2') || ...
     save(tfce_file,'tfce_score','-v7.3'); clear R2 ;
     
     if exist(H0filename,'file')
-        fprintf('Applying TFCE to null data ... \n')
+        fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_R2 = load(H0filename);
         H0_R2 = H0_R2.(cell2mat(fieldnames(H0_R2)));
         tfce_H0_thmaps = cell(1,LIMO.design.bootstrap);
@@ -188,7 +188,7 @@ elseif contains(filename,'con') || contains(filename,'ess') || ...
     save(tfce_file,'tfce_score','-v7.3'); clear tval ;
     
     if exist(H0filename,'file')
-        fprintf('Applying TFCE to null data ... \n')
+        fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_tval = load(H0filename);
         H0_tval = H0_tval.(cell2mat(fieldnames(H0_tval)));
         tfce_H0_thmaps = cell(1,LIMO.design.bootstrap);
@@ -244,7 +244,7 @@ else % anything else last dimension is F and p
     save(tfce_file,'tfce_score','-v7.3'); clear Fval;
     
     if exist(H0filename,'file')
-        fprintf('Applying TFCE to null data ... \n')
+        fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_Fval = load(H0filename);
         H0_Fval = H0_Fval.(cell2mat(fieldnames(H0_Fval)));
         tfce_H0_thmaps = cell(1,LIMO.design.bootstrap);
