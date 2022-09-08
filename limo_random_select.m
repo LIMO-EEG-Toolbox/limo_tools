@@ -153,9 +153,9 @@ end
 
 if isempty(analysis_type)
     if exist('questdlg2','file')
-        analysis_type = questdlg2('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+        analysis_type = questdlg2('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
     else
-        analysis_type = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+        analysis_type = questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
     end
     if isempty(analysis_type)
         return
