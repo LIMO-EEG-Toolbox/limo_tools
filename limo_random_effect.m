@@ -395,7 +395,7 @@ if isempty(handles.dir)
         end
     end
 
-    warndlg2(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the list of Beta file from the trial analysis.',test),'Directory containing results')
+    warndlg2(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
     mkdir(test); cd(test); handles.dir = pwd; go = 1;
 else
     go = 1;
