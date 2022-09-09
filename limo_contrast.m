@@ -7,6 +7,7 @@ function result = limo_contrast(varargin)
 % it.
 %
 % FORMATS:
+% result = limo_contrast(Y, LIMO, contrast type) 
 % result = limo_contrast(Y, Betas, LIMO, contrast type, analysis type ,contrast)
 %          --> applies to 1st level, 2nd level regressions and 2nd level ANOVA/ANCOVA
 % result = limo_contrast(Yr,LIMO, analysis type ,contrast);
@@ -42,7 +43,9 @@ function result = limo_contrast(varargin)
 
 
 %% nargin stuff
-if nargin == 5 || nargin == 6
+if nargin == 3
+    type = varargin{3};
+elseif nargin == 5 || nargin == 6
     type = varargin{5};
 elseif nargin == 4
     type = varargin{3};
