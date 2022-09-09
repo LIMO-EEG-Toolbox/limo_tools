@@ -232,7 +232,37 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -------------------------------
     if strcmpi(stattest,'regression')
         if isempty(regressor_file)
-            [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+            try
+                STUDY=evalin('base','STUDY');
+                [indvar, indvarvals] = std_getindvar(STUDY, 'datinfo');
+                % remove non numerical values
+                for iVar = length(indvar):-1:1
+                    if ~isnumeric(indvarvals{iVar}{1})
+                        indvar(iVar) = [];
+                        indvarvals(iVar) = [];
+                    end
+                end
+            catch
+                indvar = {};
+            end
+            if ~isempty(indvar)
+                % get variable from study, DOES NOT HANDLE multiple sessions
+                uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
+                           { 'style' 'listbox' 'string' indvar 'max' 2} ...
+                           { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
+                           { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse');
+                if isempty(res)
+                    [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+                else
+                    FilterIndex = 1;
+                    PathName = pwd;
+                    FileName = 'regression_vars.txt';
+                    std_saveindvar(STUDY, indvar(res{1}), fullfile(PathName, FileName));
+                end
+            else
+                [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+            end
             if FilterIndex == 0
                 return
             end
@@ -1577,18 +1607,11 @@ if gp == 1
         error('file selection failed, only Beta or Con files are supported')
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
-            param = cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option'));
-            if isempty(param)
-                disp('selection aborded'); return
-            else
-                if contains(param,'[') && contains(param,']')
-                    parameters = eval(param);
-                else
-                    parameters = eval(['[' param ']']);
-                end
+            parameters = get_beta_indices;
+            if isempty(parameters)
+                return
             end
         end
-
     elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
         parameters = 1;
     end
@@ -2233,5 +2256,41 @@ if ~iscell(params)
     end
 else
     levels = [length(params) getlevels(params{1}) ];
+end
+end
+
+% get beta indices from study
+function param = get_beta_indices()
+
+param = [];
+try
+    STUDY = evalin('base', 'STUDY');
+    if ~isempty(STUDY.limo.betas)
+        betas = { STUDY.limo.betas.description };
+    else
+        betas = {};
+    end
+    betas = [ betas { 'Constant' } ];
+catch
+    betas = [];
+end
+
+if ~isempty(betas)
+    for iBeta = 1:length(betas)
+        betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
+    end
+    uiList = { {'style' 'text' 'string' 'Pick a list of beta parameters below' } ...
+               { 'style' 'listbox' 'string' betas 'max' 2 } ...
+               {'style' 'text' 'string' 'Or ignore selection above and enter beta indices' } ...
+               {'style' 'edit' 'string' '' } };
+    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
+    if isempty(res), return; end
+    if ~isempty(res{2})
+        param =  eval( [ '[' res{2} ']' ] );
+    else
+        param =  res{1};
+    end
+else
+    param = eval( [ '[' cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
 end
 end
