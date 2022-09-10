@@ -516,7 +516,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         % do this only if betas - for con paramters = [1 1]
         for gp = 1:2
             for sub=1:size(LIMO.data.data_dir{gp},2)
-                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}{1}(sub),'LIMO.mat')));
+                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}(sub),'LIMO.mat')));
                 if parameters(gp) > size(sub_LIMO.LIMO.design.X,2)-1
                     error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}{1}{sub})));
                 end
