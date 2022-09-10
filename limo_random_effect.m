@@ -413,4 +413,3 @@ limo_settings_script;
 if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
-

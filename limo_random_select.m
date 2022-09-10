@@ -261,6 +261,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                     std_saveindvar(STUDY, indvar(res{1}), fullfile(PathName, FileName));
                 end
             else
+                warndlg2( [ 'Next a browsing window will ask you to select a text file to regress on' 10 ...
+                            'with one row per subject and as many columns as continuous regressors.' 10 ...
+                            'If you want to use continuous regressors and categorical variables ' 10 ...
+                            '(age and gender for example), use ANCOVA instead.' ], 'LIMO regressor file');
                 [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
             end
             if FilterIndex == 0
