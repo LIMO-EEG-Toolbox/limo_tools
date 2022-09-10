@@ -462,7 +462,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     end
 
     if isempty(parameters)
-        parameters = check_files(Names{1},1);
+        parameters = check_files(Names{1},1,[],'selectone');
         if isempty(parameters)
             return
         elseif length(parameters) > 1
@@ -501,7 +501,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if length(parameters) == 1
-        parameters(2) = check_files(Names{2},1);
+        parameters(2) = check_files(Names{2},1,[],'selectone');
     else
         parameters(2) = check_files(Names{2},1,parameters(2));
     end
@@ -516,9 +516,9 @@ elseif strcmpi(stattest,'two-samples t-test')
         % do this only if betas - for con paramters = [1 1]
         for gp = 1:2
             for sub=1:size(LIMO.data.data_dir{gp},2)
-                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}(sub),'LIMO.mat')));
+                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}{1}(sub),'LIMO.mat')));
                 if parameters(gp) > size(sub_LIMO.LIMO.design.X,2)-1
-                    error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}(sub))));
+                    error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}{1}{sub})));
                 end
             end
         end
@@ -648,7 +648,7 @@ elseif strcmpi(stattest,'paired t-test')
     end
 
     if isempty(parameters)
-        parameters = check_files(Names{1},1);
+        parameters = check_files(Names{1},1, [],'selectone');
     else
         parameters = check_files(Names{1},1,parameters);
     end
@@ -680,12 +680,7 @@ elseif strcmpi(stattest,'paired t-test')
                 % hack only availbale if beta files and command line argument // not allowed otherwise because it's a paired design
                 parameters(2) = check_files(Names{2},1,parameters(2));
             else
-                newparameters = check_files(Names{2},1);
-                if newparameters ~= 1
-                    error('paired t-test second set must also be con files')
-                else
-                    parameters = 1;
-                end
+                parameters(2) = check_files(Names{2},1,[],'selectone');
             end
             con_parameters    = [str2double(unique(cellfun(@(x) x(5:end-4),Names{1}))) ...
                 str2double(unique(cellfun(@(x) x(5:end-4),Names{2})))];
@@ -1579,13 +1574,18 @@ end
 end
 
 %% file checking
-function parameters = check_files(Names,gp,parameters)
+function parameters = check_files(Names,gp,parameters,selectone)
 % after selecting file, check they are all the same type (betas or con)
 % return parameters that match with files (eg 1 for con, or whatever value
 % for the beta file up to the number of regressors in the design matrix
 
 if nargin < 3
     parameters = [];
+end
+if nargin < 4
+    selectone = false;
+else
+    selectone = true;
 end
 if gp == 1
     if iscell(Names{gp})
@@ -1607,7 +1607,7 @@ if gp == 1
         error('file selection failed, only Beta or Con files are supported')
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
-            parameters = get_beta_indices;
+            parameters = get_beta_indices(selectone);
             if isempty(parameters)
                 return
             end
@@ -2260,7 +2260,7 @@ end
 end
 
 % get beta indices from study
-function param = get_beta_indices()
+function param = get_beta_indices(selectone)
 
 param = [];
 try
@@ -2279,9 +2279,18 @@ if ~isempty(betas)
     for iBeta = 1:length(betas)
         betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
     end
-    uiList = { {'style' 'text' 'string' 'Pick a list of beta parameters below' } ...
-               { 'style' 'listbox' 'string' betas 'max' 2 } ...
-               {'style' 'text' 'string' 'Or ignore selection above and enter beta indices' } ...
+    if selectone
+        strBeta = 'Pick a single beta parameters below';
+        strInds = 'Or ignore selection above and enter beta index';
+        maxval = 1;
+    else
+        strBeta = 'Pick one or more beta parameters below';
+        strInds = 'Or ignore selection above and enter beta indices';
+        maxval = 2;
+    end
+    uiList = { {'style' 'text' 'string' strBeta } ...
+               { 'style' 'listbox' 'string' betas 'max' maxval } ...
+               {'style' 'text' 'string' strInds } ...
                {'style' 'edit' 'string' '' } };
     res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
     if isempty(res), return; end
