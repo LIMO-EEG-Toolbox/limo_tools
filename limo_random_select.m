@@ -652,7 +652,7 @@ elseif strcmpi(stattest,'paired t-test')
     end
 
     if isempty(parameters)
-        parameters = check_files(Names{1},1, [],'selectone');
+        parameters = check_files(Names{1},1, []);
     else
         parameters = check_files(Names{1},1,parameters);
     end
@@ -684,7 +684,12 @@ elseif strcmpi(stattest,'paired t-test')
                 % hack only availbale if beta files and command line argument // not allowed otherwise because it's a paired design
                 parameters(2) = check_files(Names{2},1,parameters(2));
             else
-                parameters(2) = check_files(Names{2},1,[],'selectone');
+                newparameters = check_files(Names{2},1);
+                if newparameters ~= 1
+                    error('paired t-test second set must also be con files')
+                else
+                    parameters = 1;
+                end
             end
             con_parameters    = [str2double(unique(cellfun(@(x) x(5:end-4),Names{1}))) ...
                 str2double(unique(cellfun(@(x) x(5:end-4),Names{2})))];

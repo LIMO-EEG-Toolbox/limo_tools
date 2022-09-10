@@ -3,6 +3,7 @@
 
 +*.asv
 *.m~
+external/psom/limo_settings_script_user.m
 
 ## Eclipse
 #################
