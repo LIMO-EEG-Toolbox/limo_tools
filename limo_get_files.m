@@ -73,7 +73,7 @@ while go == 1
             fileList = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
             if ~isempty(fileList)
                 for iFile = 1:length(fileList)
-                    fileList.fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
+                    fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
                 end
                 uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis result file' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
