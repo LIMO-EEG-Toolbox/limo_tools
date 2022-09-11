@@ -66,6 +66,10 @@ uiwait(handles.figure1);
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_batch_gui_OutputFcn(hObject, eventdata, handles) 
 
+if isempty(handles) 
+    return;
+end
+
 if handles.quit == 1
     varargout{1} = [] ;
     varargout{2} = [] ;

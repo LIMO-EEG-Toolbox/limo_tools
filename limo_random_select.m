@@ -152,11 +152,7 @@ for in = 1:2:(nargin-2)
 end
 
 if isempty(analysis_type)
-    if exist('questdlg2','file')
-        analysis_type = questdlg2('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
-    else
-        analysis_type = questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
-    end
+    analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
     if isempty(analysis_type)
         return
     end
@@ -191,9 +187,9 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if ~isfield(LIMO.design,'parameters') || isempty(LIMO.design.parameters)
-        parameters = check_files(Names,1);
+        parameters = check_files(Paths, Names,1);
     else
-        parameters = check_files(Names,1,LIMO.design.parameters{1});
+        parameters = check_files(Paths, Names,1,LIMO.design.parameters{1});
     end
 
     if isempty(parameters)
@@ -232,39 +228,34 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -------------------------------
     if strcmpi(stattest,'regression')
         if isempty(regressor_file)
-            try
-                STUDY=evalin('base','STUDY');
-                [indvar, indvarvals] = std_getindvar(STUDY, 'datinfo');
-                % remove non numerical values
-                for iVar = length(indvar):-1:1
-                    if ~isnumeric(indvarvals{iVar}{1})
-                        indvar(iVar) = [];
-                        indvarvals(iVar) = [];
+            limo_settings_script; % set STUDY and limo_settings
+
+            FilterIndex = 0;
+            if ~isempty(STUDY)
+                indvars = pop_listfactors(STUDY, 'gui', 'off', 'level', 'two', 'vartype', 'continuous');
+                if ~isempty(indvars)
+                    % get variable from study, DOES NOT HANDLE multiple sessions
+                    uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
+                               { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
+                               { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
+                               { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse');
+                    if isempty(res)
+                        [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+                    else
+                        FilterIndex = 1;
+                        PathName = pwd;
+                        FileName = 'regression_vars.txt';
+                        std_saveindvar(STUDY, { indvars(res{1}).label }, fullfile(PathName, FileName));
                     end
                 end
-            catch
-                indvar = {};
             end
-            if ~isempty(indvar)
-                % get variable from study, DOES NOT HANDLE multiple sessions
-                uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
-                           { 'style' 'listbox' 'string' indvar 'max' 2} ...
-                           { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
-                           { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
-                res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse');
-                if isempty(res)
-                    [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
-                else
-                    FilterIndex = 1;
-                    PathName = pwd;
-                    FileName = 'regression_vars.txt';
-                    std_saveindvar(STUDY, indvar(res{1}), fullfile(PathName, FileName));
-                end
-            else
-                warndlg2( [ 'Next a browsing window will ask you to select a text file to regress on' 10 ...
-                            'with one row per subject and as many columns as continuous regressors.' 10 ...
-                            'If you want to use continuous regressors and categorical variables ' 10 ...
-                            '(age and gender for example), use ANCOVA instead.' ], 'LIMO regressor file');
+            if FilterIndex == 0
+                limo_warndlg( [ 'No EEGLAB STUDY present or not relevant variable found in the STUDY.' 10 ...
+                    'Next a browsing window will ask you to select a text file to regress on' 10 ...
+                    'with one row per subject and as many columns as continuous regressors.' 10 ...
+                    'If you want to use continuous regressors and categorical variables ' 10 ...
+                    '(age and gender for example), use ANCOVA instead.' ], 'LIMO regressor file');
                 [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
             end
             if FilterIndex == 0
@@ -466,7 +457,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     end
 
     if isempty(parameters)
-        parameters = check_files(Names{1},1,[],'selectone');
+        parameters = check_files(Paths{1}, Names{1},1,[],'selectone');
         if isempty(parameters)
             return
         elseif length(parameters) > 1
@@ -474,7 +465,7 @@ elseif strcmpi(stattest,'two-samples t-test')
             parameters = parameters(1);
         end
     else
-        parameters(1) = check_files(Names{1},1,parameters(1));
+        parameters(1) = check_files(Paths{1}, Names{1},1,parameters(1));
     end
 
     if length(LIMO.data.data) == 1
@@ -505,9 +496,9 @@ elseif strcmpi(stattest,'two-samples t-test')
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
     if length(parameters) == 1
-        parameters(2) = check_files(Names{2},1,[],'selectone');
+        parameters(2) = check_files(Paths{2}, Names{2},1,[],'selectone');
     else
-        parameters(2) = check_files(Names{2},1,parameters(2));
+        parameters(2) = check_files(Paths{2}, Names{2},1,parameters(2));
     end
 
     if ~isfield(LIMO.design,'parameters')
@@ -520,7 +511,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         % do this only if betas - for con paramters = [1 1]
         for gp = 1:2
             for sub=1:size(LIMO.data.data_dir{gp},2)
-                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}(sub),'LIMO.mat')));
+                sub_LIMO = load(cell2mat(fullfile(LIMO.data.data_dir{gp}{1}(sub),'LIMO.mat')));
                 if parameters(gp) > size(sub_LIMO.LIMO.design.X,2)-1
                     error('invalid parameter %g - design subject %s inconsistent',parameters(gp),cell2mat(fullfile(LIMO.data.data_dir{gp}{1}{sub})));
                 end
@@ -652,9 +643,17 @@ elseif strcmpi(stattest,'paired t-test')
     end
 
     if isempty(parameters)
-        parameters = check_files(Names{1},1, []);
+        parameters = check_files(Paths{1}, Names{1},1, [], 'selecttwo');
     else
-        parameters = check_files(Names{1},1,parameters);
+        parameters = check_files(Paths{1}, Names{1},1,parameters);
+    end
+
+    if size(parameters,2) ~= 2
+        if isempty(LIMO.design.parameters) && contains(Names{1}{1}, 'Betas')
+            % hack only availbale if beta files NOT command line argument
+            errordlg2('Error: for paired t-test, please select 2 parameters','Paired t-test');
+            return
+        end
     end
 
     if size(parameters,2) == 1 % either con file, or command line beta with one parameter
@@ -682,9 +681,9 @@ elseif strcmpi(stattest,'paired t-test')
         else
             if ~isempty(LIMO.design.parameters)
                 % hack only availbale if beta files and command line argument // not allowed otherwise because it's a paired design
-                parameters(2) = check_files(Names{2},1,parameters(2));
+                parameters(2) = check_files(Paths{2}, Names{2},1,parameters(2));
             else
-                newparameters = check_files(Names{2},1);
+                newparameters = check_files(Paths{2}, Names{2},1);
                 if newparameters ~= 1
                     error('paired t-test second set must also be con files')
                 else
@@ -851,7 +850,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             end
         end
     else
-        gp_nb = cell2mat(inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups'));
+        gp_nb = cell2mat(limo_inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups'));
         if isempty(gp_nb)
             return
         elseif sum(str2double(gp_nb) <= 2) && strcmpi(stattest,'N-Ways ANOVA')
@@ -870,11 +869,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             return
         else
             gp_nb          = str2double(gp_nb);
-            if exist('questdlg2','file')
-                a          = questdlg2('load con files or beta file','ANOVA loading files','con','beta','beta');
-            else
-                a          = questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
-            end
+            a              = limo_questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
             Names          = cell(gp_nb,1);
             Paths          = cell(gp_nb,1);
             LIMO.data.data = cell(gp_nb,1);
@@ -905,11 +900,11 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
 
     if isempty(LIMO.design.parameters)
         % if all con - no need to ask
-        param = check_files(Names,gp_nb);
+        param = check_files(Paths, Names,gp_nb);
         if param ~= 1
-            param = cell2mat(inputdlg('which parameters to test e.g [2]','parameters option'));
+            param = cell2mat(limo_inputdlg('which parameters to test e.g [2]','parameters option'));
         else
-            param = num2str(param); % pretend it's inputdlg output
+            param = num2str(param); % pretend it's limo_inputdlg output
         end
 
         if isempty(param)
@@ -950,7 +945,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     if length(parameters)>gp_nb
         error('%g parameter selected, longer than the number of groups %g',length(parameters),gp_nb)
     else
-        parameters = check_files(Names,gp_nb,parameters);
+        parameters = check_files(Paths, Names,gp_nb,parameters);
     end
 
     if isempty(parameters)
@@ -1145,7 +1140,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if ~isempty(LIMO.data.data)
         gp_nb = size(LIMO.data.data,1);
     else
-        gp_nb = cell2mat(inputdlg('How many independent groups? e.g. 2','Groups'));
+        gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects?','Groups', 1, {'1'}));
     end
 
     if isempty(gp_nb)
@@ -1184,26 +1179,14 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             factor_nb = factor_nb{1};
         end
     else
-        factor_nb = cell2mat(inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
+        factor_nb = cell2mat(limo_inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
     end
 
-    if isempty(factor_nb)
-        disp('selection aborded'); return
-    else
-        if contains(factor_nb,'[') && contains(factor_nb,']')
-            factor_nb = eval(factor_nb);
-        else
-            try
-                factor_nb = eval(['[' factor_nb ']']);
-            catch ME
-                if exist('errordlg2','file')
-                    errordlg2(sprintf('log error: %s',ME.message),'could not evaluate factors')
-                else
-                    errordlg(sprintf('log error: %s',ME.message),'could not evaluate factors')
-                end
-                return
-            end
-        end
+    try
+        factor_nb = eval(['[' factor_nb ']']);
+    catch ME
+        limo_errordlg(sprintf('log error: %s',ME.message),'could not evaluate factors')
+        return
     end
 
     % Cases of wrong input
@@ -1241,11 +1224,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             elseif all(iscon); a = 'con'; end
         end
     else
-        if exist('questdlg2','file')
-            a = questdlg2('load several con files per subject or one beta file','ANOVA loading files','con','beta','beta');
-        else
-            a = questdlg('load several con files per subject or one beta file','ANOVA loading files','con','beta','beta');
-        end
+        a = limo_questdlg('Do you want to load several contrast files per subject or a single beta file per group?','ANOVA loading files','con','beta','beta');
     end
 
     % beta files
@@ -1269,19 +1248,19 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             if isfield(LIMO.design,'parameters')
                 if ~isempty(LIMO.design.parameters)
                     if length(factor_nb) <=2
-                        parameters(i,:) = check_files(Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
+                        parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
                     else % cell of cells
                         all_param = LIMO.design.parameters;
                         while any(cellfun(@iscell,all_param))
                             all_param = [all_param{cellfun(@iscell,all_param)} all_param(~cellfun(@iscell,all_param))];
                         end
-                        parameters(i,:) = check_files(Names{i},1,cell2mat(all_param));
+                        parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(all_param));
                     end
                 else
-                    parameters(i,:) = check_files(Names{i},1);
+                    parameters(i,:) = check_files(Paths{i}, Names{i},1);
                 end
             else
-                parameters(i,:) = check_files(Names{i},1,LIMO.design.parameters{i});
+                parameters(i,:) = check_files(Paths{i}, Names{i},1,LIMO.design.parameters{i});
             end
         end
 
@@ -1329,7 +1308,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                     end
                 end
             end
-            gp_param(i) = check_files(Names(i,:),j);
+            gp_param(i) = check_files(Paths(i,:), Names(i,:),j);
         end
 
         if all(gp_param) % comfirms it's all con files
@@ -1533,7 +1512,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if ~isfield(LIMO.design, 'factor_names')
         LIMO.design.factor_names = cell(1,length(factor_nb));
         for i=1:length(factor_nb)
-            LIMO.design.factor_names{i} = cell2mat(inputdlg(['name factor ' num2str(i) ': ' num2str(factor_nb(i)) ' levels'],'Rep. Measures Names',1,{''},'on'));
+            LIMO.design.factor_names{i} = cell2mat(limo_inputdlg(['name factor ' num2str(i) ': ' num2str(factor_nb(i)) ' levels'],'Rep. Measures Names',1,{''},'on'));
             if isempty(LIMO.design.factor_names{i})
                 LIMO.design.factor_names{i} = ['Factor_' num2str(i)];
             end
@@ -1583,22 +1562,21 @@ end
 end
 
 %% file checking
-function parameters = check_files(Names,gp,parameters,selectone)
+function parameters = check_files(Paths,Names,gp,parameters,selectmode)
 % after selecting file, check they are all the same type (betas or con)
-% return parameters that match with files (eg 1 for con, or whatever value
+% return parameters that match with files (eg 1 for con, or whatever valuegetlabels'
 % for the beta file up to the number of regressors in the design matrix
 
-if nargin < 3
+if nargin < 4
     parameters = [];
 end
-if nargin < 4
-    selectone = false;
-else
-    selectone = true;
+if nargin < 5
+    selectmode = 'multi';
 end
 if gp == 1
     if iscell(Names{gp})
         Names = Names{gp};
+        Paths = Paths{gp};
     end
 
     % one sample case
@@ -1616,7 +1594,7 @@ if gp == 1
         error('file selection failed, only Beta or Con files are supported')
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
-            parameters = get_beta_indices(selectone);
+            parameters = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
             if isempty(parameters)
                 return
             end
@@ -1650,7 +1628,7 @@ elseif gp > 1
         error('file selection failed, only sets of Beta or sets of Con files are supported');
     elseif ~isempty(is_beta) && sum(cell2mat(test)) == length(Names) && nargout ~= 0
         if isempty(parameters)
-            parameters = eval(cell2mat(inputdlg('which parameter(s) to test e.g 1','parameters option')));
+            parameters = eval(cell2mat(limo_inputdlg('which parameter(s) to test e.g 1','parameters option')));
         elseif ~isempty(parameters) && size(parameters,2) ~=1 && size(parameters,2) ~=gp
             warning(2,'A valid parameter value must be provided - selection aborded\n');
             return
@@ -1864,15 +1842,15 @@ function LIMO = match_channels(stattest,analysis_type,LIMO)
 % note channel can be a singleton or a vector (channel/component optimized analysis)
 if strcmpi(analysis_type,'1 channel/component only')
     if isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Channels')
-        channel = inputdlg('which electrode to analyse [?]','Electrode option');
+        channel = limo_inputdlg('which electrode to analyse [?]','Electrode option');
     elseif isempty(LIMO.design.electrode) && strcmp(LIMO.Type,'Components')
-        channel = inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of channels (channel optimized analysis)
+        channel = limo_inputdlg('which component to analyse [?]','Component option'); % can be 1 nb or a vector of channels (channel optimized analysis)
     else
         if ischar(LIMO.design.electrode)
             LIMO.design.electrode = load(LIMO.design.electrode);
             LIMO.design.electrode = LIMO.design.electrode.(cell2mat(fieldnames(LIMO.design.electrode)));
         end
-        channel = {num2str(LIMO.design.electrode)}; % reformat temporarilly as if from inputdlg
+        channel = {num2str(LIMO.design.electrode)}; % reformat temporarilly as if from limo_inputdlg
     end
 
     if isempty(cell2mat(channel))
@@ -2017,11 +1995,7 @@ if stattest == 1 % one sample
 
         % data dim [channel, freq/time, param, nb subjects]
         if isempty(LIMO.Type)
-            if exist('questdlg2','file')
-                LIMO.Type = questdlg2('Is the analysis on','Type is empty','Channels','Components','Channels');
-            else
-                LIMO.Type = questdlg('Is the analysis on','Type is empty','Channels','Components','Channels');
-            end
+            LIMO.Type = limo_questdlg('Is the analysis on','Type is empty','Channels','Components','Channels');
         end
 
         if strcmp(analysis_type,'Full scalp analysis')
@@ -2269,29 +2243,32 @@ end
 end
 
 % get beta indices from study
-function param = get_beta_indices(selectone)
+function param = get_beta_indices(selectmode, betaFile)
 
 param = [];
-try
-    STUDY = evalin('base', 'STUDY');
-    if ~isempty(STUDY.limo.betas)
-        betas = { STUDY.limo.betas.description };
-    else
-        betas = {};
+betas = {};
+if nargin > 1
+    try
+        limoFile = strrep(betaFile, 'Betas.mat', 'LIMO.mat');
+        LIMO = load('-mat', limoFile);
+        betas = { LIMO.LIMO.design.betalabels.description };
+    catch
+        disp('Warning: could not find associated LIMO file');
     end
-    betas = [ betas { 'Constant' } ];
-catch
-    betas = [];
 end
 
 if ~isempty(betas)
     for iBeta = 1:length(betas)
         betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
     end
-    if selectone
+    if strcmpi(selectmode, 'selectone')
         strBeta = 'Pick a single beta parameters below';
         strInds = 'Or ignore selection above and enter beta index';
         maxval = 1;
+    elseif strcmpi(selectmode, 'selecttwo')
+        strBeta = 'Pick TWO beta parameters below';
+        strInds = 'Or ignore selection above and enter beta index';
+        maxval = 2;
     else
         strBeta = 'Pick one or more beta parameters below';
         strInds = 'Or ignore selection above and enter beta indices';
@@ -2309,6 +2286,6 @@ if ~isempty(betas)
         param =  res{1};
     end
 else
-    param = eval( [ '[' cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
+    param = eval( [ '[' cell2mat(limo_inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
 end
 end

@@ -27,6 +27,7 @@ function varargout = limo_contrast_manager(varargin)
 % -------------------------
 warning on
 global limofile
+global result
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -35,9 +36,14 @@ gui_State = struct('gui_Name',       mfilename, ...
     'gui_OutputFcn',  @limo_contrast_manager_OutputFcn, ...
     'gui_LayoutFcn',  [] , ...
     'gui_Callback',   []);
+if nargin == 0
+    limofile = [];
+    result = [];
+end
 if nargin && ischar(varargin{1})
     if exist(varargin{1},'file') == 2 && ~isempty(strfind(varargin{1},'LIMO.mat'))
         limofile = varargin{1};
+        result = [];
     else
         gui_State.gui_Callback = str2func(varargin{1});
     end
@@ -73,15 +79,21 @@ set(hObject,'Tag','figure_limo_contrast_manager');
 
 % --- Outputs from this function are returned to the command line.
 function varargout = limo_contrast_manager_OutputFcn(hObject, eventdata, handles)
-varargout{1} = 'contrast done';
+global result
 
+waitfor(findobj(hObject, 'string', 'Done'), 'userdata', 'done');
+varargout{1} = result;
 
 %% Callbacks
-
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
 global LIMO 
+global limofile
+
+if ~isfield(handles,'limofile') || isempty(handles.limofile) && ~isempty(limofile) 
+    handles.limofile = limofile;
+end
 
 if ~isfield(handles,'limofile') || isempty(handles.limofile)
     [FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
@@ -301,8 +313,13 @@ guidata(hObject,handles)
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
 global LIMO 
+global result 
+global limofile 
 
-if ~isempty(handles.C)
+set(findobj(gcbf, 'string', 'Done'), 'userdata', 'done');
+result = handles.C;
+
+if ~isempty(handles.C) && isempty(limofile)
     if handles.go == 1
         disp('executing contrast')
         
@@ -415,7 +432,7 @@ if ~isempty(handles.C)
             
             if isfield(LIMO,'contrast')
                 previous_con = size(LIMO.contrast,2);
-            else
+            elseNew_c
                 previous_con = 0;
             end
             index = previous_con+1;
@@ -457,8 +474,12 @@ if ~isempty(handles.C)
     if isempty(handles.limofile)
         limo_results;
     end
+else
+    if ~isempty(limofile)
+        guidata(hObject, handles);
+        close(get(hObject,'Parent'));
+    end
 end
-
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------

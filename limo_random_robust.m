@@ -643,7 +643,7 @@ switch type
         LIMO.design.status           = 'to do';
         
         if ~exist('answer','var') 
-            answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
+            answer = questdlg2( [ 'Do you want to zscore regressor(s)?' 10 '(most useful when using multiple regressors)' ],'Regression option','No','Yes','Yes');
         end
         
         if isempty(answer)
@@ -667,7 +667,7 @@ switch type
         % ------------------------------------------------
         % do the analysis
         if strcmpi(go,'no')
-            go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+            go = questdlg2('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
         end
         close('LIMO design');        
 

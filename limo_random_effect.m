@@ -12,8 +12,15 @@ function varargout = limo_random_effect(varargin)
 % -------------------------
 warning off
 
+limo_settings_script;
+if limo_settings.newgui
+    guiName = [mfilename '_new'];
+else
+    guiName = mfilename;
+end
+
 gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
+gui_State = struct('gui_Name',       guiName, ...
                    'gui_Singleton',  gui_Singleton, ...
                    'gui_OpeningFcn', @limo_random_effect_OpeningFcn, ...
                    'gui_OutputFcn',  @limo_random_effect_OutputFcn, ...
@@ -42,7 +49,7 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 % define handles used for the save callback
-handles.b    = 1000;
+handles.b    = 0;
 handles.tfce = 0;
 handles.ica  = 0;
 handles.dir  = [];
@@ -131,7 +138,7 @@ elseif handles.b == 0
 else
     fprintf('bootstrap changed to %g \n',handles.b)
     if handles.b > 0 && handles.b < 1000
-        warndlg(['Our simulations suggest that you need at leat 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
+        limo_warndlg(['Our simulations suggest that you need at leat 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
     end
 end
 guidata(hObject, handles);
@@ -157,7 +164,7 @@ guidata(hObject, handles);
 
 % --- Executes on button press in IC_analysis.
 function IC_analysis_Callback(hObject, ~, handles)
-M = get(hObject,'Value');
+M = get(hObject,enamValue');
 if M == 1
     handles.ica = 1;
     disp('Analysis of ICs is on');
@@ -246,7 +253,7 @@ go = update_dir(handles,'AN(C)OVA');
 if go == 0
     return
 else
-    answer = questdlg('What ANOVA model do you want to run?', 'Model selection', 'Repeated Measures ANOVA', ...
+    answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', 'Repeated Measures ANOVA', ...
         'N-Ways ANOVA','ANCOVA','Repeated Measures ANOVA');
     if ~isempty(answer)
         if handles.ica == 1
@@ -269,7 +276,7 @@ if PathName ~= 0
     list = dir(PathName);
     for i=1:length(list)
         if strcmp(list(i).name,'LIMO.mat')
-            stop = questdlg('a LIMO file already exists, are you sure you want to move to this directory', ...
+            stop = limo_questdlg('a LIMO file already exists, are you sure you want to move to this directory', ...
                 'WARNING','Yes','No','No');
             if strcmp(stop,'Yes')
                 cd(PathName);
@@ -305,7 +312,7 @@ if sts == 1
         assignin('base', 'gp_level_chanlocs', [chan_path chan_file])
          
     else
-        warndlg('this file is not recognize as a channel location file or informations are missing','file error')
+        limo_warndlg('this file is not recognize as a channel location file or informations are missing','file error')
     end
 end
 guidata(hObject, handles);
@@ -322,11 +329,43 @@ web(['file://' which('limo_random_effect.html')]);
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, ~, handles)
 
-clc
 uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
-limo_gui
+%limo_gui
+
+% --- Executes on button press in Quit.
+% ---------------------------------------------------------------
+function Plotting_Callback(hObject, ~, handles)
+
+uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_results
+
+% --- Executes on button press in Quit.
+% ---------------------------------------------------------------
+function Bootstrap_Checkbox_Callback(hObject, ~, handles)
+
+if get(hObject, 'value')
+    handles.b = str2double(get(findobj(hObject.Parent, 'tag', 'bootstrap'),'String'));
+    set(findobj(hObject.Parent, 'tag', 'TFCE'),'enable','on');
+else
+    handles.b = 0;
+    set(findobj(hObject.Parent, 'tag', 'TFCE'),'value',0);
+    set(findobj(hObject.Parent, 'tag', 'TFCE'),'enable','off');
+end
+disp(handles.b);
+
+% Bootstrap_Checkbox_Callback
+
+% --- Executes on button press in Quit.
+% ---------------------------------------------------------------
+function Contrast_Manager_Callback(hObject, ~, handles)
+
+[Names,Paths,LIMO.data.data] = limo_get_files;
+res = limo_contrast_manager(batch_contrast.LIMO_files{1});
+limo_contrast_manager;
 
 % ----------------------
 % subfunction to find channel locations
@@ -362,7 +401,7 @@ function go = test_chan_loc(handles)
 
 if isempty(handles.chan_file)
     go = 0;
-    warndlg('chanloc not specified, please load one','missing file')
+    limo_warndlg('chanloc not specified, please load one','missing file')
 else
     go = 1;
 end
@@ -380,7 +419,7 @@ if isempty(handles.dir)
             count = count + 1;
         end
         newtest = [ test num2str(count)];
-        res = questdlg2(sprintf('The directory "%s" already exist, do you want to overwrite it or\ncreate a new one named "%s"?\nIf you overwrite, previous results will be lost.',test,newtest), ...
+        res = limo_questdlg(sprintf('The directory "%s" already exist, do you want to overwrite it or\ncreate a new one named "%s"?\nIf you overwrite, previous results will be lost.',test,newtest), ...
             'Directory containing results', 'Cancel', 'Create new', 'Overwrite', 'Overwrite');
         if strcmpi(res, 'cancel')
             go = 0;
@@ -395,7 +434,7 @@ if isempty(handles.dir)
         end
     end
 
-    warndlg2(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
+    limo_warndlg(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
     mkdir(test); cd(test); handles.dir = pwd; go = 1;
 else
     go = 1;
@@ -413,3 +452,28 @@ limo_settings_script;
 if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
+
+
+% --- Executes on button press in checkbox9.
+function checkbox9_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox9
+
+
+% --- Executes on button press in pushbutton16.
+function pushbutton16_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in checkbox11.
+function checkbox11_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox11 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox11

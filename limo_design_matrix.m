@@ -397,8 +397,9 @@ if flag == 1
         REGdisplay = Cont + abs(min(Cont(:)));
         Xdisplay(:,cat_column+1:size(X,2)-1) = REGdisplay ./ max(REGdisplay(:));
     end
-    imagesc(Xdisplay); colormap('gray'); drawnow;
+    imagesc(Xdisplay); colormap('gray');
     title('Design matrix'); xlabel('regressors');ylabel('trials');
     set(gca,'XTick',1:size(X,2))
+    drawnow;
 end
 

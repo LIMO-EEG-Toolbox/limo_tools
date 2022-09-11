@@ -36,8 +36,11 @@ LIMO.design.type_of_analysis = defaults.type_of_analysis;
 LIMO.design.fullfactorial    = defaults.fullfactorial;
 LIMO.design.bootstrap        = defaults.bootstrap;
 LIMO.design.tfce             = defaults.tfce;
-LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
+LIMO.design.status           = 'to do';
+if isfield(defaults, 'betalabels')
+    LIMO.design.betalabels          = defaults.betalabels;
+end
 
 % optional fields for EEGLAB study
 if isfield(defaults,'icaclustering')

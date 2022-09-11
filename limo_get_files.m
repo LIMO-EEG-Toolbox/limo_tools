@@ -70,12 +70,14 @@ while go == 1
         limo_settings_script;
         name = '';
         if ~isempty(limo_settings.workdir)
-            fileList = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
+            fileList1 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
+            fileList2 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'con_*'));
+            fileList = [ fileList1 fileList2 ];
             if ~isempty(fileList)
                 for iFile = 1:length(fileList)
                     fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
                 end
-                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis result file' } ...
+                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
                 res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
                 if ~isempty(res)
