@@ -361,11 +361,40 @@ disp(handles.b);
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
-function Contrast_Manager_Callback(hObject, ~, handles)
+function Contrast_Callback(hObject, ~, handles)
 
-[Names,Paths,LIMO.data.data] = limo_get_files;
-res = limo_contrast_manager(batch_contrast.LIMO_files{1});
-limo_contrast_manager;
+if 0
+    limo_batch('contrast only');
+else
+    % below the code allows to use bootstrap and TFCE
+    [Names,Paths,LIMO.data.data,txtFile] = limo_get_files;
+    
+    if isempty(Names)
+        disp('No file selected, abording')
+        return
+    end
+    disp('Looking up the corresponding LIMO file');
+    res = limo_contrast_manager(Paths{1});
+    if isempty(res)
+        disp('No contrast, abording')
+        return
+    end
+    nBoot = str2double(get(findobj(hObject.Parent, 'tag', 'bootstrap'),'String'));
+    TFCE  = get(findobj(hObject.Parent, 'tag', 'TFCE'),'value');
+    
+    model.defaults.fullfactorial    = 0;         
+    model.defaults.zscore           = 0;         
+    model.defaults.bootstrap        = 1000 ;           % only for single subject analyses - not included for studies
+    model.defaults.tfce             = TFCE;         % only for single subject analyses - not included for studies
+    model.defaults.method           = 'WLS';        % default is OLS - to be updated to 'WLS' once validated
+    model.defaults.Level            = 2;                 % 1st level analysis
+    model.defaults.type_of_analysis = 'Mass-univariate'; % option can be multivariate (work in progress)
+    
+    contrast.LIMO_files = strrep(txtFile, 'Beta_', 'LIMO_');
+    contrast.mat = res;
+    limo_settings_script;
+    limo_batch('contrast only', model, contrast, STUDY);
+end
 
 % ----------------------
 % subfunction to find channel locations

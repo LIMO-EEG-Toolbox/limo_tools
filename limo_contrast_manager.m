@@ -16,7 +16,7 @@ function varargout = limo_contrast_manager(varargin)
 %
 % see also limo_contrast_checking.m limo_contrast.m
 %
-% Nicolas Chauveau & Cyril Pernet 29-04-2009 v2
+% Nicolas Chauveau, Arnaud Delorme & Cyril Pernet 29-04-2009 v2
 % updated for 1st level bootstrap + some fix 20-06-2013
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
@@ -29,8 +29,15 @@ warning on
 global limofile
 global result
 
+limo_settings_script;
+if limo_settings.newgui
+    guiName = [mfilename '_new'];
+else
+    guiName = mfilename;
+end
+
 gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
+gui_State = struct('gui_Name', guiName, ...
     'gui_Singleton',  gui_Singleton, ...
     'gui_OpeningFcn', @limo_contrast_manager_OpeningFcn, ...
     'gui_OutputFcn',  @limo_contrast_manager_OutputFcn, ...
@@ -64,16 +71,25 @@ end
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
+global limofile
+
+if ~isempty(limofile)
+    limofile = load('-mat', limofile);
+    Variable = { limofile.LIMO.design.betalabels.description };
+    tab      = table(Variable', Weight');
+end
 
 % define handles used for the save callback
 handles.dir      = pwd;
 handles.go       = 0;
-handles.C        = [];
+handles.C        = [1];
 handles.F        = 0;
 handles.X        = [];
-handles.limofile = [];
+handles.limofile = limofile;
 handles.output   = hObject;
 guidata(hObject,handles);
+set(findobj(hObject, 'tag', 'Factorlist1'),'string',Variable, 'value', 1, 'max', 2);
+
 set(hObject,'Tag','figure_limo_contrast_manager');
 % uiwait(handles.figure1);
 
@@ -148,6 +164,14 @@ else
         guidata(hObject,handles)
     end
 end
+
+% --- Evaluate New Contrast
+% ---------------------------------------------------------------
+function Facorlist1_Callback(hObject, eventdata, handles)
+
+data = get(hObject,'Data');
+weights = data(:,2)';
+set(findobj(hObject.Parent,'tag','New_Contrast'), 'string', num2str([weights{:}]));
 
 % --- Evaluate New Contrast
 % ---------------------------------------------------------------

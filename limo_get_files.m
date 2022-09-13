@@ -1,4 +1,4 @@
-function [Names,Paths,Files] = limo_get_files(varargin)
+function [Names,Paths,Files,txtFile] = limo_get_files(varargin)
 
 % routine to get multifiles from different directories
 %
@@ -33,6 +33,7 @@ gp        = [];
 guititle  = 'select a subject file or list file';
 filter    = {'*.mat;*.txt'};
 path2file = [];
+txtFile   = '';
 
 if nargin >= 1
     gp        = varargin{1}; 
@@ -64,7 +65,7 @@ Names = []; Paths = []; Files = [];
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
-            guititle = ['select a subject file or list file gp: ' num2str(gp)];
+            guititle = ['Select a subject file or list file gp: ' num2str(gp)];
         end
         % propose files to user
         limo_settings_script;
@@ -72,12 +73,12 @@ while go == 1
         if ~isempty(limo_settings.workdir)
             fileList1 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
             fileList2 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'con_*'));
-            fileList = [ fileList1 fileList2 ];
+            fileList = [ fileList1;fileList2 ];
             if ~isempty(fileList)
                 for iFile = 1:length(fileList)
                     fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
                 end
-                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file' } ...
+                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file (beta or contrast)' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
                 res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
                 if ~isempty(res)
@@ -89,6 +90,7 @@ while go == 1
         if isempty(name)
             [name,path] = uigetfile(filter,guititle);
         end
+        txtFile = fullfile(path, name);
     else
         if exist(path2file,'file') 
             [path,filename,filext] = fileparts(path2file);
