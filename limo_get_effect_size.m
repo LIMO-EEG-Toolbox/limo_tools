@@ -2,10 +2,12 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 
 % simple routine to compute effect sizes from a result file
 %
-% FORMAT [name,clusters] = limo_get_effect_size(file,mask)
+% FORMATS limo_get_effect_size
+%         [name] = limo_get_effect_size(file)
+%         [name,clusters] = limo_get_effect_size(file,mask)
 %
-% INPUTS file: is a result file like a t-test or ANOVA
-%        mask: is optional ([] by default) and is a N-ary matrix of clusters
+% INPUTS  file: is a result file like a t-test or ANOVA
+%         mask: is optional ([] by default) and is a N-ary matrix of clusters
 %
 % OUTPUTS name: is the name of the file created
 %              [file_name]_effectsize.mat is created with Cohen's d or patial
@@ -19,6 +21,11 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 %               - median provided as a comparison point to eigen mode
 %               - mean provided as a comparison point to eigen mode
 %               - min and max for completeness
+%
+%  If no inputs and outputs are given, the user is prompted. 
+%  If a mask variable exist in workspace, the user is asked if one should
+%  use it, if so the variable clusters_summary_stats is returned in the
+%  worspace, in addition of the effec_size file writen on the hard drive.
 %
 % Cyril Pernet 2022
 % ------------------------------
@@ -35,9 +42,26 @@ clusters = [];
 %% check inputs
 
 if nargin == 0
-    file = uigetfile('.mat','select a LIMO stat file');
+    % no input, ask user to select a file
+    [file,filepath] = uigetfile('.mat','select a LIMO stat file');
     if isempty(file)
         return
+    else
+        file = fullfile(filepath,file);
+    end
+    
+    % no input, check if user want to use current mask
+    ismask = evalin( 'base', 'exist(''mask'',''var'') == 1' );
+    if ismask
+        if exist('questdlg2','file')
+            opt = questdlg2('A mask variable exists in the workspace, do you want to use it to additionally return cluster summary stats?','option');
+        else
+            opt = questdlg('A mask variable exists in the workspace, do you want to use it to additionally return cluster summary stats?','option');
+        end
+        
+        if strcmpi(opt,'yes')
+           mask = evalin('base','mask'); 
+        end
     end
 end
 
@@ -226,6 +250,10 @@ if exist('mask','var')
         clusters(c).mean      = mean(data);
         clusters(c).min       = min(data);
         clusters(c).max       = max(data);
+    end
+    
+    if nargout == 0
+       assignin('base','clusters_summary_stats',clusters) 
     end
 end
 

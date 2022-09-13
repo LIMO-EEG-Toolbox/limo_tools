@@ -22,7 +22,28 @@ function clusters = limo_get_summary(file,mask)
 clusters = [];
 
 %% check inputs
-% e.g. file = 'Rep_ANOVA_Factor_1.mat';
+if nargin == 0
+    % no input, ask user to select a file
+    [file,filepath] = uigetfile('.mat','select a LIMO stat file');
+    if isempty(file)
+        return
+    else
+        file = fullfile(filepath,file);
+    end
+    
+    % no input, check if user want to use current mask
+    ismask = evalin( 'base', 'exist(''mask'',''var'') == 1' );
+    if ismask
+        mask = evalin('base','mask'); 
+    else
+        if exist('errordlg2','file')
+            errordlg2('no mask file found in the workspace, image the statistical results to create one and call this function again')
+        else
+            errordlg('no mask file found in the workspace, image the statistical results to create one and call this function again')
+        end
+    end
+end
+
 [filepath,filename,ext]=fileparts(file);
 if isempty(filepath)
     filepath = pwd;
@@ -80,5 +101,8 @@ for c = size(num,2):-1:1
     clusters(c).mean      = mean(data);
     clusters(c).min       = min(data);
     clusters(c).max       = max(data);
+    if nargout == 0
+       assignin('base','clusters_summary_stats',clusters) 
+    end
 end
 
