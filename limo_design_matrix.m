@@ -124,32 +124,6 @@ elseif ~isempty(Cat) && ~isempty(Cont)
     end
 end
 
-% additional checking for regressions
-if isempty(Cat) == 0
-    
-    if size(Cont,2)+1 >= size(Y,3)
-        error('there are too many regressors for the number of trials, reduce the model size')
-        % one cannot compute any statistics if size(Y,3) > size(Cont,2)+1
-    end
-    
-    if size(Cont,2) >1
-        if det(Cont'*Cont) == 0
-            errordlg('the regression matrix is singular, 1 or more predictors are function to each other, please consider another model', ...
-                'Matrix definition error'); return
-        elseif cond(Cont'*Cont,1) == Inf
-            errordlg('the regression matrix is close to singular, please consider another model','Matrix definition error'); return
-        end
-        
-    end
-end
-
-% final checking for full factorial
-if full_factorial == 1 && ~isempty(Cont)
-    error('LIMO does not compute full factorial ANCOVAs with covariate(s), consider a factorial ANCOVA witout interaction')
-end
-
-cd(directory);
-
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
     check        = find(sum(isnan(Cat),2)==size(Cat,2));
@@ -169,6 +143,30 @@ if ~isempty(Cont)
     Y(:,:,check) = [];
 end
 
+% additional checking for regressions
+if isempty(Cat) == 0
+    
+    if size(Cont,2)+1 >= size(Y,3)
+        error('there are too many regressors for the number of trials, reduce the model size')
+        % one cannot compute any statistics if size(Y,3) > size(Cont,2)+1
+    end
+    
+    if size(Cont,2) >1
+        if det(Cont'*Cont) == 0
+            errordlg('the regression matrix is singular, 1 or more predictors are function to each other, please consider another model', ...
+                'Matrix definition error'); return
+        elseif cond(Cont'*Cont,1) == Inf
+            errordlg('the regression matrix is close to singular, please consider another model','Matrix definition error'); return
+        end
+    end
+end
+
+% final checking for full factorial
+if full_factorial == 1 && ~isempty(Cont)
+    error('LIMO does not compute full factorial ANCOVAs with covariate(s), consider a factorial ANCOVA witout interaction')
+end
+
+cd(directory);
 %% Make the design matrix and create files
 
 if isempty(Cont)
@@ -397,9 +395,8 @@ if flag == 1
         REGdisplay = Cont + abs(min(Cont(:)));
         Xdisplay(:,cat_column+1:size(X,2)-1) = REGdisplay ./ max(REGdisplay(:));
     end
-    imagesc(Xdisplay); colormap('gray');
+    imagesc(Xdisplay); colormap('gray'); drawnow;
     title('Design matrix'); xlabel('regressors');ylabel('trials');
     set(gca,'XTick',1:size(X,2))
-    drawnow;
 end
 
