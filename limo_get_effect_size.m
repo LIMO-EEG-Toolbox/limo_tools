@@ -62,6 +62,9 @@ if nargin == 0
         if strcmpi(opt,'yes')
            mask = evalin('base','mask'); 
         end
+    else
+        msg = sprintf('no mask found in the workspace, \n it is recommended to image 1st the stat file to also have cluster summary stats if using clustering');
+        warning(msg) %#ok<SPWRN>
     end
 end
 
