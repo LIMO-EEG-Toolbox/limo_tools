@@ -11,8 +11,8 @@ function varargout = limo_contrast_manager(varargin)
 %    i.e PathtoFile = '/Users/username/WORK/LIMO.mat'
 %
 % In display_matrix_CreateFcn --> load LIMO.mat and display X
-% In New_Contrast_Callback --> test new contrast
-% In Done_Callback --> update LIMO.contrast and run new contrast
+% In New_Contrast_Callback --> test new Contrastmatrix
+% In Done_Callback --> update LIMO.Contrastmatrix and run new Contrastmatrix
 %
 % see also limo_contrast_checking.m limo_contrast.m
 %
@@ -51,8 +51,8 @@ if nargin && ischar(varargin{1})
     if exist(varargin{1},'file') == 2 && ~isempty(strfind(varargin{1},'LIMO.mat'))
         limofile = varargin{1};
         result = [];
-    else
-        gui_State.gui_Callback = str2func(varargin{1});
+    else 
+        gui_State.gui_Callback = str2func(varargin{1}); % only 1 parameter
     end
 end
 
@@ -67,33 +67,50 @@ end
 % -----------------------
 
 
-% --------------------------------------------------
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_contrast_manager_OpeningFcn(hObject, eventdata, handles, varargin)
 global limofile
 
+variables = '';
 if ~isempty(limofile)
     limofile = load('-mat', limofile);
-    Variable = { limofile.LIMO.design.betalabels.description };
-    tab      = table(Variable', Weight');
+    variables = { limofile.LIMO.design.betalabels.description };
+    if length(variables) < 2
+        uiresume
+        guidata(hObject, handles);
+        close(hObject);
+        clearvars LIMO limofile
+        errordlg_limo('LIMO design has one variable or less so a contrast cannot be defined')
+    end
 end
 
 % define handles used for the save callback
 handles.dir      = pwd;
 handles.go       = 0;
-handles.C        = [1];
+handles.C        = [];
 handles.F        = 0;
 handles.X        = [];
 handles.limofile = limofile;
+handles.variables = variables;
 handles.output   = hObject;
 guidata(hObject,handles);
-set(findobj(hObject, 'tag', 'Factorlist1'),'string',Variable, 'value', 1, 'max', 2);
+if ~isempty(variables)
+    listfactors1 = findobj(hObject, 'tag', 'Factorlist1');
+    listfactors2 = findobj(hObject, 'tag', 'Factorlist2');
+    set(listfactors1,'string', variables, 'value', 1, 'max', 2);
+    set(listfactors2,'string', variables, 'value', 2, 'max', 2);
+    handles.C = zeros(1, length(variables));    
+    handles.C(1:2) = [1 -1];
+    contrast_CreateFcn(hObject, eventdata, handles)
+end
+guidata(hObject, handles);
 
 set(hObject,'Tag','figure_limo_contrast_manager');
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
+% ---------------------------------------------------------------
 function varargout = limo_contrast_manager_OutputFcn(hObject, eventdata, handles)
 global result
 
@@ -101,6 +118,13 @@ waitfor(findobj(hObject, 'string', 'Done'), 'userdata', 'done');
 varargout{1} = result;
 
 %% Callbacks
+% --- Display the design matrix
+% ---------------------------------------------------------------
+function update_contrast_CreateFcn(hObject, eventdata, handles)
+
+selection1 = get(findobj(hObject.Parent,'tag','Facorlist1'), 'value');
+selection2 = get(findobj(hObject.Parent,'tag','Facorlist2'), 'value');
+
 % --- Display the design matrix
 % ---------------------------------------------------------------
 function display_matrix_CreateFcn(hObject, eventdata, handles)
@@ -156,7 +180,8 @@ else
     if isempty(Xdisplay)
         uiresume; guidata(hObject, handles);
     else
-        allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        %allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        allhandles = findobj(hObject.Parent.Parent,'tag', 'LIMOmatrix');
         axes(allhandles(end));
         imagesc(Xdisplay); colormap('gray');
         title('design matrix'); drawnow
@@ -165,20 +190,83 @@ else
     end
 end
 
-% --- Evaluate New Contrast
+% --- Display Contrastmatrix matrix
 % ---------------------------------------------------------------
-function Facorlist1_Callback(hObject, eventdata, handles)
+function contrast_CreateFcn(hObject, eventdata, handles)
 
-data = get(hObject,'Data');
-weights = data(:,2)';
-set(findobj(hObject.Parent,'tag','New_Contrast'), 'string', num2str([weights{:}]));
+allhandles = findobj(hObject, 'Tag','Contrastmatrix');
+if isempty(allhandles)
+    allhandles = findobj(hObject.Parent, 'Tag','Contrastmatrix');
+end
+axes(allhandles);
+try
+    imagesc(handles.C);
+catch
+    imagesc([]);
+end
+set(gca, 'clim', [-1 1]);
+handles.output = hObject;
+str = num2str(handles.C);
+str = strrep(str, '        ', ' ');
+str = strrep(str, '   ', ' ');
+str = strrep(str, ' ', ' ');
+set(findobj(hObject.Parent, 'Tag','New_Contrast'), 'string', str);
+guidata(hObject,handles)
 
-% --- Evaluate New Contrast
+function New_Contrast_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Evaluate Listbox 1
+% ---------------------------------------------------------------
+function Factorlist1_Callback(hObject, eventdata, handles)
+
+selection1 = get(hObject,'value');
+
+Factorlist2 = findobj(hObject.Parent,'tag','Factorlist2');
+selection2 = get(Factorlist2, 'value');
+selection2 = setdiff(selection2, selection1);
+set(Factorlist2, 'value', selection2);
+
+newConstrast = zeros(1,length(handles.variables));
+newConstrast(selection1) = 1/length(selection1);
+newConstrast(selection2) = -1/length(selection2);
+handles.C = newConstrast;%$ remove the T: or F: then eval string
+guidata(hObject, handles);
+contrast_CreateFcn(hObject, eventdata, handles)
+guidata(hObject, handles);
+    
+% set(findobj(hObject.Parent,'tag','New_Contrast'), 'string', num2str([weights{:}]));
+% update_contrast_CreateFcn(hObject, eventdata, handles)
+
+% --- Evaluate Listbox 1
+% ---------------------------------------------------------------
+function Factorlist2_Callback(hObject, eventdata, handles)
+
+selection2 = get(hObject,'value');
+
+Factorlist1 = findobj(hObject.Parent,'tag','Factorlist1');
+selection1 = get(Factorlist1,'value');
+selection1 = setdiff(selection1, selection2);
+set(Factorlist1, 'value', selection1);
+
+newConstrast = zeros(1,length(handles.variables));
+newConstrast(selection1) = 1/length(selection1);
+newConstrast(selection2) = -1/length(selection2);
+handles.C = newConstrast;%$ remove the T: or F: then eval string
+guidata(hObject, handles);
+contrast_CreateFcn(hObject, eventdata, handles)
+guidata(hObject, handles);
+
+% --- Evaluate New contrastmatrix
 % ---------------------------------------------------------------
 function New_Contrast_Callback(hObject, eventdata, handles)
 global LIMO 
 
 handles.C = str2num(get(hObject,'String'));
+set(findobj(hObject.Parent,'tag','Factorlist1'), 'value', []);
+set(findobj(hObject.Parent,'tag','Factorlist2'), 'value', []);
 
 if LIMO.Level == 2 && contains(LIMO.design.name,'Repeated') % always T2 in fact (contrast T but F stat)
     if contains(LIMO.design.name,'') && handles.F ~= 0
@@ -216,17 +304,7 @@ else
 end
 guidata(hObject, handles);
 
-
-function New_Contrast_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Display selected contrasts
-% ---------------------------------------------------------------
-function contrast_CreateFcn(hObject, eventdata, handles)
-
-allhandles = findobj('Tag','contrast');
+allhandles = findobj('Tag','Contrastmatrix');
 axes(allhandles);
 try
     imagesc(handles.C);
@@ -235,7 +313,6 @@ catch
 end
 handles.output = hObject;
 guidata(hObject,handles)
-
 
 % --- Executes on button press in F_contrast.
 % ---------------------------------------------------------------
@@ -255,8 +332,7 @@ if ~isempty(handles.C)
     contrast_CreateFcn(hObject, eventdata, handles)
 end
 
-
-% --- Previous Contrast
+% --- Previous contrastmatrix
 % ---------------------------------------------------------------
 function Pop_up_previous_contrasts_CreateFcn(hObject, eventdata, handles)
 global LIMO 
@@ -303,7 +379,7 @@ else
     % display_matrix_CreateFcn(hObject, eventdata, handles)
 end
 
-allhandles = findobj('Tag','contrast');
+allhandles = findobj('Tag','Contrastmatrix');
 axes(allhandles);
 imagesc([]);
 
@@ -330,8 +406,6 @@ if ~strcmp(contents(1),'none') % not 'none'
 end
 handles.output = hObject;
 guidata(hObject,handles)
-
-
 
 % --- Executes on button press in Done.
 % ---------------------------------------------------------------
@@ -508,7 +582,6 @@ end
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
 function Quit_Callback(hObject, eventdata, handles)
-clc
 uiresume
 guidata(hObject, handles);
 close(get(hObject,'Parent'));
