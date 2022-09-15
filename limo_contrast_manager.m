@@ -75,13 +75,17 @@ global limofile
 variables = '';
 if ~isempty(limofile)
     limofile = load('-mat', limofile);
-    variables = { limofile.LIMO.design.betalabels.description };
-    if length(variables) < 2
+    try
+        variables = { limofile.LIMO.design.labels.description };
+    catch
+        variables = '';
+    end
+    if length(variables) == 1
         uiresume
         guidata(hObject, handles);
         close(hObject);
         clearvars LIMO limofile
-        errordlg_limo('LIMO design has one variable or less so a contrast cannot be defined')
+        limo_errordlg('LIMO design has one variable or less so a contrast cannot be defined')
     end
 end
 
@@ -93,16 +97,23 @@ handles.F        = 0;
 handles.X        = [];
 handles.limofile = limofile;
 handles.variables = variables;
-handles.output   = hObject;
+handles.output    = hObject;
+handles.Name      = '';
 guidata(hObject,handles);
-if ~isempty(variables)
-    listfactors1 = findobj(hObject, 'tag', 'Factorlist1');
-    listfactors2 = findobj(hObject, 'tag', 'Factorlist2');
-    set(listfactors1,'string', variables, 'value', 1, 'max', 2);
-    set(listfactors2,'string', variables, 'value', 2, 'max', 2);
-    handles.C = zeros(1, length(variables));    
-    handles.C(1:2) = [1 -1];
-    contrast_CreateFcn(hObject, eventdata, handles)
+listfactors1 = findobj(hObject, 'tag', 'Factorlist1');
+listfactors2 = findobj(hObject, 'tag', 'Factorlist2');
+if ~isempty(listfactors1) && ~isempty(listfactors2)
+    if ~isempty(variables)
+        set(listfactors1,'string', variables, 'value', 1, 'max', 2);
+        set(listfactors2,'string', variables, 'value', 2, 'max', 2);
+        handles.C = zeros(1, length(variables));    
+        handles.C(1:2) = [1 -1];
+        contrast_CreateFcn(hObject, eventdata, handles)
+        handles.go = 1;
+    else
+        set(listfactors1,'string', {'LIMO file contains no variable' '(might be an old file, please recompute)'}, 'value', [], 'max', 2, 'enable', 'off');
+        set(listfactors2,'string', {'LIMO file contains no variable' '(might be an old file, please recompute)'}, 'value', [], 'max', 2, 'enable', 'off');
+    end
 end
 guidata(hObject, handles);
 
@@ -112,10 +123,9 @@ set(hObject,'Tag','figure_limo_contrast_manager');
 % --- Outputs from this function are returned to the command line.
 % ---------------------------------------------------------------
 function varargout = limo_contrast_manager_OutputFcn(hObject, eventdata, handles)
-global result
 
 waitfor(findobj(hObject, 'string', 'Done'), 'userdata', 'done');
-varargout{1} = result;
+varargout{1} = handles;
 
 %% Callbacks
 % --- Display the design matrix
@@ -218,21 +228,44 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- GUI Name
+% ---------------------------------------------------------------
+function ContrastName_Callback(hObject, eventdata, handles)
+handles.Name = get(hObject,'string');
+guidata(hObject, handles);
+
 % --- Evaluate Listbox 1
 % ---------------------------------------------------------------
 function Factorlist1_Callback(hObject, eventdata, handles)
 
 selection1 = get(hObject,'value');
 
-Factorlist2 = findobj(hObject.Parent,'tag','Factorlist2');
+Factorlist2  = findobj(hObject.Parent,'tag','Factorlist2');
 selection2 = get(Factorlist2, 'value');
 selection2 = setdiff(selection2, selection1);
 set(Factorlist2, 'value', selection2);
 
 newConstrast = zeros(1,length(handles.variables));
-newConstrast(selection1) = 1/length(selection1);
-newConstrast(selection2) = -1/length(selection2);
+if length(selection1) ~= length(selection2)
+    newConstrast(selection1) = 1/length(selection1);
+    newConstrast(selection2) = -1/length(selection2);
+else
+    newConstrast(selection1) = 1;
+    newConstrast(selection2) = -1;
+end
 handles.C = newConstrast;%$ remove the T: or F: then eval string
+
+cName = findobj(hObject.Parent,'tag','ContrastName');
+if length(selection1) == 1 && length(selection2) == 1
+    handles.Name = [ handles.variables{selection1} ' vs ' handles.variables{selection2} ];
+    handles.Name = strrep(handles.Name, 'type - ', '');
+    set(cName, 'string', handles.Name, 'userdata', 'auto');
+else
+    if strcmpi(char(get(cName, 'userdata')), 'auto')
+        set(cName, 'string', '', 'userdata', '');
+    end
+end
+
 guidata(hObject, handles);
 contrast_CreateFcn(hObject, eventdata, handles)
 guidata(hObject, handles);
@@ -252,9 +285,26 @@ selection1 = setdiff(selection1, selection2);
 set(Factorlist1, 'value', selection1);
 
 newConstrast = zeros(1,length(handles.variables));
-newConstrast(selection1) = 1/length(selection1);
-newConstrast(selection2) = -1/length(selection2);
+if length(selection1) ~= length(selection2)
+    newConstrast(selection1) = 1/length(selection1);
+    newConstrast(selection2) = -1/length(selection2);
+else
+    newConstrast(selection1) = 1;
+    newConstrast(selection2) = -1;
+end
 handles.C = newConstrast;%$ remove the T: or F: then eval string
+
+cName = findobj(hObject.Parent,'tag','ContrastName');
+if length(selection1) == 1 && length(selection2) == 1
+    handles.Name = [ handles.variables{selection1} ' vs ' handles.variables{selection2} ];
+    handles.Name = strrep(handles.Name, 'type - ', '');
+    set(cName, 'string', handles.Name, 'userdata', 'auto');
+else
+    if strcmpi(char(get(cName, 'userdata')), 'auto')
+        set(cName, 'string', '', 'userdata', '');
+    end
+end
+
 guidata(hObject, handles);
 contrast_CreateFcn(hObject, eventdata, handles)
 guidata(hObject, handles);
@@ -419,149 +469,7 @@ result = handles.C;
 
 if ~isempty(handles.C) && isempty(limofile)
     if handles.go == 1
-        disp('executing contrast')
-        
-        if LIMO.design.bootstrap ~=0 && exist([LIMO.dir filesep 'H0'],'dir') && ...
-                ~contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
-            choice = questdlg('(re)compute contrast bootstrap?','bootstrap choice','compute bootstrap contrast','don''t compute any bootstraps','compute bootstrap contrast');
-        else
-            choice = 'don''t compute any bootstraps';
-        end
-        
-        % ------------------------------------------------
-        % 1st level contrat & 2st level ANOVA/ANCOVA/Regression
-        % ------------------------------------------------
-        if LIMO.Level == 1 || ...
-                LIMO.Level == 2 && contains(LIMO.design.name,'regression','IgnoreCase',true) || ...
-                LIMO.Level == 2 && contains(LIMO.design.name,'N-ways','IgnoreCase',true) || ...
-                LIMO.Level == 2 && contains(LIMO.design.name,'ANCOVA','IgnoreCase',true) || ...
-                LIMO.Level == 2 && contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
-                ~contains(LIMO.design.name,'Repeated')
-            
-            if isfield(LIMO,'contrast')
-                previous_con = size(LIMO.contrast,2);
-            else
-                previous_con = 0;
-            end
-            index = previous_con+1;
-            
-            % update LIMO.mat
-            LIMO.contrast{index}.C = handles.C;
-            if handles.F == 0
-                LIMO.contrast{index}.V = 'T';
-            else
-                LIMO.contrast{index}.V = 'F';
-            end
-            
-            if exist(LIMO.dir,'dir')
-                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
-            end
-            
-            % -------------------------------------------------------
-            if strcmp(LIMO.design.type_of_analysis,'Mass-univariate')
-            % -------------------------------------------------------
-                
-                if contains(LIMO.design.name,'ANOVA','IgnoreCase',true) && ...
-                        contains(LIMO.design.method,'Generalized Welch''s method','IgnoreCase',true)
-                    if handles.F == 1
-                        warndlg(sprintf('there is no F contrast possible for Generalized Welch''s method ANOVA'),'Robust ANOVA info')
-                    else
-                        warndlg(sprintf('no T contrasts for Generalized Welch''s method ANOVA,\nswitching to robust t-tests for sub-groups comparison'),'Robust ANOVA info')
-                        if exist(LIMO.dir,'dir')
-                            data = load(fullfile(LIMO.dir,'Yr.mat'));
-                        else
-                            warning('%s doesn''t exist, pulling data from the local dir',LIMO.dir)
-                            data = load(fullfile(pwd,'Yr.mat')); LIMO.dir = pwd;
-                        end
-                        
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            limo_random_robust(2,data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == 1))),...
-                                data.Yr(:,:,:,find(LIMO.design.X(:,handles.C == -1))),...
-                                find(handles.C ~= 0),LIMO);
-                        else
-                            limo_random_robust(2,data.Yr(:,:,find(LIMO.design.X(:,handles.C == 1))),...
-                                data.Yr(:,:,find(LIMO.design.X(:,handles.C == -1))),...
-                                find(handles.C ~= 0),LIMO);
-                        end
-                    end
-                else % standard GLM type ANOVA/ANCOVA
-
-                    if ~exist(LIMO.dir,'dir')
-                        LIMO.dir = pwd;
-                    end
-                    limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
-
-                    if LIMO.design.bootstrap ~= 0 && strcmpi('choice','compute bootstrap contrast')
-                        Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
-                        H0_Betas = load(fullfile(LIMO.dir,['H0' filesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
-                        if strcmp(LIMO.Analysis ,'Time-Frequency')
-                            disp('preparing Time-Frequency H0 data matrix');
-                            tmp = zeros(size(H0_Betas,1), size(H0_Betas,2)*size(H0_Betas,3), size(H0_Betas,4), size(H0_Betas,5));
-                            for boot = 1:size(H0_Betas,5)
-                                tmp(:,:,:,boot)= limo_tf_4d_reshape(squeeze(H0_Betas(:,:,:,:,boot)));
-                            end
-                            limo_contrast(limo_tf_4d_reshape(Yr), tmp, LIMO, handles.F,2);
-                            clear Yr tmp
-                        else
-                            limo_contrast(Yr, H0_Betas, LIMO, handles.F,2);
-                        end
-                        clear Yr tmp
-                        disp('boostrapped contrasts done ...')
-                    end
-                end
-                
-            % -------------------------------------------------------
-            elseif strcmp(LIMO.design.type_of_analysis,'Multivariate')
-            % -------------------------------------------------------
-                
-                LIMO.contrast = handles.F;
-                limo_contrast(squeeze(Yr(:,time,:))', squeeze(Betas(:,time,:))', [], LIMO, handles.F,1);
-                if exist(LIMO.dir,'dir')
-                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3');
-                end
-
-            end
-            clear Yr Betas
-            
-            % -------------------------------------------
-            %          2nd level Repeated measure ANOVA
-            % -------------------------------------------
-        elseif LIMO.Level == 2 && contains(LIMO.design.name,'Repeated')
-            
-            if isfield(LIMO,'contrast')
-                previous_con = size(LIMO.contrast,2);
-            elseNew_c
-                previous_con = 0;
-            end
-            index = previous_con+1;
-            
-            % update LIMO.mat
-            LIMO.contrast{index}.C = handles.C;
-            LIMO.contrast{index}.V = 'F'; % always F since we use Hotelling test
-            
-            % create ess files and call limo_rep_anova adding C
-            Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr; 
-            if exist(LIMO.dir,'dir')
-                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
-            end
-            limo_contrast(Yr,LIMO,3);
-            
-            if strcmpi(choice,'compute bootstrap contrast')
-                limo_contrast(Yr, LIMO, 4);
-            end
-            
-            if LIMO.design.tfce == 1 && strcmpi(choice,'compute bootstrap contrast')
-                filename = fullfile(LIMO.dir,['ess_' num2str(index) '.mat']);
-                limo_tfce_handling(filename)
-                if LIMO.design.nb_conditions ~= 1
-                    filename = fullfile(LIMO.dir,['ess_gp_interaction_' num2str(index) '.mat']);
-                    limo_tfce_handling(filename)
-                end
-            end
-            clear Yr LIMO
-            disp('contrast evaluation done ...')
-        end
-        
+        limo_contrast_execute(LIMO, handles);
     else
         warndlg2('no new contrast to evaluate')
     end

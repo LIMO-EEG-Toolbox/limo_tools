@@ -667,7 +667,7 @@ switch type
         % ------------------------------------------------
         % do the analysis
         if strcmpi(go,'no')
-            go = questdlg2('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
+            go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
         end
         close('LIMO design');        
 
@@ -1039,7 +1039,7 @@ switch type
                 imagesc(LIMO.design.X); colormap('gray');
                 title('ANOVA model','FontSize',16);xlabel('regressors');
                 ylabel('subjects'); drawnow;
-                go = questdlg('start the analysis?');
+                go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
                 close('LIMO design')
                 if ~strcmpi(go,'Yes')
                     return

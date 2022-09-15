@@ -253,8 +253,8 @@ go = update_dir(handles,'AN(C)OVA');
 if go == 0
     return
 else
-    answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', 'Repeated Measures ANOVA', ...
-        'N-Ways ANOVA','ANCOVA','Repeated Measures ANOVA');
+    answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
+        '     N-Ways ANOVA     ','ANCOVA','Repeated Measures ANOVA','Repeated Measures ANOVA');
     if ~isempty(answer)
         if handles.ica == 1
             limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type','Components');
@@ -367,33 +367,75 @@ if 0
     limo_batch('contrast only');
 else
     % below the code allows to use bootstrap and TFCE
-    [Names,Paths,LIMO.data.data,txtFile] = limo_get_files;
-    
+    [Names,Paths,allFiles,txtFile] = limo_get_anova_files;
+  
     if isempty(Names)
         disp('No file selected, abording')
         return
     end
     disp('Looking up the corresponding LIMO file');
-    res = limo_contrast_manager(Paths{1});
-    if isempty(res)
+    LIMOfile = fullfile(Paths{1}, Names{1});
+    handles = limo_contrast_manager(LIMOfile);
+    if isempty(handles) || isempty(handles.C)
         disp('No contrast, abording')
         return
     end
     nBoot = str2double(get(findobj(hObject.Parent, 'tag', 'bootstrap'),'String'));
     TFCE  = get(findobj(hObject.Parent, 'tag', 'TFCE'),'value');
     
-    model.defaults.fullfactorial    = 0;         
-    model.defaults.zscore           = 0;         
-    model.defaults.bootstrap        = 1000 ;           % only for single subject analyses - not included for studies
-    model.defaults.tfce             = TFCE;         % only for single subject analyses - not included for studies
-    model.defaults.method           = 'WLS';        % default is OLS - to be updated to 'WLS' once validated
-    model.defaults.Level            = 2;                 % 1st level analysis
-    model.defaults.type_of_analysis = 'Mass-univariate'; % option can be multivariate (work in progress)
-    
-    contrast.LIMO_files = strrep(txtFile, 'Beta_', 'LIMO_');
-    contrast.mat = res;
-    limo_settings_script;
-    limo_batch('contrast only', model, contrast, STUDY);
+    if isempty(txtFile) % second level
+        levels = 2;
+        options = {'1st and 2nd level', '2nd level only'};
+        res = limo_questdlg( [ 'This is a 2nd (group) level contrast. Do you want to calculate the same' 10 ...
+                               'contrast at the 1st-level to be able to plot it for individual subjects? ' ], '1st-level contrast', options{:}, options{end});
+        if isempty(res)
+            return;
+        elseif strcmpi(res, options{1})
+            levels = [1 2];
+        end
+    else
+        levels = 1;
+    end
+    if any(levels == 2)
+        % 2nd level
+        limo_contrast_execute(LIMOfile, handles);
+        
+        if any(levels == 1)
+            % 1st level from second level
+            LIMO = load('-mat', LIMOfile);
+            betaFiles = LIMO.LIMO.data.data;
+            anovaVars = LIMO.LIMO.design.labels;
+            for gp = 1:length(betaFiles) % mutliple groups
+                allLIMOfiles = cellfun(@(x)strrep(x, 'Betas.mat', 'LIMO.mat'), betaFiles{gp}, 'uniformoutput', false);
+
+                % read first file to find indices of ANOVA betas in Subject
+                % betas (could be the same)
+                LIMOsubject = load('-mat', allLIMOfiles{1});
+                subjectVars = LIMOsubject.LIMO.design.labels;
+                indList = [];
+                for iBeta = 1:length(anovaVars)
+                    indTmp = strmatch(anovaVars(iBeta).description, { subjectVars.description }, 'exact');
+                    if length(indTmp) ~= 1
+                        error('Issue looking up variables for first level')
+                    end
+                    indList = [indList indTmp]; 
+                end
+
+                % run contrast
+                contrast.LIMO_files = allLIMOfiles;
+                contrast.mat = zeros(1, length(subjectVars))
+                contrast.mat(indList) = handles.C;
+                limo_settings_script; % for STUDY var
+                limo_batch('contrast only', [], contrast, STUDY);
+            end
+        end
+    elseif any(levels == 1)
+        % first level only
+        contrast.LIMO_files = strrep(txtFile, 'Beta_', 'LIMO_');
+        contrast.mat = handles.C;
+        limo_settings_script; % for STUDY var
+        limo_batch('contrast only', [], contrast, STUDY);
+    end
 end
 
 % ----------------------
@@ -463,7 +505,7 @@ if isempty(handles.dir)
         end
     end
 
-    limo_warndlg(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
+    %limo_warndlg(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
     mkdir(test); cd(test); handles.dir = pwd; go = 1;
 else
     go = 1;

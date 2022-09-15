@@ -38,8 +38,8 @@ LIMO.design.bootstrap        = defaults.bootstrap;
 LIMO.design.tfce             = defaults.tfce;
 LIMO.Level                   = 1;
 LIMO.design.status           = 'to do';
-if isfield(defaults, 'betalabels')
-    LIMO.design.betalabels          = defaults.betalabels;
+if isfield(defaults, 'labels')
+    LIMO.design.labels          = defaults.labels;
 end
 
 % optional fields for EEGLAB study

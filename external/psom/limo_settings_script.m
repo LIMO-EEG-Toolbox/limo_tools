@@ -6,12 +6,18 @@ if exist('limo_settings_script_user')
     eval('limo_settings_script_user')
 end
 
-STUDY = [];
 if isequal(limo_settings.workdir, 'derivatives')
     try
         STUDY=evalin('base','STUDY');
         %limo_settings.workdir = fullfile(S.filepath, 'derivatives');
         limo_settings.workdir = STUDY.filepath;
     catch
+        disp('Failed to get study');
+        limo_settings.workdir = '';
+        if ~exist('STUDY', 'var')
+            STUDY = [];
+        end
     end
+else
+    STUDY = [];
 end

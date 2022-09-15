@@ -1136,11 +1136,23 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     end
 
     % Ask for Gp
-    % -------------
-    if ~isempty(LIMO.data.data)
-        gp_nb = size(LIMO.data.data,1);
+    % ----------
+    limo_settings_script;
+    if limo_settings.newgui
+        if length(STUDY.group) < 2
+            limo_questdlg( [ 'No groups of subject were detected in the STUDY.' 10 ...
+                             'If you have groups of subjects, make sure to' 10 ...
+                             'use the "group" field in the STUDY editor' ], 'Group information', 'Continue', 'Continue');
+            gp_nb = 1;
+        else
+            gp_nb = length(STUDY.group);
+        end
     else
-        gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects?','Groups', 1, {'1'}));
+        if ~isempty(LIMO.data.data)
+            gp_nb = size(LIMO.data.data,1);
+        else
+            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects?','Groups', 1, {'1'}));
+        end
     end
 
     if isempty(gp_nb)
@@ -1159,6 +1171,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % Ask for Repeated Measures
     % --------------------------
+    factor_names = { 'Factor 1' 'Factor 2' 'Factor 3' };
     if ~isempty(LIMO.design.parameters) % infer factors from parameters
         if size(LIMO.design.parameters,1) == 1 && gp_nb > 1
             LIMO.design.parameters = repmat(LIMO.design.parameters,gp_nb,1);
@@ -1179,11 +1192,32 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             factor_nb = factor_nb{1};
         end
     else
-        factor_nb = cell2mat(limo_inputdlg('Enter repeated factors level? e.g. [2 3] for 2 levels F1 and 3 levels F2','Factors'));
+        uiList = { { 'style' 'text' 'string' 'Enter repeated factors level' 'fontweight' 'bold'} ...
+                   { 'style' 'text' 'string' '' } ...
+                   { 'style' 'text' 'string' 'Name' } ...
+                   { 'style' 'text' 'string' 'Number of values' } ...
+                   { 'style' 'text' 'string' 'Factor 1' } ...
+                   { 'style' 'edit' 'string' 'Face' } ...
+                   {} { 'style' 'edit' 'string' '3' } {} ...
+                   { 'style' 'text' 'string' 'Factor 2 (if any)' } ...
+                   { 'style' 'edit' 'string' 'Rep' } ...
+                   {} { 'style' 'edit' 'string' '3' } {}...
+                   { 'style' 'text' 'string' 'Factor 3 (if any)' } ...
+                   { 'style' 'edit' 'string' '' } ...
+                   {} { 'style' 'edit' 'string' '' } {} };
+        uiGeom = { [1] [1 1 1] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] };
+        res = inputgui('uilist', uiList, 'geometry', uiGeom);
+        if isempty(res)
+            return;
+        end
+        
+        factor_nb = [ res{2} ' ' res{4} ' ' res{6} ];
+        factor_names = { res{1} res{3} res{5} };
     end
 
     try
         factor_nb = eval(['[' factor_nb ']']);
+        factor_names = factor_names(1:length(factor_nb));
     catch ME
         limo_errordlg(sprintf('log error: %s',ME.message),'could not evaluate factors')
         return
@@ -1245,30 +1279,41 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                 return
             end
 
-            if isfield(LIMO.design,'parameters')
-                if ~isempty(LIMO.design.parameters)
-                    if length(factor_nb) <=2
-                        parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
-                    else % cell of cells
-                        all_param = LIMO.design.parameters;
-                        while any(cellfun(@iscell,all_param))
-                            all_param = [all_param{cellfun(@iscell,all_param)} all_param(~cellfun(@iscell,all_param))];
-                        end
-                        parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(all_param));
+            if isfield(LIMO.design,'parameters') && ~isempty(LIMO.design.parameters)
+                if length(factor_nb) <=2
+                    parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
+                else % cell of cells
+                    all_param = LIMO.design.parameters;
+                    while any(cellfun(@iscell,all_param))
+                        all_param = [all_param{cellfun(@iscell,all_param)} all_param(~cellfun(@iscell,all_param))];
                     end
-                else
-                    parameters(i,:) = check_files(Paths{i}, Names{i},1);
+                    parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(all_param));
                 end
             else
-                parameters(i,:) = check_files(Paths{i}, Names{i},1,LIMO.design.parameters{i});
+                if i > 1
+                    parameters(i,:) = parameters(1,:); % copy design for other groups
+                else
+                    parameters(i,:) = check_files(Paths{i}, Names{i},1,[], '',factor_names, factor_nb);
+                end
             end
         end
 
-        if size(parameters,2) ~= prod(factor_nb)
-            warning(['the number of parameter chosen (',num2str(size(parameters,2)), ...
-                ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
-            return
+        % check if variables names are accessible
+        limoFileS1 = fullfile(Paths{1}{1}, 'LIMO.mat');
+        if exist(limoFileS1)
+            LIMOtmp = load('-mat', limoFileS1);
+            if isfield(LIMOtmp.LIMO.design, 'labels')
+                paramLinear = parameters(i,:);
+                if iscell(paramLinear) paramLinear = [ paramLinear{:} ]; end
+                LIMO.design.labels = LIMOtmp.LIMO.design.labels(paramLinear);
+            end
         end
+
+%         if size(parameters,2) ~= prod(factor_nb)
+%             warning(['the number of parameter chosen (',num2str(size(parameters,2)), ...
+%                 ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
+%             return
+%         end
 
         if size(LIMO.data.data,2) == gp_nb
             LIMO.data.data = LIMO.data.data'; % gps in rows
@@ -1510,13 +1555,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % finally, since all seems to match up, ask for factor names
     % ---------------------------------------------------------
     if ~isfield(LIMO.design, 'factor_names')
-        LIMO.design.factor_names = cell(1,length(factor_nb));
-        for i=1:length(factor_nb)
-            LIMO.design.factor_names{i} = cell2mat(limo_inputdlg(['name factor ' num2str(i) ': ' num2str(factor_nb(i)) ' levels'],'Rep. Measures Names',1,{''},'on'));
-            if isempty(LIMO.design.factor_names{i})
-                LIMO.design.factor_names{i} = ['Factor_' num2str(i)];
-            end
-        end
+        LIMO.design.factor_names = factor_names;
     end
 
     if length(LIMO.design.factor_names) ~= length(factor_nb)
@@ -1557,92 +1596,6 @@ for ifiles = length(cellfiles):-1:1
         [Paths{ifiles}, filename, ext] = fileparts(cellfiles{ifiles});
         Names{ifiles}                  = [filename ext];
         Files{ifiles}                  = fullfile(Paths{ifiles},[filename ext]);
-    end
-end
-end
-
-%% file checking
-function parameters = check_files(Paths,Names,gp,parameters,selectmode)
-% after selecting file, check they are all the same type (betas or con)
-% return parameters that match with files (eg 1 for con, or whatever valuegetlabels'
-% for the beta file up to the number of regressors in the design matrix
-
-if nargin < 4
-    parameters = [];
-end
-if nargin < 5
-    selectmode = 'multi';
-end
-if gp == 1
-    if iscell(Names{gp})
-        Names = Names{gp};
-        Paths = Paths{gp};
-    end
-
-    % one sample case
-    % ---------------
-    is_beta = []; is_con = [];
-    for i=size(Names,2):-1:1
-        if strfind(Names{i},'Betas')
-            is_beta(i) = 1;
-        elseif strfind(Names{i},'con')
-            is_con(i) = 1;
-        end
-    end
-
-    if (isempty(is_beta)) == 0 && sum(is_beta) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(is_con) ~= size(Names,2)
-        error('file selection failed, only Beta or Con files are supported')
-    elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
-        if isempty(parameters)
-            parameters = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
-            if isempty(parameters)
-                return
-            end
-        end
-    elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
-        parameters = 1;
-    end
-
-elseif gp > 1
-
-    % several sample cases
-    % -------------------
-    for g = gp:-1:1
-        is_beta = []; is_con = [];
-        for i=1:size(Names{g},2)
-            if contains(Names{g}(i),'Betas')
-                is_beta(i) = 1;
-            elseif strfind(Names{g}{i},'con')
-                is_con(i) = 1;
-            end
-        end
-
-        if ~isempty(is_beta)
-            test{g} = sum(is_beta) == size(Names{g},2);
-        elseif ~isempty(is_con)
-            test{g} = sum(is_con) == size(Names{g},2);
-        end
-    end
-
-    if sum(cell2mat(test)) ~= length(Names)
-        error('file selection failed, only sets of Beta or sets of Con files are supported');
-    elseif ~isempty(is_beta) && sum(cell2mat(test)) == length(Names) && nargout ~= 0
-        if isempty(parameters)
-            parameters = eval(cell2mat(limo_inputdlg('which parameter(s) to test e.g 1','parameters option')));
-        elseif ~isempty(parameters) && size(parameters,2) ~=1 && size(parameters,2) ~=gp
-            warning(2,'A valid parameter value must be provided - selection aborded\n');
-            return
-        end
-        if isempty(parameters) || size(parameters,2) ~=1 && size(parameters,2) ~=gp
-            warning(2,'A valid parameter value must be provided - selection aborded\n');
-            return
-        end
-    elseif ~isempty(is_con) && sum(cell2mat(test)) == length(Names)
-        if isempty(parameters)
-            parameters = 1;
-        else
-            parameters = ones(1,length(parameters));
-        end
     end
 end
 end
@@ -2243,49 +2196,193 @@ end
 end
 
 % get beta indices from study
-function param = get_beta_indices(selectmode, betaFile)
+% ---------------------------
+function param = get_beta_indices(selectmode, betaFile,factorname,factorn)
 
 param = [];
 betas = {};
+if nargin < 3
+    factorname = {};
+end
 if nargin > 1
     try
         limoFile = strrep(betaFile, 'Betas.mat', 'LIMO.mat');
         LIMO = load('-mat', limoFile);
-        betas = { LIMO.LIMO.design.betalabels.description };
+        betas = { LIMO.LIMO.design.labels.description };
     catch
         disp('Warning: could not find associated LIMO file');
     end
 end
 
 if ~isempty(betas)
-    for iBeta = 1:length(betas)
-        betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
-    end
-    if strcmpi(selectmode, 'selectone')
-        strBeta = 'Pick a single beta parameters below';
-        strInds = 'Or ignore selection above and enter beta index';
-        maxval = 1;
-    elseif strcmpi(selectmode, 'selecttwo')
-        strBeta = 'Pick TWO beta parameters below';
-        strInds = 'Or ignore selection above and enter beta index';
-        maxval = 2;
+    if ~isempty(factorname)
+        % simple selection
+        uiList = { {'style' 'text' 'string' [ 'Select values for factor ' factorname ] 'fontweight' 'bold'} };
+        uiGeom = { [1] };
+        uiVert = 1;
+        for iRow = 1:factorn
+            switch iRow
+                case 1, str = '1st';
+                case 2, str = '2nd';
+                case 3, str = '3rd';
+                otherwise str = [ num2str(iRow) 'th' ];
+            end
+            uiList = [ uiList(:)' ...
+                   {{'style' 'text' 'string' [ str ' value or set of values' ] }} ...
+                   {{ 'style' 'listbox' 'string' betas 'max' 2 }} ];
+            uiGeom = [ uiGeom(:)' {[1]} {[1]} ];
+            uiVert = [ uiVert 1 4 ];
+        end
+        res = inputgui('uilist', uiList, 'geometry', uiGeom, 'geomvert', uiVert);
+        if isempty(res), return; end
+        if length(unique(cellfun(@length, res))) ~= 1
+            limo_errordlg('The number of selected value must be the same');
+            return;
+        end
+        param = res;
     else
-        strBeta = 'Pick one or more beta parameters below';
-        strInds = 'Or ignore selection above and enter beta indices';
-        maxval = 2;
-    end
-    uiList = { {'style' 'text' 'string' strBeta } ...
-               { 'style' 'listbox' 'string' betas 'max' maxval } ...
-               {'style' 'text' 'string' strInds } ...
-               {'style' 'edit' 'string' '' } };
-    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
-    if isempty(res), return; end
-    if ~isempty(res{2})
-        param =  eval( [ '[' res{2} ']' ] );
-    else
-        param =  res{1};
+        % simple selection
+        for iBeta = 1:length(betas)
+            betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
+        end
+        if strcmpi(selectmode, 'selectone')
+            strBeta = 'Pick a single beta parameters below';
+            strInds = 'Or ignore selection above and enter beta index';
+            maxval = 1;
+        elseif strcmpi(selectmode, 'selecttwo')
+            strBeta = 'Pick TWO beta parameters below';
+            strInds = 'Or ignore selection above and enter beta index';
+            maxval = 2;
+        else
+            strBeta = 'Pick one or more beta parameters below';
+            strInds = 'Or ignore selection above and enter beta indices';
+            maxval = 2;
+        end
+        uiList = { {'style' 'text' 'string' strBeta } ...
+                   { 'style' 'listbox' 'string' betas 'max' maxval } ...
+                   {'style' 'text' 'string' strInds } ...
+                   {'style' 'edit' 'string' '' } };
+        res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
+        if isempty(res), return; end
+        if ~isempty(res{2})
+            param =  eval( [ '[' res{2} ']' ] );
+        else
+            param =  res{1};
+        end
     end
 else
     param = eval( [ '[' cell2mat(limo_inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
+end
+end
+
+%% file checking
+function parameters = check_files(Paths,Names,gp,parameters,selectmode,factorname,factorn)
+% after selecting file, check they are all the same type (betas or con)
+% return parameters that match with files (eg 1 for con, or whatever valuegetlabels'
+% for the beta file up to the number of regressors in the design matrix
+
+if nargin < 4
+    parameters = [];
+end
+if nargin < 5 || isempty(selectmode)
+    selectmode = 'multi';
+end
+if nargin < 6
+    factorname = '';
+    factorn    = [];
+end
+if gp == 1
+    if iscell(Names{gp})
+        Names = Names{gp};
+        Paths = Paths{gp};
+    end
+
+    % one sample case
+    % ---------------
+    is_beta = []; is_con = [];
+    for i=size(Names,2):-1:1
+        if strfind(Names{i},'Betas')
+            is_beta(i) = 1;
+        elseif strfind(Names{i},'con')
+            is_con(i) = 1;
+        end
+    end
+
+    if (isempty(is_beta)) == 0 && sum(is_beta) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(is_con) ~= size(Names,2)
+        error('file selection failed, only Beta or Con files are supported')
+    elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
+        if isempty(parameters)
+            if isempty(factorname) || length(factorname) > 2
+                parameters = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
+            else
+                paramTmp = {};
+                for iFact = 1:length(factorname)
+                    paramTmp{iFact} = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}), factorname{iFact}, factorn(iFact));
+                end
+                if length(paramTmp) > 1
+                    for iParam1 = 1:length(paramTmp{1})
+                        values = paramTmp{1}{iParam1}; % these values might not be in order
+                        for iVal = 1:length(values)
+                            for iParam2 = 1:length(paramTmp{2})
+                                if any(paramTmp{2}{iParam2} == values(iVal))
+                                    pos(iVal) = iParam2;
+                                end
+                            end
+                        end
+                        paramTmp{1}{iParam1} = paramTmp{1}{iParam1}(pos); % reorder values
+                    end
+                end
+                parameters = cell2mat(paramTmp{1});
+            end
+            %parameters = { [1 2 3] [4 5 6] [7 8 9] };
+            if isempty(parameters)
+                return
+            end
+        end
+    elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
+        parameters = 1;
+    end
+
+elseif gp > 1
+
+    % several sample cases
+    % -------------------
+    for g = gp:-1:1
+        is_beta = []; is_con = [];
+        for i=1:size(Names{g},2)
+            if contains(Names{g}(i),'Betas')
+                is_beta(i) = 1;
+            elseif strfind(Names{g}{i},'con')
+                is_con(i) = 1;
+            end
+        end
+
+        if ~isempty(is_beta)
+            test{g} = sum(is_beta) == size(Names{g},2);
+        elseif ~isempty(is_con)
+            test{g} = sum(is_con) == size(Names{g},2);
+        end
+    end
+
+    if sum(cell2mat(test)) ~= length(Names)
+        error('file selection failed, only sets of Beta or sets of Con files are supported');
+    elseif ~isempty(is_beta) && sum(cell2mat(test)) == length(Names) && nargout ~= 0
+        if isempty(parameters)
+            parameters = eval(cell2mat(limo_inputdlg('which parameter(s) to test e.g 1','parameters option')));
+        elseif ~isempty(parameters) && size(parameters,2) ~=1 && size(parameters,2) ~=gp
+            warning(2,'A valid parameter value must be provided - selection aborded\n');
+            return
+        end
+        if isempty(parameters) || size(parameters,2) ~=1 && size(parameters,2) ~=gp
+            warning(2,'A valid parameter value must be provided - selection aborded\n');
+            return
+        end
+    elseif ~isempty(is_con) && sum(cell2mat(test)) == length(Names)
+        if isempty(parameters)
+            parameters = 1;
+        else
+            parameters = ones(1,length(parameters));
+        end
+    end
 end
 end
