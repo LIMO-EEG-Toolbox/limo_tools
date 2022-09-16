@@ -1293,7 +1293,13 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                 if i > 1
                     parameters(i,:) = parameters(1,:); % copy design for other groups
                 else
-                    parameters(i,:) = check_files(Paths{i}, Names{i},1,[], '',factor_names, factor_nb);
+                    [parameters(i,:),betas] = check_files(Paths{i}, Names{i},1,[], '');
+                    paramTmp        = reorganize_params(parameters(i,:), betas,factor_names, factor_nb);
+                    if ~isempty(paramTmp)
+                        parameters(i,:) = paramTmp;
+                    else 
+                        return;
+                    end
                 end
             end
         end
@@ -2197,7 +2203,7 @@ end
 
 % get beta indices from study
 % ---------------------------
-function param = get_beta_indices(selectmode, betaFile,factorname,factorn)
+function [param,betas] = get_beta_indices(selectmode, betaFile,factorname,factorn)
 
 param = [];
 betas = {};
@@ -2215,72 +2221,66 @@ if nargin > 1
 end
 
 if ~isempty(betas)
-    if ~isempty(factorname)
-        % simple selection
-        uiList = { {'style' 'text' 'string' [ 'Select values for factor ' factorname ] 'fontweight' 'bold'} };
-        uiGeom = { [1] };
-        uiVert = 1;
-        for iRow = 1:factorn
-            switch iRow
-                case 1, str = '1st';
-                case 2, str = '2nd';
-                case 3, str = '3rd';
-                otherwise str = [ num2str(iRow) 'th' ];
-            end
-            uiList = [ uiList(:)' ...
-                   {{'style' 'text' 'string' [ str ' value or set of values' ] }} ...
-                   {{ 'style' 'listbox' 'string' betas 'max' 2 }} ];
-            uiGeom = [ uiGeom(:)' {[1]} {[1]} ];
-            uiVert = [ uiVert 1 4 ];
-        end
-        res = inputgui('uilist', uiList, 'geometry', uiGeom, 'geomvert', uiVert);
-        if isempty(res), return; end
-        if length(unique(cellfun(@length, res))) ~= 1
-            limo_errordlg('The number of selected value must be the same');
-            return;
-        end
-        param = res;
+    % simple selection
+    for iBeta = 1:length(betas)
+        betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
+    end
+    if strcmpi(selectmode, 'selectone')
+        strBeta = 'Pick a single beta parameters below';
+        strInds = 'Or ignore selection above and enter beta index';
+        maxval = 1;
+    elseif strcmpi(selectmode, 'selecttwo')
+        strBeta = 'Pick TWO beta parameters below';
+        strInds = 'Or ignore selection above and enter beta index';
+        maxval = 2;
     else
-        % simple selection
-        for iBeta = 1:length(betas)
-            betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
-        end
-        if strcmpi(selectmode, 'selectone')
-            strBeta = 'Pick a single beta parameters below';
-            strInds = 'Or ignore selection above and enter beta index';
-            maxval = 1;
-        elseif strcmpi(selectmode, 'selecttwo')
-            strBeta = 'Pick TWO beta parameters below';
-            strInds = 'Or ignore selection above and enter beta index';
-            maxval = 2;
-        else
-            strBeta = 'Pick one or more beta parameters below';
-            strInds = 'Or ignore selection above and enter beta indices';
-            maxval = 2;
-        end
-        uiList = { {'style' 'text' 'string' strBeta } ...
-                   { 'style' 'listbox' 'string' betas 'max' maxval } ...
-                   {'style' 'text' 'string' strInds } ...
-                   {'style' 'edit' 'string' '' } };
-        res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
-        if isempty(res), return; end
-        if ~isempty(res{2})
-            param =  eval( [ '[' res{2} ']' ] );
-        else
-            param =  res{1};
-        end
+        strBeta = 'Pick one or more beta parameters below';
+        strInds = 'Or ignore selection above and enter beta indices';
+        maxval = 2;
+    end
+    uiList = { {'style' 'text' 'string' strBeta } ...
+        { 'style' 'listbox' 'string' betas 'max' maxval } ...
+        {'style' 'text' 'string' strInds } ...
+        {'style' 'edit' 'string' '' } };
+    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
+    if isempty(res), return; end
+    if ~isempty(res{2})
+        param =  eval( [ '[' res{2} ']' ] );
+    else
+        param =  res{1};
     end
 else
     param = eval( [ '[' cell2mat(limo_inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
 end
 end
 
+%% reorder parameters
+function parameters = reorganize_params(parameters, betas, factorname, factorn)
+
+% simple selection
+str = ['Reorganize values as needed: ' factorname{1} '=rows and ' factorname{2} '=columns'];
+uiList = { {'style' 'text' 'string' str 'fontweight' 'bold'} };
+uiGeom = { [1] };
+uiVert = 1;
+for iRow = 1:length(parameters)
+    uiList = [ uiList(:)' ...
+        {{ 'style' 'popupmenu' 'string' betas(parameters) 'value' iRow }} ];
+    if mod(iRow, factorn(1)) == 0
+        uiGeom = [ uiGeom(:)' {ones(1,factorn(1))} ];
+    end
+end
+res = inputgui('uilist', uiList, 'geometry', uiGeom, 'minwidth', 800);
+if isempty(res), parameters = []; return; end
+parameters = parameters(cell2mat(res));
+end
+
 %% file checking
-function parameters = check_files(Paths,Names,gp,parameters,selectmode,factorname,factorn)
+function [parameters,betas] = check_files(Paths,Names,gp,parameters,selectmode)
 % after selecting file, check they are all the same type (betas or con)
 % return parameters that match with files (eg 1 for con, or whatever valuegetlabels'
 % for the beta file up to the number of regressors in the design matrix
 
+betas = {};
 if nargin < 4
     parameters = [];
 end
@@ -2313,26 +2313,7 @@ if gp == 1
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
             if isempty(factorname) || length(factorname) > 2
-                parameters = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
-            else
-                paramTmp = {};
-                for iFact = 1:length(factorname)
-                    paramTmp{iFact} = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}), factorname{iFact}, factorn(iFact));
-                end
-                if length(paramTmp) > 1
-                    for iParam1 = 1:length(paramTmp{1})
-                        values = paramTmp{1}{iParam1}; % these values might not be in order
-                        for iVal = 1:length(values)
-                            for iParam2 = 1:length(paramTmp{2})
-                                if any(paramTmp{2}{iParam2} == values(iVal))
-                                    pos(iVal) = iParam2;
-                                end
-                            end
-                        end
-                        paramTmp{1}{iParam1} = paramTmp{1}{iParam1}(pos); % reorder values
-                    end
-                end
-                parameters = cell2mat(paramTmp{1});
+                [parameters,betas] = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
             end
             %parameters = { [1 2 3] [4 5 6] [7 8 9] };
             if isempty(parameters)
