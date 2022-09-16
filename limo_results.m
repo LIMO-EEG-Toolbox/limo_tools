@@ -11,9 +11,15 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+limo_settings_script;
+if limo_settings.newgui
+    guiName = [mfilename '_new'];
+else
+    guiName = mfilename;
+end
 
 gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
+gui_State = struct('gui_Name',guiName, ...
     'gui_Singleton',  gui_Singleton, ...
     'gui_OpeningFcn', @limo_results_OpeningFcn, ...
     'gui_OutputFcn',  @limo_results_OutputFcn, ...
@@ -69,8 +75,7 @@ varargout{1} = 'LIMO result terminated';
 % ---------------------------------------------------------------
 function Image_results_Callback(hObject, eventdata, handles)
 
-
-[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
+[FileName,PathName,FilterIndex]=limo_get_result_file;
 if FilterIndex ~= 0
     cd(PathName);
     if contains(FileName,'tfce')
@@ -97,7 +102,7 @@ end
 % ---------------------------------------------------------------
 function Topoplot_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Result to plot');
+[FileName,PathName,FilterIndex]=limo_get_result_file;
 if FilterIndex == 1
     cd(PathName);
     if contains(FileName,'tfce')
