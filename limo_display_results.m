@@ -68,6 +68,14 @@ if nargin <= 6
     flag = 1;
 end
 
+params.Type     = Type;
+params.FileName = FileName;
+params.PathName = PathName;
+params.LIMO     = LIMO;
+params.p        = p;
+params.MCC      = MCC;
+params.flag     = flag;
+
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
 % see limo_stat_values - discontinuated empirical threshold (misleading)
 
@@ -76,15 +84,75 @@ if ischar(LIMO)
     load(LIMO, 'LIMO');
 end
 
-if LIMO.design.bootstrap == 0
-    if MCC == 2
-        errordlg2('Clustering thresholding necessitates boostrap - invalid choice');
-    elseif MCC == 3
-        errordlg2('TFCE thresholding necessitates boostrap - invalid choice');
-    elseif MCC == 4
-        errordlg2('Maximum stat thresholding necessitates bootstrap - invalid choice');
+[~,FileNameTmp,ext] = fileparts(FileName);
+if MCC == 2 || MCC == 4 % cluster and MAX correction
+    LIMO.design.bootstrap = 1;
+
+    % deal with bootstrap
+    if ~exist([PathName filesep 'H0' filesep 'H0_' FileNameTmp ext],'file')
+        if LIMO.Level == 1
+            if strncmp(FileNameTmp,'con',3) || strncmp(FileNameTmp,'ess',3)
+                limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+            else
+                if strcmp(limo_questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
+                    LIMO                  = LIMO;
+                    LIMO.design.bootstrap = 800;
+                    if handles.tfce == 1
+                        LIMO.design.tfce  = 1;
+                    end
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+                    limo_eeg(4);
+                end
+            end
+        else % LIMO.Level == 2
+            res = limo_questdlg('This option requires to compute bootstraps (this may take time)','Bootstraping data','Cancel','Continue','Continue');
+            if ~strcmp(res,'Continue')
+                return;
+            end
+            if contains(FileNameTmp,'one_sample')
+                limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
+                    str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'two_samples')
+                limo_random_robust(2,fullfile(LIMO.dir,'Yr1.mat'),...
+                    fullfile(LIMO.dir,'Yr1.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'paired_samples')
+                limo_random_robust(3,fullfile(LIMO.dir,'Yr1.mat'),...
+                    fullfile(LIMO.dir,'Yr1.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
+                LIMO = LIMO; LIMO.design.bootstrap = 1000;
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+                LIMO = LIMO; limo_eeg(4,LIMO.dir); clear LIMO
+            elseif contains(FileNameTmp,'ANOVA') && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
+                limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
+            elseif contains(FileNameTmp,'Rep_ANOVA')
+                if strncmp(FileNameTmp,'con',3)
+                    if exist([PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                        limo_contrast([PathName filesep 'Yr.mat'], ...
+                            [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 0,3);
+                    else
+                        errordlg2('there is no GLM bootstrap file for this contrast file')
+                    end
+                elseif strncmp(FileNameTmp,'ess',3)
+                    if exist([PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                        limo_contrast([PathName filesep 'Yr.mat'], ...
+                            [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 1,3);
+                    else
+                        errordlg2('there is no bootstrap file for this contrast file')
+                    end
+                else
+                    disp('Bootstraping Repeated Measure ANOVA')
+                    limo_random_robust(6,fullfile(PathName,'Yr.mat'),LIMO.data.Cat, ...
+                        LIMO.design.repeated_measure, LIMO, 'go','yes')
+                end
+            end
+        end
     end
-    MCC = 1;
+elseif MCC == 3
+    LIMO.design.tfce      = 1;
+    if ~exist([PathName filesep 'tfce' filesep 'tfce_' FileName ext],'file')
+        limo_tfce_handling(currentfile,'checkfile','yes')
+    end
+    errordlg2('TFCE thresholding necessitates boostrap - invalid choice');
 end
 
 if LIMO.design.bootstrap == 1 && LIMO.design.tfce == 0 && MCC == 3
@@ -240,7 +308,7 @@ if LIMO.Level == 1
                     if ndims(toplot)==3
                         limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
-                        limo_display_image(LIMO,toplot,mask,mytitle,flag)
+                        limo_display_image(LIMO,toplot,mask,mytitle,params)
                     end
                 end
                 
@@ -410,7 +478,7 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');
                     end
-                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',flag)
+                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',params)
                     
                     %                     figure;set(gcf,'Color','w');
                     %                     for t=1:size(Discriminant_coeff,2)
@@ -1165,14 +1233,14 @@ elseif LIMO.Level == 2
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle,flag)
+            limo_display_image(LIMO,toplot,mask,mytitle,params)
             
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
             else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
+                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,params)
             end
             
         elseif Type == 2

@@ -66,7 +66,9 @@ elseif strcmpi(LIMO.Analysis,'Frequency')
     end
 end
 
-subplot(3,3,6,'replace');
+ax = subplot(3,3,6,'replace');
+pos = get(ax, 'position');
+set(ax, 'position', [ pos(1) pos(2)+0.07 pos(3) pos(4)-0.1])
 if size(udat.toplot,2) == 1
     bar(udat.toplot(y,1)); grid on; axis([0 2 0 max(udat.toplot(:))+0.2]); ylabel('stat value')
     if isfield(LIMO,'Type')
@@ -120,9 +122,8 @@ end
 colormap(gca, udat.cc);
 set_imgaxes(LIMO,udat.scale);
 title(udat.mytitle,'Fontsize',12)
-set(h_im , 'ButtonDownFcn', 'limo_display_image_callback(gcbf, gcbo)')
 
-% image cross
+% circled region
 % -----------
 hold on;
 if strcmpi(LIMO.Analysis,'Time')
@@ -134,7 +135,8 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
 end
 set(h,'MarkerSize', 20, 'color', 'k', 'LineWidth', 3);
 
-% stats
+% stats text
+% -----------
 strStat = '';
 try
     p_values = evalin('base','p_values');
@@ -155,7 +157,9 @@ catch pvalerror
     fprintf('couldn''t figure the stats values?? %s \n',pvalerror.message)
 end
 fprintf('%s\n', strStat)
-subplot(3,3,9,'replace');
+ax = subplot(3,3,9,'replace');
+pos = get(ax, 'position');
+set(ax, 'position', [ pos(1) pos(2)+0.08 pos(3) pos(4)-0.04])
 if ~isempty(strStat)
     commaPos = find(strStat == ',');
     strStat1 = strStat(1:commaPos-1);
@@ -164,13 +168,36 @@ if ~isempty(strStat)
     text(1,3,strStat1, 'Interpreter','none', 'fontweight', 'bold');
 end
 if strcmpi(LIMO.Analysis,'Frequency')
-    text(1,1, ['Select frequency/electrode' 10 'by cliking on the image' ], 'Interpreter','none');
+    helptxt = ['Select frequency/electrode' 10 'by cliking on the image' ];
 else
-    text(1,1, ['Select time/electrode' 10 'by cliking on the image' ], 'Interpreter','none');
+    helptxt = ['Select time/electrode' 10 'by cliking on the image' ];
 end
+text(1,1, helptxt, 'Interpreter','none');
 xlim([1 10]);
-ylim([1 3]);
+ylim([-0.5 2.5]);
 axis off;
+
+% interactivity
+% -----------
+set(h_im , 'ButtonDownFcn', 'limo_display_image_callback(gcbf, gcbo)')
+
+if ~isempty(findobj(gcf, 'tag', 'pval'))
+    return
+else
+    udat = get(gcf, 'userdata');
+    if ~isempty(udat.params)
+        cb = [ 'gcbf2 = gcbf; uDat = get(gcbf2, ''userdata'');' ...
+            'pvalTmp = str2num(get(findobj(gcbf2, ''tag'', ''pval''), ''string''));' ...
+            'mccTmp  = get(findobj(gcbf2, ''tag'', ''mcc''), ''value'');' ...
+            'limo_display_results(uDat.params.Type, uDat.params.FileName, uDat.params.PathName, pvalTmp, mccTmp, uDat.params.LIMO);' ...
+            'clear uDat pvalTmp mccTmp; close(gcbf2);' ];
+        ui_p = uipanel('Title', 'Masking/statistics', 'BackgroundColor', [.66 .76 1], 'position', [0.675 0.03 0.3 0.18 ]);
+        uicontrol(ui_p, 'style', 'text', 'string', 'p<','unit', 'normalized','position', [0.1 0.6 0.2 0.3], 'backgroundcolor', [.66 .76 1]); %, [0.73 0.12 0.05 0.05],
+        uicontrol(ui_p, 'style', 'edit', 'string', num2str(udat.params.p),'tag','pval','unit', 'normalized','position', [0.3 0.6 0.3 0.3], 'callback', cb); %, [0.78 0.12 0.08 0.05])
+        options = { 'Uncorrected threshold' 'Cluster correction' 'TFCE correction' 'MAX correction' };
+        uicontrol(ui_p, 'style', 'popupmenu', 'string', options, 'value', udat.params.MCC, 'tag', 'mcc', 'unit', 'normalized','position',  [0.05 0.25 0.9 0.2], 'callback', cb); %[0.68 0.05 0.25 0.05])
+    end
+end
 
 %% set axes and labels 
 % -------------------------------------------------------------------------
