@@ -179,7 +179,7 @@ axis off;
 
 % interactivity
 % -----------
-set(h_im , 'ButtonDownFcn', 'limo_display_image_callback(gcbf, gcbo)')
+set(h_im , 'ButtonDownFcn', 'limo_display_image_callback(gcbf, gcbo)', 'tag', 'image')
 
 if ~isempty(findobj(gcf, 'tag', 'pval'))
     return
@@ -189,8 +189,10 @@ else
         cb = [ 'gcbf2 = gcbf; uDat = get(gcbf2, ''userdata'');' ...
             'pvalTmp = str2num(get(findobj(gcbf2, ''tag'', ''pval''), ''string''));' ...
             'mccTmp  = get(findobj(gcbf2, ''tag'', ''mcc''), ''value'');' ...
+            'imgTmp = findobj(gcbf2, ''tag'', ''image'');' ...
+            'set(imgTmp, ''CData'', get(imgTmp, ''CData'')*0);' ...
             'limo_display_results(uDat.params.Type, uDat.params.FileName, uDat.params.PathName, pvalTmp, mccTmp, uDat.params.LIMO);' ...
-            'clear uDat pvalTmp mccTmp; close(gcbf2);' ];
+            'clear uDat pvalTmp mccTmp imgTmp; close(gcbf2);' ];
         ui_p = uipanel('Title', 'Masking/statistics', 'BackgroundColor', [.66 .76 1], 'position', [0.675 0.03 0.3 0.18 ]);
         uicontrol(ui_p, 'style', 'text', 'string', 'p<','unit', 'normalized','position', [0.1 0.6 0.2 0.3], 'backgroundcolor', [.66 .76 1]); %, [0.73 0.12 0.05 0.05],
         uicontrol(ui_p, 'style', 'edit', 'string', num2str(udat.params.p),'tag','pval','unit', 'normalized','position', [0.3 0.6 0.3 0.3], 'callback', cb); %, [0.78 0.12 0.08 0.05])
