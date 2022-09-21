@@ -49,7 +49,9 @@ if isempty(filepath)
     filepath = pwd;
 end
 filename = [filename ext];
-assert(exist(fullfile(filepath,filename),'file'), 'file %s not found', filename)
+if ~exist(fullfile(filepath,filename),'file')
+    error('file %s not found', filename)
+end
 
 if ~exist(fullfile(filepath,'LIMO.mat'),'file')
     error('cannot find a LIMO.mat in the same filder as this file, this is required for this function to work')
