@@ -26,6 +26,22 @@ if ~isempty(obj)
     udat.y = y;
 end
 
+% ----- Colormap --------
+maxval = max(abs(max(udat.scale(:))),abs(min(udat.scale(:))));
+if isempty(udat.colorlim) 
+%     || min(abs(udat.colorlim)) < maxval
+%     if ~isempty(udat.colorlim) && min(abs(udat.colorlim)) < maxval
+%         fprintf(2, 'Color limits changed so clipped data is displayed properly');
+%     end
+    if max(udat.scale(:)) < 0
+        udat.colorlim = [-maxval 0];
+    elseif min(udat.scale(:)) > 0 
+        udat.colorlim = [0 maxval];
+    else
+        udat.colorlim = [-maxval maxval];
+    end
+end
+
 % topoplot at new time or freq
 % because x axis is already with the correct value
 if isempty(udat.timerange)
@@ -67,9 +83,9 @@ end
 % topoplot 
 % --------
 if length(LIMO.data.chanlocs) > 2
+    ax = subplot(3,4,3,'replace');
     if strcmpi(LIMO.Analysis,'Time')
         if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
-            subplot(3,4,3,'replace');
             if size(udat.toplot,2) == 1
                 topoplot(udat.toplot(:,1),LIMO.data.chanlocs,udat.opt{:});
                 title('topoplot','FontSize',12)
@@ -81,7 +97,6 @@ if length(LIMO.data.chanlocs) > 2
     
     elseif strcmpi(LIMO.Analysis,'Frequency')
         if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
-            subplot(3,4,3,'replace');
             if size(udat.toplot,2) == 1
                 topoplot(udat.toplot(:,1),LIMO.data.chanlocs,udat.opt{:});
                 title('topoplot','FontSize',12)
@@ -95,6 +110,7 @@ if length(LIMO.data.chanlocs) > 2
         udat.colorlim = clim;
     end
     clim(udat.colorlim);
+    %axcopy(ax);
 end
 
 % curve 
@@ -142,6 +158,7 @@ if ~isempty(udat.colorlim)
     ylim(udat.colorlim);
 end
 title(mytitle2,'FontSize',12);
+%axcopy(ax);
 
 % image 
 % -----
@@ -215,26 +232,32 @@ axis off;
 
 % interactivity
 % -----------
-cb_redraw = 'limo_display_image_callback(gcbf, gcbo)';
+cb_redraw     = 'limo_display_image_callback(gcbf, gcbo)';
 set(h_im , 'ButtonDownFcn', cb_redraw, 'tag', 'image')
 set(fig, 'userdata', udat);
 
+climStr = [num2str(udat.colorlim(1),2) ' ' num2str(udat.colorlim(2),2)];
 if ~isempty(findobj(gcf, 'tag', 'pval'))
-    set(findobj(gcf, 'tag', 'channel'), 'value', y);
-    set(findobj(gcf, 'tag', 'time')   , 'string', num2str(round(x)));
+    set(findobj(gcf, 'tag', 'channel')  , 'value', y);
+    set(findobj(gcf, 'tag', 'time')     , 'string', num2str(round(x)));
+    set(findobj(gcf, 'tag', 'colorlim') , 'string', climStr);
     return
 else
     udat = get(gcf, 'userdata');
     if ~isempty(udat.params)
-        cb = [ 'gcbf2 = gcbf; uDat = get(gcbf2, ''userdata'');' ...
-            'nopTmp  = get(findobj(gcbf2, ''tag'', ''nomask''), ''value'');' ...
-            'pvalTmp = str2num(get(findobj(gcbf2, ''tag'', ''pval''), ''string''));' ...
+        cb = [ ...
+            'gcbf2 = gcbf; uDat = get(gcbf2, ''userdata'');' ...
+            'nopTmp    = get(findobj(gcbf2, ''tag'', ''nomask''), ''value'');' ...
+            'pvalTmp   = str2num(get(findobj(gcbf2, ''tag'', ''pval''), ''string''));' ...
+            'mccTmp    = get(findobj(gcbf2, ''tag'', ''mcc''), ''value'');' ...
+            'imgTmp    = findobj(gcbf2, ''tag'', ''image'');' ...
+            'plot3type = get(findobj(gcbf2, ''tag'', ''model''), ''value'');' ...
+            'regressor = get(findobj(gcbf2, ''tag'', ''regressor''), ''value'');' ...
             'if nopTmp, pvalTmp = 1; else pvalTmp = 0.05; end;' ...
-            'mccTmp  = get(findobj(gcbf2, ''tag'', ''mcc''), ''value'');' ...
-            'imgTmp = findobj(gcbf2, ''tag'', ''image'');' ...
             'set(imgTmp, ''CData'', get(imgTmp, ''CData'')*0);' ...
-            'tmpRes = limo_display_results(''type'', uDat.params.Type, ''filename'', uDat.params.FileName, ''pathname'', uDat.params.PathName, ''p'', pvalTmp, ''MCC'', mccTmp, ''LIMO'', uDat.params.LIMO, ''fig'', gcbf);' ...
-            'clear uDat nopTmp pvalTmp mccTmp imgTmp tmpRes;' ];
+            'tmpRes = limo_display_results(''type'', uDat.params.Type, ''filename'', uDat.params.FileName, ''pathname'', uDat.params.PathName, ''p'', pvalTmp, ''MCC'', mccTmp, ''LIMO'', uDat.params.LIMO, ''fig'', gcbf, ''plot3type'', plot3type, ''regressor'', regressor-1);' ...
+            'clear uDat nopTmp pvalTmp mccTmp imgTmp tmpRes plot3type regressor;' ];
+%            'tmpRes = limo_display_results(''type'', uDat.params.Type, ''filename'', uDat.params.FileName, ''pathname'', uDat.params.PathName, ''p'', pvalTmp, ''MCC'', mccTmp, ''LIMO'', uDat.params.LIMO, ''fig'', gcbf);' ...
         
         % plot what?
         add = 0.03;
@@ -251,10 +274,16 @@ else
                 [0.05  0.50+add 0.9 0.3] ...
                 [0.05  0.25+add 0.9 0.3] [0.45  0.32+add 0.52 0.25] ...
                 [0.05  0.00+add 0.9 0.3] [0.72  0.15+add 0.25 0.17] };
+        popupData = { 'Statistics' };
         if isfield(LIMO.data, 'chanlocs') popupValues  = { LIMO.data.chanlocs.labels }; else popupValues  = { LIMO.data.expected_chanlocs.labels }; end 
-        popupModel =  { 'Original data' 'Modeled data' 'Ajusted data' };
-        uicontrol(ui_w, 'style', 'popupmenu',  'string', popupValues,  'unit', 'normalized','position', pos{1}, 'tag','channels','callback', cb); 
-        uicontrol(ui_w, 'style', 'popupmenu',  'string', popupModel ,  'unit', 'normalized','position', pos{2}, 'tag','channels','callback', cb); 
+        if isfield(LIMO.design, 'labels') popupData   = { popupData{:} LIMO.design.labels.description }; end 
+        %if ~isempty(popupData) && contains(popupData{end}, 'onstant') popupData(end) = []; end
+        if isempty(udat.regressor) udat.regressor = 0; end
+        if isempty(udat.plot3type) udat.plot3type = 1; end
+        popupModel  = { 'Original data' 'Modeled data' 'Ajusted data' };
+        enableModel = fastif(udat.regressor == 0, 'off', 'on');
+        uicontrol(ui_w, 'style', 'popupmenu',  'string', popupData,    'unit', 'normalized','position', pos{1}, 'tag','regressor','callback', cb, 'value', udat.regressor+1); 
+        uicontrol(ui_w, 'style', 'popupmenu',  'string', popupModel ,  'unit', 'normalized','position', pos{2}, 'tag','model','callback', cb, 'value', udat.plot3type, 'enable', enableModel); 
         uicontrol(ui_w, 'style', 'text',       'string', 'Channel',    'unit', 'normalized','position', pos{3}, 'backgroundcolor', [.66 .76 1], 'horizontalalignment', 'left');
         uicontrol(ui_w, 'style', 'popupmenu',  'string', popupValues,  'unit', 'normalized','position', pos{4}, 'tag','channel','callback', cb_redraw, 'value', y); 
         uicontrol(ui_w, 'style', 'text',       'string', 'Time (millisec)' , 'unit', 'normalized','position', pos{5}, 'backgroundcolor', [.66 .76 1], 'horizontalalignment', 'left');
@@ -264,7 +293,6 @@ else
         pos = { [0.05 0.5  0.6 0.4] [0.55 0.55  0.42 0.35] ...
                 [0.05 0.1  0.6 0.4] [0.55 0.15  0.42 0.35] };
         tlimStr = [num2str(round(udat.timerange(1))) ' ' num2str(round(udat.timerange(end)))];
-        climStr = [num2str(udat.colorlim(1),2) ' ' num2str(udat.colorlim(2),2)];
         uicontrol(ui_l, 'style', 'text',       'string', 'Time range' ,'unit', 'normalized','position', pos{1}, 'backgroundcolor', [.66 .76 1], 'horizontalalignment', 'left');
         uicontrol(ui_l, 'style', 'edit',       'string', tlimStr,      'unit', 'normalized','position', pos{2}, 'tag','timerange','callback', cb_redraw); 
         uicontrol(ui_l, 'style', 'text',       'string', 'Color lim.' ,'unit', 'normalized','position', pos{3}, 'backgroundcolor', [.66 .76 1], 'horizontalalignment', 'left');
@@ -332,17 +360,4 @@ else
     end
 end
 
-% ----- Colormap --------
-try
-    maxval = max(abs(max(scale(:))),abs(min(scale(:))));
-    if max(scale(:)) < 0
-        caxis([-maxval 0])
-    elseif min(scale(:)) > 0 
-        caxis([0 maxval])
-    else
-        caxis([-maxval maxval])
-    end
-catch caxiserror
-    fprintf('axis issue: %s\n',caxiserror.message)
-end
 

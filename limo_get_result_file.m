@@ -14,17 +14,33 @@ FilterIndex = 0;
 FileName = 0;
 PathName = 0;
 
+% level 1 or level 2
+options = { 'Level 1', 'Level 2'};
+res = limo_questdlg('Plot level 1 (subject) or level 2 (group) analysis file?', 'Result file', options{:}, options{end});
+if isempty(res), return; end
+if contains(res, options{1}) % cancel
+    level = 1;
+    strGUI = 'Pick a result file for level 1 analysis (individual subject)';
+else
+    level = 2;
+    strGUI = 'pick a result file for level 2 analysis (group analysis)';
+end
+
 limo_settings_script;
 if limo_settings.newgui
     cd(limo_settings.workdir);
 end
-dirContent1 = dir('AN(C)OVA*/*.mat');
-dirContent2 = dir('one_sample_ttest*/*.mat');
-dirContent3 = dir('one_sample_ttest*/*/*.mat');
-dirContent4 = dir('paired_ttest*/*.mat');
-dirContent5 = dir('two_samples_ttest*/*.mat');
-dirContent6 = dir('regression*/*.mat');
-dirContent  = [dirContent1;dirContent2;dirContent3;dirContent4;dirContent5;dirContent6];
+if level == 1
+    dirContent = dir('sub*/eeg/ses*/*/*.mat');
+else
+    dirContent1 = dir('AN(C)OVA*/*.mat');
+    dirContent2 = dir('one_sample_ttest*/*.mat');
+    dirContent3 = dir('one_sample_ttest*/*/*.mat');
+    dirContent4 = dir('paired_ttest*/*.mat');
+    dirContent5 = dir('two_samples_ttest*/*.mat');
+    dirContent6 = dir('regression*/*.mat');
+    dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;dirContent5;dirContent6];
+end
 
 % remove Yr and LIMO files
 for iFile = length(dirContent):-1:1
@@ -54,8 +70,8 @@ if isempty(dirContent)
         [FileName,PathName,FilterIndex]=uigetfile('*.*','Select Result to plot');
     end
 else
-    uiList = { {'style' 'text' 'string' 'Pick a result file' } ...
-        { 'style' 'popupmenu' 'string' {dirContent.fullname}  'value', length(dirContent) }};
+    uiList = { {'style' 'text'       'string'  strGUI } ...
+               { 'style' 'popupmenu' 'string' {dirContent.fullname}  'value', 1 } };
     res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
     if ~isempty(res)
         FileName = dirContent(res{1}).name;

@@ -208,7 +208,6 @@ if isempty(g.fig)
     udat.timerange = [];
     udat.y        = e;
     if ~isempty(timevect) udat.x = timevect(f); else udat.x = freqvect(f); end    
-    
 else
     fig = g.fig;
     udat = get(fig, 'userdata');
@@ -220,17 +219,19 @@ end
 %% update with mouse clicks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opt   = {'maplimits','absmax','verbose','off','colormap', limo_color_images(toplot)};
-udat.opt      = opt;
-udat.cc       = cc;
-udat.LIMO     = LIMO;
-udat.title    = g.title;
-udat.scale    = scale;
-udat.params   = g.params; % parameters to limo_display_results
-udat.ratio = ratio;
-udat.toplot = toplot;
+udat.regressor = g.params.regressor;
+udat.plot3type = g.params.plot3type;
+udat.opt       = opt;
+udat.cc        = cc;
+udat.LIMO      = LIMO;
+udat.title     = g.title;
+udat.scale     = scale;
+udat.params    = g.params; % parameters to limo_display_results
+udat.ratio     = ratio;
+udat.toplot    = toplot;
+udat.timevect  = timevect;
+udat.freqvect  = freqvect;
 udat.frame_zeros = frame_zeros;
-udat.timevect = timevect;
-udat.freqvect = freqvect;
 
 set(fig, 'userdata', udat);
 limo_display_image_callback(fig, []);

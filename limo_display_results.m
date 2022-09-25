@@ -84,17 +84,25 @@ if isfield(g, 'MCC')      MCC      = g.MCC; end
 if isfield(g, 'LIMO')     LIMO     = g.LIMO; end
 if isfield(g, 'flag')     flag     = g.flag; end
 
+if isequal(g.regressor, 0), g.regressor = []; end
+if ~isempty(g.plot3type)
+    extra = {'Original','Modelled','Adjusted'};
+    extra = extra{g.plot3type};
+end
 res = '';
 toplot = load(fullfile(PathName,FileName));
 toplot = toplot.(cell2mat(fieldnames(toplot)));
 
-params.Type     = Type;
-params.FileName = FileName;
-params.PathName = PathName;
-params.LIMO     = LIMO;
-params.p        = p;
-params.MCC      = MCC;
-params.flag     = flag;
+params.Type      = Type;
+params.FileName  = FileName;
+params.PathName  = PathName;
+params.LIMO      = LIMO;
+params.p         = p;
+params.MCC       = MCC;
+params.flag      = flag;
+params.plot3type = g.plot3type;
+params.regressor = g.regressor;
+params.flag      = flag;
 
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
 % see limo_stat_values - discontinuated empirical threshold (misleading)
@@ -304,6 +312,12 @@ if LIMO.Level == 1
                     end
                 end
                 
+                % replace plotting value with user regressor selection
+                if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+                    if ~exist('freq_index', 'var'), freq_index = []; end
+                    toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+                end
+
                 % -------------------------------------------------------------------------
                 %              Actual plot takes place here
                 % -------------------------------------------------------------------------
@@ -320,7 +334,7 @@ if LIMO.Level == 1
                         LIMO.cache.fig.title      = mytitle;
                         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                     end
-                    
+
                     if ndims(toplot)==3
                         limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
@@ -494,7 +508,14 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');
                     end
-                    res = limo_display_image('LIMO',LIMO,'toplot',abs(Discriminant_coeff(:,:,1)),'mask',abs(Discriminant_coeff(:,:,1)),'title', 'Discriminant coefficients Z1', 'params', params, 'fig', g.fig);
+                    % replace plotting value with user regressor selection
+                    if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+                        if ~exist('freq_index', 'var'), freq_index = []; end
+                        toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+                    else
+                        toplot = abs(Discriminant_coeff(:,:,1));
+                    end
+                    res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',abs(Discriminant_coeff(:,:,1)),'title', 'Discriminant coefficients Z1', 'params', params, 'fig', g.fig);
                     %res = limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',params);
                     
                     %                     figure;set(gcf,'Color','w');
@@ -1246,7 +1267,13 @@ elseif LIMO.Level == 2
                 disp('Cached data in LIMO.mat cannot be updated - LIMO dir doesn''t exist (likely moved files)')
             end
         end
-        
+
+        % replace toplot by user selection
+        if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+            if ~exist('freq_index', 'var'), freq_index = []; end
+            toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+        end
+
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
