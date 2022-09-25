@@ -30,6 +30,7 @@ FileName  = varargin{1}; % Name of the file selected
 p         = varargin{2}; % p value
 MCC       = varargin{3}; % multiple comparison option
 LIMO      = varargin{4}; % LIMO.mat
+plotFlag  = false;
 
 % check the appropriate method is used
 % -----------------------------------
@@ -243,9 +244,9 @@ elseif ~isempty(M) && MCC == 2
             
             % finally get cluster mask and corrected p-values
             if contains(FileName,'ttest') || contains(FileName,'LI_Map')
-                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p); % mask and cluster p values
+                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
             else
-                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
             end
                 
             Nclust   = unique(mask); 
@@ -286,7 +287,7 @@ elseif ~isempty(M) && MCC == 4 % Stat max
                 end
             end
             clear H0_data;
-            [mask,M] = limo_max_correction(abs(M),abs(bootM),p);
+            [mask,M] = limo_max_correction(abs(M),abs(bootM),p,plotFlag);
             mytitle  = sprintf('%s: correction by max',titlename);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
@@ -305,7 +306,7 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             score    = score.(cell2mat(fieldnames(score)));
             H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
             H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
-            [mask,M] = limo_max_correction(score,H0_score,p);
+            [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
             mytitle  = sprintf('%s: correction using TFCE',titlename);
         catch ME
             errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
@@ -374,9 +375,9 @@ if contains(FileName,'Rep_ANOVA')
                 end
                 
                 if size(M,1) == 1
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p); % temporal clustering
+                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p,plotFlag); % temporal clustering
                 else
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,2,p); % spatial-temporal clustering
+                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,2,p,plotFlag); % spatial-temporal clustering
                 end
                 Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
@@ -425,7 +426,7 @@ if contains(FileName,'Rep_ANOVA')
                     end
                 end
                 
-                [mask,M] = limo_max_correction(abs(M),abs(bootT),p); % threshold max absolute T values
+                [mask,M] = limo_max_correction(abs(M),abs(bootT),p,plotFlag); % threshold max absolute T values
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     mytitle = sprintf('Interaction correction by T max');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
@@ -454,7 +455,7 @@ if contains(FileName,'Rep_ANOVA')
                 tfce_data    = tfce_data.(cell2mat(fieldnames(tfce_data)));
                 H0_tfce_data = load(H0_tfce_data);
                 H0_tfce_data = H0_tfce_data.(cell2mat(fieldnames(H0_tfce_data)));
-                [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p);
+                [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p,plotFlag);
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     mytitle = sprintf('Interaction correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)

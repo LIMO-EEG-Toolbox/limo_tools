@@ -60,7 +60,7 @@ H0filename   = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
 
 if strcmpi(checkfile,'yes')
     if exist(tfce_file,'file')
-        answer = questdlg('tfce file already exist - overwrite?','data check','Yes','No','Yes');
+        answer = questdlg('tfce file already exist - overwrite?','data check','No','Yes','Yes');
         if strcmp(answer,'Yes')
             LIMO.design.tfce = 1;
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')

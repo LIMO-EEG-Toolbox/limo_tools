@@ -163,7 +163,7 @@ else
 end
 clear all_maps
 
-% LI curve is the LI per threashold
+% LI curve is the LI per threshold
 % A tfce map contains the weighted clusters over space and frames, we just do
 % the mean tfce values (these are the ones surviving a given threshold) for
 % left and right hemispheres and compute LI. Just like for a tfce score,

@@ -35,7 +35,7 @@ function [X, nb_conditions, nb_interactions, nb_continuous] = limo_design_matrix
 %   R2.mat   = NaNs - the model fit (same size as Yr)
 %   Beta.mat = NaNs - the beta values (dim: electrode,frame, number of paramters in the model)
 %
-% See also LIMO_IMPORT)T, LIMO_IMPORT_F, LIMO_EEG, LIMO_GLM
+% See also LIMO_IMPORT, LIMO_IMPORT_F, LIMO_EEG, LIMO_GLM
 %
 % Cyril Pernet / Guillaume Rousselet v4 27/04/2009
 % Cyril Pernet v5 29/12/2010 % removed nb_items, updated for several factors

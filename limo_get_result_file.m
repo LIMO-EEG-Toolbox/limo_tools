@@ -10,18 +10,21 @@ Names = {};
 Paths = {};
 Files = {};
 txtFile = '';
+FilterIndex = 0;
+FileName = 0;
+PathName = 0;
 
 limo_settings_script;
 if limo_settings.newgui
     cd(limo_settings.workdir);
 end
 dirContent1 = dir('AN(C)OVA*/*.mat');
-dirContent1 = dir('AN(C)OVA*/*.mat');
 dirContent2 = dir('one_sample_ttest*/*.mat');
-dirContent3 = dir('paired_ttest*/*.mat');
-dirContent4 = dir('two_samples_ttest*/*.mat');
-dirContent5 = dir('regression*/*.mat');
-dirContent  = [dirContent1;dirContent2;dirContent3;dirContent4;dirContent5];
+dirContent3 = dir('one_sample_ttest*/*/*.mat');
+dirContent4 = dir('paired_ttest*/*.mat');
+dirContent5 = dir('two_samples_ttest*/*.mat');
+dirContent6 = dir('regression*/*.mat');
+dirContent  = [dirContent1;dirContent2;dirContent3;dirContent4;dirContent5;dirContent6];
 
 % remove Yr and LIMO files
 for iFile = length(dirContent):-1:1

@@ -1,4 +1,4 @@
-function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
+function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 
 % This function displays various results
 % The arguments specify cases for the
@@ -42,18 +42,29 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % ----------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
+if ~ischar(Type)
+    options = { 'type', Type, 'filename', FileName, 'pathname', PathName, 'p', p, 'MCC', MCC, 'LIMO', LIMO, varargin{:} };
+else 
+    options = { Type FileName PathName p MCC LIMO flag varargin{:} };
+end
+
 try
-    options = varargin;
-    if ~isempty( varargin )
+    if ~isempty( options )
         for i = 1:2:numel(options)
             g.(options{i}) = options{i+1};
         end
-    else
-        g = [];
     end
 catch
-    disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
+    error('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
 end
+
+try g.type;      catch, g.type     = 1;  end % 2-D image
+try g.filename;  catch, g.filename = [];  end % No default values
+try g.pathname;  catch, g.pathname = [];  end % No default values
+try g.p;         catch, g.p        = 0.05;  end 
+try g.MCC;       catch, g.MCC      = 1;   end % No correction
+try g.LIMO;      catch, g.LIMO     = [];  end % No default values
+try g.flag;      catch, g.flag     = 1;  end % interactive figure
 
 try g.channels;  catch, g.channels  = [];  end % No default values
 try g.regressor; catch, g.regressor = [];  end % No default values
@@ -62,11 +73,20 @@ try g.sumstats;  catch, g.sumstats  = [];  end % No default values
 try g.restrict;  catch, g.restrict  = [];  end % No default values
 try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
 
+try g.fig;       catch, g.fig       = [];  end % Existing figure
+
+% decode inputs given as structure
+if isfield(g, 'type')     Type     = g.type; end
+if isfield(g, 'filename') FileName = g.filename; end
+if isfield(g, 'pathname') PathName = g.pathname; end
+if isfield(g, 'p')        p        = g.p; end
+if isfield(g, 'MCC')      MCC      = g.MCC; end
+if isfield(g, 'LIMO')     LIMO     = g.LIMO; end
+if isfield(g, 'flag')     flag     = g.flag; end
+
+res = '';
 toplot = load(fullfile(PathName,FileName));
 toplot = toplot.(cell2mat(fieldnames(toplot)));
-if nargin <= 6
-    flag = 1;
-end
 
 params.Type     = Type;
 params.FileName = FileName;
@@ -113,11 +133,11 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
                     str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'two_samples')
-                limo_random_robust(2,fullfile(LIMO.dir,'Yr1.mat'),...
-                    fullfile(LIMO.dir,'Yr1.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
+                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'paired_samples')
-                limo_random_robust(3,fullfile(LIMO.dir,'Yr1.mat'),...
-                    fullfile(LIMO.dir,'Yr1.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
+                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
                 LIMO = LIMO; LIMO.design.bootstrap = 1000;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
@@ -304,7 +324,7 @@ if LIMO.Level == 1
                     if ndims(toplot)==3
                         limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
-                        limo_display_image(LIMO,toplot,mask,mytitle,params)
+                        res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
                     end
                 end
                 
@@ -474,7 +494,8 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');
                     end
-                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',params)
+                    res = limo_display_image('LIMO',LIMO,'toplot',abs(Discriminant_coeff(:,:,1)),'mask',abs(Discriminant_coeff(:,:,1)),'title', 'Discriminant coefficients Z1', 'params', params, 'fig', g.fig);
+                    %res = limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',params);
                     
                     %                     figure;set(gcf,'Color','w');
                     %                     for t=1:size(Discriminant_coeff,2)
@@ -1229,14 +1250,15 @@ elseif LIMO.Level == 2
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle,params)
+            % res = limo_display_image(LIMO,toplot,mask,mytitle,params);
+            res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
             
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
             else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,params)
+                res = limo_display_image('LIMO',LIMO,'toplot',squeeze(toplot),'mask',squeeze(mask),'title', mytitle, 'params', params, 'fig', g.fig);
             end
             
         elseif Type == 2

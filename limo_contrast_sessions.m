@@ -71,7 +71,8 @@ else
 end
 
 % since those are sessions, they must have a common folder location
-LIMO.dir              = fileparts(LIMO1.dir(1:find(LIMO1.dir ~= LIMO2.dir)-1));
+minLen = min(length(LIMO1.dir), length(LIMO2.dir));
+LIMO.dir              = fileparts(LIMO1.dir(1:find(LIMO1.dir(1:minLen) ~= LIMO2.dir(1:minLen) )-1));
 LIMO.data             = rmfield(LIMO.data,'data');
 LIMO.data.data{1}     = fullfile(LIMO1.dir,'Yr.mat');
 LIMO.data.data{2}     = fullfile(LIMO2.dir,'Yr.mat');

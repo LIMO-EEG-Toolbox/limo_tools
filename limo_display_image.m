@@ -1,16 +1,16 @@
-function limo_display_image(LIMO,toplot,mask,mytitle,params)
+function res = limo_display_image(LIMO,toplot,mask,mytitle,params,varargin)
 
 % This function displays images with a intensity plotted as function of
 % time or frequency (x) and electrodes (y) - for ERSP it precomputes what
 % needs to be plotted and call LIMO_display_image_tf
 %
-% FORMAT: limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
+% FORMAT: limo_display_image(LIMO,toplot,mask,title,dynamic)
 %
 % INPUTS:
 %   LIMO.mat  = Name of the file to image
 %   toplot    = 2D matrix to plot (typically t/F values)
 %   mask      = areas for which to show data (to show all mask = ones(size(topolot))
-%   mytitle   = title to show
+%   title     = title to show
 %   dynamic   = set to 0 for no interaction (default is 1)
 %
 % The colour scales are from https://github.com/CPernet/brain_colours
@@ -25,13 +25,37 @@ function limo_display_image(LIMO,toplot,mask,mytitle,params)
 % ----------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if nargin < 5
-    params = [];
+if ~ischar(LIMO)
+    options = { 'LIMO', LIMO, 'toplot', toplot, 'mask', mask, 'title', mytitle, 'params', params, varargin{:} };
+else 
+    options = { LIMO,toplot,mask,mytitle,params varargin{:} };
 end
+
+try
+    if ~isempty( options )
+        for i = 1:2:numel(options)
+            g.(options{i}) = options{i+1};
+        end
+    end
+catch
+    error('limo_display_image() error: calling convention {''key'', value, ... } error'); return;
+end
+
+try g.LIMO;      catch, g.LIMO     = [];  end % No default values
+try g.toplot;    catch, g.toplot   = [];  end % No default values
+try g.mask;      catch, g.mask     = [];  end % interactive figure
+try g.title;     catch, g.title    = '';  end % interactive figure
+try g.params;    catch, g.params   = [];  end % interactive figure
+try g.fig;       catch, g.fig      = [];  end % Existing figure
+
+LIMO    = g.LIMO;
+toplot  = g.toplot;
+mask    = g.mask;
 
 %% get some informations for the plots
 
 % what do we plot?  the data (toplot) masked (tpically of significance)
+res = '';
 scale           = toplot.*single(mask>0);  
 scale(scale==0) = NaN;   
 cc              = limo_color_images(scale); % get a color map commensurate to that
@@ -160,37 +184,54 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
     end
     
 else
-    error('LIMO.Analysis unspecfied')
+    error('LIMO.Analysis unspecified')
 end
 
-if isempty(mytitle)
+if isempty(g.title)
     if isfield(LIMO.design,'name')
-        mytitle = LIMO.design.name;
+        g.title = LIMO.design.name;
     else
-        mytitle = ' ';
+        g.title = ' ';
     end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fig = figure('Color','w','InvertHardCopy','off');
+if isempty(g.fig)
+    fig = figure('Color','w','InvertHardCopy','off');
+    pos = get(fig, 'position');
+    set(gcf, 'position', [pos(1:2) pos(3)*1.3 pos(4)]);
+
+    % figure parameters
+    udat.colorlim = [];
+    udat.timerange = [];
+    udat.y        = e;
+    if ~isempty(timevect) udat.x = timevect(f); else udat.x = freqvect(f); end    
+    
+else
+    fig = g.fig;
+    udat = get(fig, 'userdata');
+    clf(fig)
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% update with mouse clicks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-opt   = {'maplimits','maxmin','verbose','off','colormap', limo_color_images(toplot)};
-
+opt   = {'maplimits','absmax','verbose','off','colormap', limo_color_images(toplot)};
+udat.opt      = opt;
+udat.cc       = cc;
+udat.LIMO     = LIMO;
+udat.title    = g.title;
+udat.scale    = scale;
+udat.params   = g.params; % parameters to limo_display_results
 udat.ratio = ratio;
 udat.toplot = toplot;
 udat.frame_zeros = frame_zeros;
 udat.timevect = timevect;
 udat.freqvect = freqvect;
-udat.opt      = opt;
-udat.cc       = cc;
-udat.LIMO     = LIMO;
-udat.mytitle  = mytitle;
-udat.scale    = scale;
-udat.params   = params; % parameters to limo_display_results
+
 set(fig, 'userdata', udat);
-limo_display_image_callback(fig, [], timevect(f), e);
+limo_display_image_callback(fig, []);
+res = true;

@@ -300,24 +300,16 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                     end
                     warning('covariate adjusted for delete subjects');
                 catch ME
-                    if exist('errordlg2','file')
-                        errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
-                    else
-                        errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
-                    end
+                    limo_errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
                     fprintf('%s',ME.message); return
                 end
             end
-            if exist('errordlg2','file')
-                errordlg2(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
-            else
-                errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
-            end
+            limo_errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
         elseif sum(isnan(X(:))) ~= 0
             if sum(sum(isnan(X),2)) == 1
-                warning('loaded regressor(s) include a NaN and the corresponding subject is removed')
+                limo_warndlg('loaded regressor(s) include a NaN and the corresponding subject is removed')
             else
-                warning('loaded regressor(s) include NaN(s) - corresponding subjects are removed')
+                limo_warndlg('loaded regressor(s) include NaN(s) - corresponding subjects are removed')
             end
             
             sub_toremove = find(sum(isnan(X),2));
@@ -359,6 +351,9 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 tmp_data          = squeeze(data(:,:,:,parameters(i),:));
             else
                 tmp_data          = squeeze(data(:,:,parameters(i),:));
+            end
+            if size(data,1) == 1
+                tmp_data = reshape(tmp_data, [ 1 size(tmp_data)]);
             end
         end
 

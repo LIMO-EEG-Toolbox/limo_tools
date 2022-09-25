@@ -5,4 +5,4 @@ if exist('errordlg2','file')
 else
     errordlg(varargin{1});
 end
-error(varargin{1})
+%error(varargin{1})
