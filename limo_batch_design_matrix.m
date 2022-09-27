@@ -13,35 +13,15 @@ function limo_batch_design_matrix(LIMOfile)
 global EEGLIMO
 LIMO = load(LIMOfile);
 LIMO = LIMO.LIMO;
-
-
-filename_limo = fullfile(LIMO.data.data_dir, LIMO.data.data);
-doreload      = false;
-
-% check whether the data needs to be reloaded from disk. This is needed
-% when there's a mismatch between the files in the EEGLIMO vs. the LIMO
-% struct, or when EEGLIMO is empty
 if exist('EEGLIMO','var') && ~isempty(EEGLIMO)
-    filename_eeglimo = fullfile(EEGLIMO.filepath, EEGLIMO.filename);
-    if ~strcmp(filename_limo, filename_eeglimo)
-        doreload = true;
+    if ~strcmp([LIMO.data.data_dir filesep LIMO.data.data],[EEGLIMO.filepath filesep EEGLIMO.filename])
+        cd (LIMO.data.data_dir);
+        disp('reloading data ..');
+        EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
     end
 else
-  doreload = true;
-end
-
-if doreload
     disp('reloading data ..');
-    [~,~,ext]=fileparts(filename_limo);
-    if strcmpi(ext,'.set')
-        EEGLIMO = pop_loadset(filename_limo); % eeglab
-    elseif strcmpi(ext,'.mat')
-        EEGLIMO = load(filename_limo); % fieldtrip
-        EEGLIMO = EEGLIMO.(cell2mat(fieldnames(EEGLIMO)));
-        if strcmp(ft_datatype(EEGLIMO),'unknown')
-            error('ERROR: neither EEGLAB nor FieldTrip input file!')
-        end
-    end
+    EEGLIMO=pop_loadset([LIMO.data.data_dir filesep LIMO.data.data]);
 end
 
 if strcmp(LIMO.Analysis,'Time')
@@ -105,13 +85,9 @@ if strcmp(LIMO.Analysis,'Time')
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
-        if ~exist('erp','file')  
-            % load from FieldTrip
-            signal = permute(EEGLIMO.trial,[2,3,1]); % channels * time * trials
-            % signal = cell2mat(permute(EEGLIMO.trial,[1,3,2]));
-        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'daterp')
             if ~iscell(EEGLIMO.etc.datafiles.daterp) && strcmp(EEGLIMO.etc.datafiles.daterp(end-3:end),'.mat')
-                signal = load(EEGLIMO.etc.datafiles.daterp, '-mat');
+                signal = load('-mat', EEGLIMO.etc.datafiles.daterp);
                 if isstruct(signal)
                     signal = signal.(cell2mat(fieldnames(signal)));
                 end
@@ -207,10 +183,7 @@ elseif strcmp(LIMO.Analysis,'Frequency')
         end
     else % channels
         spec = dir(fullfile(LIMO.data.data_dir,'*.datspec'));
-        if ~exist(spec,'file')  
-            % load from FieldTrip
-            signal = permute(EEGLIMO.powspctrm,[2,3,1]); % channels * freq * trials
-        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datspec')
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datspec')
             if ~iscell(EEGLIMO.etc.datafiles.datspec) && strcmp(EEGLIMO.etc.datafiles.datspec(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.datspec);
                 if isstruct(signal)
@@ -313,11 +286,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
         end
     else % channels
         if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
-           if ~exist(EEGLIMO.etc.datafiles.dattimef,'file')  
-            % load from FieldTrip
-            signal = permute(EEGLIMO.powspctrm,[2,3,4,1]); % channels * freq * time * trials
-           else
-           
+            signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
             if ~iscell(EEGLIMO.etc.datafiles.dattimef) && strcmp(EEGLIMO.etc.datafiles.dattimef(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.dattimef);
                 if isstruct(signal)
@@ -338,7 +307,6 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                     end
                     signal = limo_concatcells(signal); clear EEGLIMO
                 end
-            end
             end
         elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datersp')
             [~,~,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
@@ -370,7 +338,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
 end
 
 clear ALLEEGLIMO
-save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO');
+cd (LIMO.dir) ; save LIMO LIMO
 
 % make the design matrix
 disp('computing design matrix');
@@ -417,9 +385,9 @@ else
     LIMO.design.name = 'Mean';
 end
 LIMO.design.status = 'to do';
-save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO');
-clear Y
+save LIMO LIMO; clear Y
 
+end
 % -------------------------------------------------------------------------
 function file_fullpath = rel2fullpath(studypath,filepath)
 % Return full path if 'filepath' is a relative path. The output format will
@@ -455,4 +423,5 @@ for i = nit:-1:1
             file_fullpath = pathtmp;
         end
     end
+end
 end
