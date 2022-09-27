@@ -470,9 +470,9 @@ if handles.bootstrap == 1 && ~strcmp(handles.type,'Components')
             defaults.chanloc = test; disp('channel location loaded');
         else
             if ~exist('warndlg2',file)
-                warndlg('this file is not recognize as a channel location file or informations are missing','file error')
+                warndlg('This file is not recognized as a channel location file or information is missing','file error')
             else
-                warndlg2('this file is not recognize as a channel location file or informations are missing','file error')
+                warndlg2('This file is not recognized as a channel location file or information is missing','file error')
             end
         end
     else
@@ -483,9 +483,9 @@ handles.defaults = defaults;
 
 if isempty(handles.CatName) && isempty(handles.ContName)
     if ~exist('warndlg2',file)
-        warndlg('no regressors loaded, only the mean will be created','no regressors')
+        warndlg('No regressors loaded, only the mean will be created','no regressors')
     else
-        warndlg2('no regressors loaded, only the mean will be created','no regressors')
+        warndlg2('No regressors loaded, only the mean will be created','no regressors')
     end
 end
 uiresume

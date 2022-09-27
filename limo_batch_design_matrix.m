@@ -63,7 +63,9 @@ if strcmp(LIMO.Analysis,'Time')
                         if isstruct(signal{d}); signal{d}  = limo_struct2mat(signal{d}); end
                     end
                 end
-                signal = limo_concatcells(signal);
+                if iscell(signal)
+                    signal = limo_concatcells(signal);
+                end
             end
         else
             signal = eeg_getdatact(EEGLIMO,'component',1:size(EEGLIMO.icawinv,2));
@@ -72,32 +74,34 @@ if strcmp(LIMO.Analysis,'Time')
         
         % 2nd if cluster present, reorder
         if isfield(LIMO.data,'cluster')
-            try
-                STUDY = evalin('base','STUDY');
-            catch
-                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
-            end
-            nb_clusters     = size(STUDY.cluster(1).child,2);
-            nb_subjects     = length(STUDY.design(STUDY.currentdesign).cases.value'); % length({STUDY.datasetinfo.subject}); % ;
-            Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
-            subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
-            newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
-            for c=1:nb_clusters
-                n = length(Cluster_matrix.clust(c).subj);
-                tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
-                if ~isempty(tmp)
-                    which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
-                    if length(which_ics)==1
-                        newY(c,:,:) =  Y(which_ics,:,:);
-                    else
-                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights*EEGLIMO.icasphere,EEGLIMO.icawinv,which_ics);
+            if LIMO.data.cluster ~=0
+                try
+                    STUDY = evalin('base','STUDY');
+                catch
+                    error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
+                end
+                nb_clusters     = size(STUDY.cluster(1).child,2);
+                nb_subjects     = length(STUDY.design(STUDY.currentdesign).cases.value'); % length({STUDY.datasetinfo.subject}); % ;
+                Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+                dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+                data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+                current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
+                subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
+                newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
+                for c=1:nb_clusters
+                    n = length(Cluster_matrix.clust(c).subj);
+                    tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
+                    if ~isempty(tmp)
+                        which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
+                        if length(which_ics)==1
+                            newY(c,:,:) =  Y(which_ics,:,:);
+                        else
+                            newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights*EEGLIMO.icasphere,EEGLIMO.icawinv,which_ics);
+                        end
                     end
                 end
+                Y = newY; clear newY;
             end
-            Y = newY; clear newY;
         end
     else % channels
         erp = dir(fullfile(LIMO.data.data_dir,'*.daterp'));
@@ -170,33 +174,36 @@ elseif strcmp(LIMO.Analysis,'Frequency')
             signal = eeg_getdatact(EEGLIMO,'component',1:length(EEGLIMO.icawinv));
         end
         Y = signal(:,LIMO.data.trim1:LIMO.data.trim2,:); clear signal
+        
         if isfield(LIMO.data,'cluster')
-            try
-                STUDY = evalin('base','STUDY');
-            catch
-                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
-            end
-            nb_clusters     = size(STUDY.cluster(1).child,2);
-            nb_subjects     = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
-            Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
-            subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
-            newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
-            for c=1:nb_clusters
-                n = length(Cluster_matrix.clust(c).subj);
-                tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
-                if ~isempty(tmp)
-                    which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
-                    if length(which_ics)==1
-                        newY(c,:,:) =  Y(which_ics,:,:);
-                    else
-                        newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+            if LIMO.data.cluster ~=0
+                try
+                    STUDY = evalin('base','STUDY');
+                catch
+                    error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
+                end
+                nb_clusters     = size(STUDY.cluster(1).child,2);
+                nb_subjects     = length({STUDY.datasetinfo.subject}); % length(unique({STUDY.datasetinfo.subject}));
+                Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+                dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+                data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+                current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
+                subject_name    = {STUDY.datasetinfo(current_subject(1)).subject};
+                newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
+                for c=1:nb_clusters
+                    n = length(Cluster_matrix.clust(c).subj);
+                    tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
+                    if ~isempty(tmp)
+                        which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
+                        if length(which_ics)==1
+                            newY(c,:,:) =  Y(which_ics,:,:);
+                        else
+                            newY(c,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+                        end
                     end
                 end
+                Y = newY; clear newY;
             end
-            Y = newY; clear newY;
         end
     else % channels
         spec = dir(fullfile(LIMO.data.data_dir,'*.datspec'));
@@ -243,51 +250,74 @@ elseif strcmp(LIMO.Analysis,'Frequency')
     end
     
 elseif strcmp(LIMO.Analysis,'Time-Frequency')
-    disp('Time-Frequency implementation - checking tf data, be patient ...');
+    disp('Checking Time-Frequency data, be patient ...');
     
     if strcmp(LIMO.Type,'Components')
-        if ~iscell(EEGLIMO.etc.datafiles.datspec) && isfield(EEGLIMO.etc.datafiles,'icatimef')
-             signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.icatimef)).^2;
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'icatimef')
+            if ~iscell(EEGLIMO.etc.datafiles.icatimef) && ~isstruct(EEGLIMO.etc.datafiles.icatimef)
+                signal = limo_struct2mat(EEGLIMO.etc.datafiles.icatimef);
+            elseif iscell(EEGLIMO.etc.datafiles.icatimef)
+                signal = load('-mat',EEGLIMO.etc.datafiles.icatimef{1});
+                if isstruct(signal); signal = limo_struct2mat(signal); end
+            else
+                try
+                    for d=sum(contains(fieldnames(EEGLIMO.etc.datafiles.icatimef),'comp')):-1:1
+                        signal{d} = EEGLIMO.etc.datafiles.icatimef.(['comp' num2str(d)]);
+                    end
+                    signal = limo_concatcells(signal); clear EEGLIMO
+                catch
+                    error('cannot load time frequency data')
+                end
+            end
+        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'icaersp')
+            if ~iscell(EEGLIMO.etc.datafiles.icaersp)
+                signal = limo_struct2mat(EEGLIMO.etc.datafiles.icaersp);
+            else
+                signal = load('-mat',EEGLIMO.etc.datafiles.icaersp{1});
+                if isstruct(signal); signal = limo_struct2mat(signal); end
+            end
         else
             signal = abs(eeg_getdatact(EEGLIMO,'component',1:length(EEGLIMO.icawinv)).^2);
         end
         Y = abs(signal(:,LIMO.data.trim_lowf:LIMO.data.trim_highf,LIMO.data.trim1:LIMO.data.trim2,:)).^2; clear signal
-
+        
         if isfield(LIMO.data,'cluster')
-            try
-                STUDY = evalin('base','STUDY');
-            catch
-                error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
-            end
-            nb_clusters     = size(STUDY.cluster(1).child,2);
-            nb_subjects     = length(unique({STUDY.datasetinfo.subject}));
-            Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
-            dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
-            data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
-            current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
-            subject_name    = {STUDY.datasetinfo(current_subject).subject};
-            newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
-            for c=1:nb_clusters
-                n = length(Cluster_matrix.clust(c).subj);
-                tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
-                if ~isempty(tmp)
-                    which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
-                    if length(which_ics)==1
-                        newY(c,:,:,:) =  Y(which_ics,:,:);
-                    else
-                        newY(c,:,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+            if LIMO.data.cluster ~=0
+                try
+                    STUDY = evalin('base','STUDY');
+                catch
+                    error('to run component clustering, you need the EEGLAB study loaded in the workspace with the clustering computed and saved')
+                end
+                nb_clusters     = size(STUDY.cluster(1).child,2);
+                nb_subjects     = length(unique({STUDY.datasetinfo.subject}));
+                Cluster_matrix  = parse_clustinfo(STUDY,STUDY.cluster(1).name);
+                dsetinfo        = rel2fullpath(STUDY.filepath,{STUDY.datasetinfo.filepath}');
+                data_dir        = rel2fullpath(STUDY.filepath,LIMO.data.data_dir(1:end));
+                current_subject = find(cellfun(@strcmp, dsetinfo',repmat({data_dir},nb_subjects,1)));
+                subject_name    = {STUDY.datasetinfo(current_subject).subject};
+                newY            = NaN(nb_clusters,size(Y,2),size(Y,3));
+                for c=1:nb_clusters
+                    n = length(Cluster_matrix.clust(c).subj);
+                    tmp = find(cellfun(@strcmp,Cluster_matrix.clust(c).subj',repmat(subject_name,n,1)));
+                    if ~isempty(tmp)
+                        which_ics = unique(Cluster_matrix.clust(c).ics(tmp));
+                        if length(which_ics)==1
+                            newY(c,:,:,:) =  Y(which_ics,:,:);
+                        else
+                            newY(c,:,:,:) = limo_combine_components(Y,EEGLIMO.icaweights,EEGLIMO.icawinv,which_ics);
+                        end
                     end
                 end
+                Y = newY; clear newY;
             end
-            Y = newY; clear newY;
         end
     else % channels
-        ersp = dir(fullfile(LIMO.data.data_dir,'*.dattimef'));
-        if ~exist(ersp,'file')  
+        if isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
+           if ~exist(EEGLIMO.etc.datafiles.dattimef,'file')  
             % load from FieldTrip
             signal = permute(EEGLIMO.powspctrm,[2,3,4,1]); % channels * freq * time * trials
-        elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'dattimef')
-            signal = abs(limo_struct2mat(EEGLIMO.etc.datafiles.dattimef)).^2;
+           else
+           
             if ~iscell(EEGLIMO.etc.datafiles.dattimef) && strcmp(EEGLIMO.etc.datafiles.dattimef(end-3:end),'.mat')
                 signal = load(EEGLIMO.etc.datafiles.dattimef);
                 if isstruct(signal)
@@ -309,6 +339,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
                     signal = limo_concatcells(signal); clear EEGLIMO
                 end
             end
+            end
         elseif isfield(EEGLIMO.etc, 'datafiles') && isfield(EEGLIMO.etc.datafiles,'datersp')
             [~,~,ext]=fileparts(EEGLIMO.etc.datafiles.datersp);
             if strcmp(ext,'.dattimef') % somehow wrong name
@@ -318,6 +349,7 @@ elseif strcmp(LIMO.Analysis,'Time-Frequency')
             end
         else
             disp('no data found (EEG.etc.datafiles): using a hack searching for dattimef data')
+            ersp = dir(fullfile(LIMO.data.data_dir,'*.dattimef'));
             if ~isempty(ersp)
                 for d=length(ersp):-1:1
                     signal{d} = load('-mat',fullfile(ersp(d).folder,ersp(d).name));

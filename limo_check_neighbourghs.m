@@ -17,8 +17,15 @@ if ~isfield(LIMO.data,'neighbouring_matrix')
             disp('selection aborded');
             return
         else
-            channeighbstructmat = load([newpath filesep file]);
-            channeighbstructmat = channeighbstructmat.channeighbstructmat;
+            neighbouringmatrix  = load([newpath filesep file]);
+            fields              = fieldnames(neighbouringmatrix);
+            for f=1:length(fields)
+                if isstruct(neighbouringmatrix.(fields{f}))
+                    expected_chanlocs = neighbouringmatrix.(fields{f});
+                elseif ismatrix(neighbouringmatrix.(fields{f}))
+                    channeighbstructmat = neighbouringmatrix.(fields{f});
+                end
+            end
         end
     else
         if ~exist(fullfile(LIMO.data.data_dir,LIMO.data.data),'file')
@@ -29,7 +36,13 @@ if ~isfield(LIMO.data,'neighbouring_matrix')
             channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
         end
     end
-    LIMO.data.neighbouring_matrix = channeighbstructmat;
+    % update and save
+    LIMO.data.expected_chanlocs   = expected_chanlocs;
+    if ~all(unique(channeighbstructmat) == [0 1]')
+        error('the neighbouring matrix is not binary')
+    else
+        LIMO.data.neighbouring_matrix = channeighbstructmat;
+    end
     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
 end
 

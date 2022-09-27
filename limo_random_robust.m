@@ -118,6 +118,7 @@ else
     end
 end
 
+
 %% start
 
 switch type
@@ -200,7 +201,7 @@ switch type
         % ------------------------------------------------
         % Bootstrap
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -353,7 +354,7 @@ switch type
         % ------------------------------------------------
         % compute the null
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -368,7 +369,8 @@ switch type
                 % create a boot one_sample file to store data under H0
                 H0_two_samples = NaN(size(data1,1), size(data1,2), 2, LIMO.design.bootstrap); % stores T and p values for each boot
                 % create centered data to estimate H0
-                if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true) || ...
+                            contains(LIMO.design.method,'Welch','IgnoreCase',true)
                     data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
                 else % if strcmpi(LIMO.design.method,'Mean')
@@ -388,7 +390,8 @@ switch type
                     fprintf('bootstrapping channel %g/%g \n',e,size(array,1));
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
                     tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
+                    if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true) || ...
+                            contains(LIMO.design.method,'Welch','IgnoreCase',true)
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~]=limo_yuen_ttest(Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
                         end
@@ -509,7 +512,7 @@ switch type
         
         % ------------------------------------------------
         if LIMO.design.bootstrap > 0
-            
+            limo_check_ppool
             bootex = 1;
             boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
@@ -762,10 +765,13 @@ switch type
                 end
                 Yhat             = NaN(size(data));
                 Condition_effect = NaN(size(data,1),size(data,2),2);
+                LIMO.design.df    = NaN(size(data,1),1);
+                LIMO.design.dfe   = NaN(size(data,1),size(data,2));
                 array            = find(~isnan(data(:,1,1)));
                 for e=1:size(array,1)
-                    channel = array(e); fprintf('processing channel %g \n,',channel);
-                    [Condition_effect(channel,:,1), Condition_effect(channel,:,2),Yhat(channel,:,:)] = ...
+                    channel = array(e); fprintf('processing channel %g \n',channel);
+                    [Condition_effect(channel,:,1), Condition_effect(channel,:,2),...
+                        Yhat(channel,:,:), LIMO.design.df(channel),LIMO.design.dfe(channel,:)] = ...
                         limo_robust_1way_anova(squeeze(data(channel,:,:)),LIMO.design.X(:,1:end-1),20); % no intercept in this model
                 end
                 delete(fullfile(LIMO.dir,'Betas.mat')); % no betas here
@@ -844,7 +850,7 @@ switch type
             limo_tfce_handling(fullfile(LIMO.dir,'Condition_effect_1.mat'));
             LIMO.design.tfce = 1;
         end
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3');
 
         if strcmp(LIMO.design.method,'Generalized Welch''s method')
             disp('Robust Gp ANOVA for trimmed means (generalization of Welch''s method) done')
@@ -924,7 +930,6 @@ switch type
         LIMO.design.fullfactorial    = 0;
         LIMO.design.zscore           = 0;
         LIMO.design.repeated_measure = factor_levels;
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
         
         % specific stuff for repeated measures
         % from the input we know which case to handle
@@ -1050,11 +1055,11 @@ switch type
                 fprintf('analyse channel %g/%g\n ...', channel,size(data,1));
                 tmp = squeeze(data(channel,:,:,:));
                 if size(data,2) == 1
-                    Y = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
+                    Y  = ones(1,size(tmp,1),size(tmp,2)); Y(1,:,:) = tmp;
                     gp = gp_vector(find(~isnan(Y(1,:,1))),:);
-                    Y = Y(:,find(~isnan(Y(1,:,1))),:);
+                    Y  = Y(:,find(~isnan(Y(1,:,1))),:);
                 else
-                    Y = tmp(:,find(~isnan(tmp(1,:,1))),:);
+                    Y  = tmp(:,find(~isnan(tmp(1,:,1))),:);
                     gp = gp_vector(find(~isnan(tmp(1,:,1))),:);
                 end
                 
@@ -1070,6 +1075,8 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,1,1) = result.F;
                     tmp_Rep_ANOVA(channel,:,1,2) = result.p;
+                    LIMO.design.df(channel)      = result.df;
+                    LIMO.design.dfe(channel)     = result.dfe;
                 elseif type == 2
                     if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C); % trimmed means
@@ -1078,6 +1085,8 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,:,1) = result.F';
                     tmp_Rep_ANOVA(channel,:,:,2) = result.p';
+                    LIMO.design.df(channel,:)    = result.df;
+                    LIMO.design.dfe(channel,:)   = result.dfe;
                 elseif type == 3
                     if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB); % trimmed means
@@ -1086,10 +1095,16 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,1,1)                   = result.repeated_measure.F;
                     tmp_Rep_ANOVA(channel,:,1,2)                   = result.repeated_measure.p;
+                    LIMO.design.df(channel)                        = result.repeated_measure.df;
+                    LIMO.design.dfe(channel)                       = result.repeated_measure.dfe;
                     Rep_ANOVA_Gp_effect(channel,:,1)               = result.gp.F;
                     Rep_ANOVA_Gp_effect(channel,:,2)               = result.gp.p;
+                    LIMO.design.group.df(channel)                  = result.gp.df;
+                    LIMO.design.group.dfe(channel)                 = result.gp.dfe;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,1) = result.interaction.F;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,2) = result.interaction.p;
+                    LIMO.design.interaction.df(channel)            = result.interaction.df;
+                    LIMO.design.interaction.dfe(channel)           = result.interaction.dfe;
                 elseif type == 4
                     if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                         result = limo_robust_rep_anova(Y,gp,factor_levels,C,XB); % trimmed means
@@ -1098,11 +1113,18 @@ switch type
                     end
                     tmp_Rep_ANOVA(channel,:,:,1)                     = result.repeated_measure.F';
                     tmp_Rep_ANOVA(channel,:,:,2)                     = result.repeated_measure.p';
+                    LIMO.design.df(channel,:)                        = result.repeated_measure.df;
+                    LIMO.design.dfe(channel,:)                       = result.repeated_measure.dfe;
                     Rep_ANOVA_Gp_effect(channel,:,1)                 = result.gp.F;
                     Rep_ANOVA_Gp_effect(channel,:,2)                 = result.gp.p;
+                    LIMO.design.group.df(channel)                    = result.gp.df;
+                    LIMO.design.group.dfe(channel)                   = result.gp.dfe;
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,1) = result.interaction.F';
                     tmp_Rep_ANOVA_Interaction_with_gp(channel,:,:,2) = result.interaction.p';
+                    LIMO.design.interaction.df(channel,:)            = result.interaction.df;
+                    LIMO.design.interaction.dfe(channel,:)           = result.interaction.dfe;
                 end
+                
                 nb_effects = size(tmp_Rep_ANOVA,3);
                 clear tmp Y gp result
             end
@@ -1166,6 +1188,8 @@ switch type
             end
         end
         
+        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+        
         % if skipping the above
         if ~exist('nb_effects','var')
             nb_effects = length(LIMO.design.C);
@@ -1177,10 +1201,12 @@ switch type
             clear Rep_ANOVA_Gp_effect tmp_Rep_ANOVA_Interaction_with_gp
         end
         
+        
         % ----------------------------------------------------------------
         % now do the bootstrap
         % ---------------------
         if LIMO.design.bootstrap > 0
+            limo_check_ppool
             boot_files = dir(fullfile(LIMO.dir,'H0'));
             if ~isempty(boot_files) && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');

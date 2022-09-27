@@ -27,7 +27,8 @@ function out = limo_match_elec(c_elec,e_elec,a_beg,a_end,data)
 %
 % Guillaume Rousselet, Cyril Pernet v1 24-September-2009
 % Cyril Pernet May 2014, updates for time-freqency
-% ------------------------------
+% Cyril Pernet 2021 - fixed EEGLAB adding EEG in front of channels with just numbers as name
+% --------------------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 if numel(size(data)) == 4
@@ -35,7 +36,10 @@ if numel(size(data)) == 4
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
-            if strcmpi(c_elec(current).labels,e_elec(expected).labels)
+            test = strfind(e_elec(expected).labels,'EEG');
+            if test == 1; test = 0; end % basically renamed EEG00X
+            if strcmpi(c_elec(current).labels,e_elec(expected).labels) || ...
+                    strcmpi(c_elec(current).labels,e_elec(expected).labels([1:test, test+4:end]))
                 out(expected,:,:,:) = data(current,a_beg(1):a_end(1),a_beg(2):a_end(2),:);
             end
         end
@@ -45,12 +49,12 @@ else
     
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
-            if strcmpi(c_elec(current).labels,e_elec(expected).labels)
+            test = strfind(e_elec(expected).labels,'EEG');
+            if test == 1; test = 0; end % basically renamed EEG00X
+            if strcmpi(c_elec(current).labels,e_elec(expected).labels) || ...
+                    strcmpi(c_elec(current).labels,e_elec(expected).labels([1:test, test+4:end]))
                 out(expected,:,:) = data(current,a_beg:a_end,:);
             end
         end
     end
 end
-
-
-

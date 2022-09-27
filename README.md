@@ -17,6 +17,11 @@ LIMO 3.0 has been tested with EEGLAB 2021.0. This [test script](https://github.c
 The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
 We also have a full [tutorial](https://github.com/LIMO-EEG-Toolbox/limo_meeg/wiki) taking you through an analysis.
 
+## Questions
+
+Best to use the discussion forums like the eeglab mailing list or neurostar (tagging people) for general analysis questions.  
+You can also email directly or raise a github issue, in particular for bugs.
+
 ## Citation and method reporting
 Published papers related to the method(s) used here are listed in the [citations.nbib file](https://github.com/LIMO-EEG-Toolbox/limo_tools/blob/master/citations.nbib). More generally, we recommended using [boilerplate texts from the wiki](https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki/Reporting-results-differs-with-the-method-used).
 

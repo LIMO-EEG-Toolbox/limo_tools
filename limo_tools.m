@@ -98,6 +98,9 @@ choice =  questdlg2('Do you want to Create or Edit a group level file?', ...
 if strcmp(choice,'Create')
 
     [expected_chanlocs, channeighbstructmat] = limo_expected_chanlocs;
+    if isempty(expected_chanlocs) && isempty(channeighbstructmat)
+        return
+    end
     figure('Name','Channel locations')
     topoplot([], expected_chanlocs,'style','blank','electrodes','labelpoint','chaninfo',expected_chanlocs);
     figure('Name','Neighbouring matrix')

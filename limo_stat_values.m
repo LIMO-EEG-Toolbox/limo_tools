@@ -219,7 +219,7 @@ elseif ~isempty(M) && MCC == 2
                 end
                 
                 if size(M,1) == 1
-                    tmp = NaN(1,size(M,2),size(M,3),size(bootM,4));
+                    tmp = NaN(1,size(M,2),size(M,3),size(bootM,3));
                     tmp(1,:,:,:) = bootM; bootM = tmp;
                     tmp(1,:,:,:) = bootP; bootP = tmp;
                     clear tmp
@@ -234,7 +234,7 @@ elseif ~isempty(M) && MCC == 2
                 end
                 
                 if size(M,1) == 1
-                    tmp = NaN(1,size(M,2),size(bootM,4));
+                    tmp = NaN(1,size(M,2),size(bootM,2));
                     tmp(1,:,:,:) = bootM; bootM = tmp;
                     tmp(1,:,:,:) = bootP; bootP = tmp;
                     clear tmp

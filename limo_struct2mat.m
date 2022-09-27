@@ -76,13 +76,13 @@ if numel(size(tmp_data)) == 2 % erp spec itc
         end
     end
     
-elseif numel(size(tmp_data)) == 3; % ersp
+elseif numel(size(tmp_data)) == 3 % ersp
     
     try
         out=NaN(n,freq,time,trials);
     catch err
         if strcmp(err.message,'Out of memory. Type HELP MEMORY for your options.')
-            disp('ouch your are OUT OF MEMORY, consider reducing sampling and frequency range' )
+            disp('ouch you are OUT OF MEMORY, consider reducing sampling and frequency range' )
             return
         else
             disp('a strange error occured while trying to generate the data matrix')

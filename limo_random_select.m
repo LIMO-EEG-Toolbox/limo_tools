@@ -153,9 +153,9 @@ end
 
 if isempty(analysis_type)
     if exist('questdlg2','file')
-        analysis_type = questdlg2('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+        analysis_type = questdlg2('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
     else
-        analysis_type = questdlg('Rdx option','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
+        analysis_type = questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','Full scalp analysis','1 channel/component only','Full scalp analysis');
     end
     if isempty(analysis_type)
         return
@@ -232,7 +232,37 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -------------------------------
     if strcmpi(stattest,'regression')
         if isempty(regressor_file)
-            [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+            try
+                STUDY=evalin('base','STUDY');
+                [indvar, indvarvals] = std_getindvar(STUDY, 'datinfo');
+                % remove non numerical values
+                for iVar = length(indvar):-1:1
+                    if ~isnumeric(indvarvals{iVar}{1})
+                        indvar(iVar) = [];
+                        indvarvals(iVar) = [];
+                    end
+                end
+            catch
+                indvar = {};
+            end
+            if ~isempty(indvar)
+                % get variable from study, DOES NOT HANDLE multiple sessions
+                uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
+                           { 'style' 'listbox' 'string' indvar 'max' 2} ...
+                           { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
+                           { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse');
+                if isempty(res)
+                    [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+                else
+                    FilterIndex = 1;
+                    PathName = pwd;
+                    FileName = 'regression_vars.txt';
+                    std_saveindvar(STUDY, indvar(res{1}), fullfile(PathName, FileName));
+                end
+            else
+                [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+            end
             if FilterIndex == 0
                 return
             end
@@ -288,7 +318,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             else
                 errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
             end
-        elseif ~isempty(sum(isnan(X),2))
+        elseif sum(isnan(X(:))) ~= 0
             if sum(sum(isnan(X),2)) == 1
                 warning('loaded regressor(s) include a NaN and the corresponding subject is removed')
             else
@@ -482,7 +512,7 @@ elseif strcmpi(stattest,'two-samples t-test')
 
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if ~all(contains(Names{1},'con')) && ~all(contains(Names{1},'con'))
+    if ~all(contains(Names{1},'betas')) && ~all(contains(Names{1},'con'))
         % do this only if betas - for con paramters = [1 1]
         for gp = 1:2
             for sub=1:size(LIMO.data.data_dir{gp},2)
@@ -1188,7 +1218,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
         if any(isbeta(:)) && any(iscon(:))
             error('input data mix Beta and con files - not supported')
-        elseif sum(isbeta(:)) == 0 && sum(iscon(:)) == 0 % maybe it's a custum file name
+        elseif sum(isbeta(:)) == 0 && sum(iscon(:)) == 0 % maybe it's a custom file name
             for gp = gp_nb:-1:1
                 all_files  = limo_get_files([],[],[],LIMO.data.data{gp});
                 isbeta(gp) = mean(cellfun(@(x) contains(x,'Beta'),all_files));
@@ -1424,6 +1454,14 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     end
 
     % last re-check dimensions
+    if sum(single(isnan(data(:)))) == numel(data)
+        if exist('errordlg2','file')
+            errordlg2('the data matrix is empty! either betas.mat/con.mat files are empty or there is a bug'); return
+        else
+            errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
+        end
+    end
+    
     if gp_nb ==1 && size(data,numel(size(data))-1) <= 2
         warning('the concatenated data have %g repeated measures, consider using a t-test',size(data,numel(size(data))-1))
         return
@@ -1569,18 +1607,11 @@ if gp == 1
         error('file selection failed, only Beta or Con files are supported')
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
-            param = cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option'));
-            if isempty(param)
-                disp('selection aborded'); return
-            else
-                if contains(param,'[') && contains(param,']')
-                    parameters = eval(param);
-                else
-                    parameters = eval(['[' param ']']);
-                end
+            parameters = get_beta_indices;
+            if isempty(parameters)
+                return
             end
         end
-
     elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
         parameters = 1;
     end
@@ -2225,5 +2256,41 @@ if ~iscell(params)
     end
 else
     levels = [length(params) getlevels(params{1}) ];
+end
+end
+
+% get beta indices from study
+function param = get_beta_indices()
+
+param = [];
+try
+    STUDY = evalin('base', 'STUDY');
+    if ~isempty(STUDY.limo.betas)
+        betas = { STUDY.limo.betas.description };
+    else
+        betas = {};
+    end
+    betas = [ betas { 'Constant' } ];
+catch
+    betas = [];
+end
+
+if ~isempty(betas)
+    for iBeta = 1:length(betas)
+        betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
+    end
+    uiList = { {'style' 'text' 'string' 'Pick a list of beta parameters below' } ...
+               { 'style' 'listbox' 'string' betas 'max' 2 } ...
+               {'style' 'text' 'string' 'Or ignore selection above and enter beta indices' } ...
+               {'style' 'edit' 'string' '' } };
+    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
+    if isempty(res), return; end
+    if ~isempty(res{2})
+        param =  eval( [ '[' res{2} ']' ] );
+    else
+        param =  res{1};
+    end
+else
+    param = eval( [ '[' cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option')) ']' ]);
 end
 end

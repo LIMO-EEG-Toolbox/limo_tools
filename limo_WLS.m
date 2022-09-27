@@ -39,7 +39,7 @@ if (rows <= cols)
    error('WLS cannot be computed, there is not enough trials for this design');     
 end
 
-if isempty(Y(:,mad(Y,1) > 1e-6))
+if isempty(Y(:,mad(Y,1) > 1e-6)) % time points for which medians of trials > 1e-6
     error('WLS cannot be computed, for at least 1 condition, all trials have the same values')
 end
 
@@ -47,10 +47,12 @@ end
 %% get the weights from PC on adjusted residuals
 
 % Hat matrix; Leverages for each observation
-H = diag(X*pinv(X'*X)*X');
+H      = diag(X*pinv(X'*X)*X');
+H(H>1) = 1; % numerical error instead of H=1 we can obtain 1.000000..... because of pinv
 
 % Adjustment factor
-adjfactor = 1 ./ sqrt(1-H);
+adjfactor                   = 1 ./ sqrt(1-H);
+adjfactor(isinf(adjfactor)) = 1; % if H = 1, no adjustment
 
 % OLS solution
 b = pinv(X)*Y;

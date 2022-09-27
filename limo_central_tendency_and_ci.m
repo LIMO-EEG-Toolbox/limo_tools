@@ -70,6 +70,19 @@ if nargin == 3 || nargin == 4
     % ------------------------
     
     data = varargin{1};
+    if ischar(data)
+        if ~exist(data,'file')
+            error('%s does not exist',data)
+        else
+            try
+                data = load(data);
+                data = data.(cell2mat(fieldnames(data)));
+            catch
+                error('%s is not a matrix',data)
+            end
+        end
+    end
+    
     if ndims(data)<3 || ndims(data) >4 %#ok<*ISMAT>
         if ndims(data) == 2
             disp('for 2D data, try using limo_central_estimator.m');
@@ -233,7 +246,8 @@ elseif nargin == 6 || nargin == 7
             ends_at = size(Yr,2) - (last_frame(i) - min(last_frame));
         end
         
-        if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
+        if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
+                max(parameters) == size(LIMO.design.X,2) % any categorial or the constant
             if all(is_limo)
                 index = logical(sum(LIMO.design.X(:,parameters)==1,2));
                 for channel=size(Yr,1):-1:1
@@ -299,7 +313,11 @@ elseif nargin == 6 || nargin == 7
             end
             clear tmp
         else
-            error('parameter %g not computed - continuous regressor',max(parameters));
+            if max(parameters) > size(LIMO.design.X,2)
+                warning('subject %g, parameter %g not computed: \n the design only includes %g regressors plus the constant',Paths{i},size(LIMO.design.X,2));
+            else
+                warning('subject %g, \n parameter %g not computed - continuous regressor',Paths{i},max(parameters));
+            end
         end
     end
     
@@ -505,13 +523,12 @@ elseif nargin == 1
             if isempty(parameters)
                 return
             else
-                try
+                parameters = eval(cell2mat(parameters));
+                if isnan(parameters)
                     parameters = str2double(cell2mat(parameters));
-                catch
-                    parameters = eval(cell2mat(parameters));
                 end
             end
-            
+        
         else
             errordlg('file selection failed, only LIMO.mat files are supported'); return
         end
@@ -590,7 +607,8 @@ elseif nargin == 1
             
             if strcmpi(Q,'Evaluate single conditions')
                 for j=length(parameters):-1:1
-                    if parameters(j) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions)
+                    if parameters(j) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
+                            parameters(j) == size(LIMO.design.X,2)
                         index = LIMO.design.X(:,parameters(j))==1;
                         if strcmpi(weighted_mean,'yes')
                             for channel=1:size(Yr,1)
@@ -645,11 +663,16 @@ elseif nargin == 1
                         end
                         clear tmp
                     else
-                        fprintf('parameter %g not computed - continuous regressor \n',j);
+                        if max(j) > size(LIMO.design.X,2)
+                            warning('subject %g, parameter %g not computed: \n the design only includes %g regressors plus the constant',Paths{i},size(LIMO.design.X,2));
+                        else
+                            warning('subject %g, \n parameter %g not computed - continuous regressor',Paths{i},j);
+                        end
                     end
                 end
             elseif strcmpi(Q,'Pool Conditions')
-                if max(parameters) <= sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions)
+                if max(parameters) <= sum(LIMO.design.nb_conditions)+sum(LIMO.design.nb_interactions) || ...
+                        max(parameters) == size(LIMO.design.X)
                     index = find(sum(LIMO.design.X(:,parameters)==1,2)); % find all trials from selected columns
                     if strcmpi(weighted_mean,'yes')
                         for channel=size(Yr,1):-1:1
@@ -708,7 +731,7 @@ elseif nargin == 1
                     end
                     clear tmp
                 else
-                    fprintf('pooling not computed - one or more continuous regressor selected \n');
+                   fprintf('pooling not computed - one or more continuous regressor selected \n');
                 end
             end
             clear Yr

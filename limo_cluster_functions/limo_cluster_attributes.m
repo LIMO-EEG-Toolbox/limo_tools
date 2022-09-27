@@ -1,9 +1,19 @@
 function [extend_mask, height_mask, extend, height, H0_extend, H0_height] = limo_cluster_attributes(data,dataH0,neighbouring_matrix,p_value)
-% data is 3D [electrode,time frames,[F,p])
-% dataH0 is 4D [electrode,time frames,[F,p],resamples)
-% neighbouring_matrix is the matrix describing which electrodes are neighbour
-% p_value is the cluster forming threshold and min p value of the cluster
-% ------------------------------
+
+% Routine to compute all cluster attributes
+%         this is not used in LIMO for clustering, but used for validating
+%         results when doing Monte Carlo simulations
+%
+% FORMAT [extend_mask, height_mask, extend, height, H0_extend, H0_height] = ...
+%               limo_cluster_attributes(data,dataH0,neighbouring_matrix,p_value)
+%
+% INPUTS data is 3D [electrode,time frames,[F,p])
+%        dataH0 is 4D [electrode,time frames,[F,p],resamples)
+%        neighbouring_matrix is the matrix describing which electrodes are neighbour
+%        p_value is the cluster forming threshold and min p value of the cluster
+%
+% OUTPUTS are the clusters extend and height 
+% ------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
 % observed data

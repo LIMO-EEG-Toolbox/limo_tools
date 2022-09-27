@@ -25,7 +25,7 @@ tmpcfg = limo_eeglab2fieldtrip(EEG, 'preprocessing', 'none');
 lay = limo_ft_prepare_layout(tmpcfg, tmpcfg); % fieldtrip function
 tmpcfg.layout        = lay;
 if nargin < 2
-  neighbourdist = eval(cell2mat(inputdlg('enter neighbourhood distance','neighbourhood distance'))); % 0.37 for biosemi 128;
+    neighbourdist = eval(cell2mat(inputdlg('enter neighbourhood distance','neighbourhood distance'))); % 0.37 for biosemi 128;
 end
 tmpcfg.neighbourdist = neighbourdist;
 [neighbours,channeighbstructmat] = limo_ft_neighbourselection(tmpcfg, []); % fieldtrip function
