@@ -1,10 +1,11 @@
-function limo_batch_import_data(setfile,cat,cont,defaults)
+function limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 
 % routine to import 
 %
-% FORMAT limo_batch_import_data(setfile,cat,cont,defaults)
+% FORMAT limo_batch_import_data(EEG_DATA,cat,cont,defaults)
 % 
-% INPUT setfile is a an EEG files .set to be loaded
+% INPUT EEG_DATA is a an EEG file (temporary .set or .mat) to be loaded
+%                from EEGLAB or FieldTrip
 %       cat and cont are either numeric or txt or mat files
 %               corresponding to the regressors in the model
 %       defaults is a structure specifying all the parameters
@@ -17,18 +18,20 @@ function limo_batch_import_data(setfile,cat,cont,defaults)
 %
 % see also limo_batch 
 % ------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2021
 
 global EEGLIMO
 
-EEGLIMO                      = load('-mat',setfile);
-EEGLIMO                      = EEGLIMO.EEG;
-[root,name,ext]              = fileparts(setfile); 
+EEGLIMO                      = load('-mat',EEG_DATA);
+EEGLIMO                      = EEGLIMO.(cell2mat(fieldnames(EEGLIMO)));
+if ~isfield(EEGLIMO,'filepath')
+    [root,name,ext]          = fileparts(EEG_DATA);
+    EEGLIMO.filepath         = root;
+    EEGLIMO.filename         = [name ext];
+end
 LIMO.dir                     = defaults.name;
-LIMO.data.data               = [name ext];
-LIMO.data.data_dir           = root;
-LIMO.data.sampling_rate      = EEGLIMO.srate;
-LIMO.Analysis                = defaults.analysis;
+LIMO.data.data               = EEGLIMO.filename;
+LIMO.data.data_dir           = EEGLIMO.filepath;
 LIMO.Type                    = defaults.type;
 LIMO.design.zscore           = defaults.zscore;
 LIMO.design.method           = defaults.method;
@@ -38,6 +41,54 @@ LIMO.design.bootstrap        = defaults.bootstrap;
 LIMO.design.tfce             = defaults.tfce;
 LIMO.design.status           = 'to do';
 LIMO.Level                   = 1;
+
+if strcmp(LIMO.data.data(end-3:end),'.set') % EEGLAB
+    LIMO.Analysis                = defaults.analysis;
+    LIMO.data.sampling_rate      = EEGLIMO.srate;
+elseif ~strcmp(ft_datatype(EEGLIMO),'unknown')
+    % this seems a data structure according to FieldTrip specs
+    dtype = ft_datatype(EEGLIMO);
+    switch dtype
+        case 'raw'
+            error('ERROR in limo_batch_import_data: FieldTrip ''raw'' data structures are not supported, convert to a ''timelock'' representation first');
+        case 'timelock'
+            % check whether the data has a 'trial' field
+            if ~isfield(EEGLIMO, 'trial')
+                error('ERROR in limo_batch_import_data: FieldTrip ''timelock'' data structures need a ''trial'' field');
+            end
+            if ~isfield(EEGLIMO, 'chanlocs')
+                EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+            end
+            LIMO.Analysis = 'Time';
+            EEGLIMO.timevect = EEGLIMO.time*1000;
+            LIMO.data.sampling_rate = mean(diff(EEGLIMO.time));
+        case 'freq'
+          % check whether the data has a 'powspctrm' field
+          if ~isfield(EEGLIMO, 'powspctrm')
+              error('ERROR in limo_batch_import_data: FieldTrip ''freq'' data structures require a ''powspctrm'' field');
+          end
+          if ~isfield(EEGLIMO, 'chanlocs')
+              EEGLIMO = limo_get_ft_chanlocs(EEGLIMO, defaults);
+          end
+          if isfield(EEGLIMO, 'time')
+            % time-freq
+            LIMO.Analysis = 'Time-Frequency';
+            EEGLIMO.tf_times = EEGLIMO.time*1000;
+            EEGLIMO.tf_freqs = EEGLIMO.freq;
+          else
+            LIMO.Analysis = 'Frequency';
+            EEGLIMO.freqvect = EEGLIMO.freq;
+          end
+          
+        case 'source'
+            error('ERROR in limo_batch_import_data: FieldTrip ''source'' data structures are not (yet) supported');
+      otherwise
+          error('ERROR in limo_batch_import_data: FieldTrip ''%s'' data structures are not supported', dtype); 
+    end
+else
+    error('ERROR in limo_batch_import_data: neither EEGLAB nor FieldTrip data')
+end
+
 
 % optional fields for EEGLAB study
 if isfield(defaults,'icaclustering')
@@ -75,7 +126,10 @@ if strcmp(defaults.analysis,'Time')
         end
         timevect = data.times; clear data;
     else
-        timevect = EEGLIMO.etc.timeerp;
+        warning('the field EEG.etc.timeerp is missing');
+        if isfield(EEGLIMO,'times')
+            timevect = EEGLIMO.times;
+        end
     end
     
     % start
@@ -89,18 +143,18 @@ if strcmp(defaults.analysis,'Time')
     end
     
     % end
-    if isempty(defaults.end) || defaults.end > max(EEGLIMO.times)
+    if isempty(defaults.end) || defaults.end > max(timevect)
         LIMO.data.end   = timevect(end);
         LIMO.data.trim2 = length(timevect);
     else
-        [~,position]    = min(abs(EEGLIMO.times - defaults.end));
+        [~,position]    = min(abs(timevect - defaults.end));
         LIMO.data.end   = timevect(position);
         LIMO.data.trim2 = position;
     end
     
     LIMO.data.timevect  = timevect(LIMO.data.trim1:LIMO.data.trim2);
     
-elseif strcmp(defaults.analysis,'Frequency') 
+elseif strcmp(LIMO.Analysis,'Frequency') 
     
     if ~isfield(EEGLIMO.etc,'freqspec')
         try
@@ -114,7 +168,13 @@ elseif strcmp(defaults.analysis,'Frequency')
                 data = load('-mat',fullfile(pwd,EEGLIMO.data));
             end
         end
-        freqvect = data.freqs; clear data;
+    end
+    
+    if isfield(EEGLIMO, 'freqvect')
+        freqvect = EEGLIMO.freqvect;
+    elseif ~isfield(EEGLIMO.etc,'freqspec')
+        disp('the fied EEG.etc.freqspec is missing - reloading single trials');
+        data     = load('-mat',EEGLIMO.etc.freqspec);
     else
         freqvect = EEGLIMO.etc.freqspec;
     end
@@ -141,7 +201,7 @@ elseif strcmp(defaults.analysis,'Frequency')
     
     LIMO.data.freqlist  = freqvect(LIMO.data.trim1:LIMO.data.trim2);
 
-elseif strcmp(defaults.analysis,'Time-Frequency')
+elseif strcmp(LIMO.Analysis,'Time-Frequency')
     
     if ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
         try
@@ -155,8 +215,13 @@ elseif strcmp(defaults.analysis,'Time-Frequency')
                 data = load('-mat',fullfile(pwd,EEGLIMO.data));
             end
         end
-        timevect = data.times;
-        freqvect = data.freqs;
+
+    if isfield(EEGLIMO, 'tf_times') && isfield(EEGLIMO, 'tf_freqs')
+        timevect = EEGLIMO.tf_times;
+        freqvect = EEGLIMO.tf_freqs;
+    elseif ~isfield(EEGLIMO.etc,'timeersp') || ~isfield(EEGLIMO.etc,'freqersp')
+        disp('ersp fied in EEG.etc absent or impcomplete, reloading the single trials')
+        data = load('-mat',EEGLIMO.etc.timef,'times','freqs');
     else
         timevect = EEGLIMO.etc.timeersp;
         freqvect = EEGLIMO.etc.freqersp;
@@ -213,10 +278,11 @@ if isnumeric(cat)
 else
     if strcmp(cat(end-3:end),'.txt')
         LIMO.data.Cat = load(cat);
-    else
-        strcmp(cat(end-3:end),'.mat')
+    elseif strcmp(cat(end-3:end),'.mat')
         name = load(cat); f = fieldnames(name);
         LIMO.data.Cat = getfield(name,f{1});
+    else
+        error('ERROR cat')
     end
 end
 
@@ -225,18 +291,15 @@ if isnumeric(cont)
 else
     if strcmp(cont(end-3:end),'.txt')
         LIMO.data.Cont = load(cont);
-    else
-        strcmp(cont(end-3:end),'.mat')
+    elseif strcmp(cont(end-3:end),'.mat')
         [~,name,~] = fileparts(cont);
         load(cont); LIMO.data.Cont = eval(name);
+    else
+        error('ERROR cont')
     end
 end
 
 if ~exist('LIMO.dir','dir')
     mkdir(LIMO.dir)
 end
-cd(LIMO.dir); 
-save LIMO LIMO; 
-cd ..
-
-
+save(fullfile(LIMO.dir, 'LIMO.mat'), 'LIMO'); 

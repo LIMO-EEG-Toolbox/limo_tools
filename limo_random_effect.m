@@ -292,9 +292,10 @@ function chan_cluster_neighbours_Callback(hObject, ~, handles)
 [chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
 if sts == 1
     test = load([chan_path chan_file]);
-    if isfield(test,'expected_chanlocs')
-        test = test.expected_chanlocs;
+    if ~isfield(test,'expected_chanlocs')
+        error('selected file has to be expected_chanlocs structure')
     end
+    test = test.(cell2mat(fieldnames(test)));
     
     if isstruct(test) && ~isempty(test(1).labels) && ~isempty(test(1).theta) && ~isempty(test(1).radius) ...
             && ~isempty(test(1).X) && ~isempty(test(1).Y) && ~isempty(test(1).Z) && ~isempty(test(1).sph_theta) ...
