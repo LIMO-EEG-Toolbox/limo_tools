@@ -26,6 +26,12 @@ if ~isempty(obj)
     udat.y = y;
 end
 
+if isfield(udat.params, 'flag')
+    interactive = udat.params.flag;
+else
+    interactive = true;
+end
+
 % ----- Colormap --------
 maxval = max(abs(max(udat.scale(:))),abs(min(udat.scale(:))));
 if isempty(udat.colorlim) 
@@ -45,18 +51,31 @@ end
 % topoplot at new time or freq
 % because x axis is already with the correct value
 if isempty(udat.timerange)
-    udat.timerange = udat.timevect([1 end]);
+    if isempty(udat.timevect)
+        udat.timerange = udat.freqvect([1 end]);
+    else
+        udat.timerange = udat.timevect([1 end]);
+    end
 end
 x = udat.x;
 y = udat.y;
-frame = udat.frame_zeros + round(x / udat.ratio);
 
 if isempty(udat.timerange)
-    frameRange = 1:length(udat.timevect);
+    if isempty(udat.timevect)
+        frameRange = 1:length(udat.freqvect);
+    else
+        frameRange = 1:length(udat.timevect);
+    end
 else
-    [~,frameBeg] = min(abs(udat.timevect-udat.timerange(1)));
-    [~,frameEnd] = min(abs(udat.timevect-udat.timerange(2)));
-    frameRange = frameBeg:frameEnd;
+    if isempty(udat.timevect)
+        [~,frameBeg] = min(abs(udat.freqvect-udat.timerange(1)));
+        [~,frameEnd] = min(abs(udat.freqvect-udat.timerange(2)));
+        frameRange = frameBeg:frameEnd;
+    else
+        [~,frameBeg] = min(abs(udat.timevect-udat.timerange(1)));
+        [~,frameEnd] = min(abs(udat.timevect-udat.timerange(2)));
+        frameRange = frameBeg:frameEnd;
+    end
 end
 
 if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -79,11 +98,19 @@ else
         y = 1;
     end
 end
+frame = udat.frame_zeros + round(x / udat.ratio);
+if frame <= 0
+    frame = 1;
+end
 
 % topoplot 
 % --------
 if length(LIMO.data.chanlocs) > 2
-    ax = subplot(3,4,3,'replace');
+    if ~interactive
+        ax = subplot(3,3,3,'replace');
+    else
+        ax = subplot(3,4,3,'replace');
+    end
     if strcmpi(LIMO.Analysis,'Time')
         if ~contains(LIMO.design.name, ['one ' LIMO.Type(1:end-1)]) && ~isempty(LIMO.data.chanlocs)
             if size(udat.toplot,2) == 1
@@ -91,7 +118,7 @@ if length(LIMO.data.chanlocs) > 2
                 title('topoplot','FontSize',12)
             else
                 topoplot(udat.toplot(:,frame),LIMO.data.chanlocs,udat.opt{:});
-                title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',11)
             end
         end
     
@@ -102,20 +129,24 @@ if length(LIMO.data.chanlocs) > 2
                 title('topoplot','FontSize',12)
             else
                 topoplot(udat.toplot(:,frame),LIMO.data.chanlocs,udat.opt{:});
-                title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',12)
+                title(['topoplot @ ' num2str(round(x)) 'Hz'],'FontSize',11)
             end
         end
     end
     if isempty(udat.colorlim)
         udat.colorlim = clim;
     end
-    clim(udat.colorlim);
+    caxis(udat.colorlim);
     %axcopy(ax);
 end
 
 % curve 
 % -----
-ax = subplot(3,4,7,'replace');
+if ~interactive
+    ax = subplot(3,3,6,'replace');
+else
+    ax = subplot(3,4,7,'replace');
+end
 if size(udat.toplot,2) == 1
     bar(udat.toplot(y,1)); grid on; axis([0 2 0 max(udat.toplot(:))+0.2]); ylabel('stat value')
     if isfield(LIMO,'Type')
@@ -157,12 +188,16 @@ end
 if ~isempty(udat.colorlim)
     ylim(udat.colorlim);
 end
-title(mytitle2,'FontSize',12);
+title(mytitle2,'FontSize',11);
 %axcopy(ax);
 
 % image 
 % -----
-subplot(3,4,[1 2 5 6 9 10],'replace'); 
+if ~interactive
+    subplot(3,3,[1 2 4 5 7 8],'replace');
+else
+    subplot(3,4,[1 2 5 6 9 10],'replace');
+end
 cla;
 h_im = [];
 if strcmpi(LIMO.Analysis,'Time')
@@ -175,9 +210,9 @@ end
 colormap(gca, udat.cc);
 set_imgaxes(LIMO,udat.scale);
 if ~isempty(udat.colorlim)
-    clim(udat.colorlim);
+    caxis(udat.colorlim);
 end
-title(udat.title,'Fontsize',12)
+title(udat.title,'Fontsize',10)
 
 % circled region
 hold on;
@@ -212,7 +247,11 @@ catch pvalerror
     fprintf('couldn''t figure the stats values?? %s \n',pvalerror.message)
 end
 fprintf('%s\n', strStat)
-ax = subplot(3,4,11,'replace');
+if ~interactive
+    ax = subplot(3,3,9,'replace');
+else
+    ax = subplot(3,4,11,'replace');
+end
 if ~isempty(strStat)
     commaPos = find(strStat == ',');
     strStat1 = strStat(1:commaPos-1);
@@ -232,6 +271,10 @@ axis off;
 
 % interactivity
 % -----------
+if ~interactive
+    return;
+end
+    
 cb_redraw     = 'limo_display_image_callback(gcbf, gcbo)';
 set(h_im , 'ButtonDownFcn', cb_redraw, 'tag', 'image')
 set(fig, 'userdata', udat);
@@ -253,7 +296,7 @@ else
             'imgTmp    = findobj(gcbf2, ''tag'', ''image'');' ...
             'plot3type = get(findobj(gcbf2, ''tag'', ''model''), ''value'');' ...
             'regressor = get(findobj(gcbf2, ''tag'', ''regressor''), ''value'');' ...
-            'if nopTmp, pvalTmp = 1; else pvalTmp = 0.05; end;' ...
+            'if nopTmp, pvalTmp = 1; mccTmp = 1; else pvalTmp = 0.05; end;' ...
             'set(imgTmp, ''CData'', get(imgTmp, ''CData'')*0);' ...
             'tmpRes = limo_display_results(''type'', uDat.params.Type, ''filename'', uDat.params.FileName, ''pathname'', uDat.params.PathName, ''p'', pvalTmp, ''MCC'', mccTmp, ''LIMO'', uDat.params.LIMO, ''fig'', gcbf, ''plot3type'', plot3type, ''regressor'', regressor-1);' ...
             'clear uDat nopTmp pvalTmp mccTmp imgTmp tmpRes plot3type regressor;' ];

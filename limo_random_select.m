@@ -151,10 +151,15 @@ for in = 1:2:(nargin-2)
     end
 end
 
-if isempty(analysis_type)
-    analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
+limo_settings_script;
+if limo_settings.newgui
+    analysis_type = 'Full scalp analysis';
+else
     if isempty(analysis_type)
-        return
+        analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
+        if isempty(analysis_type)
+            return
+        end
     end
 end
 
@@ -306,10 +311,12 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             end
             limo_errordlg(sprintf('the number of regression value %g differs from the number of subjects %g',size(X,1),N),'Covariate error');
         elseif sum(isnan(X(:))) ~= 0
-            if sum(sum(isnan(X),2)) == 1
-                limo_warndlg('loaded regressor(s) include a NaN and the corresponding subject is removed')
+            if ~skip_design_check
+                if sum(sum(isnan(X),2)) == 1
+                    limo_warndlg('loaded regressor(s) include NaN(s) - corresponding subjects are removed')
+                end
             else
-                limo_warndlg('loaded regressor(s) include NaN(s) - corresponding subjects are removed')
+                fprintf(2, 'loaded regressor(s) include NaN(s) - corresponding subjects are removed\n');
             end
             
             sub_toremove = find(sum(isnan(X),2));
@@ -864,7 +871,6 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
             return
         else
             gp_nb          = str2double(gp_nb);
-            a              = limo_questdlg('load con files or beta file','ANOVA loading files','con','beta','beta');
             Names          = cell(gp_nb,1);
             Paths          = cell(gp_nb,1);
             LIMO.data.data = cell(gp_nb,1);
@@ -875,11 +881,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % ---------------------------------
     for i=1:gp_nb
         if isempty(LIMO.data.data{i})
-            if strcmp(a,'beta') % beta files
-                [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' beta file gp ',num2str(i)]);
-            else
-                [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' con file gp ',num2str(i)]);
-            end
+            [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' beta or con file gp ',num2str(i)]);
         else
             if maxsub == 1 && ischar(LIMO.data.data{i}) % Case for path to the files
                 [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([],[],[],LIMO.data.data{i});
@@ -895,20 +897,25 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
 
     if isempty(LIMO.design.parameters)
         % if all con - no need to ask
-        param = check_files(Paths, Names,gp_nb);
-        if param ~= 1
-            param = cell2mat(limo_inputdlg('which parameters to test e.g [2]','parameters option'));
+        limo_settings_script;
+        if ~isempty(STUDY) && ~any(contains(Names{1}, 'con_'))
+            [param,~] = get_beta_indices('selectmulti', fullfile(Paths{1}{1}, Names{1}{1}));
         else
-            param = num2str(param); % pretend it's limo_inputdlg output
+            param = check_files(Paths, Names,gp_nb);
+            if param ~= 1
+                param = cell2mat(limo_inputdlg('which parameters to test e.g [2]','parameters option'));
+            else
+                param = num2str(param); % pretend it's limo_inputdlg output
+            end
         end
 
         if isempty(param)
             disp('selection aborded'); return
         else
-            if contains(param,'[') && contains(param,']')
-                parameters = eval(param);
-            else
+            if ischar(param)
                 parameters = eval(['[' param ']']);
+            else
+                parameters = param;
             end
         end
 
@@ -997,7 +1004,39 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % now load covariates and check it matches data
     if strcmpi(stattest,'ANCOVA')
         if isempty(regressor_file)
-            [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select covariate file');
+            limo_settings_script;
+            if ~isempty(STUDY)
+                indvars = pop_listfactors(STUDY, 'gui', 'off', 'level', 'two', 'vartype', 'continuous');
+                if ~isempty(indvars)
+                    % get variable from study, DOES NOT HANDLE multiple sessions
+                    uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
+                               { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
+                               { 'style' 'checkbox' 'string' 'Compute interaction with sessions (will show as an additional covariate)' } ...
+                               { 'style' 'checkbox' 'string' 'Compute interaction with groups (will show as an additional covariate)' } ...
+                               { 'style' 'text' 'string' '' } ...
+                               { 'style' 'text' 'string' 'These variables will be saved in the current folder as "covariate_vars.txt"' } ...' ...
+                               { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                    if length(STUDY.group)   < 2, uiList(4) = []; end
+                    if length(STUDY.session) < 2, uiList(3) = []; end
+                    res = inputgui('uilist', uiList, 'geometry', mattocell(ones(1,length(uiList))), 'geomvert', [1 3 ones(1,length(uiList)-2)], 'cancel', 'Browse');
+                    if isempty(res)
+                        [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
+                    else
+                        interaction_sess  = false;
+                        interaction_group = false;
+                        FilterIndex = 1;
+                        PathName = pwd;
+                        FileName = 'covariate_vars.txt';
+                        if length(res) > 1
+                            if length(STUDY.session) >=2, interaction_sess  = res{2}; end
+                            if length(STUDY.group)   >=2, interaction_group = res{end}; end
+                        end
+                        std_saveindvar(STUDY, { indvars(res{1}).label }, fullfile(PathName, FileName), STUDY.session, STUDY.group, interaction_sess, interaction_group); % note that here it should depend on what the user select (group/session)
+                    end
+                end
+            else
+                [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select covariate file');
+            end
             if FilterIndex == 0
                 return
             else
@@ -1073,12 +1112,14 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         current_param  = parameters(i); % select only relevant parameters (usually the same)
         if strcmp(LIMO.Analysis,'Time-Frequency')
             if i==1
-                tmp_data = NaN(size(data{i},[1 2 3 5]));
+                sz = [ size(data{i}) 1 1 1];
+                tmp_data = NaN(sz([1 2 3 5]));
             end
             tmp_data(:,:,:,index:(sum(nb_subjects(1:i))))  = squeeze(data{i}(:,:,:,current_param,:));
         else
             if i==1
-                tmp_data = NaN(size(data{i},[1 2 4]));
+                sz = [ size(data{i}) 1 1 1];
+                tmp_data = NaN(sz([1 2 4]));
             end
             tmp_data(:,:,index:(sum(nb_subjects(1:i)))) = squeeze(data{i}(:,:,current_param,:));
         end
@@ -1134,19 +1175,21 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % ----------
     limo_settings_script;
     if limo_settings.newgui
-        if length(STUDY.group) < 2
+        if length(STUDY.group) < 2 && length(STUDY.session) < 2
             limo_questdlg( [ 'No groups of subject were detected in the STUDY.' 10 ...
                              'If you have groups of subjects, make sure to' 10 ...
                              'use the "group" field in the STUDY editor' ], 'Group information', 'Continue', 'Continue');
             gp_nb = 1;
+        elseif ~isempty(LIMO.data.data)
+            gp_nb = size(LIMO.data.data,1);
         else
-            gp_nb = length(STUDY.group);
+            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {'1'}));
         end
     else
         if ~isempty(LIMO.data.data)
             gp_nb = size(LIMO.data.data,1);
         else
-            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects?','Groups', 1, {'1'}));
+            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session?','Groups', 1, {'1'}));
         end
     end
 
@@ -2237,7 +2280,7 @@ if ~isempty(betas)
         { 'style' 'listbox' 'string' betas 'max' maxval } ...
         {'style' 'text' 'string' strInds } ...
         {'style' 'edit' 'string' '' } };
-    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2 1]);
+    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [3 1] }, 'geomvert', [1 length(betas)/2+1 1]);
     if isempty(res), return; end
     if ~isempty(res{2})
         param =  eval( [ '[' res{2} ']' ] );

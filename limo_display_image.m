@@ -199,7 +199,7 @@ end
 %% make the main figure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isempty(g.fig)
-    fig = figure('Color','w','InvertHardCopy','off');
+    fig = figure('Color','w','InvertHardCopy','off', 'paperpositionmode', 'auto');
     pos = get(fig, 'position');
     set(gcf, 'position', [pos(1:2) pos(3)*1.3 pos(4)]);
 

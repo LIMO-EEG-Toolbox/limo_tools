@@ -18,7 +18,7 @@ function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varar
 %   MCC       = Multiple Comparison technique
 %               1=None, 2= Cluster, 3=TFCE, 4=T max
 %   LIMO      = LIMO structure
-%   flag      = indicates to allow surfing the figure (1) or not (0)
+%   flag      = indicates interactivity (1) or not (0)
 %
 % OPTIONAL INPUTS  (Usage: {''key'', value, ... })
 % 'channels' : Provide the index of the channel to be used.
@@ -149,7 +149,7 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
             elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
                 LIMO = LIMO; LIMO.design.bootstrap = 1000;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-                LIMO = LIMO; limo_eeg(4,LIMO.dir); clear LIMO
+                LIMO = LIMO; limo_eeg(4,LIMO.dir);
             elseif contains(FileNameTmp,'ANOVA') && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
                 limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
             elseif contains(FileNameTmp,'Rep_ANOVA')

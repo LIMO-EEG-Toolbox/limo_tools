@@ -36,7 +36,7 @@ function [b, w] = limo_IRLS(varargin)
 %  Copyright (C) LIMO Team 2019
 
 %% default
-iterlim = 100;    % set a 100 iteration max
+iterlim = 1000;    % set a 100 iteration max
 fig     = 'off';  % if one going to play with itermlim, you may as well make a figure to see what is going on
 
 %% check inputs

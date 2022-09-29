@@ -1274,6 +1274,8 @@ switch type
                 array = find(~isnan(data(:,1,1,1)));
                 
                 % preallocation for parfor
+                H0_Rep_ANOVA_Gp_effect_sub = []; % avoid parfor warning
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = []; % avoid parfor warning
                 if type ==1
                     tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),1,2);
                 elseif type == 2

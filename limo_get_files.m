@@ -73,7 +73,8 @@ while go == 1
         if ~isempty(limo_settings.workdir)
             fileList1 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
             fileList2 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'con_*'));
-            fileList = [ fileList1;fileList2 ];
+            fileList3 = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Between_sessions_con_*'));
+            fileList = [ fileList1;fileList2;fileList3 ];
             if ~isempty(fileList)
                 for iFile = 1:length(fileList)
                     fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
