@@ -58,7 +58,11 @@ mask    = g.mask;
 res = '';
 scale           = toplot.*single(mask>0);  
 scale(scale==0) = NaN;   
-cc              = limo_color_images(scale); % get a color map commensurate to that
+tmpplot = toplot;
+if any(mask(:) == 0)
+     tmpplot(1) = NaN;
+end
+cc              = limo_color_images(tmpplot); % get a color map commensurate to that
 
 v = max(scale(:));       % from the 2D data to plot, find max
 [e,f]=find(scale==v);    % which channel and time/frequency frame
