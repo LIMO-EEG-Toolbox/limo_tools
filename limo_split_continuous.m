@@ -16,6 +16,8 @@ function new_cont = limo_split_continuous(varargin)
 % OUPUT new_cont is the continuous regressor normalized and split per
 % condition - if no output specified, user is prompted to save
 %
+% Example:
+%  new_cont = limo_split_continuous([ones(10,1)*-1;ones(10,1)], [1:20]')
 % Cyril Pernet 08-April-2014
 % ------------------------------
 %  Copyright (C) LIMO Team 2019

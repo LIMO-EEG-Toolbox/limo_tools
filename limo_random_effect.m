@@ -340,7 +340,13 @@ function Plotting_Callback(hObject, ~, handles)
 
 uiresume
 guidata(hObject, handles);
-delete(handles.figure1)
+[FileName,PathName,FilterIndex]=limo_get_result_file;
+if FilterIndex ~= 0
+    tmp          = load([PathName filesep 'LIMO.mat']);
+    limo_display_results(1,FileName,PathName,0.05,1,tmp.LIMO);
+end
+
+%delete(handles.figure1)
 limo_results
 
 % --- Executes on button press in Quit.

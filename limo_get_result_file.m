@@ -27,7 +27,7 @@ else
 end
 
 limo_settings_script;
-if limo_settings.newgui
+if limo_settings.newgui && ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
 if level == 1
