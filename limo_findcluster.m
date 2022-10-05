@@ -97,13 +97,11 @@ if exist('spm_bwlabel','file') == 3   % axs - preferentially use spm_bwlabel mex
     end
     
 elseif exist('bwlabeln','file') == 2 && exist('spm_bwlabel','file') ~= 3
-    
     for spatdimlev=1:spatdimlength
         [labelmat(spatdimlev, :, :), num] = bwlabeln(reshape(onoff(spatdimlev, :, :), nfreq, ntime), 4);
         labelmat(spatdimlev, :, :) = labelmat(spatdimlev, :, :) + (labelmat(spatdimlev, :, :)~=0)*total;
         total = total + num;
     end
-    
 else
     errordlg('You need either the Image Processing Toolbox or SPM in your path to do clustering'); return
 end
@@ -114,7 +112,7 @@ labelmat = reshape(labelmat, spatdimlength, nfreq*ntime);
 
 % combine clusters that are connected in neighbouring channel(s)
 % (combinations).
-replaceby=1:total;
+replaceby=[1:total]';
 for spatdimlev=1:spatdimlength
     neighbours=find(spatdimneighbstructmat(spatdimlev,:));
     for nbindx=neighbours
