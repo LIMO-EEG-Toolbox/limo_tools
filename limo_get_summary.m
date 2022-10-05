@@ -1,11 +1,12 @@
-function clusters = limo_get_summary(file,mask)
+function [clusters,madeupclusters] = limo_get_summary(file,mask)
 
 % simple routine to compute summary statistics per cluster
 %
 % FORMAT clusters = limo_get_summary(file,mask)
 %
 % INPUTS file is a result file like a t-test or ANOVA
-%        mask is a N-ary matrix of clusters
+%        mask is a N-ary matrix of clusters, if binary it will try to make
+%        up clusters
 %
 % OUTPUTS clusters, a structure with summary statistics per cluster
 %               - eigenmode is the 'direction' of the effect size (usually,
@@ -108,3 +109,4 @@ for c = length(num):-1:1
     end
 end
 
+madeupclusters = mask;
