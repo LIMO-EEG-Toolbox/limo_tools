@@ -96,7 +96,7 @@ end
 
 num = unique(mask);
 num(num==0) = [];
-for c = size(num,2):-1:1
+for c = length(num):-1:1
     data                  = stats(mask == num(c));
     clusters(c).eigenmode = sqrt(eig(data'*data)/length(data));
     clusters(c).median    = median(data);
