@@ -213,9 +213,14 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
         effect_size = A ./B ;
         name        = fullfile(filepath,[filename(1:end-4) '_PartialEta2.mat']);
     elseif contains(filename,'Rep_ANOVA_Interaction')
-        effect_nb   = str2double(filename(strfind(filename,'Factor_')+7:strfind(filename,'Factor_')+6+strfind(filename(strfind(filename,'Factor_')+6:end),'_')));
-        df          = squeeze(LIMO.design.interaction.df(:,effect_nb));
-        dfe         = squeeze(LIMO.design.interaction.dfe(:,effect_nb));
+        effect_nb   = filename(max(strfind(filename,'_'))+1:end-4);
+        position    = contains(LIMO.design.effects,'Interaction');
+        for v=1:size(effect_nb,2)
+            position = position .* contains(LIMO.design.effects,effect_nb(v));
+        end
+        effect_nb   = find(position);
+        df          = squeeze(LIMO.design.df(:,effect_nb));
+        dfe         = squeeze(LIMO.design.dfe(:,effect_nb));
         T2          = F.*repmat((df./dfe),1,size(F,2));
         N           = size(LIMO.design.X,1)/size(LIMO.design.C{effect_nb},2);
         effect_size = T2 ./ N;
