@@ -198,7 +198,7 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
             index2     = max(strfind(filename,'_'))-1;
             effect_nb  = eval(filename(index1:index2));
         else
-            index1     = strfind(filename,'Factor')+length('Factor')+1;
+            index1     = strfind(filename,'ess')+length('ess')+1;
             effect_nb  = eval(filename(index1:end));
         end
         df          = squeeze(LIMO.design.df(:,effect_nb));
