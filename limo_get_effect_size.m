@@ -188,7 +188,7 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
         end
     end
     
-    if ~contains(filename,'Rep_ANOVA_Interaction') && ~contains(filename,'Rep_ANOVA_Gp')
+    if ~contains(filename,'Rep_ANOVA_Interaction') && ~contains(filename,'Rep_ANOVA_Gp') && ~contains(filename,'ess')
         if contains(filename,'Main_effect','IgnoreCase',true)
             index1     = strfind(filename,'Main_effect')+length('Main_effect')+1;
             index2     = max(strfind(filename,'_'))-1;
@@ -198,8 +198,7 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
             index2     = max(strfind(filename,'_'))-1;
             effect_nb  = eval(filename(index1:index2));
         else
-            index1     = strfind(filename,'ess')+length('ess')+1;
-            effect_nb  = eval(filename(index1:end));
+            error('unexpected file')
         end
         df          = squeeze(LIMO.design.df(:,effect_nb));
         dfe         = squeeze(LIMO.design.dfe(:,effect_nb));
