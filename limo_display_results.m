@@ -1190,7 +1190,7 @@ elseif LIMO.Level == 2
     % -------------------------------------------
     if data_cached == 0
         
-        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
         if isempty(mask)
             return
