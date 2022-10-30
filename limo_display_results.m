@@ -1084,7 +1084,7 @@ elseif LIMO.Level == 2
     % -------------------------------------------
     if data_cached == 0
         
-        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
         if isempty(mask)
             return
@@ -1752,20 +1752,27 @@ elseif LIMO.Level == 2
                 % end
             end
 
-            if contains(FileName,'Rep_ANOVA_Main')
-                % -----------------------------------
+            if ~contains(FileName,'Rep_ANOVA_Interaction') && ...
+                ~contains(FileName,'Rep_ANOVA_Gp') 
+                % contains(FileName,{'Rep_ANOVA_Main','Rep_ANOVA'}) 
+                % --------------------------------------------------
                                 
                 % the data to plot are the difference in Yr given LIMO.design.C (see limo_rep_anova)
                 if contains(FileName,'Main_effect','IgnoreCase',true)
-                    index1 = strfind(FileName,'Main_effect')+12;
+                    index1     = strfind(FileName,'Main_effect')+length('Main_effect')+1;
+                    index2     = max(strfind(FileName,'_'))-1;
+                    effect_nb  = eval(FileName(index1:index2));
                 elseif contains(FileName,'Interaction','IgnoreCase',true)
-                    index1 = strfind(FileName,'Interaction')+12;
+                    index1     = strfind(FileName,'Interaction')+length('Interaction')+1;
+                    index2     = max(strfind(FileName,'_'))-1;
+                    effect_nb  = eval(FileName(index1:index2));
+                else
+                    index1     = strfind(FileName,'Factor')+length('Factor')+1;
+                    effect_nb  = eval(FileName(index1:end));
                 end
-                index2                = max(strfind(FileName,'_'))-1;
-                effect_nb             = eval(FileName(index1:index2));
-                C                     = LIMO.design.C{effect_nb};
-                Data                  = load(fullfile(LIMO.dir,'Yr.mat'));
-                Data                  = Data.(cell2mat(fieldnames(Data)));
+                C              = LIMO.design.C{effect_nb};
+                Data           = load(fullfile(LIMO.dir,'Yr.mat'));
+                Data           = Data.(cell2mat(fieldnames(Data)));
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     [~,channel,freq,time] = limo_display_reducedim(Data,LIMO,g.channels,g.restrict,g.dimvalue);
                     Data              = squeeze(Data(channel,freq,time,:,:));

@@ -64,8 +64,27 @@ Names = []; Paths = []; Files = [];
 while go == 1
     if isempty(path2file)
         if ~isempty(gp)
-            [name,path] = uigetfile(filter,['select a subject file or list file gp: ' num2str(gp)]);
-        else
+            guititle = ['select a subject file or list file gp: ' num2str(gp)];
+        end
+        % propose files to user
+        limo_settings_script;
+        name = '';
+        if ~isempty(limo_settings.workdir)
+            fileList = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'Beta*'));
+            if ~isempty(fileList)
+                for iFile = 1:length(fileList)
+                    fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
+                end
+                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis result file' } ...
+                           { 'style' 'popupmenu' 'string' {fileList.name} } };
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+                if ~isempty(res)
+                    name = fileList(res{1}).name;
+                    path = fileList(res{1}).folder;
+                end
+            end
+        end
+        if isempty(name)
             [name,path] = uigetfile(filter,guititle);
         end
     else
@@ -105,3 +124,6 @@ while go == 1
         errordlg('format not supported'); go = 0;
     end
 end
+
+   
+

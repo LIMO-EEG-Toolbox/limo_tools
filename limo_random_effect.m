@@ -46,17 +46,7 @@ handles.b    = 1000;
 handles.tfce = 0;
 handles.ica  = 0;
 handles.dir  = [];
-try S=evalin('base','STUDY');
-    handles.chan_file = S.design.limo.chanloc; clear S
-    fprintf('using study channel location file \n%s\n',handles.chan_file);
-catch
-    try
-        S=evalin('base','gp_level_chanlocs');
-        handles.chan_file = S;
-    catch
-        handles.chan_file = [];
-    end
-end
+handles = get_chan_loc(handles);
 guidata(hObject, handles);
 % uiwait(handles.figure1);
 
@@ -338,9 +328,36 @@ guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
 
+% ----------------------
+% subfunction to find channel locations
+% ----------------------
+function handles = get_chan_loc(handles)
 
+try 
+    S=evalin('base','STUDY');
+    handles.chan_file = S.design.limo.chanloc; clear S
+catch
+    try
+        S=evalin('base','gp_level_chanlocs');
+        handles.chan_file = S;
+    catch
+        go_to_working_dir;
+        tmpChanFile = fullfile(pwd, 'limo_gp_level_chanlocs.mat');
+        if exist(tmpChanFile, 'file')
+            handles.chan_file = tmpChanFile;
+        else
+            handles.chan_file = [];
+        end
+    end
+end
+if ~isempty(handles.chan_file)
+    fprintf('using study channel location file \n%s\n',handles.chan_file);
+end
+
+% ----------------------
 % subfunction called before calling the others 
 % to test chanlocs is loaded
+% ----------------------
 function go = test_chan_loc(handles)
 
 if isempty(handles.chan_file)
@@ -350,19 +367,50 @@ else
     go = 1;
 end
 
+% ----------------------
+% create folder if necessary
+% ----------------------
 function go = update_dir(handles,test)
-
 go = 0;
 if isempty(handles.dir)
-    if ~exist(test,'dir')
-        disp('directory not specified, creating one')
-        mkdir(test); cd(test); handles.dir = pwd; go = 1;
-    else
-        warndlg2(sprintf('directory not specified, %s already exists \n please create and select a directory',test),'directory issue')
+    go_to_working_dir; % no effect if limo_settings.workdir is empty
+    if exist(fullfile(pwd, test),'dir')
+        count = 2;
+        while exist([ test num2str(count)],'dir')
+            count = count + 1;
+        end
+        newtest = [ test num2str(count)];
+        res = questdlg2(sprintf('The directory "%s" already exist, do you want to overwrite it or\ncreate a new one named "%s"?\nIf you overwrite, previous results will be lost.',test,newtest), ...
+            'Directory containing results', 'Cancel', 'Create new', 'Overwrite', 'Overwrite');
+        if strcmpi(res, 'cancel')
+            go = 0;
+            return;
+        elseif strcmpi(res, 'Create new')
+            test = newtest;
+        end
+
+        if exist(test,'dir')
+            disp('Removing folder');
+            rmdir(test, 's');
+        end
     end
+
+    warndlg2(sprintf('Creating "%s" directory.\nRemember it so you can plot results.\nNow you will select the type of analysis and the single trial analysis result file.',test),'Directory containing results')
+    mkdir(test); cd(test); handles.dir = pwd; go = 1;
 else
     go = 1;
 end
 
-
+% ----------------------
+% go to the right folder
+% ----------------------
+function go_to_working_dir()
+if ~exist('limo_settings_script', 'file')
+    pathTmp = fileparts(which('limo_eeg'));
+    addpath(fullfile(pathTmp, 'external', 'psom'));
+end
+limo_settings_script;
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
 
