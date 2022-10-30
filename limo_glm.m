@@ -169,8 +169,8 @@ if strcmp(method,'OLS')
     end
     
 elseif strcmp(method,'WLS')
-    [Betas,W,rf] = limo_WLS(X,Y);
-    WX           = X.*repmat(W,1,size(X,2));
+    [Betas,W] = limo_WLS(X,Y);
+    WX        = X.*repmat(W,1,size(X,2));
     
 elseif strcmp(method,'WLS-TF')
     % unpack the data
@@ -235,16 +235,24 @@ switch method
             E = diag(Y'*R*Y);              % SS Error => vecnorm(R*Y).^2
         end
         
+        if any(E<0)
+            warning on
+            warning('data and model are too close! negative MSE inverted\n')
+            E = abs(E); warning off
+        end
+        
         % degrees of freedom
         % -------------------
-       df  = rank(WX)-1;
-       if strcmp(method,'OLS')
+        df  = rank(WX)-1;
+        if df == 0
+            df = 1; % case of just the mean
+        end
+        
+        if strcmp(method,'OLS')
             dfe = size(Y,1)-rank(WX);
-       else
-            % Satterthwaite approximation minus the number of dimensions removed by pcout to get W
-            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)); 
-            % df = trace(HM'*HM).^2/trace(HM'*HM*HM'*HM); 
-            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf-1); 
+        else
+            % Satterthwaite approximation
+            dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
         end
         
         % model R^2
@@ -540,7 +548,7 @@ switch method
         model.dfe           = NaN(n_freqs,2);
         model.conditions.df = squeeze(NaN(nb_factors,n_freqs,2));
         
-        % iterate per freqency band
+        % iterate per frequency band
         % ---------------------------
         for freq=n_freqs:-1:1
             
@@ -549,7 +557,6 @@ switch method
             
             % covariance stuff
             % -----------------
-            HM    = WX{freq}*pinv(WX{freq});    
             if strcmpi(variance_estimates,'HC4')
                 h   = diag(WX{freq}*pinv(WX{freq}'*WX{freq})*WX{freq}');
                 d   = min(4,h/mean(h));
@@ -559,12 +566,17 @@ switch method
                 E   = diag(squeeze(Y(freq,:,:))'*R*squeeze(Y(freq,:,:)));             
             end
             
+            if any(E<0)
+                warning on
+                warning('data and model are too close! negative MSE inverted - freq%g\n',freq)
+                E = abs(E); warning off
+            end
+            
             % degrees of freedom
             % -------------------
             df  = rank(WX{freq})-1;
             HM  = WX{freq}*pinv(WX{freq}); % Hat matrix, projection onto X
             dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM));
-            % dfe = trace((eye(size(HM))-HM)'*(eye(size(HM))-HM)) - (rf(freq)-1);
 
             % model R^2
             % -----------
@@ -813,8 +825,8 @@ switch method
                 else % ANCOVA type of designs
                     
                     % pre-allocate space
-                    df_continuous   = zeros(nb_continuous,size(Y,3));
-                    F_continuous    = zeros(nb_continuous,size(Y,3));
+                    df_continuous   = zeros(nb_continuous,1);
+                    F_continuous    = zeros(nb_continuous,n_times);
                     
                     % compute
                     N_conditions = sum(nb_conditions) + sum(nb_interactions);
@@ -943,6 +955,11 @@ switch method
             HM                     = WX*pinv(WX);
             R                      = eye(size(Y,1)) - WX*pinv(WX);
             E                      = Y(:,frame)'*R*Y(:,frame);
+            if E<0
+                warning on
+                warning('data and model are too close! negative MSE inverted - frame %g\n',frame)
+                E = abs(E); warning off
+            end
             % The number of degrees of freedom can be defined as the minimum number of
             % independent coordinates that can specify the position of the system completely.
             % This gives the same as [rank(X)-1 (size(Y,1)-rank(X))] if OLS, here we
@@ -953,7 +970,7 @@ switch method
             E_ols                  = Y(:,frame)'*R_ols*Y(:,frame);
             % MSE adjustment, E cannot be smaller than OLS since the
             % hyperplane we fit is farther away from some observations
-            if E < E_ols
+            if E < abs(E_ols)
                 n = size(X,1); p = rank(X);
                 sigmar = E/(n-p); sigmals = E_ols/(n-p);
                 MSE = (n*sigmar + p^2*sigmals) / (n+p^2);

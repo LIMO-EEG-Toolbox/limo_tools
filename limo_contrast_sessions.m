@@ -133,11 +133,11 @@ if ~isempty(joint_labels)
             tmp     = squeeze(data2(channel,:,:));
             index   = intersect(find(~isnan(tmp(1,:))),find(LIMO2.design.X(:,regressors)));
             Y2      = tmp(:,index); clear tmp
-            if strcmpi(LIMO1.design.method,'WLS')
-                W  = squeeze(LIMO1.design.weights(channel,index));
+            if strcmpi(LIMO2.design.method,'WLS')
+                W  = squeeze(LIMO2.design.weights(channel,index));
                 Y2 = Y2.*repmat(W,[size(Y2,1) 1]);
-            elseif strcmpi(LIMO1.design.method,'IRLS')
-                W  = squeeze(LIMO1.design.weights(channel,:,index));
+            elseif strcmpi(LIMO2.design.method,'IRLS')
+                W  = squeeze(LIMO2.design.weights(channel,:,index));
                 Y2 = Y2.*W;
             end
             

@@ -161,7 +161,7 @@ while out == 0
         end
         
         % the last dim of data.data can be the number of subjects or the trials 
-        % sorted by there weights - use file name to know which estimator was used
+        % sorted by their weights - use file name to know which estimator was used
         if isfield(data,'data')
             if contains(file, 'Mean','IgnoreCase',true)
                 name{turn} = 'Subjects'' Means';
@@ -184,7 +184,7 @@ while out == 0
                     name{turn} = file;
                 end
             end
-            subjects_plot = 1;
+            subjects_plot = 1; 
         end
     end
     
@@ -206,13 +206,18 @@ while out == 0
             D           = squeeze(tmp(:,:,1,:));
             Data        = nan(1,size(tmp,2),size(tmp,4));
             Data(1,:,:) = D; clear D;
-        elseif size(tmp,1) > 1 && size(tmp,3) == 1 % only 1 variable not squeezed yet
+        elseif size(tmp,1) > 1 && size(tmp,3) == 1 && subjects_plot==0 % only 1 variable not squeezed yet
             Data        = squeeze(tmp(:,:,1,:));
         elseif size(tmp,1) > 1 && size(tmp,3) == 3 
             Data        = tmp;
         else % many subjects for instance
             if ~exist('v','var')
-                v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                if isfield(data.limo,'PlotRank')
+                    v = cell2mat(inputdlg(['which decile to plot, 1 to ' num2str(size(tmp,4)-1)],'plotting option'));
+                else
+                    v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                end
+                
                 if isempty(v)
                     out = 1; return
                 elseif ischar(v)
@@ -318,7 +323,11 @@ while out == 0
         end
         
         if strcmp(channel,'') 
-            tmp = Data(:,:,2); 
+            if ndims(Data)==2 %#ok<ISMAT>
+                tmp = Data;
+            else
+                tmp = Data(:,:,2);
+            end
             if sum(isnan(tmp(:))) == numel(tmp)
                 error('the data file appears empty (only NaNs)')
             else
@@ -331,10 +340,18 @@ while out == 0
                 Data = squeeze(Data(channel,:,:)); fprintf('ploting channel %g\n',channel)
             end
         else
-            try
-                Data = squeeze(Data(channel,:,:));
-            catch
-                Data = squeeze(Data(eval(cell2mat(channel)),:,:));
+            if ndims(Data)==2 %#ok<ISMAT>
+                try
+                    Data = squeeze(Data(channel,:));
+                catch
+                    Data = squeeze(Data(eval(cell2mat(channel)),:));
+                end
+            else
+                try
+                    Data = squeeze(Data(channel,:,:));
+                catch
+                    Data = squeeze(Data(eval(cell2mat(channel)),:,:));
+                end
             end
         end
     end
@@ -354,7 +371,9 @@ while out == 0
         colorOrder = get(gca, 'ColorOrder');
         colorindex = 1;
     else
-        if size(vect,2) ~= size(Data,1)
+        if subjects_plot == 1 && length(vect) ~= length(Data)
+            warndlg('the new data selected have a different size, plot skipped')
+        elseif subjects_plot == 0 && length(vect) ~= size(Data,1)
             warndlg('the new data selected have a different size, plot skipped')
         else
             if subjects_plot == 0

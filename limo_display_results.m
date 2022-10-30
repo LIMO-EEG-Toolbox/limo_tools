@@ -71,9 +71,9 @@ end
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
 % see limo_stat_values - discontinuated empirical threshold (misleading)
 
+% Load LIMO structure if a path was provided
 if ischar(LIMO)
-    LIMO = load(LIMO);
-    LIMO = LIMO.LIMO;
+    load(LIMO, 'LIMO');
 end
 
 if LIMO.design.bootstrap == 0
@@ -96,7 +96,7 @@ end
 % -------------------      LEVEL 1     ------------------------------------
 % -------------------  SINGLE SUBJECT  ------------------------------------
 % -------------------------------------------------------------------------
-if LIMO.Level == 1
+if LIMO.Level == 1 
     
     switch Type
         
@@ -163,9 +163,9 @@ if LIMO.Level == 1
                         if strcmpi(FileName,'R2.mat') && size(LIMO.design.X,2)==1
                             mask = ones(size(mask)); LIMO.cache.fig.mask = mask;
                             mytitle = 'R^2 Coef unthresholded'; LIMO.cache.fig.title = mytitle;
-                            save LIMO LIMO
+                            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                         else
-                            save LIMO LIMO
+                            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                             return
                         end
                     else
@@ -234,7 +234,7 @@ if LIMO.Level == 1
                         LIMO.cache.fig.pval       = M;
                         LIMO.cache.fig.mask       = mask;
                         LIMO.cache.fig.title      = mytitle;
-                        save LIMO LIMO
+                        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                     end
                     
                     if ndims(toplot)==3
@@ -554,11 +554,12 @@ if LIMO.Level == 1
             if isempty(regressor); disp('selection aborded'); return; end
             regressor = cell2mat(regressor);
             if isempty(regressor); disp('selection aborded'); return; end
+            if ~contains(regressor,'['); regressor=['[' regressor ']']; end
+            if ischar(regressor); regressor=str2num(regressor); end %#ok<ST2NM>
+            regressor = sort(regressor);
             
-            try regressor = sort(str2double(regressor));
-                if max(regressor) > size(LIMO.design.X,2); errordlg('invalid regressor number'); end
-            catch ME
-                error('can''t select this regressor: %s',ME.message);
+            if max(regressor) > size(LIMO.design.X,2)
+                errordlg('invalid regressor number'); 
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
@@ -573,10 +574,10 @@ if LIMO.Level == 1
                 errordlg2('you can''t plot categorical and continuous regressors together'); return
             end
             
-            % which ERP to make
-            % ------------------
+            % which data type to make
+            % ------------------------
             if isempty(g.plot3type) && ~any(strcmpi(g.plot3type,{'Original','Modelled','Adjusted'}))
-                extra = questdlg('Plotting ERP','ERP Options','Original','Modelled','Adjusted','Adjusted');
+                extra = questdlg('Which data type to plot?','Options','Original','Modelled','Adjusted','Adjusted');
             else
                 extra = g.plot3type;
             end
@@ -653,7 +654,7 @@ if LIMO.Level == 1
                 channel = eval(cell2mat(channel));
                 if size(channel) > 1
                     errordlg('invalid channel choice'); return
-                elseif channel > size(LIMO.data.chanlocs,1) || channel < 1
+                elseif channel > size(LIMO.data.chanlocs,2) || channel < 1
                     errordlg('invalid channel number'); return
                 end
                 
@@ -676,42 +677,42 @@ if LIMO.Level == 1
             if isfield(LIMO,'cache')
                 if strcmpi(LIMO.Analysis,'Time-Frequency') && isfield(LIMO.cache,'ERPplot')
                     
-                    if mean([LIMO.cache.ERPplot.channel == channel ...
-                            LIMO.cache.ERPplot.regressor == regressor ...
-                            LIMO.cache.ERPplot.frequency == frequency]) == 1 ...
-                            && strcmpi('LIMO.cache.ERPplot.extra',extra)
+                    if mean([LIMO.cache.Courseplot.channel == channel ...
+                            LIMO.cache.Courseplot.regressor == regressor ...
+                            LIMO.cache.Courseplot.frequency == frequency]) == 1 ...
+                            && strcmpi('LIMO.cache.Courseplot.extra',extra)
                         
                         if sum(regressor <= categorical) == length(regressor)
-                            average = LIMO.cache.ERPplot.average;
-                            ci = LIMO.cache.ERPplot.ci;
-                            mytitle = LIMO.cache.ERPplot.title;
+                            average = LIMO.cache.Courseplot.average;
+                            ci = LIMO.cache.Courseplot.ci;
+                            mytitle = LIMO.cache.Courseplot.title;
                             disp('using cached data');
                             data_cached = 1;
                         else
-                            continuous = LIMO.cache.ERPplot.continuous;
-                            mytitle = LIMO.cache.ERPplot.title;
+                            continuous = LIMO.cache.Courseplot.continuous;
+                            mytitle = LIMO.cache.Courseplot.title;
                             disp('using cached data');
                             data_cached = 1;
                         end
                     end
                     
-                elseif strcmpi(LIMO.Analysis,'Time') && isfield(LIMO.cache,'ERPplot') || ...
-                        strcmpi(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'ERPplot')
+                elseif strcmpi(LIMO.Analysis,'Time') && isfield(LIMO.cache,'Courseplot') || ...
+                        strcmpi(LIMO.Analysis,'Frequency') && isfield(LIMO.cache,'Courseplot')
                     
-                    if length(LIMO.cache.ERPplot.regressor) == length(channel)
-                        if mean([LIMO.cache.ERPplot.channel == channel ...
-                                LIMO.cache.ERPplot.regressor == regressor]) == 1  ...
-                                && strcmpi('LIMO.cache.ERPplot.extra',extra)
+                    if length(LIMO.cache.Courseplot.regressor) == length(channel)
+                        if mean([LIMO.cache.Courseplot.channel == channel ...
+                                LIMO.cache.Courseplot.regressor == regressor]) == 1  ...
+                                && strcmpi('LIMO.cache.Courseplot.extra',extra)
                             
                             if sum(regressor <= categorical) == length(regressor)
-                                average = LIMO.cache.ERPplot.average;
-                                ci = LIMO.cache.ERPplot.ci;
-                                mytitle = LIMO.cache.ERPplot.title;
+                                average = LIMO.cache.Courseplot.average;
+                                ci = LIMO.cache.Courseplot.ci;
+                                mytitle = LIMO.cache.Courseplot.title;
                                 disp('using cached data');
                                 data_cached = 1;
                             else
-                                continuous = LIMO.cache.ERPplot.continuous;
-                                mytitle = LIMO.cache.ERPplot.title;
+                                continuous = LIMO.cache.Courseplot.continuous;
+                                mytitle = LIMO.cache.Courseplot.title;
                                 disp('using cached data');
                                 data_cached = 1;
                             end
@@ -983,16 +984,16 @@ if LIMO.Level == 1
                     ylabel('Amplitude in {\mu}V','FontSize',16)
                 end
                 
-                LIMO.cache.ERPplot.extra     = extra;
-                LIMO.cache.ERPplot.average   = average;
-                LIMO.cache.ERPplot.channel   = channel;
-                LIMO.cache.ERPplot.regressor = regressor;
+                LIMO.cache.Courseplot.extra     = extra;
+                LIMO.cache.Courseplot.average   = average;
+                LIMO.cache.Courseplot.channel   = channel;
+                LIMO.cache.Courseplot.regressor = regressor;
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    LIMO.cache.ERPplot.frequency = frequency;
+                    LIMO.cache.Courseplot.frequency = frequency;
                 end
-                LIMO.cache.ERPplot.ci        = ci;
-                LIMO.cache.ERPplot.title     = mytitle;
-                save LIMO LIMO
+                LIMO.cache.Courseplot.ci        = ci;
+                LIMO.cache.Courseplot.title     = mytitle;
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                 
             else
                 for i=1:size(continuous,1)
@@ -1021,14 +1022,14 @@ if LIMO.Level == 1
                     end
                 end
                 
-                LIMO.cache.ERPplot.continuous = continuous;
-                LIMO.cache.ERPplot.channel    = channel;
-                LIMO.cache.ERPplot.regressor  = regressor;
+                LIMO.cache.Courseplot.continuous = continuous;
+                LIMO.cache.Courseplot.channel    = channel;
+                LIMO.cache.Courseplot.regressor  = regressor;
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    LIMO.cache.ERPplot.frequency = frequency;
+                    LIMO.cache.Courseplot.frequency = frequency;
                 end
-                LIMO.cache.ERPplot.title      = mytitle;
-                save LIMO LIMO
+                LIMO.cache.Courseplot.title      = mytitle;
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
             end
             
     end % closes switch
@@ -1068,7 +1069,7 @@ elseif LIMO.Level == 2
                     mask        = LIMO.cache.fig.mask;
                     mytitle     = LIMO.cache.fig.title;
                     data_cached = 1;
-                    assignin('base','stat_values',M)
+                    assignin('base','stat_values',toplot)
                     assignin('base','p_values',M)
                     assignin('base','mask',mask)
                 end
@@ -1083,7 +1084,7 @@ elseif LIMO.Level == 2
     % -------------------------------------------
     if data_cached == 0
         
-        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
         if isempty(mask)
             return
@@ -1096,7 +1097,8 @@ elseif LIMO.Level == 2
         end
         
         if strcmpi(LIMO.Analysis,'Time-Frequency') || strcmpi(LIMO.Analysis,'ITC')
-            if contains(FileName,'R2')
+            if contains(FileName,'R2') || ...
+                    contains(FileName,'semi_partial')
                 toplot = squeeze(toplot(:,:,:,1));
             elseif contains(FileName,'ttest','IgnoreCase',true) || ...
                     contains(FileName,'LI_Map','IgnoreCase',true)
@@ -1116,7 +1118,8 @@ elseif LIMO.Level == 2
                 disp('file no supported'); return
             end
         else
-            if contains(FileName,'R2')
+            if contains(FileName,'R2') || ...
+                    contains(FileName,'semi_partial')
                 toplot = squeeze(toplot(:,:,1));
             elseif contains(FileName,'ttest','IgnoreCase',true) || ...
                     contains(FileName,'LI_Map','IgnoreCase',true)
@@ -1152,7 +1155,11 @@ elseif LIMO.Level == 2
             LIMO.cache.fig.pval       = squeeze(M);
             LIMO.cache.fig.mask       = squeeze(mask);
             LIMO.cache.fig.title      = mytitle;
-            save LIMO LIMO
+            if exist(LIMO.dir,'dir')
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            else
+                disp('Cached data in LIMO.mat cannot be updated - LIMO dir doesn''t exist (likely moved files)')
+            end
         end
         
         % image all results
@@ -1499,7 +1506,7 @@ elseif LIMO.Level == 2
                     reg_values(remove,:)   = [];
                 end
                 
-            elseif contains(['Modelled','Modeled'],extra,'Ignorecase',true)
+            elseif contains(extra,{'Modelled','Modeled'},'Ignorecase',true)
                 if exist('Betas.mat','file') % OLS & IRLS GLM
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         Betas = load('Betas.mat');
@@ -1745,20 +1752,27 @@ elseif LIMO.Level == 2
                 % end
             end
 
-            if contains(FileName,'Rep_ANOVA_Main')
-                % -----------------------------------
+            if ~contains(FileName,'Rep_ANOVA_Interaction') && ...
+                ~contains(FileName,'Rep_ANOVA_Gp') 
+                % contains(FileName,{'Rep_ANOVA_Main','Rep_ANOVA'}) 
+                % --------------------------------------------------
                                 
                 % the data to plot are the difference in Yr given LIMO.design.C (see limo_rep_anova)
                 if contains(FileName,'Main_effect','IgnoreCase',true)
-                    index1 = strfind(FileName,'Main_effect')+12;
+                    index1     = strfind(FileName,'Main_effect')+length('Main_effect')+1;
+                    index2     = max(strfind(FileName,'_'))-1;
+                    effect_nb  = eval(FileName(index1:index2));
                 elseif contains(FileName,'Interaction','IgnoreCase',true)
-                    index1 = strfind(FileName,'Interaction')+12;
+                    index1     = strfind(FileName,'Interaction')+length('Interaction')+1;
+                    index2     = max(strfind(FileName,'_'))-1;
+                    effect_nb  = eval(FileName(index1:index2));
+                else
+                    index1     = strfind(FileName,'Factor')+length('Factor')+1;
+                    effect_nb  = eval(FileName(index1:end));
                 end
-                index2                = max(strfind(FileName,'_'))-1;
-                effect_nb             = eval(FileName(index1:index2));
-                C                     = LIMO.design.C{effect_nb};
-                Data                  = load(fullfile(LIMO.dir,'Yr.mat'));
-                Data                  = Data.(cell2mat(fieldnames(Data)));
+                C              = LIMO.design.C{effect_nb};
+                Data           = load(fullfile(LIMO.dir,'Yr.mat'));
+                Data           = Data.(cell2mat(fieldnames(Data)));
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     [~,channel,freq,time] = limo_display_reducedim(Data,LIMO,g.channels,g.restrict,g.dimvalue);
                     Data              = squeeze(Data(channel,freq,time,:,:));

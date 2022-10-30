@@ -81,17 +81,19 @@ if strcmpi(LIMO.Analysis,'Time')
     if size(timevect,2) ~= size(toplot,2)
         timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
         LIMO.data.timevect =  timevect;
-        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+        if exist(LIMO.dir,'dir')
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+        end
     end
     
-    ratio =  (timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
+    ratio =  abs(timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
     if LIMO.data.start < 0
         frame_zeros = find(timevect == 0);
         if isempty(frame_zeros)
             frame_zeros = round(abs(LIMO.data.start) / ratio)+1;
         end
     else
-        frame_zeros = 1;
+        frame_zeros = -round(min(timevect)/ ratio);
     end
     
 elseif strcmpi(LIMO.Analysis,'Frequency')
@@ -108,14 +110,14 @@ elseif strcmpi(LIMO.Analysis,'Frequency')
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
     
-    ratio =  (freqvect(end)-freqvect(1)) / length(freqvect);
+    ratio =  abs(freqvect(end)-freqvect(1)) / length(freqvect);
     if LIMO.data.start < 0
         frame_zeros = find(freqvect == 0);
         if isempty(frame_zeros)
             frame_zeros = round(abs(LIMO.data.start) / ratio)+1;
         end
     else
-        frame_zeros = 1;
+        frame_zeros = -round(min(freqvect)/ ratio);
     end
     
 elseif strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -128,18 +130,18 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
     
     if size(timevect,2) ~= size(toplot,2)
         timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
-        LIMO.data.tf_times =  timevect;
+        LIMO.data.tf_times = timevect;
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
     
-    ratio =  (timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
+    ratio =  abs(timevect(end)-timevect(1)) / length(timevect); % this the diff in 'size' between consecutive frames
     if LIMO.data.start < 0
         frame_zeros = find(timevect == 0);
         if isempty(frame_zeros)
             frame_zeros = round(abs(LIMO.data.start) / ratio)+1;
         end
     else
-        frame_zeros = 1;
+        frame_zeros = -round(min(timevect)/ ratio);
     end
     
     if isfield(LIMO.data,'tf_freqs')
@@ -443,14 +445,18 @@ if dynamic == 1
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         if ~isnan(p_values(yframe,frame))
                             fprintf('Stat value: %g, p_value %g \n',toplot(yframe,frame),p_values(yframe,frame));
+                        else
+                            fprintf('Stat value: %g, p_value is a NaN? \n',toplot(yframe,frame));
                         end
                     else
                         if ~isnan(p_values(round(y),frame))
                             fprintf('Stat value: %g, p_value %g \n',toplot(round(y),frame),p_values(round(y),frame));
+                        else
+                            fprintf('Stat value: %g, p_value is a NaN? \n',toplot(round(y),frame));
                         end
                     end
                 catch pvalerror
-                    fprintf('couldn''t figure the p value?? %s \n',pvalerror.message)
+                    fprintf('couldn''t figure the stats values?? %s \n',pvalerror.message)
                 end
             end
         end

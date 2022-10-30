@@ -49,7 +49,7 @@ mask = cluster_p;
 
 %% compute cluster mass
 ndim = numel(size(bootM));
-if ndim ~=3 || ndim ~= 4
+if ndim < 3 
     error('H0 data must be 3D or 4D')
 end
 
@@ -78,8 +78,4 @@ if MCC == 2
 elseif MCC == 1
     [mask, cluster_p] = limo_chancluster_test(squeeze(M),squeeze(P),squeeze(bootM),squeeze(bootP),p);
 end
-
-
-
-
 

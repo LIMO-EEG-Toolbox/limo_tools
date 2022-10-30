@@ -1,7 +1,7 @@
 function Data = limo_plot_difference(varargin)
 
-% allows to plot the Difference between two data set with alpha % Hightest
-% Density Intervals (ie Bayesian bootstrap CI) 
+% allows to plot the Difference between two data set with alpha 
+% Hightest Density Intervals (ie Bayesian bootstrap CI) 
 % WARNING this is computed channel/time frame wise, ie this is not simultaneous CI
 %
 % FORMATS
@@ -25,6 +25,7 @@ function Data = limo_plot_difference(varargin)
 %         'restrict' is 'Time' or 'Frequency' for ERSP analyses
 %                    --> only for display, differences and HDI are saved on
 %                        drive for both dimensions
+%        'name'      the name to save the data 
 %
 % OUTPUT
 % Data    a structure with

@@ -38,22 +38,7 @@ if strcmp(LIMO.design.status,'to do')
         end
     end
     
-    if strcmpi(LIMO.design.method,'WLS') % only called 1st level - array(1) will work
-        try
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                limo_pcout(squeeze(Yr(array(1),1,:,:))');
-            else
-                limo_pcout(squeeze(Yr(array(1),:,:))');
-            end
-        catch pcout_error
-            if strcmp(pcout_error.message,'Principal Component Projection cannot be computed, more observations than variables are needed')
-                error_msg = sprintf('error in %s\n %s\n running the analysis using OLS and downsampling data solves this issue',LIMO.dir,pcout_error.message);
-                errordlg(error_msg,'WLS issue','non-modal'); error('%s\n',pcout_error.message)
-            else
-                error('%s\n',pcout_error.message)
-            end
-        end
-    elseif strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
+    if strcmpi(LIMO.design.method,'IRLS') % 1st or 2nd level
         N = size(Yr,numel(size(Yr)));
         if N < 50
             LIMO.design.method = 'OLS';
@@ -139,40 +124,61 @@ if strcmp(LIMO.design.status,'to do')
                 LIMO.model.continuous_df  = model.continuous.df;
             end
             update = 0;
+        
         elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
+            
+            % store temporarily as cell everything
             LIMO.model.model_df{channel} = model.df;          
             if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df{channel}  = model.conditions.df;
+                LIMO.model.conditions_df{channel}  = squeeze(model.conditions.df);
             end
             if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df{channel}  = model.interactions.df;
+                LIMO.model.interactions_df{channel}  = squeeze(model.interactions.df);
             end
             if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df{channel}  = model.continuous.df;
+                LIMO.model.continuous_df{channel}  = squeeze(model.continuous.df);
             end
-            
-            % remove cell as sizes are identical for a given method
+
+            % 1 cell per channel 
             if e == size(array,1)
-                tmp = cell2mat(LIMO.model.model_df)';
+                tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
+                if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
+                   tmp = tmp'; 
+                end
                 df  = tmp(1:2:end,1); % a single value over time
                 dfe = tmp(2:2:end,:); % could be different over time
                 LIMO.model = rmfield(LIMO.model,'model_df');
                 LIMO.model.model_df = [df dfe]; clear tmp
+                
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)';
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_interactions ~=0
-                    tmp =  cell2mat(LIMO.model.interactions_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp
                 end
+                
                 if LIMO.design.nb_continuous ~=0
-                    tmp = cell2mat(LIMO.model.continuous_df);
-                    df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    tmp = cell2mat(LIMO.model.continuous_df)'; % dim (elec*[df dfe]) * n
+                    if size(tmp,1) == size(Yr,1)*2 
+                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                    elseif size(tmp,1) == size(Yr,1)
+                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                    end
                     LIMO.model = rmfield(LIMO.model,'continuous_df');
                     LIMO.model.continuous_df = [df dfe]; clear tmp
                 end
@@ -360,7 +366,11 @@ if LIMO.design.bootstrap ~=0
         else
             overwrite_H0boot = questdlg('overwrite H0?','limo check','yes','no','yes');
             if strcmp(overwrite_H0boot,'no') || isempty(overwrite_H0boot)
-                warndlg2('Analysis stopped - not overwriting H0')
+                if exist('warndlg2','file')
+                    warndlg2('Analysis stopped - not overwriting H0')
+                else
+                    warndlg('Analysis stopped - not overwriting H0')
+                end
                 return
             end
         end
@@ -448,7 +458,7 @@ if LIMO.design.bootstrap ~=0
             
             for e = 1:length(array)
                 channel = array(e);
-                waitbar(e/size(array,1))
+                waitbar(e/size(array,2))
                 fprintf('bootstrapping channel %g \n',channel);
                 if LIMO.Level == 2
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -601,8 +611,14 @@ if LIMO.design.bootstrap ~=0
                                 tmp_H0_Covariates(channel,:,1,2,B) = model.continuous.p{B};
                             else
                                 for i=1:LIMO.design.nb_continuous
-                                    tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
-                                    tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    if all(size(squeeze(tmp_H0_Covariates(channel,:,i,1,B))) == size(squeeze(model.continuous.F{B}(:,i)))) || ...
+                                            all(size(squeeze(tmp_H0_Covariates(channel,:,i,1,B))) == size(squeeze(model.continuous.F{B}(:,i))'))
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(:,i);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(:,i);
+                                    else
+                                        tmp_H0_Covariates(channel,:,i,1,B) = model.continuous.F{B}(i,:);
+                                        tmp_H0_Covariates(channel,:,i,2,B) = model.continuous.p{B}(i,:);
+                                    end
                                 end
                             end
                         end
@@ -627,12 +643,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Conditions(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Condition_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Condition_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Condition_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Condition_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Condition_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Condition_effect(1,:,:,:) = tmp;
+                            H0_Condition_effect = tmp;
                         end
                     else
                         H0_Condition_effect = tmp;
@@ -652,12 +672,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Interaction_effect(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Interaction_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Interaction_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Interaction_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Interaction_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Interaction_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Interaction_effect(1,:,:,:) = tmp;
+                            H0_Interaction_effect = tmp;
                         end
                     else
                         H0_Interaction_effect = tmp;
@@ -677,12 +701,16 @@ if LIMO.design.bootstrap ~=0
                         tmp = squeeze(tmp_H0_Covariates(:,:,i,:,:));
                     end
                     
-                    if ~isempty(LIMO.design.electrode)
-                        H0_Covariate_effect = NaN([1 size(tmp)]);
-                        if strcmpi(LIMO.Analysis,'Time-Frequency')
-                            H0_Covariate_effect(1,:,:,:,:) = tmp;
+                    if isfield(LIMO.design,'electrode')
+                        if ~isempty(LIMO.design.electrode)
+                            H0_Covariate_effect = NaN([1 size(tmp)]);
+                            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                                H0_Covariate_effect(1,:,:,:,:) = tmp;
+                            else
+                                H0_Covariate_effect(1,:,:,:) = tmp;
+                            end
                         else
-                            H0_Covariate_effect(1,:,:,:) = tmp;
+                            H0_Covariate_effect = tmp;
                         end
                     else
                         H0_Covariate_effect = tmp;

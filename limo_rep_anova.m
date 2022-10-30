@@ -21,7 +21,6 @@ function result = limo_rep_anova(varargin)
 %       For instance enter [1 1 1 2 2 2 3 3 3] to indicate that subjects
 %       1-3 belonged to group 1, subjects 4-6 belonged to group 2...
 %       Enter [] if all subjects belonged to the same group.
-%       There must be the same number of subjects in each group.
 % - factors is a vector indicating the levels of each factor
 %       (prod(factors)=p), e.g. [2 2] for a 2 by 2 factorial
 % - C is optional and represent the contrast vector to compute (see limo_OrthogContrasts)
@@ -31,33 +30,52 @@ function result = limo_rep_anova(varargin)
 % OUTPUT
 %
 %   F     = F value of the Hotelling T2 test
+%   df    = degrees of freedom of the effect(s)
+%   dfe   = degrees of freedom of the error
 %   p     = corresponding level of significance
 %   names = a letter per factor by default
 %
 %   - One sample repeated measure
 %       result.F
+%       result.df
+%       result.dfe
 %       result.p
 % 
 %   - Repeated measure with more than one factor
 %       result.F
+%       result.df
+%       result.dfe
 %       result.p
 %       result.names
 % 
 %   - 1 within and 1 between factors
 %       result.repeated_measure.F
 %       result.repeated_measure.p
+%       result.repeated_measure.df
+%       result.repeated_measure.dfe
 %       result.gp.F
+%       result.gp.df
+%       result.gp.dfe
 %       result.gp.p
 %       result.interaction.F
+%       result.interaction.df
+%       result.interaction.dfe
 %       result.interaction.p
 % 
 %   - repeated measure with more than one factor and 1 between factor
-%       result.repeated_measure.names
 %       result.repeated_measure.F
 %       result.repeated_measure.p
-%       result.gp.F, result.gp.p
+%       result.repeated_measure.df
+%       result.repeated_measure.dfe
+%       result.repeated_measure.names
+%       result.gp.F, 
+%       result.gp.df
+%       result.gp.dfe
+%       result.gp.p
 %       result.interaction.F
 %       result.interaction.p
+%       result.interaction.df
+%       result.interaction.dfe
 %       result.interaction.names
 %
 %
@@ -93,8 +111,9 @@ function result = limo_rep_anova(varargin)
 % Cyril Pernet May 2011 - update to run locally the mutlivariate 
 %            analysis + added the time dimension to speed things up
 % GAR April 2013: updated help & comments; added name output
+% Cyril Pernet 2022 added df,dfe in the result structure
 % ------------------------------
-%  Copyright (C) LIMO Team 2020
+%  Copyright (C) LIMO Team 2022
 
 
 %% input stuff
@@ -188,7 +207,9 @@ switch type
             end
         end
         
-        result.F     = ( dfe / ((n-1)*df) ) * Tsquare; 
+        result.F     = ( dfe / ((n-1)*df) ) * Tsquare;
+        result.df    = df;
+        result.dfe   = dfe;
         result.p     = 1 - fcdf(result.F, df, dfe);
 
         % -----------------------------------------------------------------
@@ -208,23 +229,27 @@ switch type
         y = squeeze(nanmean(Data,2)); % these are the means to compare   
         if iscell(C)
             for effect = size(C,2):-1:1
-                c                    = C{effect};
-                df(effect)           = rank(c);
-                dfe(effect)          = n-df(effect);
+                c                   = C{effect};
+                df                  = rank(c);
+                dfe                 = n-df;
                 for frame = 1:size(Data,1)
-                    Tsquare(frame)    =  n*(c*y(frame,:)')'*pinv(c*squeeze(S(frame,:,:))*c')*(c*y(frame,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
+                    Tsquare(frame)  =  n*(c*y(frame,:)')'*pinv(c*squeeze(S(frame,:,:))*c')*(c*y(frame,:)'); % is also t = sqrt(n*(c*y)'*inv(c*S*c')*(c*y));
                 end
-                result.F(effect,:)   = ( dfe(effect) / ((n-1)*(df(effect))) ) * Tsquare;
-                result.p(effect,:)   =  1 - fcdf(result.F(effect,:), df(effect), dfe(effect));
+                result.F(effect,:)  = ( dfe / ((n-1)*(df)) ) * Tsquare;
+                result.p(effect,:)  =  1 - fcdf(result.F(effect,:), df, dfe);
+                result.df(effect)   = df;
+                result.dfe(effect)  = dfe;
             end
         else
-            df           = rank(C);
-            dfe          = n-df;
+            df                 = rank(C);
+            dfe                = n-df;
             for frame = size(Data,1):-1:1
-                Tsquare(frame)    =  n*(C*y(frame,:)')'*pinv(C*squeeze(S(frame,:,:))*C')*(C*y(frame,:)');
+                Tsquare(frame) =  n*(C*y(frame,:)')'*pinv(C*squeeze(S(frame,:,:))*C')*(C*y(frame,:)');
             end
-            result.F   = ( dfe / ((n-1)*(df)) ) * Tsquare;
-            result.p   =  1 - fcdf(result.F, df, dfe);
+            result.F           = ( dfe / ((n-1)*(df)) ) * Tsquare;
+            result.p           =  1 - fcdf(result.F, df, dfe);
+            result.df          = df;
+            result.dfe         = dfe;
         end
         
         
@@ -268,24 +293,27 @@ switch type
         ve  = sum(sum(X(:,1:end-1))-1); % - rank(X); % dfe for different sample sizes (gives the same as rank(X)*(sum(X(:,1))-1) for equal sample sizes            
         Spl = E/ve; % covariance of data split per gp
         for frame = f:-1:1
-            Tsquare(frame)                 = n*(C*yp(:,frame))'*inv(C*squeeze(Spl(frame,:,:))*C')*(C*yp(:,frame));
+            Tsquare(frame)           = n*(C*yp(:,frame))'*inv(C*squeeze(Spl(frame,:,:))*C')*(C*yp(:,frame));
         end
         result.repeated_measure.F    = ( dfe / (ve*df) ) * Tsquare; 
         result.repeated_measure.p    = 1 - fcdf(result.repeated_measure.F, df, dfe);
-
-        
+        result.repeated_measure.df   = df;
+        result.repeated_measure.dfe  = dfe;
+         
         % compute the gp effect (=univariate stat on the mean across repeated measures)
         % ----------------------------------------------------------------------------              
         Y  = nanmean(Data,3); % average repeated measures
-        [result.gp.F,result.gp.p] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
-
+        [result.gp.F,result.gp.p,result.gp.df,result.gp.dfe] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
         
        % compute interaction (= multivariate on differences)
        % -------------------------------------------------------
        for frame=1:f
            I = (C*squeeze(Data(frame,:,:))')';
-           [result.interaction.F(frame), result.interaction.p(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+           [result.interaction.F(frame), result.interaction.p(frame),...
+               df(frame),dfe(frame)] = local_glm(I,X,k,sum(X(:,1:k),1),2);
        end
+       result.interaction.df  = unique(df); % has a be length = 1 because frames have the same n
+       result.interaction.dfe = unique(dfe);
        
         % -----------------------------------------------------------------
     case{4} % several within and 1 between factors
@@ -334,8 +362,10 @@ switch type
                 for frame = f:-1:1
                     Tsquare(frame) = n*(c*y(:,frame))'*pinv(c*squeeze(Spl(frame,:,:))*c')*(c*y(:,frame));
                 end
-                result.repeated_measure.F(effect,:) = ( dfe / (ve*df) ) .* Tsquare;
-                result.repeated_measure.p(effect,:) = 1 - fcdf(result.repeated_measure.F(effect,:), df, dfe);
+                result.repeated_measure.F(effect,:)   = ( dfe / (ve*df) ) .* Tsquare;
+                result.repeated_measure.p(effect,:)   = 1 - fcdf(result.repeated_measure.F(effect,:), df, dfe);
+                result.repeated_measure.df(effect,:)  = df;
+                result.repeated_measure.dfe(effect,:) = dfe;
             end
         else
             df  = rank(C);
@@ -344,14 +374,16 @@ switch type
             for frame = f:-1:1
                 Tsquare(frame) = n*(C*y(:,frame))'*pinv(C*squeeze(Spl(frame,:,:))*C')*(C*y(:,frame));
             end
-            result.repeated_measure.F = ( dfe / (ve*df) ) .* Tsquare;
-            result.repeated_measure.p = 1 - fcdf(result.repeated_measure.F, df, dfe);
+            result.repeated_measure.F   = ( dfe / (ve*df) ) .* Tsquare;
+            result.repeated_measure.p   = 1 - fcdf(result.repeated_measure.F, df, dfe);
+            result.repeated_measure.df  = df;
+            result.repeated_measure.dfe = dfe;
         end
         
         % compute the gp effect (=univariate stat)
         % ---------------------------------------     
         Y  = nanmean(Data,3); % average repeated measures
-        [result.gp.F, result.gp.p] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
+        [result.gp.F, result.gp.p,result.gp.df,result.gp.dfe] = local_glm(Y',X,k,sum(X(:,1:k),1),1);
        
        % compute the interactions with gp
        % ---------------------------------
@@ -360,13 +392,18 @@ switch type
                c = C{effect};
                for frame=1:f
                    I = (c*squeeze(Data(frame,:,:))')';
-                   [result.interaction.F(effect,frame), result.interaction.p(effect,frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+                   [result.interaction.F(effect,frame), result.interaction.p(effect,frame),...
+                       df(frame), dfe(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
                end
+               result.interaction.df(effect,c)  = unique(df); 
+               result.interaction.dfe(effect,c) = unique(dfe);
            end
        else
            for frame=1:f
                I = (C*squeeze(Data(frame,:,:))')';
-               [result.interaction.F(frame), result.interaction.p(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
+               [result.interaction.F(frame), result.interaction.p(frame),...
+                   result.interaction.df(frame), result.interaction.dfe(frame)]= ...
+                   local_glm(I,X,k,sum(X(:,1:k),1),2);
            end
        end
        
@@ -376,7 +413,7 @@ end % closes the function
 
 % subfuncton
 % --------------
-function [F,p] = local_glm(Y,X,nb_gp,nb_subjects,flag)
+function [F,p,df_Hotelling, dfe_Hotelling] = local_glm(Y,X,nb_gp,nb_subjects,flag)
 
 R              = eye(size(Y,1)) - (X*pinv(X));  % Residual matrix
 E              = (Y'*R*Y);   % SS Error
@@ -418,5 +455,7 @@ if flag == 2
 else
     F    = (diag(H)./(rank(X)-1)) ./ (diag(E)/(size(Y,1)-rank(X)));
     p    = 1 - fcdf(F, (rank(X)-1), (size(Y,1)-rank(X)));
+    df_Hotelling  = rank(X)-1;
+    dfe_Hotelling = size(Y,1)-rank(X); % actually not hotelling, just named for consistant function output
 end
 end

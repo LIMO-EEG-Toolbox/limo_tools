@@ -6,20 +6,22 @@ function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 % and Werner implementation but have ommited dimensions where MAD = 0.
 % 
 % FORMAT dist = limo_pcout(x)
-%        [dist,out,rf,w1,w2] = limo_pcout(x,'figure',option)
+%        [dist,out,rf,w1,w2] = limo_pcout(x,'downsample','on','figure',option)
 %
 % INPUTS:
 %   x             = 2D matrix of EEG data (dim trials x frames)
-%   'figure'      = indicate you want a figure out
+%   'downsample'  = indicates option of downsampling when there are not
+%                   enough trials set to 'on' or 'off' (default)
+%   'figure'      = indicates you want a figure out
 %   option        = 'new' or 'on' to plot on a new figure or the current one
 %   'xaxis'       = label followed by vector value (e.g. 'Time' [-50:4:200])
-%   'weightsas'   = 'hisotgrams','kernel'
+%   'weightsas'   = 'histograms','kernel' (default)
 %
 % OUTPUTS:
 %   dist          = weights (distance) for each trial. Outliers have a near to zero weight.
 %   out           = the out is a binary vector where False values are outliers
 %   rf            = the reduction factor (i.e. how many components were removed
-%                   to compute w1/w2 and get dist/out
+%                   to compute w1/w2 and get dist/out)
 %   w1            = the kurtosis weighted robust Euclidian distance (location)
 %   w2            = the robust Euclidian distance (scatter)
 %
@@ -33,12 +35,15 @@ function [dist,out,rf,w1,w2] = limo_pcout(x,varargin)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-fig = 'off';
-weightsas = 'KDE';
+downsamplex = 'on';
+fig         = 'off';
+weightsas   = 'Kernel';
 
 if nargin >1
     for i=1:nargin-2
-        if strcmpi(varargin{i},'figure')
+        if strcmpi(varargin{i},'downsample')
+            downsamplex = varargin{i+1};
+        elseif strcmpi(varargin{i},'figure')
             fig = varargin{i+1};
         elseif strcmpi(varargin{i},'weightsas')
             weightsas = varargin{i+1};
@@ -63,28 +68,32 @@ if isempty(x)
 end
 
 [n,p] = size(x);
-if n<p
-    error([ 'Principal Component Projection cannot be computed, more observations than variables are needed.' 10 ...
-        'When using WLS (weighted least square), you must have more trials than time samples. This is not the' 10 ...
-        'case for this dataset. Try reducing the number of time samples or use OLS (ordinary least square) instead.' ])
+if n<p && strcmpi(downsamplex,'on')
+    f = p/n; 
+    if ceil(f) == 2
+        warning('automatically downsampling by 2 for WLS computation as there are not enough trials')
+        x = downsample(x',2)'; [n,p] = size(x);
+    else
+        warning('%g frame/trial ratio is very low, running SVD as usual but consider using OLS rather than WLS especially if you have a low sampling rates',f)
+    end
 end
 
 %% 1st Phase: Detect location outliers
 
 % robustly rescale each component
-madx    = mad(x,1) .* 1.4826; % median values normally scaled
-x2      = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1); % robust standardization
-x3      = x2 - repmat(mean(x2),n,1); % standardization
- 
+madx    = mad(x,1) .* 1.4826;                                % median absolute deviations normally scaled (~std)
+x2      = (x - repmat(median(x), n, 1)) ./ repmat(madx,n,1); % robust standardization (like x-mean / std)
+x3      = x2 - repmat(mean(x2),n,1);                         % make it 0 centred
+
 % calculate the principal components (retain 99% of variance)
-a       = svd(x3).^2./(n-1);
-paux    = (1:p)' .* ((cumsum(a)./sum(a) > 0.99));
+a       = svd(x3).^2./(n-1);                      % take the square of eigen values
+paux    = (1:length(a))' .* ((cumsum(a)./sum(a) > 0.99)); % indices to keep 99% of the variance
 paux2   = paux(paux > 0);
-p1      = paux2(1);
-rf      = p-p1;
-[~,~,V] = svd(x3);
+p1      = paux2(1);                               % number of components to keep 
+rf      = p-p1;                                   % number of components to remove
 
 % Project x in the principal components
+[~,~,V] = svd(x3);
 xpc     = x2 * V(:,1:p1); 
 madxpc  = mad(xpc,1) * 1.4826;
 
@@ -97,37 +106,36 @@ xpcsc   = (xpc - repmat(median(xpc),n,1)) ./ repmat(madxpc,n,1);
 wp = abs(mean(xpcsc.^4) - 3);
 % to scale wp between 0,1 -> wp/sum(wp)
 % calculate the pc scaled by weights
-xpcwsc = xpcsc * diag(wp/sum(wp));
+xpcwsc  = xpcsc * diag(wp/sum(wp));
 xpcnorm = sqrt(sum(xpcwsc.^2,2));
 
 %Transform the Robust distance (xpcnorm)
 xdist1 = (xpcnorm .*  sqrt(chi2inv(0.5,p1))) ./ median(xpcnorm);
 
 %Obtain an accurate classification between outliers and non-outliers
-%translated biweight function 
-M1 = quantile(xdist1, 1/3);
-const1 = median(xdist1) + 2.5 * mad(xdist1,1)* 1.4826;
-w1 = ( 1 - ((xdist1 - M1)./(const1 - M1)).^2).^2;
-w1(xdist1 < M1) = 1;
+% translated biweight function 
+M1                  = quantile(xdist1, 1/3);
+const1              = median(xdist1) + 2.5 * mad(xdist1,1)* 1.4826;
+w1                  = ( 1 - ((xdist1 - M1)./(const1 - M1)).^2).^2;
+w1(xdist1 < M1)     = 1;
 w1(xdist1 > const1) = 0;
 
 %% Scatter outliers. 
 % Similar to the first phase but without the kurtosis weigthed function. 
 
-xpcnorm = sqrt(sum(xpcsc.^2,2));
-xdist2 = xpcnorm *  sqrt(chi2inv(0.5,p1)) ./ median(xpcnorm);
-
-M2 = sqrt(chi2inv(0.25,p1));
-const2 = sqrt(chi2inv(0.99,p1));
-w2 = ( 1 - ((xdist2 - M2)./(const2 - M2)).^2).^2;
-w2(xdist2 < M2) = 1;
+xpcnorm             = sqrt(sum(xpcsc.^2,2));
+xdist2              = xpcnorm *  sqrt(chi2inv(0.5,p1)) ./ median(xpcnorm);
+M2                  = sqrt(chi2inv(0.25,p1));
+const2              = sqrt(chi2inv(0.99,p1));
+w2                  = ( 1 - ((xdist2 - M2)./(const2 - M2)).^2).^2;
+w2(xdist2 < M2)     = 1;
 w2(xdist2 > const2) = 0;
 
 % Sometimes too many non-outliers receive a weight of 0, with s != 0
 % helps to ensure that outliers are detected in both phases (w1,w2)
-s = 0.25;
+s    = 0.25;
 dist = (w1 + s) .* (w2 + s) ./ ((1 + s)^2);
-out = round(dist + s);
+out  = round(dist + s);
 
 if strcmpi(fig,'new') || strcmpi(fig,'on')
     if strcmpi(fig,'new')
@@ -152,7 +160,7 @@ if strcmpi(fig,'new') || strcmpi(fig,'on')
     
     
     % show weights
-    if strcmpi(weightsas,'KDE')
+    if strcmpi(weightsas,'Kernel')
         [~,~,~,KDE]=data_plot([w1 w2 dist],'estimator','mean','figure','off');
         subplot(3,5,[6 7]); bar(KDE{1}(:,1),KDE{1}(:,2),'FaceColor',[0.1 0.4 0.7])
         ylabel('frequency'); axis tight; grid on; box on; title('location weights')

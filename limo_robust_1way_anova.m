@@ -55,7 +55,6 @@ for gp = 1:J
     wa(:,1:ga+1)    = repmat(asort(:,ga+1),1, ga+1); % substitute lower values
     wa(:,na-ga:end) = repmat(asort(:,na-ga),1, ga+1); % substitute higher values
     wva             = nanvar(wa,0,2); % windsorized variances
-    
     d = ((na-1).*wva) ./ (h(gp)*(h(gp)-1));
     w(:,gp) = 1./d;
 end

@@ -56,7 +56,6 @@ end
 M       = []; 
 mask    = []; 
 mytitle = [];
-c       = clock; 
 disp(' ');
 
 % disp some references for this
@@ -82,7 +81,10 @@ if MCC ~= 1
         disp(' ');
     end
 end
-fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6));
+
+if MCC ~= 1
+    fprintf('computing corrected statistics at %s...\n',datetime('now','Format','hh:mm:ss'));
+end
 
 
 %% Deal with each case of FileName
@@ -219,7 +221,7 @@ elseif ~isempty(M) && MCC == 2
                 end
                 
                 if size(M,1) == 1
-                    tmp = NaN(1,size(M,2),size(M,3),size(bootM,4));
+                    tmp = NaN(1,size(M,2),size(M,3),size(bootM,3));
                     tmp(1,:,:,:) = bootM; bootM = tmp;
                     tmp(1,:,:,:) = bootP; bootP = tmp;
                     clear tmp
@@ -234,7 +236,7 @@ elseif ~isempty(M) && MCC == 2
                 end
                 
                 if size(M,1) == 1
-                    tmp = NaN(1,size(M,2),size(bootM,4));
+                    tmp = NaN(1,size(M,2),size(bootM,2));
                     tmp(1,:,:,:) = bootM; bootM = tmp;
                     tmp(1,:,:,:) = bootP; bootP = tmp;
                     clear tmp
@@ -242,7 +244,12 @@ elseif ~isempty(M) && MCC == 2
             end
             
             % finally get cluster mask and corrected p-values
-            [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            if contains(FileName,'ttest') || contains(FileName,'LI_Map')
+                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p); % mask and cluster p values
+            else
+                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p); % mask and cluster p values
+            end
+                
             Nclust   = unique(mask); 
             Nclust   = length(Nclust)-1; % mask = mask>0;
             if Nclust <= 1
