@@ -24,14 +24,11 @@ function reshaped = limo_tf_4d_reshape(reshape_in,forced_dim)
 % Cyril Pernet, fixed the last dim to be arbitrary + size check, Jan 2014
 % add the fored_dim argument -- making the function more generic
 
-if ~exist('LIMO', 'var') %FIXME this is always true, unless it is expected somehow that LIMO can be defined as a global variable, but then we'll need a global LIMO one line above
+if ~exist('LIMO','var')
     if exist(fullfile(pwd,'LIMO.mat'),'file')
-        % this assumes a LIMO.mat file to exist in the present working
-        % directory
         LIMO = load('LIMO.mat');
         LIMO = LIMO.LIMO;
     elseif exist(fullfile(fileparts(pwd),'LIMO.mat'),'file')
-        % this checks for the existence of a LIMO.mat file one folder up.
         LIMO = load(fullfile(fileparts(pwd),'LIMO.mat'));
         LIMO = LIMO.LIMO;
     else
@@ -81,7 +78,8 @@ if numel(reshape_size) == 4
         reshaped(:,:,tr) = tf_long_2d;
     end
     
-elseif numel(reshape_size) <= 3    %% else, if we have 3D input, reshape it to be 4D
+elseif numel(reshape_size) == 3 || 2
+    %% else, if we have 3D input, reshape it to be 4D
     % ------------------------------------------------
     
     [n_elec, n_freq_times, N] = size(reshape_in);

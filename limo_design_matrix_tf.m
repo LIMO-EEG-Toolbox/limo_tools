@@ -58,7 +58,6 @@ if nargin==3
     full_factorial   = varargin{2}.design.fullfactorial;
     chanlocs         = varargin{2}.data.chanlocs;
     type_of_analysis = varargin{2}.design.type_of_analysis;
-    size3D           = varargin{2}.data.size3D;
     size4D           = varargin{2}.data.size4D;
     flag             = varargin{3};
     try
@@ -87,7 +86,7 @@ end
 
 
 %% Dimension check
-Y = limo_tf_4d_reshape(Y, size3D);
+Y = limo_tf_4d_reshape(Y);
 
 if Cont == 0
     Cont = [];
@@ -151,6 +150,8 @@ end
 if full_factorial == 1 && ~isempty(Cont)
     error('LIMO does not compute full factorial ANCOVAs with covariate(s), consider a factorial ANCOVA witout interaction')
 end
+
+cd(directory);
 
 %% check if NaNs - that is offer the possibility to remove some trials
 if ~isempty(Cat)
@@ -359,8 +360,7 @@ try
     
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = zeros(size4D(1),size4D(2),size4D(3),3); 
-        save(fullfile(directory,'R2'), 'R2', '-v7.3');
+        R2 = zeros(size4D(1),size4D(2),size4D(3),3); save R2 R2 -v7.3;
     end
     
     if nb_conditions ~=0
@@ -377,11 +377,11 @@ try
     
     % note - overwritten in limo_eeg_tf
     disp('saving 4D files to disk, be patient ...')
-    Yr=limo_tf_4d_reshape(Yr, size4D);
-    save(fullfile(directory,  'Yr'),    'Yr',    '-v7.3'); clear Yr
-    save(fullfile(directory,  'Yhat'),  'Yhat',  '-v7.3'); clear Yhat
-    save(fullfile(directory,  'Res'),   'Res',   '-v7.3'); clear Res
-    save(fullfile(directory,  'Betas'), 'Betas', '-v7.3'); clear Betas
+    Yr=limo_tf_4d_reshape(Yr);
+    save Yr Yr -v7.3; clear Yr
+    save Yhat Yhat -v7.3; clear Yhat
+    save Res Res -v7.3; clear Res
+    save Betas Betas -v7.3; clear Betas
     if strcmp(type_of_analysis,'Mass-univariate'); clear R2; end
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end

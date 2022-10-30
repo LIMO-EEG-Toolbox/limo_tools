@@ -22,7 +22,7 @@ function maxclustersum = limo_getclustersum(f,p,channeighbstructmat,minnbchan,al
 if nargin<5;alphav=.05;end
 if nargin<4;minnbchan=2;end
 
-[posclusterslabelmat,nposclusters] = limo_ft_findcluster(p<=alphav,channeighbstructmat,minnbchan);
+[posclusterslabelmat,nposclusters] = limo_findcluster(p<=alphav,channeighbstructmat,minnbchan);
 % figure;imagesc(posclusterslabelmat)
 
 if nposclusters~=0
