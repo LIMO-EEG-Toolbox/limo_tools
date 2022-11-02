@@ -131,14 +131,14 @@ function bootstrap_Callback(hObject, ~, handles)
 
 handles.b = str2double(get(hObject,'String'));
 if isempty(handles.b)
-    handles.b = 1000;
+    handles.b = 0;
 elseif handles.b == 0
     disp('bootstrap set to null')
     set(handles.TFCE,'Value',0)
 else
     fprintf('bootstrap changed to %g \n',handles.b)
     if handles.b > 0 && handles.b < 1000
-        limo_warndlg(['Our simulations suggest that you need at leat 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
+        limo_warndlg(['Our simulations suggest that you need at least 1000 bootstraps, consider changing your value: current boot ' num2str(handles.b)],'Bootstrap issue');
     end
 end
 guidata(hObject, handles);
