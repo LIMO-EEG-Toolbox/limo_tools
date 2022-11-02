@@ -207,7 +207,7 @@ switch type
             end
         end
         
-        result.F     = ( dfe / ((n-1)*df) ) * Tsquare;
+        result.F     = ( dfe / ((n-1)*df) ) * Tsquare; 
         result.df    = df;
         result.dfe   = dfe;
         result.p     = 1 - fcdf(result.F, df, dfe);
