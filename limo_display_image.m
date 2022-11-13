@@ -31,6 +31,10 @@ end
 
 %% get some informations for the plots
 
+if sum(toplot(:)) == 0
+    error('the image to plot is empty')
+end
+
 % what do we plot?  the data (toplot) masked (tpically of significance)
 scale           = toplot.*single(mask>0);  
 scale(scale==0) = NaN;   
