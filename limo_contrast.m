@@ -134,7 +134,7 @@ if type == 1 || type == 2
             LIMO.contrast{contrast_nb}.C = out;
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
         else
-           error('invalid contrast ass input') 
+           error('invalid contrast as input') 
         end
     elseif nargin == 6 && type == 2 % <---- find the index of the contrast to bootstrap
         if ~isfield(LIMO,'contrast')
@@ -143,7 +143,7 @@ if type == 1 || type == 2
         else
             allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
             out   = limo_contrast_checking(LIMO.dir,LIMO.design.X,varargin{6});
-            contrast_nb = max(cellfun(@(x) all(x==out), allC));
+            [~,contrast_nb] = max(cellfun(@(x) all(x(:)==out(:)), allC));
         end
         
         if contrast_nb == 0
@@ -366,7 +366,7 @@ switch type
                         ess(channel,:,end-2) = df;
                         
                         c  = zeros(length(C));
-                        C0 = eye(size(c,1)) - diag(C)*pinv(diag(C));
+                        C0 = eye(size(c,1)) - (diag(C)*pinv(diag(C)));
                         if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
                             if strcmpi(LIMO.design.method,'WLS')
                                 WX = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
