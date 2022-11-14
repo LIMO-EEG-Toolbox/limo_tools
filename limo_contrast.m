@@ -143,7 +143,14 @@ if type == 1 || type == 2
         else
             allC  = cellfun(@(x) x.C,LIMO.contrast,'UniformOutput',false);
             out   = limo_contrast_checking(LIMO.dir,LIMO.design.X,varargin{6});
-            [~,contrast_nb] = max(cellfun(@(x) all(x(:)==out(:)), allC));
+            for c = 1:length(allC)
+                if length(allC{c}(:)) == length(out(:))
+                    test(c) = all(allC{c}(:) == out(:));
+                else
+                    test(c) = 0;
+                end
+            end
+            [~,contrast_nb] = find(test);
         end
         
         if contrast_nb == 0
