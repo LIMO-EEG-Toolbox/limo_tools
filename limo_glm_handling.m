@@ -777,13 +777,13 @@ if LIMO.design.tfce == 1
     mkdir tfce; 
     
     % R2
-    limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no')
+    limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no');
     
     % conditions
     if prod(LIMO.design.nb_conditions) ~=0
         for i=1:length(LIMO.design.nb_conditions)
             name = sprintf('Condition_effect_%g.mat',i);
-            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no');
         end
     end
     
@@ -791,7 +791,7 @@ if LIMO.design.tfce == 1
     if LIMO.design.fullfactorial == 1
         for i=1:length(LIMO.design.fullfactorial)
             name = sprintf('Interaction_effect_%g.mat',i);
-            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no');
         end
     end
     
@@ -799,7 +799,7 @@ if LIMO.design.tfce == 1
     if LIMO.design.nb_continuous ~=0
         for i=1:LIMO.design.nb_continuous
             name = sprintf('Covariate_effect_%g.mat',i); 
-            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
+            limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no');
         end
     end
 end
