@@ -2,10 +2,12 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 
 % simple routine to compute effect sizes from a result file
 %
-% FORMAT [name,clusters] = limo_get_effect_size(file,mask)
+% FORMATS limo_get_effect_size
+%         [name] = limo_get_effect_size(file)
+%         [name,clusters] = limo_get_effect_size(file,mask)
 %
-% INPUTS file: is a result file like a t-test or ANOVA
-%        mask: is optional ([] by default) and is a N-ary matrix of clusters
+% INPUTS  file: is a result file like a t-test or ANOVA
+%         mask: is optional ([] by default) and is a N-ary matrix of clusters
 %
 % OUTPUTS name: is the name of the file created
 %              [file_name]_effectsize.mat is created with Cohen's d or patial
@@ -19,6 +21,11 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 %               - median provided as a comparison point to eigen mode
 %               - mean provided as a comparison point to eigen mode
 %               - min and max for completeness
+%
+%  If no inputs and outputs are given, the user is prompted. 
+%  If a mask variable exist in workspace, the user is asked if one should
+%  use it, if so the variable clusters_summary_stats is returned in the
+%  worspace, in addition of the effec_size file writen on the hard drive.
 %
 % Cyril Pernet 2022
 % ------------------------------
@@ -35,9 +42,29 @@ clusters = [];
 %% check inputs
 
 if nargin == 0
-    file = uigetfile('.mat','select a LIMO stat file');
+    % no input, ask user to select a file
+    [file,filepath] = uigetfile('.mat','select a LIMO stat file');
     if isempty(file)
         return
+    else
+        file = fullfile(filepath,file);
+    end
+    
+    % no input, check if user want to use current mask
+    ismask = evalin( 'base', 'exist(''mask'',''var'') == 1' );
+    if ismask
+        if exist('questdlg2','file')
+            opt = questdlg2('A mask variable exists in the workspace, do you want to use it to additionally return cluster summary stats?','option');
+        else
+            opt = questdlg('A mask variable exists in the workspace, do you want to use it to additionally return cluster summary stats?','option');
+        end
+        
+        if strcmpi(opt,'yes')
+           mask = evalin('base','mask'); 
+        end
+    else
+        msg = sprintf('no mask found in the workspace, \n it is recommended to image 1st the stat file to also have cluster summary stats if using clustering');
+        warning(msg) %#ok<SPWRN>
     end
 end
 
@@ -46,7 +73,9 @@ if isempty(filepath)
     filepath = pwd;
 end
 filename = [filename ext];
-assert(exist(fullfile(filepath,filename),'file'), 'file %s not found', filename)
+if ~exist(fullfile(filepath,filename),'file')
+    error('file %s not found', filename)
+end
 
 if ~exist(fullfile(filepath,'LIMO.mat'),'file')
     error('cannot find a LIMO.mat in the same filder as this file, this is required for this function to work')
@@ -148,6 +177,7 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
             F   = squeeze(F(:,:,1));
         else
             df  = squeeze(F(:,:,3));
+            dfe = size(LIMO.design.X,1)/prod(LIMO.design.repeated_measure) - df;
             F   = squeeze(F(:,:,4));
         end
     else
@@ -155,11 +185,12 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
             F   = squeeze(F(:,:,:,1));
         else
             df  = squeeze(F(:,:,:,3));
+            dfe = size(LIMO.design.X,1)/prod(LIMO.design.repeated_measure) - df;
             F   = squeeze(F(:,:,:,4));
         end
     end
     
-    if ~contains(filename,'Rep_ANOVA_Interaction') && ~contains(filename,'Rep_ANOVA_Gp')
+    if ~contains(filename,'Rep_ANOVA_Interaction') && ~contains(filename,'Rep_ANOVA_Gp') 
         if contains(filename,'Main_effect','IgnoreCase',true)
             index1     = strfind(filename,'Main_effect')+length('Main_effect')+1;
             index2     = max(strfind(filename,'_'))-1;
@@ -169,35 +200,40 @@ elseif contains(LIMO.design.name,'Repeated','IgnoreCase',true)   % All stuffs fo
             index2     = max(strfind(filename,'_'))-1;
             effect_nb  = eval(filename(index1:index2));
         else
-            index1     = strfind(filename,'Factor')+length('Factor')+1;
-            effect_nb  = eval(filename(index1:end));
+            index1     = strfind(filename,'ess')+length('ess')+1;
+            effect_nb  = eval(filename(index1:end-4));
         end
+
+        if ~exist('df','var')
+            df      = repmat(squeeze(LIMO.design.df(:,effect_nb)),[1 size(F,2)]);
+            dfe     = repmat(squeeze(LIMO.design.dfe(:,effect_nb)),[1 size(F,2)]);
+        end
+        T2          = F.*(df./dfe);
+        effect_size = T2 ./ size(LIMO.design.X,1)/prod(LIMO.design.repeated_measure);
+        name        = fullfile(filepath,[filename(1:end-4) '_MahalanobisD.mat']);
+   
+    elseif contains(filename,'Rep_ANOVA_Gp')
+        A           = (LIMO.design.group.df'.*F);
+        B           = (A+repmat(LIMO.design.group.dfe',1,size(A,2)));
+        effect_size = A ./B ;
+        name        = fullfile(filepath,[filename(1:end-4) '_PartialEta2.mat']);
+    
+    elseif contains(filename,'Rep_ANOVA_Interaction')
+        effect_nb   = filename(max(strfind(filename,'_'))+1:end-4);
+        position    = contains(LIMO.design.effects,'Interaction');
+        for v=1:size(effect_nb,2)
+            position = position .* contains(LIMO.design.effects,effect_nb(v));
+        end
+        effect_nb   = find(position);
         df          = squeeze(LIMO.design.df(:,effect_nb));
         dfe         = squeeze(LIMO.design.dfe(:,effect_nb));
         T2          = F.*repmat((df./dfe),1,size(F,2));
         N           = size(LIMO.design.X,1)/size(LIMO.design.C{effect_nb},2);
         effect_size = T2 ./ N;
         name        = fullfile(filepath,[filename(1:end-4) '_MahalanobisD.mat']);
-    elseif contains(filename,'Rep_ANOVA_Gp')
-        A           = (LIMO.design.group.df'.*F);
-        B           = (A+repmat(LIMO.design.group.dfe',1,size(A,2)));
-        effect_size = A ./B ;
-        name        = fullfile(filepath,[filename(1:end-4) '_PartialEta2.mat']);
-    elseif contains(filename,'Rep_ANOVA_Interaction')
-        effect_nb   = str2double(filename(strfind(filename,'Factor_')+7:strfind(filename,'Factor_')+6+strfind(filename(strfind(filename,'Factor_')+6:end),'_')));
-        df          = squeeze(LIMO.design.interaction.df(:,effect_nb));
-        dfe         = squeeze(LIMO.design.interaction.dfe(:,effect_nb));
-        T2          = F.*repmat((df./dfe),1,size(F,2));
-        N           = size(LIMO.design.X,1)/size(LIMO.design.C{effect_nb},2);
-        effect_size = T2 ./ N;
-        name        = fullfile(filepath,[filename(1:end-4) '_MahalanobisD.mat']);
-    elseif contains(filename,'ess')
-        if contains(filename,'gp_interaction')
-            effect_nb   = str2double(filename(strfind(filename,'ess_gp_interaction_')+19:end-4));
-        else
-            effect_nb   = str2double(filename(strfind(filename,'ess_')+4:end-4));
-        end
-        N           = size(LIMO.design.X,1)/size(LIMO.contrast{effect_nb}.C,2);
+    
+    else
+        N           = size(LIMO.design.X,1)/prod(LIMO.design.repeated_measure);
         T2          = F.*(df./(N-df));
         effect_size = T2 ./ N;
     end
@@ -226,6 +262,10 @@ if exist('mask','var')
         clusters(c).mean      = mean(data);
         clusters(c).min       = min(data);
         clusters(c).max       = max(data);
+    end
+    
+    if nargout == 0
+       assignin('base','clusters_summary_stats',clusters) 
     end
 end
 

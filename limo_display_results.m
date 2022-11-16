@@ -1190,7 +1190,7 @@ elseif LIMO.Level == 2
     % -------------------------------------------
     if data_cached == 0
         
-        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice,[]);
+        [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
         if isempty(mask)
             return
@@ -1233,7 +1233,10 @@ elseif LIMO.Level == 2
             elseif strncmp(FileName,'con_',4)
                 toplot = squeeze(toplot(:,:,4));
             elseif strncmp(FileName,'ess_',4)
-                toplot = squeeze(toplot(:,:,4));
+                 if ~exist('ess','var')
+                    effect_nb = eval(FileName(5:end-4)); %#ok<NASGU>
+                end
+                toplot = squeeze(toplot(:,:,end-1));
             elseif contains(FileName,'Condition') || ...
                     contains(FileName,'Covariate') || ...
                     contains(FileName,'Rep_ANOVA')

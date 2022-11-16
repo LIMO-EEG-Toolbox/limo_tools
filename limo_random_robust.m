@@ -485,7 +485,7 @@ switch type
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('paired_samples_ttest_parameter_%s',num2str(parameter')');
+        name = sprintf('paired_samples_ttest_parameter_%d_%d',parameter(1), parameter(2));
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
@@ -1270,9 +1270,10 @@ switch type
             
             % compute bootstrap under H0 for F and p
             fprintf('Bootstrapping Repeated Measures ANOVA\n');
+            warning off
             parfor B=1:LIMO.design.bootstrap
                 array = find(~isnan(data(:,1,1,1)));
-                
+
                 % preallocation for parfor
                 H0_Rep_ANOVA_Gp_effect_sub = []; % avoid parfor warning
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = []; % avoid parfor warning
@@ -1362,12 +1363,14 @@ switch type
                         tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub(channel,:,:,2) = result.interaction.p';
                     end
                 end
+                
                 tmp_boot_H0_Rep_ANOVA(:,:,:,:,B)  = tmp_boot_H0_Rep_ANOVA_sub;
                 if type == 3 || type == 4
                     H0_Rep_ANOVA_Gp_effect(:,:,:,B) = H0_Rep_ANOVA_Gp_effect_sub;
                     tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,:,:,B) = tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub;
                 end
             end
+            warning on
             
             % save          
             for i=1:size(tmp_boot_H0_Rep_ANOVA,3)

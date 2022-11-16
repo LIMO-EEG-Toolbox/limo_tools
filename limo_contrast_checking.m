@@ -31,6 +31,7 @@ end
 
 %% update the contrast with 0s
 % ----------------------------------------
+diagonalize = 0;
 if nargin == 1 || nargin == 3
 
     limo_path = varargin{:,1};
@@ -54,7 +55,13 @@ if nargin == 1 || nargin == 3
         if l == size(X,2)
             C = C';
             disp('C has been transposed')
-            [~,w]=size(C);
+            [l,w]=size(C);
+        end
+
+        if l == w
+            diagonalize = 1;
+            C           = diag(C)';
+            [l,w]       = size(C);
         end
 
         % could be that cst term not coded
@@ -69,6 +76,10 @@ if nargin == 1 || nargin == 3
         if w ~= size(X,2)
             disp('c must have the same number of columns as X')
             error('dimensions must agree')
+        end
+
+        if diagonalize
+            C = diag(C);
         end
     end
     

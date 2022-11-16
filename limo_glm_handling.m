@@ -153,9 +153,9 @@ if strcmp(LIMO.design.status,'to do')
                 if LIMO.design.nb_conditions ~=0
                     tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
                     if size(tmp,1) == size(Yr,1)*2 
-                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                        df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
                     elseif size(tmp,1) == size(Yr,1)
-                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                        df  = tmp(1,:); dfe = tmp(2,:);
                     end
                     LIMO.model = rmfield(LIMO.model,'conditions_df');
                     LIMO.model.conditions_df = [df dfe]; clear tmp
@@ -164,9 +164,9 @@ if strcmp(LIMO.design.status,'to do')
                 if LIMO.design.nb_interactions ~=0
                     tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
                     if size(tmp,1) == size(Yr,1)*2 
-                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                        df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
                     elseif size(tmp,1) == size(Yr,1)
-                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                        df  = tmp(1,:); dfe = tmp(2,:);
                     end
                     LIMO.model = rmfield(LIMO.model,'interactions_df');
                     LIMO.model.interactions_df = [df dfe]; clear tmp

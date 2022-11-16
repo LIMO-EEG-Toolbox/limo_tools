@@ -1,11 +1,12 @@
-function clusters = limo_get_summary(file,mask)
+function [clusters,madeupclusters] = limo_get_summary(file,mask)
 
 % simple routine to compute summary statistics per cluster
 %
 % FORMAT clusters = limo_get_summary(file,mask)
 %
 % INPUTS file is a result file like a t-test or ANOVA
-%        mask is a N-ary matrix of clusters
+%        mask is a N-ary matrix of clusters, if binary it will try to make
+%        up clusters
 %
 % OUTPUTS clusters, a structure with summary statistics per cluster
 %               - eigenmode is the 'direction' of the effect size (usually,
@@ -22,13 +23,36 @@ function clusters = limo_get_summary(file,mask)
 clusters = [];
 
 %% check inputs
-% e.g. file = 'Rep_ANOVA_Factor_1.mat';
+if nargin == 0
+    % no input, ask user to select a file
+    [file,filepath] = uigetfile('.mat','select a LIMO stat file');
+    if isempty(file)
+        return
+    else
+        file = fullfile(filepath,file);
+    end
+    
+    % no input, check if user want to use current mask
+    ismask = evalin( 'base', 'exist(''mask'',''var'') == 1' );
+    if ismask
+        mask = evalin('base','mask'); 
+    else
+        if exist('errordlg2','file')
+            errordlg2('no mask file found in the workspace, image the statistical results to create one and call this function again')
+        else
+            errordlg('no mask file found in the workspace, image the statistical results to create one and call this function again')
+        end
+    end
+end
+
 [filepath,filename,ext]=fileparts(file);
 if isempty(filepath)
     filepath = pwd;
 end
 filename = [filename ext];
-assert(exist(fullfile(filepath,filename),'file'), 'file %s not found', filename)
+if ~exist(fullfile(filepath,filename),'file')
+    error('file %s not found', filename)
+end
 
 if ~exist(fullfile(filepath,'LIMO.mat'),'file')
     error('cannot find a LIMO.mat in the same filder as this file, this is required for this function to work')
@@ -73,12 +97,16 @@ end
 
 num = unique(mask);
 num(num==0) = [];
-for c = size(num,2):-1:1
+for c = length(num):-1:1
     data                  = stats(mask == num(c));
     clusters(c).eigenmode = sqrt(eig(data'*data)/length(data));
     clusters(c).median    = median(data);
     clusters(c).mean      = mean(data);
     clusters(c).min       = min(data);
     clusters(c).max       = max(data);
+    if nargout == 0
+       assignin('base','clusters_summary_stats',clusters) 
+    end
 end
 
+madeupclusters = mask;

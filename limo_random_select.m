@@ -2404,4 +2404,9 @@ elseif gp > 1
         end
     end
 end
+
+if isempty(betas)
+    error('LIMO could not match betas across subjects, the array is empty')
+end
+
 end

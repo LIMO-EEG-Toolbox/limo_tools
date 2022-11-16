@@ -57,7 +57,6 @@ end
 M       = []; 
 mask    = []; 
 mytitle = [];
-c       = clock; 
 disp(' ');
 
 % disp some references for this
@@ -83,7 +82,10 @@ if MCC ~= 1
         disp(' ');
     end
 end
-fprintf('limo_display_results %gh %gmin %gsec: making figure...\n',c(4),c(5),c(6));
+
+if MCC ~= 1
+    fprintf('computing corrected statistics at %s...\n',datetime('now','Format','hh:mm:ss'));
+end
 
 
 %% Deal with each case of FileName
