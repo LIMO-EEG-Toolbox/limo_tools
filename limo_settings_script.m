@@ -1,6 +1,6 @@
 limo_settings.psom = true; % toggle the use of the PSOM library
-limo_settings.workdir = ''; % empty is current folder
-limo_settings.newgui = false; % empty is current folder
+limo_settings.workdir = 'derivatives'; % empty is current folder
+limo_settings.newgui = true; % empty is current folder
 
 if exist('limo_settings_script_user')
     eval('limo_settings_script_user')
