@@ -86,7 +86,7 @@ if LIMO.Level == 1 || ...
             end
             limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
 
-            if LIMO.design.bootstrap ~= 0 && strcmpi('choice','compute bootstrap contrast')
+            if LIMO.design.bootstrap ~= 0 && strcmpi(choice,'compute bootstrap contrast')
                 Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
                 H0_Betas = load(fullfile(LIMO.dir,['H0' filesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
                 if strcmp(LIMO.Analysis ,'Time-Frequency')
