@@ -552,15 +552,19 @@ switch type
                             % ----------
                         else
                             E = (Y'*R*Y);
-                            c = zeros(length(C));
-                            for n=1:length(C)
-                                c(n,n) = C(n);
-                            end
+                            if isvector(C)
+                                c = zeros(length(C));
+                                for n=1:length(C)
+                                    c(n,n) = C(n);
+                                end
+                            else
+                                c = C;
+                            end                           
                             C0 = eye(size(c,2)) - c*pinv(c);
                             X0 = WX*C0;
                             R0 = eye(size(Y,1)) - (X0*pinv(X0));
-                            M = R0 - R;
-                            H = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
+                            M  = R0 - R;
+                            H  = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
                             df = rank(c) - 1;
                             if df == 0
                                 df = 1;
@@ -568,8 +572,7 @@ switch type
                             H0_ess(channel,:,1,B) = (diag(H)/df)./(diag(E)/dfe(channel));  % F value
                             H0_ess(channel,:,2,B) = 1 - fcdf(H0_ess(channel,:,1,B), rank(c)-1, dfe(channel));   % p value
                         end
-                        
-                        
+                                                
                     else % -------- IRLS ------------
                         for frame = 1:size(Y,2)
                            fprintf('compute bootstrap channel %g frame %g/%g ... \n',channel, frame,size(Y,2))
@@ -609,9 +612,13 @@ switch type
                                 % ----------
                             else
                                 E = (Y(:,frame)'*R*Y(:,frame));
-                                c = zeros(length(C));
-                                for n=1:length(C)
-                                    c(n,n) = C(n);
+                                if isvector(C)
+                                    c = zeros(length(C));
+                                    for n=1:length(C)
+                                        c(n,n) = C(n);
+                                    end
+                                else
+                                    c = C;
                                 end
                                 C0 = eye(size(c,2)) - c*pinv(c);
                                 X0 = WX*C0;

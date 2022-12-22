@@ -39,10 +39,9 @@ if (rows <= cols)
    error('WLS cannot be computed, there is not enough trials for this design');     
 end
 
-if isempty(Y(:,mad(Y,1) > 1e-6)) % time points for which medians of trials > 1e-6
+if isempty(Y(:,median(abs(Y-median(Y))) > 1e-6)) % time points for which medians of trials > 1e-6
     error('WLS cannot be computed, for at least 1 condition, all trials have the same values')
 end
-
 
 %% get the weights from PC on adjusted residuals
 

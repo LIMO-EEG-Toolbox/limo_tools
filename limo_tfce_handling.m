@@ -165,7 +165,7 @@ if contains(filename,'R2') || ...
     end
     
     % -------------------------------------------------------------------------------------------------------------
-elseif contains(filename,'con') || contains(filename,'ess') || ...
+elseif contains(filename,'con') || ...
         contains(LIMO.design.name,'One sample','IgnoreCase',true) || ...
         contains(LIMO.design.name,'Two samples','IgnoreCase',true) || ...
         contains(LIMO.design.name,'Paired','IgnoreCase',true)  % these file last dimension is mean, se, df, t and p
@@ -228,6 +228,10 @@ else % anything else last dimension is F and p
     % ------------------------------------------
     Fval = load(filename);
     Fval = Fval.(cell2mat(fieldnames(Fval)));
+    if contains(filename,'ess')
+        Fval = Fval(:,:,end-1:end);
+    end
+
     if size(Fval,1) == 1
         if strcmpi(LIMO.Analysis,'Time-Frequency')
             [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2,squeeze(Fval(:,:,:,1)),[]);

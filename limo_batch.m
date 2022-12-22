@@ -649,7 +649,7 @@ if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
     if sum(failed) == N % all subjects
-        warning('LIMO batch done but all subjects failed')
+        warning('LIMO batch done but all subjects failed. This can be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
     else
         warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
     end
