@@ -19,7 +19,13 @@ if nargin == 0
 end
 
 %% load file
-tmp = load([filepath gp_level_file]);
+if ismatrix(gp_level_file)
+    LIMO = gp_level_file;
+    tmp  = struct('LIMO',LIMO);
+else
+    tmp = load([filepath gp_level_file]);
+end
+
 if isfield(tmp,'LIMO')
     if isfield(tmp.LIMO.data,'channeighbstructmat')
         channeighbstructmat = tmp.LIMO.data.channeighbstructmat;
