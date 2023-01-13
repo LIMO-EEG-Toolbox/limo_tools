@@ -7,7 +7,7 @@ function [mask,cluster_pval,max_th] = limo_clustering(varargin)
 % P     = 2D matrix of observed p values (for a single channel use 1 in the 1st dimension)
 % bootM = 3D matrix of F values for data bootstrapped under H0
 % bootP = 3D matrix of F values for data bootstrapped under H0
-% LIMO  = LIMO structure - the necessary information is
+% LIMO  = the only necessary information is 
 %                         LIMO.data.chanlocs: the structure describing channels
 %                         LIMO.data.neighbouring_matrix: the binary matrix of neighbours
 % MCC   = 2 (spatial-temporal clustering) or 3 (temporal clustering)
@@ -48,7 +48,7 @@ if size(M,1) == 1
 end
 
 % boostrap parameters
-nboot = size(bootM,3);      % nb of boostrap performed
+nboot = size(bootM,length(size(bootM)));      % nb of boostrap performed
     
 % set outputs empty as default
 cluster_pval = [];
@@ -60,7 +60,11 @@ max_th       = [];
 if MCC == 2 && size(bootM,1)>1
     minnbchan           = 2;
     if isfield(LIMO,'data')
-        channeighbstructmat = LIMO.data.neighbouring_matrix;
+        if isfield(LIMO.data,'neighbouring_matrix')
+            channeighbstructmat = LIMO.data.neighbouring_matrix;
+        else
+            channeighbstructmat = LIMO.data.channeighbstructmat;
+        end
     else
         channeighbstructmat = LIMO.channeighbstructmat;
     end
