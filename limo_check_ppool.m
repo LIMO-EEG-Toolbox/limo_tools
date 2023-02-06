@@ -8,7 +8,7 @@ function limo_check_ppool
 N      = [];
 addons = ver;
 
-if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "UniformOutput",false)))
+if any(ismember('Parallel Computing Toolbox', {addons.Name}))  
     
     if isempty(N)
         p = gcp('nocreate');
