@@ -1379,12 +1379,17 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             % data are of dim size(expected_chanlocs,2), latter start/earlier stop across subjects, parameters, nb of subjects
             if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
 
-                if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_index).chanlocs) == size(tmp,1)
+                if strcmpi(LIMO.Type,'Channels') && size(subj_chanlocs(subject_index).chanlocs,1) == size(tmp,1) || ...
+                        strcmpi(LIMO.Type,'Channels') && size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
                     matched_data = limo_match_elec(subj_chanlocs(subject_index).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
                 elseif  strcmpi(LIMO.Type,'Components')
                     matched_data = tmp(:,begins_at:ends_at,:);
                 else
-                    error('LIMO.Type not found - can''t match data across subjects')
+                    if ~isfield(LIMO,'Type')
+                        error('LIMO.Type not found - can''t match data across subjects')
+                    elseif strcmpi(LIMO.Type,'Channels')
+                        error('error while matching data sizes subject %g group %g has %g channels vs, %g in the data',i,h,length(subj_chanlocs(subject_index).chanlocs),size(tmp,1))
+                    end
                 end
 
                 if matrix_index == 1
@@ -1487,7 +1492,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     end
 
     % data dim [channel * frames * all param * subjects]
-    % the expected dim in LIMO_rep_anova are [cahnnel * frames * subjects * conditions]
+    % the expected dim in LIMO_rep_anova are [channel * frames * subjects * conditions]
     % + one vector describing the group belonging
 
     if strcmp(LIMO.Analysis,'Time-Frequency')
