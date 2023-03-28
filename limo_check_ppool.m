@@ -5,7 +5,7 @@ function limo_check_ppool
 % -----------------------------------------------------
 %  Copyright (C) LIMO Team 2022
 
-N      = 6;
+N      = [];
 addons = ver;
 
 if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "UniformOutput",false)))
