@@ -1,14 +1,16 @@
-function out = limo_color_images(in)
+function out = limo_color_images(varargin)
 
 %% limo color map
 %
-% FORMAT out = limo_color_images(in)
+% FORMAT out = limo_color_images(in,'legacymode',legacyvalue)
 %
 % INPUT in - the 2D matrix to color (if map masked by NaN, last value if gray)
 %          - a single value
+%       optional is to indicate the 'legacymode' as 'off' (default) or 'on'
 %
 % OUTPUT out is an RGB colormap
-%        if in is a 2D matrix, out is NIH_fire, NIH_cool or diverging_bwr
+%        if in is a 2D matrix, out is the diverging_bwr 
+%        in legacymode, out can be NIH_fire (in all + values), NIH_cool (in all - values) or diverging_bwr
 %        if in is a singleton and <= 11, colours are taken from ColorBrewer.org
 %           http://colorbrewer2.org/#type=qualitative&scheme=Paired&n=12
 %        if in is a singleton and > 12 colurs are sampled sample at equidistance from the xrain colour scale
@@ -19,11 +21,17 @@ function out = limo_color_images(in)
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
+%% check inputs
+legacyvalue = 'off';
 if nargin == 0
     help limo_color_images
     return
+elseif nargin > 1 && contains(varargin{1},'legacy','IgnoreCase',true)
+    legacyvalue = varargin{3};
 end
 
+%% get the colors
+in = varargin{1};
 if all(size(in)==1)
     if in <= 11
         
@@ -310,14 +318,22 @@ else
     % defaults
     color_path = [fileparts(which('limo_eeg')) filesep 'external' filesep 'color_maps' filesep];
     
-    if min(in(:)) >= 0
-        out = load([color_path 'NIH_fire.mat']); out = out.lutmap2;
-        out = out(floor(length(out)/2):end,:);
-    elseif max(in(:)) <= 0
-        out = load([color_path 'NIH_ice.mat']); out = out.lutmap2;
-    else
+    if strcmpi(legacyvalue,'off')
         out = load([color_path 'diverging_bwr.mat']); out = out.dmap;
-        % out = flipud(out(1:ceil(length(out)/2),:));
+        if min(in(:)) >= 0
+            out = out(128:end,:);
+        elseif max(in(:)) <= 0
+            out = out(1:128,:);
+        end
+    else
+        if min(in(:)) >= 0
+            out = load([color_path 'NIH_fire.mat']); out = out.lutmap2;
+            out = out(floor(length(out)/2):end,:);
+        elseif max(in(:)) <= 0
+            out = load([color_path 'NIH_ice.mat']); out = out.lutmap2;
+        else
+            out = load([color_path 'diverging_bwr.mat']); out = out.dmap;
+        end
     end
     
     if sum(isnan(in(:))) ~= 0

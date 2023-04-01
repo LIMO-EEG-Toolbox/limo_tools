@@ -28,4 +28,4 @@ if nargin < 2
     neighbourdist = eval(cell2mat(inputdlg('enter neighbourhood distance','neighbourhood distance'))); % 0.37 for biosemi 128;
 end
 tmpcfg.neighbourdist = neighbourdist;
-[neighbours,channeighbstructmat] = limo_ft_neighbourselection(tmpcfg, []); % fieldtrip function
+[~,channeighbstructmat] = limo_ft_neighbourselection(tmpcfg, []); % fieldtrip function

@@ -368,7 +368,7 @@ if contains(FileName,'Rep_ANOVA')
                     bootT = squeeze(H0_data(:,:,1,:));
                     bootP = squeeze(H0_data(:,:,2,:));
                     if size(M,1) == 1
-                        tmp = NaN(1,size(M,2),size(bootT,4));
+                        tmp = NaN(1,size(M,2),size(bootT,2));
                         tmp(1,:,:) = bootT; bootT = tmp;
                         tmp(1,:,:) = bootP; bootP = tmp;
                         clear tmp

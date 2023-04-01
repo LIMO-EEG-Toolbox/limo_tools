@@ -17,10 +17,7 @@ if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "Unifo
             % check how many cores to use
             % ---------------------------
             N = getenv('NUMBER_OF_PROCESSORS'); % logical number of cores (i.e. count hyperthreading)
-            if isempty(N)
-                N = feature('numcores');        % physical number of cores (no logical on servers)
-            end
-                
+            % N = feature('numcores');          % physical number of cores
             if ischar(N)
                 N = str2double(N);
             end
@@ -36,7 +33,11 @@ if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "Unifo
             parpool(N-1);
         end
     else
-        parpool(N);
+        try
+            parpool(N);
+        catch errpool
+            warning('could not start the parallel pool:',errpool.message)
+        end
     end
     
 else
