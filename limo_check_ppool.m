@@ -17,8 +17,9 @@ if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "Unifo
             % check how many cores to use
             % ---------------------------
             N = getenv('NUMBER_OF_PROCESSORS'); % logical number of cores (i.e. count hyperthreading)
-            % N = feature('numcores');          % physical number of cores
-            if ischar(N)
+            if isempty(N)
+                N = feature('numcores');          % physical number of cores
+            elseif ischar(N)
                 N = str2double(N);
             end
             
