@@ -44,13 +44,12 @@ elseif nargin <= 2
         Yr    = limo_tf_4d_reshape(Yr);
         Betas = limo_tf_4d_reshape(Betas);
     end
-    [n,p]     = size(LIMO.design.X);
+    n     = size(LIMO.design.X,1);
+    p     = rank(LIMO.design.X);
     if n ~= size(Yr,3)
         error('the design matrix in LIMO and the data do not have the same number of trials')
     end
-    if p ~= size(Betas,3)
-        error('the design matrix in LIMO and the Beta file do not have the same number of parameters')
-    end
+    
     X = LIMO.design.X;
 
     if nargin == 2
@@ -65,7 +64,9 @@ else
             Betas = varargin{v+1};
         elseif any(strcmpi(varargin{v},{'X','Design'}))
             X     = varargin{v+1};
-            [n,p] = size(X);
+
+            n     =size(X,1);
+            p     =rank(X);
         elseif strcmpi(varargin{v},'k')
             k = varargin{v+1};
         end
@@ -91,13 +92,7 @@ else
         end
     end
 
-    if p ~= size(Betas,1)
-        if p == size(Betas,2)
-            Betas = Betas';
-        else
-            error('the design matrix and the Beta value do not have the same number of parameters')
-        end
-    end
+    
 
 end
 
@@ -117,26 +112,26 @@ if size(Betas,2) == 1
 end
 
 % run the analysis channel wise
+
 array = find(~isnan(Yr(:,1,1)));
 for channel= 1:length(array)
     residuals = squeeze(Yr(array(channel),:,:))' - X*squeeze(Betas(array(channel),:,:))';
+    sigma2=sum(residuals.^2)/n;
 
     % compute likelihood
     if strcmpi(family,'none')
-        ll = -(1/2)*(n*log(2*pi) + n*log(var(squeeze(Yr(array(channel),:,:))'-residuals)) ...
-            + sum((squeeze(Yr(array(channel),:,:))'-residuals).^2)/var(squeeze(squeeze(Yr(array(channel),:,:))'-residuals)));
+        ll =-(n/2)*log(2*pi*sigma2) - sum(residuals.^2)/(2*sigma2);
     elseif strcmpi(family,'binomial')
         ll = sum(log(binopdf(y, 1, exp(X*beta_hat)./(1+exp(X*beta_hat)))));
     elseif strcmpi(family,'poisson')
         ll = sum(log(poisspdf(squeeze(Yr(array(channel),:,:)), exp(X*beta_hat))));
     elseif strcmpi(family,'gaussian')
-        ll = -(1/2)*(n*log(2*pi) + n*log(var(squeeze(Yr(array(channel),:,:))'-residuals)) ...
-            + sum((squeeze(Yr(array(channel),:,:))'-residuals).^2)/var(squeeze(Yr(array(channel),:,:))'-residuals));
+        ll = -(n/2)*log(2*pi*sigma2) - sum(residuals.^2)/(2*sigma2);
     end
 
     if ~isempty(k)
-        aic = -2*ll + 2*p+sqrt(k_steps);
-        bic = -2*ll + p*log(n)+sqrt(k_steps);
+        aic = -2*ll + 2*p+sqrt(k);
+        bic = -2*ll + p*log(n)+sqrt(k);
     else
         aic = -2.*ll + 2*p;
         bic = -2.*ll + p*log(n);
