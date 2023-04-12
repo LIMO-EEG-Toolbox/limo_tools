@@ -16,22 +16,22 @@ warning on;
 %% Compute GLM and save stats files
 
 if strcmp(LIMO.design.status,'to do')
-    Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));  
+    Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
     Yhat  = load('Yhat');  Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
     Res   = load('Res');   Res   = Res.(cell2mat(fieldnames(Res)));
     R2    = load('R2');    R2    = R2.(cell2mat(fieldnames(R2)));
     Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
-  
-    % check method and change parametyers accordingly
+    
+    % check method and change parameters accordingly
     % -----------------------------------------------
     if size(Yr,1) == 1 % in any cases, just one channel/component
         array = 1;
     else
-        if LIMO.Level == 2        % second level we can have missing data because of 
+        if LIMO.Level == 2        % second level we can have missing data because of
             array = [1:size(Yr,1)]'; %#ok<NBRAK> % bad channels for some subjects - adjust X
         else % level 1 = skip empty channels
             if strcmpi(LIMO.Analysis,'Time-Frequency')
-                array = find(~isnan(Yr(:,1,1,1))); 
+                array = find(~isnan(Yr(:,1,1,1)));
             else
                 array = find(~isnan(Yr(:,1,1)));
             end
@@ -43,20 +43,20 @@ if strcmp(LIMO.design.status,'to do')
         if N < 50
             LIMO.design.method = 'OLS';
             warning('with %g observations detected, IRLS won''t converge, switching to OLS',N)
-        end        
+        end
     end
     
     % check dimensions (3D vs 4D)
     % --------------------------------------
-    if strcmpi(LIMO.Analysis,'Time-Frequency') 
-         [~,n_freqs,n_times,~] = size(Yr); 
-         Yr    = limo_tf_4d_reshape(Yr); 
-         Yhat  = limo_tf_4d_reshape(Yhat); % reshape to 3D
-         Res   = limo_tf_4d_reshape(Res);
-         R2    = limo_tf_4d_reshape(R2);
-         Betas = limo_tf_4d_reshape(Betas);
+    if strcmpi(LIMO.Analysis,'Time-Frequency')
+        [~,n_freqs,n_times,~] = size(Yr);
+        Yr    = limo_tf_4d_reshape(Yr);
+        Yhat  = limo_tf_4d_reshape(Yhat); % reshape to 3D
+        Res   = limo_tf_4d_reshape(Res);
+        R2    = limo_tf_4d_reshape(R2);
+        Betas = limo_tf_4d_reshape(Betas);
     end
-
+    
     % ------------ prepare condition/covariates -------------------
     if LIMO.design.nb_conditions ~=0
         tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(LIMO.design.nb_conditions),2);
@@ -90,7 +90,7 @@ if strcmp(LIMO.design.status,'to do')
     
     warning off;
     for e = 1:length(array)
-        channel = array(e); 
+        channel = array(e);
         if LIMO.Level == 2
             fprintf('analyzing channel %g/%g \n',e,size(array,1));
             Y             = squeeze(Yr(channel,:,:));
@@ -102,166 +102,172 @@ if strcmp(LIMO.design.status,'to do')
             LIMO.design.X = X(index,:);
             model         = limo_glm(Y',LIMO); warning on;
         else % level 1 we should not have any NaNs because we use 'array'
-            if strcmp(LIMO.Type,'Channels')
-                fprintf('analyzing channel %g/%g \n',e,size(array,1));
+            if sum(squeeze(Yr(channel,1,:))) ~= 0
+                if strcmp(LIMO.Type,'Channels')
+                    fprintf('analyzing channel %g/%g \n',e,size(array,1));
+                else
+                    fprintf('analyzing component %g/%g \n',e,size(array,1));
+                end
+                index = 1:size(Yr,3);
+                model = limo_glm(squeeze(Yr(channel,:,:))',LIMO);
             else
-                fprintf('analyzing component %g/%g \n',e,size(array,1));
+                model = [];
             end
-            index = 1:size(Yr,3);
-            model = limo_glm(squeeze(Yr(channel,:,:))',LIMO);
         end
         
-        % update the LIMO.mat 
-        if update == 1 && strcmpi(LIMO.design.method,'OLS')
-            LIMO.model.model_df = model.df;
-            if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df  = model.conditions.df;
-            end
-            if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df  = model.interactions.df;
-            end
-            if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df  = model.continuous.df;
-            end
-            update = 0;
-        
-        elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df 
-            
-            % store temporarily as cell everything
-            LIMO.model.model_df{channel} = model.df;          
-            if LIMO.design.nb_conditions ~=0
-                LIMO.model.conditions_df{channel}  = squeeze(model.conditions.df);
-            end
-            if LIMO.design.nb_interactions ~=0
-                LIMO.model.interactions_df{channel}  = squeeze(model.interactions.df);
-            end
-            if LIMO.design.nb_continuous ~=0
-                LIMO.model.continuous_df{channel}  = squeeze(model.continuous.df);
-            end
-
-            % 1 cell per channel 
-            if e == size(array,1)
-                tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
-                if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
-                   tmp = tmp'; 
-                end
-                df  = tmp(1:2:end,1); % a single value over time
-                dfe = tmp(2:2:end,:); % could be different over time
-                LIMO.model = rmfield(LIMO.model,'model_df');
-                LIMO.model.model_df = [df dfe]; clear tmp
-                
+        if ~isempty(model)
+            % update the LIMO.mat
+            if update == 1 && strcmpi(LIMO.design.method,'OLS')
+                LIMO.model.model_df = model.df;
                 if LIMO.design.nb_conditions ~=0
-                    tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
-                    if size(tmp,1) == size(Yr,1)*2 
-                        df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
-                    elseif size(tmp,1) == size(Yr,1)
-                        df  = tmp(1,:); dfe = tmp(2,:);
-                    end
-                    LIMO.model = rmfield(LIMO.model,'conditions_df');
-                    LIMO.model.conditions_df = [df dfe]; clear tmp
+                    LIMO.model.conditions_df  = model.conditions.df;
                 end
-                
                 if LIMO.design.nb_interactions ~=0
-                    tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
-                    if size(tmp,1) == size(Yr,1)*2 
-                        df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
-                    elseif size(tmp,1) == size(Yr,1)
-                        df  = tmp(1,:); dfe = tmp(2,:);
-                    end
-                    LIMO.model = rmfield(LIMO.model,'interactions_df');
-                    LIMO.model.interactions_df = [df dfe]; clear tmp
+                    LIMO.model.interactions_df  = model.interactions.df;
+                end
+                if LIMO.design.nb_continuous ~=0
+                    LIMO.model.continuous_df  = model.continuous.df;
+                end
+                update = 0;
+                
+            elseif update == 1 && ~strcmpi(LIMO.design.method,'OLS') % each channel can have different weighting and thus different df
+                
+                % store temporarily as cell everything
+                LIMO.model.model_df{channel} = model.df;
+                if LIMO.design.nb_conditions ~=0
+                    LIMO.model.conditions_df{channel}  = squeeze(model.conditions.df);
+                end
+                if LIMO.design.nb_interactions ~=0
+                    LIMO.model.interactions_df{channel}  = squeeze(model.interactions.df);
+                end
+                if LIMO.design.nb_continuous ~=0
+                    LIMO.model.continuous_df{channel}  = squeeze(model.continuous.df);
                 end
                 
-                if LIMO.design.nb_continuous ~=0
-                    tmp = cell2mat(LIMO.model.continuous_df)'; % dim (elec*[df dfe]) * n
-                    if size(tmp,1) == size(Yr,1)*2 
-                        df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
-                    elseif size(tmp,1) == size(Yr,1)
-                        df  = tmp(:,1); dfe = tmp(:,2:end);
+                % 1 cell per channel
+                if e == size(array,1)
+                    tmp = cell2mat(LIMO.model.model_df)'; % dim (elec*[df dfe]) x 1 or time
+                    if size(tmp,2) == size(Yr,1)*2        % when dim 2 is shorter matlab can switch dim around in limo_glm :-(
+                        tmp = tmp';
                     end
-                    LIMO.model = rmfield(LIMO.model,'continuous_df');
-                    LIMO.model.continuous_df = [df dfe]; clear tmp
+                    df  = tmp(1:2:end,1); % a single value over time
+                    dfe = tmp(2:2:end,:); % could be different over time
+                    LIMO.model = rmfield(LIMO.model,'model_df');
+                    LIMO.model.model_df = [df dfe]; clear tmp
+                    
+                    if LIMO.design.nb_conditions ~=0
+                        tmp = cell2mat(LIMO.model.conditions_df)'; % dim (elec*[df dfe]) * 1
+                        if size(tmp,1) == size(Yr,1)*2
+                            df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
+                        elseif size(tmp,1) == size(Yr,1)
+                            df  = tmp(1,:); dfe = tmp(2,:);
+                        end
+                        LIMO.model = rmfield(LIMO.model,'conditions_df');
+                        LIMO.model.conditions_df = [df dfe]; clear tmp
+                    end
+                    
+                    if LIMO.design.nb_interactions ~=0
+                        tmp =  cell2mat(LIMO.model.interactions_df)'; % dim (elec*[df dfe]) * 1
+                        if size(tmp,1) == size(Yr,1)*2
+                            df  = tmp(1:2:end,:); dfe = tmp(2:2:end,:);
+                        elseif size(tmp,1) == size(Yr,1)
+                            df  = tmp(1,:); dfe = tmp(2,:);
+                        end
+                        LIMO.model = rmfield(LIMO.model,'interactions_df');
+                        LIMO.model.interactions_df = [df dfe]; clear tmp
+                    end
+                    
+                    if LIMO.design.nb_continuous ~=0
+                        tmp = cell2mat(LIMO.model.continuous_df)'; % dim (elec*[df dfe]) * n
+                        if size(tmp,1) == size(Yr,1)*2
+                            df  = tmp(1:2:end,1); dfe = tmp(2:2:end,:);
+                        elseif size(tmp,1) == size(Yr,1)
+                            df  = tmp(:,1); dfe = tmp(:,2:end);
+                        end
+                        LIMO.model = rmfield(LIMO.model,'continuous_df');
+                        LIMO.model.continuous_df = [df dfe]; clear tmp
+                    end
                 end
             end
-        end
-        
-        % update the files to be stored on the disk
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            if strcmp(LIMO.design.method,'IRLS')
-                W(channel,:,index) = model.W';
-                for ft=size(W,2):-1:1 % each freq*time has different weighting
-                    WX = LIMO.design.X .* repmat(squeeze(W(channel,ft,:)),1,size(X,2));
-                    fitted_data(:,ft)  = (WX*squeeze(model.betas(:,ft,:)));
+            
+            % update the files to be stored on the disk
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                if strcmp(LIMO.design.method,'IRLS')
+                    W(channel,:,index) = model.W';
+                    for ft=size(W,2):-1:1 % each freq*time has different weighting
+                        WX = LIMO.design.X .* repmat(squeeze(W(channel,ft,:)),1,size(X,2));
+                        fitted_data(:,ft)  = (WX*squeeze(model.betas(:,ft,:)));
+                    end
+                elseif strcmp(LIMO.design.method,'WLS')
+                    W(channel,:,index) = model.W';
+                    for f=n_freqs:-1:1 % each freq has different weighting
+                        WX = LIMO.design.X .* repmat(squeeze(W(channel,f,:)),1,size(X,2));
+                        fitted_data(1,f,:,:)  = (WX*squeeze(model.betas(:,f,:)))';
+                    end
+                    fitted_data = squeeze(limo_tf_4d_reshape(fitted_data))';
+                    % reshape beta freq to ft
+                    for c=size(model.betas,1):-1:1
+                        tmp(c,:) = reshape(model.betas(c,:,:), [n_freqs*n_times,1]);
+                    end
+                    model.betas = tmp; clear tmp
+                    
+                else % OLS, W is already ones
+                    fitted_data = LIMO.design.X*model.betas;
                 end
-            elseif strcmp(LIMO.design.method,'WLS')
-                W(channel,:,index) = model.W'; 
-                for f=n_freqs:-1:1 % each freq has different weighting
-                    WX = LIMO.design.X .* repmat(squeeze(W(channel,f,:)),1,size(X,2));
-                    fitted_data(1,f,:,:)  = (WX*squeeze(model.betas(:,f,:)))';
+            else
+                if strcmp(LIMO.design.method,'IRLS')
+                    W(channel,:,index) = model.W';
+                elseif strcmp(LIMO.design.method,'WLS')
+                    if strcmpi(LIMO.Analysis,'Time-Frequency')
+                        W(channel,:,index) = model.W;
+                    else
+                        W(channel,index) = model.W;
+                    end
                 end
-                fitted_data = squeeze(limo_tf_4d_reshape(fitted_data))';
-                % reshape beta freq to ft
-                for c=size(model.betas,1):-1:1
-                    tmp(c,:) = reshape(model.betas(c,:,:), [n_freqs*n_times,1]);
-                end
-                model.betas = tmp; clear tmp
-
-            else % OLS, W is already ones
                 fitted_data = LIMO.design.X*model.betas;
             end
-        else
-            if strcmp(LIMO.design.method,'IRLS')
-                W(channel,:,index) = model.W';
-            elseif strcmp(LIMO.design.method,'WLS')
-                if strcmpi(LIMO.Analysis,'Time-Frequency')
-                    W(channel,:,index) = model.W;
+            
+            % all these always 3D - reshape before saving
+            Yhat(channel,:,index) = fitted_data';
+            Res(channel,:,index)  = squeeze(Yr(channel,:,index)) - fitted_data';
+            clear fitted_data
+            R2(channel,:,1)       = model.R2_univariate;
+            R2(channel,:,2)       = model.F;
+            R2(channel,:,3)       = model.p;
+            Betas(channel,:,:)    = model.betas';
+            
+            if prod(LIMO.design.nb_conditions) ~=0
+                if length(LIMO.design.nb_conditions) == 1
+                    tmp_Condition_effect(channel,:,1,1) = model.conditions.F;
+                    tmp_Condition_effect(channel,:,1,2) = model.conditions.p;
                 else
-                    W(channel,index) = model.W;
+                    for i=1:length(LIMO.design.nb_conditions)
+                        tmp_Condition_effect(channel,:,i,1) = model.conditions.F(i,:);
+                        tmp_Condition_effect(channel,:,i,2) = model.conditions.p(i,:);
+                    end
                 end
             end
-            fitted_data = LIMO.design.X*model.betas;
-        end
-        
-        % all these always 3D - reshape before saving
-        Yhat(channel,:,index) = fitted_data';
-        Res(channel,:,index)  = squeeze(Yr(channel,:,index)) - fitted_data';
-        clear fitted_data
-        R2(channel,:,1)       = model.R2_univariate;
-        R2(channel,:,2)       = model.F;
-        R2(channel,:,3)       = model.p;
-        Betas(channel,:,:)    = model.betas';
-
-        if prod(LIMO.design.nb_conditions) ~=0
-            if length(LIMO.design.nb_conditions) == 1
-                tmp_Condition_effect(channel,:,1,1) = model.conditions.F;
-                tmp_Condition_effect(channel,:,1,2) = model.conditions.p;
-            else
-                for i=1:length(LIMO.design.nb_conditions)
-                    tmp_Condition_effect(channel,:,i,1) = model.conditions.F(i,:);
-                    tmp_Condition_effect(channel,:,i,2) = model.conditions.p(i,:);
+            
+            if LIMO.design.fullfactorial == 1
+                for i=1:length(LIMO.design.nb_interactions)
+                    tmp_Interaction_effect(channel,:,i,1) = model.interactions.F(i,:);
+                    tmp_Interaction_effect(channel,:,i,2) = model.interactions.p(i,:);
                 end
             end
-        end
-        
-        if LIMO.design.fullfactorial == 1
-            for i=1:length(LIMO.design.nb_interactions)
-                tmp_Interaction_effect(channel,:,i,1) = model.interactions.F(i,:);
-                tmp_Interaction_effect(channel,:,i,2) = model.interactions.p(i,:);
-            end
-        end
-        
-        if LIMO.design.nb_continuous ~=0
-            if LIMO.design.nb_continuous == 1
-                tmp_Covariate_effect(channel,:,1,1) = model.continuous.F;
-                tmp_Covariate_effect(channel,:,1,2) = model.continuous.p;
-            else
-                for i=1:LIMO.design.nb_continuous
-                    tmp_Covariate_effect(channel,:,i,1) = model.continuous.F(:,i);
-                    tmp_Covariate_effect(channel,:,i,2) = model.continuous.p(:,i);
+            
+            if LIMO.design.nb_continuous ~=0
+                if LIMO.design.nb_continuous == 1
+                    tmp_Covariate_effect(channel,:,1,1) = model.continuous.F;
+                    tmp_Covariate_effect(channel,:,1,2) = model.continuous.p;
+                else
+                    for i=1:LIMO.design.nb_continuous
+                        tmp_Covariate_effect(channel,:,i,1) = model.continuous.F(:,i);
+                        tmp_Covariate_effect(channel,:,i,2) = model.continuous.p(:,i);
+                    end
                 end
             end
+            clear model
         end
-        clear model
     end
     warning on;
     
@@ -273,16 +279,16 @@ if strcmp(LIMO.design.status,'to do')
     if ~isfield(LIMO.design,'name')
         LIMO.design.name    = 'GLM';
     end
-    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
     
     if strcmpi(LIMO.Analysis,'Time-Frequency')
-         Yhat  = limo_tf_4d_reshape(Yhat);
-         Res   = limo_tf_4d_reshape(Res);
-         R2    = limo_tf_4d_reshape(R2);
-         Betas = limo_tf_4d_reshape(Betas);
+        Yhat  = limo_tf_4d_reshape(Yhat);
+        Res   = limo_tf_4d_reshape(Res);
+        R2    = limo_tf_4d_reshape(R2);
+        Betas = limo_tf_4d_reshape(Betas);
     end
     save(fullfile(LIMO.dir,'Yhat.mat'),  'Yhat',  '-v7.3');
-    save(fullfile(LIMO.dir,'Res.mat'),   'Res',   '-v7.3'); 
+    save(fullfile(LIMO.dir,'Res.mat'),   'Res',   '-v7.3');
     save(fullfile(LIMO.dir,'Betas.mat'), 'Betas', '-v7.3');
     save(fullfile(LIMO.dir,'R2.mat'),    'R2',    '-v7.3');
     clear Yhat Res Betas R2
@@ -731,7 +737,7 @@ if LIMO.design.bootstrap ~=0
     end
 end
 
-%% TFCE 
+%% TFCE
 % --------------
 if LIMO.design.tfce == 1
     
@@ -742,39 +748,39 @@ if LIMO.design.tfce == 1
         end
     end
     
-    % check if there is a neighbouring matrix 
+    % check if there is a neighbouring matrix
     % (since TFCE integrates over clusters)
     if ~isfield(LIMO.data,'neighbouring_matrix')
-       warning('no neighbouring matrix found, this is required for TFCE')
-       answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
-       if strcmp(answer,'Load')
-           [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
-           if whatsup == 0
-               disp('selection aborded');
-               return
-           else
-               tmp   = load(fullfile(newpath,file));
-               fn    = fieldnames(tmp);
-               index = find(ismember(fn,'channeighbstructmat'));
-               if isempty(index)
-                   error('no neighbouring matrix ''channeighbstructmat'' found')
-               else
-                   LIMO.data.neighbouring_matrix = getfield(tmp,fn{index});
-                   save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-               end
-           end
-       else
-           [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
-           if isempty(LIMO.data.neighbouring_matrix)
-               error('no neighbouring matrix returned, try creating with limo tools')
-           else
-               save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
-           end
-       end
+        warning('no neighbouring matrix found, this is required for TFCE')
+        answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
+        if strcmp(answer,'Load')
+            [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
+            if whatsup == 0
+                disp('selection aborded');
+                return
+            else
+                tmp   = load(fullfile(newpath,file));
+                fn    = fieldnames(tmp);
+                index = find(ismember(fn,'channeighbstructmat'));
+                if isempty(index)
+                    error('no neighbouring matrix ''channeighbstructmat'' found')
+                else
+                    LIMO.data.neighbouring_matrix = getfield(tmp,fn{index});
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+                end
+            end
+        else
+            [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
+            if isempty(LIMO.data.neighbouring_matrix)
+                error('no neighbouring matrix returned, try creating with limo tools')
+            else
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+            end
+        end
     end
-       
+    
     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
-    mkdir tfce; 
+    mkdir tfce;
     
     % R2
     limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no')
@@ -798,7 +804,7 @@ if LIMO.design.tfce == 1
     % covariates / continuous regressors
     if LIMO.design.nb_continuous ~=0
         for i=1:LIMO.design.nb_continuous
-            name = sprintf('Covariate_effect_%g.mat',i); 
+            name = sprintf('Covariate_effect_%g.mat',i);
             limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
         end
     end
