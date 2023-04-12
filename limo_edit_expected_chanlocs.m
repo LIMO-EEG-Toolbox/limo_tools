@@ -19,11 +19,11 @@ if nargin == 0
 end
 
 %% load file
-if ismatrix(gp_level_file)
+if ischar(gp_level_file)
+    tmp = load([filepath gp_level_file]);
+else
     LIMO = gp_level_file;
     tmp  = struct('LIMO',LIMO);
-else
-    tmp = load([filepath gp_level_file]);
 end
 
 if isfield(tmp,'LIMO')

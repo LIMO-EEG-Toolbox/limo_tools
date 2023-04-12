@@ -1272,21 +1272,21 @@ switch type
             fprintf('Bootstrapping Repeated Measures ANOVA\n');
             warning off
             parfor B=1:LIMO.design.bootstrap
-                array = find(~isnan(data(:,1,1,1)));
+                array = find(~isnan(centered_data(:,1,1,1)));
 
                 % preallocation for parfor
                 if type ==1
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),1,2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 elseif type == 2
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),length(C),2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
                 elseif type == 3
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),1,2);
-                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(data,1),size(data,2),2);
-                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(data,1),size(data,2),1,2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
+                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 else
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),length(C),2);
-                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(data,1),size(data,2),2);
-                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(data,1),size(data,2),length(C),2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
+                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_dataa,1),size(centered_data,2),length(C),2);
                 end
  
                 for e = 1:length(array)
