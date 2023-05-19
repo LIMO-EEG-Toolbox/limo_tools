@@ -509,7 +509,8 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         procstatus(subject) = 1;
     end
     
-else % parallel call to the pipeline
+else % parallel call to the pipeline , the usual way
+
     limo_check_ppool
     parfor subject = 1:N 
         disp('--------------------------------')
@@ -565,6 +566,7 @@ else % parallel call to the pipeline
             end
         end
     end
+    poolobj = gcp('nocreate'); delete(poolobj); % close parallel pool 
 end
 
 %% Save txt files
