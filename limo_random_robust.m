@@ -872,8 +872,9 @@ switch type
             data = varargin{2}; % e,f,subjects,measures
         end
         
-        gp_vector         = varargin{3}; % length of data, indices groups
-        factor_levels     = varargin{4}; % vector eg [2 3]
+        factor_levels     = varargin{4}; % vector eg [2 3] --> LIMO.design.repeated_measure
+        gp_vector         = varargin{3}; % length of data, indices groups --> LIMO.data.Cat  
+                                         % size(LIMO.design.X,2) = % N*prod(factor_levels)+1
         if ischar(varargin{5})
             LIMO = load(varargin{5});
             LIMO = LIMO.LIMO;

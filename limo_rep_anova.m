@@ -395,8 +395,8 @@ switch type
                    [result.interaction.F(effect,frame), result.interaction.p(effect,frame),...
                        df(frame), dfe(frame)]= local_glm(I,X,k,sum(X(:,1:k),1),2);
                end
-               result.interaction.df(effect,c)  = unique(df); 
-               result.interaction.dfe(effect,c) = unique(dfe);
+               result.interaction.df(effect)  = unique(df); 
+               result.interaction.dfe(effect) = unique(dfe);
            end
        else
            for frame=1:f
