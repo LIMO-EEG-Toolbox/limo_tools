@@ -509,7 +509,7 @@ elseif strcmpi(stattest,'two-samples t-test')
 
     % check type of files and returns which beta param to test
     % -------------------------------------------------------
-    if ~all(contains(Names{1},'betas')) && ~all(contains(Names{1},'con'))
+    if ~all(contains(Names{1},'betas')) && ~all(contains(Names{1},'Betas')) && ~all(contains(Names{1},'con'))
         % do this only if betas - for con paramters = [1 1]
         for gp = 1:2
             for sub=1:size(LIMO.data.data_dir{gp},2)
@@ -2405,7 +2405,7 @@ elseif gp > 1
     end
 end
 
-if isempty(betas)
+if isempty(betas) && isempty(parameters)
     error('LIMO could not match betas across subjects, the array is empty')
 end
 
