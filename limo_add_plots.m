@@ -222,7 +222,11 @@ while out == 0
                 if isfield(data.limo,'PlotRank')
                     v = cell2mat(inputdlg(['which decile to plot, 1 to ' num2str(size(tmp,4)-1)],'plotting option'));
                 else
-                    v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                    if size(tmp,3) == 1
+                        v = 1;
+                    else
+                        v = cell2mat(inputdlg(['which variable to plot, 1 to ' num2str(size(tmp,3))],'plotting option'));
+                    end
                 end
                 
                 if isempty(v)
@@ -235,26 +239,12 @@ while out == 0
             if  subjects_plot == 0 && length(v)>1
                 errordlg2('only 1 parameter value expected'); return
             else
-                if subjects_plot == 1
-                    if size(tmp,1) == 1 && size(tmp,3) > 1
-                        D           = squeeze(tmp(:,:,:,v));
-                        Data        = nan(1,size(tmp,2),size(tmp,4));
-                        Data(1,:,:) = D; clear D;
-                    else
-                        if ndims(tmp) == 4
-                            Data    = squeeze(tmp(:,:,:,v));
-                        else
-                            Data    = squeeze(tmp(:,:,v));
-                        end
-                    end
+                if size(tmp,1) == 1 && size(tmp,3) > 1
+                    D           = squeeze(tmp(:,:,v,:));
+                    Data        = nan(1,size(tmp,2),size(tmp,4));
+                    Data(1,:,:) = D; clear D;
                 else
-                    if size(tmp,1) == 1 && size(tmp,3) > 1
-                        D           = squeeze(tmp(:,:,v,:));
-                        Data        = nan(1,size(tmp,2),size(tmp,4));
-                        Data(1,:,:) = D; clear D;
-                    else
-                        Data        = squeeze(tmp(:,:,v,:));
-                    end
+                    Data        = squeeze(tmp(:,:,v,:));
                 end
             end
         end
