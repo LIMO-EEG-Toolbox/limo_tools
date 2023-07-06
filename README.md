@@ -11,6 +11,14 @@ This repository (master) is the stable version of LIMO MEEG (v3). A quick overvi
 Have EEGLAB installed (because we call some functions) and LIMO in the plug-in directory.
 Data of each subject must be in subject specific folders -- ideally follow the [Brain Imaging Data Structure](https://bids.neuroimaging.io/) making working with EEGLAB/FieldTrip/LIMO easier.
 
+If you are using LIMO tools programmatically, make sure subfolders are in the matlab path 
+```matlab
+addpath([limo_folder filesep 'limo_cluster_functions']); 
+addpath([limo_folder filesep 'external']); 
+addpath([limo_folder filesep 'external' filesep 'psom']); 
+addpath([limo_folder filesep 'help']); addpath([limo_folder filesep 'deprecated']
+```
+
 LIMO 3.0 has been tested with EEGLAB 2021.0. This [test script](https://github.com/sccn/eeglab-testcases/blob/master/unittesting_limo/limo_preproc_stats_hw.m) runs nightly to make sure LIMO remains stable.
 
 ## Documentation
