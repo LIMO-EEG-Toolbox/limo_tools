@@ -144,8 +144,11 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
                     fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'paired_samples')
+                underScoresPos = strfind(FileNameTmp,'_');
+                param1         = str2num(FileNameTmp(underScoresPos(end-1)+1:underScoresPos(end)-1));
+                param2         = str2num(FileNameTmp(underScoresPos(end)+1:end));
                 limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
-                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                    fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
             elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
                 LIMO = LIMO; LIMO.design.bootstrap = 1000;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');

@@ -514,7 +514,7 @@ switch type
         if LIMO.design.bootstrap > 0
             limo_check_ppool
             bootex = 1;
-            boot_name = sprintf('H0_paired_samples_ttest_parameter_%s',num2str(parameter')');
+            boot_name = sprintf('H0_paired_samples_ttest_parameter_%d_%d',parameter(1),parameter(end));
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if ~strcmp(answer,'Yes')
