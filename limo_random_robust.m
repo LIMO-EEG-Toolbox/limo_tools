@@ -485,7 +485,7 @@ switch type
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('paired_samples_ttest_parameter_%d_%d',parameter(1), parameter(2));
+        name = sprintf('paired_samples_ttest_parameter_%d_%d',parameter(1), parameter(end));
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)

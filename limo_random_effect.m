@@ -393,7 +393,7 @@ else
         levels = 2;
         options = {'1st and 2nd level', '2nd level only'};
         res = limo_questdlg( [ 'This is a 2nd (group) level contrast. Do you want to calculate the same' 10 ...
-                               'contrast at the 1st-level to be able to plot it for individual subjects? ' ], '1st-level contrast', options{:}, options{end});
+                               'contrast at the 1st-level to be able to plot it for individual subjects? ' ], '1st-level contrast', options{:}, options{1});
         if isempty(res)
             return;
         elseif strcmpi(res, options{1})

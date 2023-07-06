@@ -98,7 +98,7 @@ else
         y = 1;
     end
 end
-frame = udat.frame_zeros + round(x / udat.ratio);
+frame = udat.frame_zeros + floor(x / udat.ratio);
 if frame <= 0
     frame = 1;
 end

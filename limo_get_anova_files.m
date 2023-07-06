@@ -47,6 +47,8 @@ if length(dirContent) > 1
             return;
         end
     end
+else
+    path = fullfile(dirContent.folder, dirContent.name);
 end    
 res = dir(fullfile(path, 'LIMO.mat'));
 if isempty(res)
