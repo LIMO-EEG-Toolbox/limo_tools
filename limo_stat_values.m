@@ -25,6 +25,19 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 % ------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2020
 
+root = fileparts(which('limo_eeg'));
+pathCell = regexp(path, pathsep, 'split');
+onPath = all([sum(strcmp([root filesep 'help'],pathCell))~=0,...
+    sum(strcmp([root filesep 'limo_cluster_functions'],pathCell))~=0,...
+    sum(strcmp([root filesep 'external' filesep 'psom'],pathCell))~=0,...
+    sum(strcmp([root filesep 'deprecated'], pathCell))~=0]);
+if onPath == 0
+    addpath([root filesep 'limo_cluster_functions'])
+    addpath([root filesep 'external'])
+    addpath([root filesep 'external' filesep 'psom'])
+    addpath([root filesep 'help'])
+    addpath([root filesep 'deprecated'])
+end
 
 FileName  = varargin{1}; % Name of the file selected
 p         = varargin{2}; % p value
@@ -368,7 +381,7 @@ if contains(FileName,'Rep_ANOVA')
                     bootT = squeeze(H0_data(:,:,1,:));
                     bootP = squeeze(H0_data(:,:,2,:));
                     if size(M,1) == 1
-                        tmp = NaN(1,size(M,2),size(bootT,4));
+                        tmp = NaN(1,size(M,2),size(bootT,2));
                         tmp(1,:,:) = bootT; bootT = tmp;
                         tmp(1,:,:) = bootP; bootP = tmp;
                         clear tmp

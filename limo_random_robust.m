@@ -872,8 +872,9 @@ switch type
             data = varargin{2}; % e,f,subjects,measures
         end
         
-        gp_vector         = varargin{3}; % length of data, indices groups
-        factor_levels     = varargin{4}; % vector eg [2 3]
+        factor_levels     = varargin{4}; % vector eg [2 3] --> LIMO.design.repeated_measure
+        gp_vector         = varargin{3}; % length of data, indices groups --> LIMO.data.Cat  
+                                         % size(LIMO.design.X,2) = % N*prod(factor_levels)+1
         if ischar(varargin{5})
             LIMO = load(varargin{5});
             LIMO = LIMO.LIMO;
@@ -1272,21 +1273,21 @@ switch type
             fprintf('Bootstrapping Repeated Measures ANOVA\n');
             warning off
             parfor B=1:LIMO.design.bootstrap
-                array = find(~isnan(data(:,1,1,1)));
+                array = find(~isnan(centered_data(:,1,1,1)));
 
                 % preallocation for parfor
                 if type ==1
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),1,2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 elseif type == 2
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),length(C),2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
                 elseif type == 3
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),1,2);
-                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(data,1),size(data,2),2);
-                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(data,1),size(data,2),1,2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
+                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 else
-                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(data,1),size(data,2),length(C),2);
-                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(data,1),size(data,2),2);
-                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(data,1),size(data,2),length(C),2);
+                    tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
+                    H0_Rep_ANOVA_Gp_effect_sub = NaN(size(centered_data,1),size(centered_data,2),2);
+                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_dataa,1),size(centered_data,2),length(C),2);
                 end
  
                 for e = 1:length(array)

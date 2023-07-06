@@ -340,6 +340,8 @@ if ~isempty(handles.C)
             
             if exist(LIMO.dir,'dir')
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+            else
+                save(fullfile(pwd,'LIMO.mat'),'LIMO','-v7.3')
             end
             
             % -------------------------------------------------------
@@ -369,14 +371,14 @@ if ~isempty(handles.C)
                                 find(handles.C ~= 0),LIMO);
                         end
                     end
-                else % standard GLM type ANOVA/ANCOVA
+                else % standard GLM type ANOVA/ANCOVA/regression
 
                     if ~exist(LIMO.dir,'dir')
                         LIMO.dir = pwd;
                     end
                     limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
 
-                    if LIMO.design.bootstrap ~= 0 && strcmpi('choice','compute bootstrap contrast')
+                    if LIMO.design.bootstrap ~= 0 && strcmpi(choice,'compute bootstrap contrast')
                         Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
                         H0_Betas = load(fullfile(LIMO.dir,['H0' filesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
                         if strcmp(LIMO.Analysis ,'Time-Frequency')

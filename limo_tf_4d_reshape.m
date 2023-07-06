@@ -103,19 +103,3 @@ elseif numel(reshape_size) == 3 || 2
         reshaped(:,:,:,tr) = eft_3d;
     end
 end
-    
-    
-    
-    
-    
-    
-                
-                
-                
-                
-                
-    
-    
-    
-    
-    

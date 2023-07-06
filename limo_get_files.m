@@ -77,7 +77,7 @@ while go == 1
                 end
                 uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis result file' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
-                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }); % , 'cancel', 'Browse');
                 if ~isempty(res)
                     name = fileList(res{1}).name;
                     path = fileList(res{1}).folder;

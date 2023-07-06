@@ -509,7 +509,8 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         procstatus(subject) = 1;
     end
     
-else % parallel call to the pipeline
+else % parallel call to the pipeline , the usual way
+
     limo_check_ppool
     parfor subject = 1:N 
         disp('--------------------------------')
@@ -565,6 +566,7 @@ else % parallel call to the pipeline
             end
         end
     end
+    poolobj = gcp('nocreate'); delete(poolobj); % close parallel pool 
 end
 
 %% Save txt files
@@ -620,7 +622,7 @@ if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
     if sum(failed) == N % all subjects
-        warning('LIMO batch done but all subjects failed')
+        warning('LIMO batch done but all subjects failed. This can be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
     else
         warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
     end

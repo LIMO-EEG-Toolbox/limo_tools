@@ -99,6 +99,10 @@ if type == 1 || type == 2
     X       = LIMO.design.X;
     nb_beta = size(LIMO.design.X,2);
     if isfield(LIMO.model,'model_df')
+        if iscell(LIMO.model.model_df)
+            LIMO.model.model_df = cell2mat(LIMO.model.model_df');
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+        end
         dfe = LIMO.model.model_df(:,2:end);
     else
         dfe = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
@@ -339,66 +343,72 @@ switch type
                         
                         % Update con file [mean value, se, df, t, p]
                         if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                            var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel); % sum of (xi-mean)^2 since res are xi-mean take res^2, dived by dfe ie n-dimensions of the mean
-                            con(channel,:,1)         = C*squeeze(Betas(channel,:,:))'; % how do we scale axes of WX
-                            if strcmpi(LIMO.design.method,'OLS')
-                                WX                   = X;
-                            else
-                                WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
+                            if sum(squeeze(Res(channel,1,:))) ~= 0 && ~isnan(sum(squeeze(Res(channel,1,:))))
+                                var                      = (squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') / dfe(channel); % sum of (xi-mean)^2 since res are xi-mean take res^2, dived by dfe ie n-dimensions of the mean
+                                con(channel,:,1)         = C*squeeze(Betas(channel,:,:))'; % how do we scale axes of WX
+                                if strcmpi(LIMO.design.method,'OLS')
+                                    WX                   = X;
+                                else
+                                    WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
+                                end
+                                con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var = avg distance to model projected into the contrast space
+                                con(channel,:,3)         = dfe(channel);
+                                con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
+                                con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2;
                             end
-                            con(channel,:,2)         = sqrt(diag(var)'.*(C*pinv(WX'*WX)*C')); % var = avg distance to model projected into the contrast space
-                            con(channel,:,3)         = dfe(channel);
-                            con(channel,:,4)         = (C*squeeze(Betas(channel,:,:))') ./ sqrt(diag(var)'.*(C*pinv(WX'*WX)*C'));
-                            con(channel,:,5)         = (1-tcdf(squeeze(abs(con(channel,:,4))), dfe(channel))).*2; 
                         elseif strcmpi(LIMO.design.method,'IRLS')
-                            var                      = diag((squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') ./ dfe(channel,:));
-                            for frame = 1:size(Betas,2)
-                                con(channel,frame,1) = C*squeeze(Betas(channel,frame,:));
-                                WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
-                                con(channel,frame,2) = sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,3) = dfe(channel,frame);
-                                con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))) ./ sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
-                                con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(channel,frame))).*2;
+                            if sum(squeeze(Res(channel,1,:))) ~= 0 && ~isnan(sum(squeeze(Res(channel,1,:))))
+                                var                      = diag((squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))') ./ dfe(channel,:));
+                                for frame = 1:size(Betas,2)
+                                    con(channel,frame,1) = C*squeeze(Betas(channel,frame,:));
+                                    WX                   = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
+                                    con(channel,frame,2) = sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
+                                    con(channel,frame,3) = dfe(channel,frame);
+                                    con(channel,frame,4) = (C*squeeze(Betas(channel,frame,:))) ./ sqrt(var(frame).*(C*pinv(WX'*WX)*C'));
+                                    con(channel,frame,5) = (1-tcdf(squeeze(abs(con(channel,frame,4))), dfe(channel,frame))).*2;
+                                end
                             end
                         end
                     else % F contrast
                         % Update ess file [mean values, se, df, F, p]
-                        E = diag(squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))');
-                        ess(channel,:,1:size(C,1)) = (C*squeeze(Betas(channel,:,:))')' ;
-                        if rank(diag(C)) == 1
-                            df = 1;
-                        else
-                            df = rank(diag(C)) - 1;
-                        end
-                        ess(channel,:,end-2) = df;
-                        
-                        c  = zeros(length(C));
-                        C0 = eye(size(c,1)) - (diag(C)*pinv(diag(C)));
-                        if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
-                            if strcmpi(LIMO.design.method,'WLS')
-                                WX = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
+                        if sum(squeeze(Res(channel,1,:))) ~= 0 && ~isnan(sum(squeeze(Res(channel,1,:))))
+                            E = diag(squeeze(Res(channel,:,:))*squeeze(Res(channel,:,:))');
+                            ess(channel,:,1:size(C,1)) = (C*squeeze(Betas(channel,:,:))')' ;
+                            if rank(diag(C)) == 1
+                                df = 1;
                             else
-                                WX = X;
+                                df = rank(diag(C)) - 1;
                             end
-                            R  = eye(size(Y,3)) - (WX*pinv(WX));
-                            X0 = X*C0;
-                            R0 = eye(size(Y,3)) - (X0*pinv(X0));
-                            M  = R0 - R;
-                            H  = (squeeze(Betas(channel,:,:))*X'*M*X*squeeze(Betas(channel,:,:))');
-                            ess(channel,:,end-3) = E/dfe(channel);
-                            ess(channel,:,end-1) = (diag(H)/df)./(E/dfe(channel));  % F value
-                            ess(channel,:,end)   = 1 - fcdf(ess(channel,:,end-1), df, dfe(channel)); % p value
-                        else % IRLS
-                            for frame = 1:size(Betas,2)
-                                WX = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
+                            ess(channel,:,end-2) = df;
+                            
+                            c  = zeros(length(C));
+                            C0 = eye(size(c,1)) - (diag(C)*pinv(diag(C)));
+                            if strcmpi(LIMO.design.method,'OLS') || strcmpi(LIMO.design.method,'WLS')
+                                if strcmpi(LIMO.design.method,'WLS')
+                                    WX = X.*repmat(squeeze(LIMO.design.weights(channel,:)'),1,size(X,2));
+                                else
+                                    WX = X;
+                                end
                                 R  = eye(size(Y,3)) - (WX*pinv(WX));
                                 X0 = X*C0;
                                 R0 = eye(size(Y,3)) - (X0*pinv(X0));
                                 M  = R0 - R;
-                                H  = (squeeze(Betas(channel,frame,:))'*X'*M*X*squeeze(Betas(channel,frame,:)));
-                                ess(channel,:,end-3) = E(frame)/dfe(channel);
-                                ess(channel,frame,end-1) = (H/df)./(E(frame)/dfe(channel));  % F value
-                                ess(channel,frame,end)   = 1 - fcdf(ess(channel,frame,end-1), df, dfe(channel)); % p value
+                                H  = (squeeze(Betas(channel,:,:))*X'*M*X*squeeze(Betas(channel,:,:))');
+                                ess(channel,:,end-3) = E/dfe(channel);
+                                ess(channel,:,end-1) = (diag(H)/df)./(E/dfe(channel));  % F value
+                                ess(channel,:,end)   = 1 - fcdf(ess(channel,:,end-1), df, dfe(channel)); % p value
+                            else % IRLS
+                                for frame = 1:size(Betas,2)
+                                    WX = X.*repmat(squeeze(LIMO.design.weights(channel,frame,:)),1,size(X,2));
+                                    R  = eye(size(Y,3)) - (WX*pinv(WX));
+                                    X0 = X*C0;
+                                    R0 = eye(size(Y,3)) - (X0*pinv(X0));
+                                    M  = R0 - R;
+                                    H  = (squeeze(Betas(channel,frame,:))'*X'*M*X*squeeze(Betas(channel,frame,:)));
+                                    ess(channel,:,end-3) = E(frame)/dfe(channel);
+                                    ess(channel,frame,end-1) = (H/df)./(E(frame)/dfe(channel));  % F value
+                                    ess(channel,frame,end)   = 1 - fcdf(ess(channel,frame,end-1), df, dfe(channel)); % p value
+                                end
                             end
                         end
                     end
@@ -552,15 +562,19 @@ switch type
                             % ----------
                         else
                             E = (Y'*R*Y);
-                            c = zeros(length(C));
-                            for n=1:length(C)
-                                c(n,n) = C(n);
-                            end
+                            if isvector(C)
+                                c = zeros(length(C));
+                                for n=1:length(C)
+                                    c(n,n) = C(n);
+                                end
+                            else
+                                c = C;
+                            end                           
                             C0 = eye(size(c,2)) - c*pinv(c);
                             X0 = WX*C0;
                             R0 = eye(size(Y,1)) - (X0*pinv(X0));
-                            M = R0 - R;
-                            H = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
+                            M  = R0 - R;
+                            H  = (squeeze(Betas(channel,:,:,B))*X'*M*X*squeeze(Betas(channel,:,:,B))');
                             df = rank(c) - 1;
                             if df == 0
                                 df = 1;
@@ -568,8 +582,7 @@ switch type
                             H0_ess(channel,:,1,B) = (diag(H)/df)./(diag(E)/dfe(channel));  % F value
                             H0_ess(channel,:,2,B) = 1 - fcdf(H0_ess(channel,:,1,B), rank(c)-1, dfe(channel));   % p value
                         end
-                        
-                        
+                                                
                     else % -------- IRLS ------------
                         for frame = 1:size(Y,2)
                            fprintf('compute bootstrap channel %g frame %g/%g ... \n',channel, frame,size(Y,2))
@@ -609,9 +622,13 @@ switch type
                                 % ----------
                             else
                                 E = (Y(:,frame)'*R*Y(:,frame));
-                                c = zeros(length(C));
-                                for n=1:length(C)
-                                    c(n,n) = C(n);
+                                if isvector(C)
+                                    c = zeros(length(C));
+                                    for n=1:length(C)
+                                        c(n,n) = C(n);
+                                    end
+                                else
+                                    c = C;
                                 end
                                 C0 = eye(size(c,2)) - c*pinv(c);
                                 X0 = WX*C0;
