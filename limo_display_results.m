@@ -1,4 +1,4 @@
-function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
+function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 
 % This function displays various results
 % The arguments specify cases for the
@@ -18,7 +18,7 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 %   MCC       = Multiple Comparison technique
 %               1=None, 2= Cluster, 3=TFCE, 4=T max
 %   LIMO      = LIMO structure
-%   flag      = indicates to allow surfing the figure (1) or not (0)
+%   flag      = indicates interactivity (1) or not (0)
 %
 % OPTIONAL INPUTS  (Usage: {''key'', value, ... })
 % 'channels' : Provide the index of the channel to be used.
@@ -36,24 +36,35 @@ function limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varargin)
 % input
 %
 % Cyril Pernet, Guillaume Rousselet, Carl Gaspar,
-% Nicolas Chauveau, Andrew Stewart, Ramon Martinez-Cancino
+% Nicolas Chauveau, Andrew Stewart, Ramon Martinez-Cancino, Arnaud Delorme
 %
 % see also limo_stat_values limo_display_image topoplot limo_course_plot
 % ----------------------------------------------------------------------
 %  Copyright (C) LIMO Team 2019
 
+if ~ischar(Type)
+    options = { 'type', Type, 'filename', FileName, 'pathname', PathName, 'p', p, 'MCC', MCC, 'LIMO', LIMO, varargin{:} };
+else 
+    options = { Type FileName PathName p MCC LIMO flag varargin{:} };
+end
+
 try
-    options = varargin;
-    if ~isempty( varargin )
+    if ~isempty( options )
         for i = 1:2:numel(options)
             g.(options{i}) = options{i+1};
         end
-    else
-        g = [];
     end
 catch
-    disp('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
+    error('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
 end
+
+try g.type;      catch, g.type     = 1;  end % 2-D image
+try g.filename;  catch, g.filename = [];  end % No default values
+try g.pathname;  catch, g.pathname = [];  end % No default values
+try g.p;         catch, g.p        = 0.05;  end 
+try g.MCC;       catch, g.MCC      = 1;   end % No correction
+try g.LIMO;      catch, g.LIMO     = [];  end % No default values
+try g.flag;      catch, g.flag     = 1;  end % interactive figure
 
 try g.channels;  catch, g.channels  = [];  end % No default values
 try g.regressor; catch, g.regressor = [];  end % No default values
@@ -62,11 +73,36 @@ try g.sumstats;  catch, g.sumstats  = [];  end % No default values
 try g.restrict;  catch, g.restrict  = [];  end % No default values
 try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
 
+try g.fig;       catch, g.fig       = [];  end % Existing figure
+
+% decode inputs given as structure
+if isfield(g, 'type')     Type     = g.type; end
+if isfield(g, 'filename') FileName = g.filename; end
+if isfield(g, 'pathname') PathName = g.pathname; end
+if isfield(g, 'p')        p        = g.p; end
+if isfield(g, 'MCC')      MCC      = g.MCC; end
+if isfield(g, 'LIMO')     LIMO     = g.LIMO; end
+if isfield(g, 'flag')     flag     = g.flag; end
+
+if isequal(g.regressor, 0), g.regressor = []; end
+if ~isempty(g.plot3type)
+    extra = {'Original','Modelled','Adjusted'};
+    extra = extra{g.plot3type};
+end
+res = '';
 toplot = load(fullfile(PathName,FileName));
 toplot = toplot.(cell2mat(fieldnames(toplot)));
-if nargin <= 6
-    flag = 1;
-end
+
+params.Type      = Type;
+params.FileName  = FileName;
+params.PathName  = PathName;
+params.LIMO      = LIMO;
+params.p         = p;
+params.MCC       = MCC;
+params.flag      = flag;
+params.plot3type = g.plot3type;
+params.regressor = g.regressor;
+params.flag      = flag;
 
 choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
 % see limo_stat_values - discontinuated empirical threshold (misleading)
@@ -76,20 +112,75 @@ if ischar(LIMO)
     load(LIMO, 'LIMO');
 end
 
-if LIMO.design.bootstrap == 0
-    if MCC == 2
-        errordlg2('Clustering thresholding necessitates boostrap - invalid choice');
-    elseif MCC == 3
-        errordlg2('TFCE thresholding necessitates boostrap - invalid choice');
-    elseif MCC == 4
-        errordlg2('Maximum stat thresholding necessitates bootstrap - invalid choice');
-    end
-    MCC = 1;
-end
+[~,FileNameTmp,ext] = fileparts(FileName);
+if MCC == 2 || MCC == 4 % cluster and MAX correction
+    LIMO.design.bootstrap = 1;
 
-if LIMO.design.bootstrap == 1 && LIMO.design.tfce == 0 && MCC == 3
-    errordlg2('TFCE thresholding hasn''t been computed - invalid choice');
-    MCC =1;
+    % deal with bootstrap
+    if ~exist([PathName filesep 'H0' filesep 'H0_' FileNameTmp ext],'file')
+        if LIMO.Level == 1
+            if strncmp(FileNameTmp,'con',3) || strncmp(FileNameTmp,'ess',3)
+                limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+            else
+                if strcmp(limo_questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
+                    LIMO                  = LIMO;
+                    LIMO.design.bootstrap = 800;
+                    if handles.tfce == 1
+                        LIMO.design.tfce  = 1;
+                    end
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+                    limo_eeg(4);
+                end
+            end
+        else % LIMO.Level == 2
+            res = limo_questdlg('This option requires to compute bootstraps (this may take time)','Bootstraping data','Cancel','Continue','Continue');
+            if ~strcmp(res,'Continue')
+                return;
+            end
+            if contains(FileNameTmp,'one_sample')
+                limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
+                    str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'two_samples')
+                limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
+                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'paired_samples')
+                limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
+                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+            elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
+                LIMO = LIMO; LIMO.design.bootstrap = 1000;
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+                LIMO = LIMO; limo_eeg(4,LIMO.dir);
+            elseif contains(FileNameTmp,'ANOVA') && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
+                limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
+            elseif contains(FileNameTmp,'Rep_ANOVA')
+                if strncmp(FileNameTmp,'con',3)
+                    if exist([PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                        limo_contrast([PathName filesep 'Yr.mat'], ...
+                            [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 0,3);
+                    else
+                        errordlg2('there is no GLM bootstrap file for this contrast file')
+                    end
+                elseif strncmp(FileNameTmp,'ess',3)
+                    if exist([PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                        limo_contrast([PathName filesep 'Yr.mat'], ...
+                            [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 1,3);
+                    else
+                        errordlg2('there is no bootstrap file for this contrast file')
+                    end
+                else
+                    disp('Bootstraping Repeated Measure ANOVA')
+                    limo_random_robust(6,fullfile(PathName,'Yr.mat'),LIMO.data.Cat, ...
+                        LIMO.design.repeated_measure, LIMO, 'go','yes')
+                end
+            end
+        end
+    end
+elseif MCC == 3
+    LIMO.design.tfce      = 1;
+    currentfile = fullfile(PathName, FileName);
+    if ~exist([PathName filesep 'H0' filesep 'tfce_H0_' FileNameTmp ext],'file')
+        limo_tfce_handling(currentfile,'checkfile','yes')
+    end
 end
 
 % -------------------------------------------------------------------------
@@ -124,7 +215,7 @@ if LIMO.Level == 1
                             if isempty(mask)
                                 data_cached = 0;
                             elseif sum(mask(:)) == 0
-                                warndlg('  no values under threshold  ','no significant effect','modal');
+                                limo_errordlg('  no values under threshold  ','no significant effect','modal');
                                 return
                             else
                                 M           = LIMO.cache.fig.pval;
@@ -151,7 +242,6 @@ if LIMO.Level == 1
                     if isempty(mask)
                         disp('no values computed'); return
                     elseif sum(mask(:)) == 0
-                        warndlg('  no values under threshold  ','no significant effect','modal');
                         LIMO.cache.fig.name       = FileName;
                         LIMO.cache.fig.MCC        = MCC;
                         LIMO.cache.fig.stats      = [];
@@ -168,6 +258,8 @@ if LIMO.Level == 1
                             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                             return
                         end
+                        limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                        return
                     else
                         assignin('base','p_values',M)
                         assignin('base','mask',mask)
@@ -220,6 +312,12 @@ if LIMO.Level == 1
                     end
                 end
                 
+                % replace plotting value with user regressor selection
+                if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+                    if ~exist('freq_index', 'var'), freq_index = []; end
+                    toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+                end
+
                 % -------------------------------------------------------------------------
                 %              Actual plot takes place here
                 % -------------------------------------------------------------------------
@@ -236,11 +334,11 @@ if LIMO.Level == 1
                         LIMO.cache.fig.title      = mytitle;
                         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
                     end
-                    
+
                     if ndims(toplot)==3
                         limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
-                        limo_display_image(LIMO,toplot,mask,mytitle,flag)
+                        res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
                     end
                 end
                 
@@ -271,7 +369,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            warndlg('  no values under threshold  ','no significant effect','modal');
+                            limo_errordlg('  no values under threshold  ','no significant effect','modal');
                             return
                         else
                             toplot = squeeze(toplot(:,1)); % plot R2 values instead of F
@@ -310,7 +408,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            warndlg('  no values under threshold  ','no significant effect','modal');
+                            limo_errordlg('  no values under threshold  ','no significant effect','modal');
                             return
                         else
                             if strcmpi(choice,'Roy')
@@ -410,7 +508,15 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');
                     end
-                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',flag)
+                    % replace plotting value with user regressor selection
+                    if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+                        if ~exist('freq_index', 'var'), freq_index = []; end
+                        toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+                    else
+                        toplot = abs(Discriminant_coeff(:,:,1));
+                    end
+                    res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',abs(Discriminant_coeff(:,:,1)),'title', 'Discriminant coefficients Z1', 'params', params, 'fig', g.fig);
+                    %res = limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',params);
                     
                     %                     figure;set(gcf,'Color','w');
                     %                     for t=1:size(Discriminant_coeff,2)
@@ -1061,7 +1167,7 @@ elseif LIMO.Level == 2
                 if isempty(mask)
                     data_cached = 0;
                 elseif sum(mask(:)) == 0
-                    warndlg('  no values under threshold  ','no significant effect','modal');
+                    limo_errordlg('  no values under threshold  ','no significant effect','modal');
                     return
                 else
                     toplot      = LIMO.cache.fig.stats;
@@ -1076,7 +1182,7 @@ elseif LIMO.Level == 2
             end
         catch no_cache
             data_cached = 0;
-            warning(no_cache,'failed to chache data %s',no_cache.message)
+            limo_errordlg(no_cache,'failed to chache data %s',no_cache.message)
         end
     end
     
@@ -1089,7 +1195,7 @@ elseif LIMO.Level == 2
         if isempty(mask)
             return
         elseif sum(mask(:)) == 0
-            warndlg('  no values under threshold  ','no significant effect','modal');
+            limo_errordlg('  no values under threshold  ','no significant effect','modal');
             return
         else
             assignin('base','p_values',squeeze(M))
@@ -1164,18 +1270,25 @@ elseif LIMO.Level == 2
                 disp('Cached data in LIMO.mat cannot be updated - LIMO dir doesn''t exist (likely moved files)')
             end
         end
-        
+
+        % replace toplot by user selection
+        if ~isempty(g.regressor) && ~isequal(g.regressor, 0)
+            if ~exist('freq_index', 'var'), freq_index = []; end
+            toplot = limo_get_model_data(LIMO, g.regressor, extra, p, freq_index);
+        end
+
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle,flag)
+            % res = limo_display_image(LIMO,toplot,mask,mytitle,params);
+            res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
             
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
             else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
+                res = limo_display_image('LIMO',LIMO,'toplot',squeeze(toplot),'mask',squeeze(mask),'title', mytitle, 'params', params, 'fig', g.fig);
             end
             
         elseif Type == 2
@@ -1195,7 +1308,7 @@ elseif LIMO.Level == 2
             end
             
             if sum(mask(:)) == 0
-                warndlg('no values under threshold','no significant effect');
+                limo_errordlg('no values under threshold','no significant effect');
             else
                 EEG.data     = toplot;
                 EEG.setname  = mytitle;
@@ -1368,7 +1481,7 @@ elseif LIMO.Level == 2
                 
                 if isempty(regressor)
                     warning on
-                    warning('couldn''t figure out the regressor number/column, plot aborded')
+                    limo_errordlg('couldn''t figure out the regressor number/column, plot aborded')
                     return
                 end
                 
@@ -1580,11 +1693,8 @@ elseif LIMO.Level == 2
             elseif contains(extra,'Adjusted','Ignorecase',true)
                 if length(LIMO.design.nb_conditions) == 1 && LIMO.design.nb_continuous == 0
                     warning on;
-                    if exist('warndlg2','file')
-                        warndlg2('Only one condition detected, no adjusted data possible');return
-                    else
-                        warndlg('Only one condition detected, no adjusted data possible');return
-                    end                       
+                    limo_errordlg('Only one condition detected, no adjusted data possible');
+                    return
                 end
                 
                 allvar = 1:size(LIMO.design.X,2)-1;
@@ -2151,7 +2261,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % imagesc of the results
         %--------------------------
         if sum(mask(:)) == 0
-            warndlg('no values under threshold parameter','no significant effect');
+            limo_errordlg('no values under threshold parameter','no significant effect');
         else
             scale = M.*mask;
             if min(scale(:))<0
@@ -2174,7 +2284,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % topoplot
         %--------------------------
         if sum(mask(:)) == 0
-            warndlg('no values under threshold','no significant effect');
+            limo_errordlg('no values under threshold','no significant effect');
         else
             EEG.data = M.*mask;
             EEG.setname = 'Lateralization Map';

@@ -8,12 +8,12 @@ function [tfce_score,thresholded_maps] = limo_tfce(varargin)
 %       tfce_score = limo_tfce(type,data,channeighbstructmat,updatebar,E,H,dh)
 %
 %       type = 1 for 1D data (one channel ERP or Power),
-%              2 for 2D data (ERP, Power, or a single freq*time map),
-%              3 for 3D data (ERSP)
+%              2 for 2D data (ERP, Power, or a single freq x time map),
+%              3 for 3D data (usually ERSP: channels x freq x time)
 %       The first dimension must contain channels
 %       Data can be either a map of t/F values or a set of t/F maps computed under H0 (in last dim)
 %       channeighbstructmat is the neighbourhood matrix for clustering 
-%          - if empty for type 2, switch to bwlabel = freq*time map.
+%          - if empty for type 2, switch to bwlabel = freq x time map.
 %          - the size of this matrix is n_channel x n_channel indicating which channels
 %            are neighbords (1) or not neighbors (0)
 %       updatebar is a flag (default = 1) to produce a waitbar
@@ -366,6 +366,7 @@ switch type
                             [clustered_map, num] = bwlabel((data > h),4);
                         else
                             [clustered_map, num] = limo_findcluster((data > h), channeighbstructmat,2);
+                            %[clustered_map, num] = limo_findcluster_mult((data > h), channeighbstructmat,0);
                         end
                         
                         extent_map = zeros(x,y); % same as cluster map but contains extent value instead

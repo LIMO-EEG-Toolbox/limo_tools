@@ -11,9 +11,15 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+limo_settings_script;
+if limo_settings.newgui
+    guiName = [mfilename '_new'];
+else
+    guiName = mfilename;
+end
 
 gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
+gui_State = struct('gui_Name',guiName, ...
     'gui_Singleton',  gui_Singleton, ...
     'gui_OpeningFcn', @limo_results_OpeningFcn, ...
     'gui_OutputFcn',  @limo_results_OutputFcn, ...
@@ -69,8 +75,7 @@ varargout{1} = 'LIMO result terminated';
 % ---------------------------------------------------------------
 function Image_results_Callback(hObject, eventdata, handles)
 
-
-[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Univariate Results to display','*.mat');
+[FileName,PathName,FilterIndex]=limo_get_result_file;
 if FilterIndex ~= 0
     cd(PathName);
     if contains(FileName,'tfce')
@@ -97,7 +102,7 @@ end
 % ---------------------------------------------------------------
 function Topoplot_Callback(hObject, eventdata, handles)
 
-[FileName,PathName,FilterIndex]=uigetfile(handles.filter,'Select Result to plot');
+[FileName,PathName,FilterIndex]=limo_get_result_file;
 if FilterIndex == 1
     cd(PathName);
     if contains(FileName,'tfce')
@@ -296,11 +301,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                         limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
                             str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'two_samples')
-                        limo_random_robust(2,fullfile(handles.LIMO.dir,'Yr1.mat'),...
-                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                        limo_random_robust(2,fullfile(handles.LIMO.dir,'Y1r.mat'),...
+                            fullfile(handles.LIMO.dir,'Y1r.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'paired_samples')
-                        limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
-                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                        limo_random_robust(3,fullfile(handles.LIMO.dir,'Y1r.mat'),...
+                            fullfile(handles.LIMO.dir,'Y1r.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
                 elseif contains(filename,'Covariate_effect') && contains(handles.LIMO.design.name,'Regression') 
                     LIMO = handles.LIMO; LIMO.design.bootstrap = 1000;
                     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 

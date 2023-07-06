@@ -71,7 +71,8 @@ else
 end
 
 % since those are sessions, they must have a common folder location
-LIMO.dir              = fileparts(LIMO1.dir(1:find(LIMO1.dir ~= LIMO2.dir)-1));
+minLen = min(length(LIMO1.dir), length(LIMO2.dir));
+LIMO.dir              = fileparts(LIMO1.dir(1:find(LIMO1.dir(1:minLen) ~= LIMO2.dir(1:minLen) )-1));
 LIMO.data             = rmfield(LIMO.data,'data');
 LIMO.data.data{1}     = fullfile(LIMO1.dir,'Yr.mat');
 LIMO.data.data{2}     = fullfile(LIMO2.dir,'Yr.mat');
@@ -98,7 +99,7 @@ try
         data2 = limo_tf_4d_reshape(data2);
     end
     
-    if any(size(data1,[1 2]) ~= size(data2,[1 2]))
+    if size(data1,1) ~= size(data2,1) || size(data1,2) ~= size(data2,2)
         error('Dataset have different dimensions - reprocess sessions with the same parameters')
     end
 catch no_load
@@ -112,7 +113,7 @@ joint_labels   = intersect(arrayfun(@(x)x.labels,LIMO1.data.chanlocs,'UniformOut
 
 % compute for each regressor
 if ~isempty(joint_labels)
-    for regressors = (size(LIMO1.design.X,2)-1):-1:1
+    for regressors = (size(LIMO1.design.X,2)):-1:1
         con      = NaN(size(data1,1),size(data1,2),size(data1,3),5); % dim 3 = mean diff/se/df/t/p
         filesout{regressors} = fullfile(LIMO.dir,['con_' num2str(regressors) 'sess_' pair '.mat']);
         

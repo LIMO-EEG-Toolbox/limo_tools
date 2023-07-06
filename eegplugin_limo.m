@@ -9,7 +9,7 @@ function version = eegplugin_limo(fig,try_strings,catch_strings)
 % ---------------------------------------------
 %  Copyright (C) LIMO Team 2022
 
-version ='LIMOEEG3.3';
+version ='limo4.0';
 if nargin < 3
     error('eegplugin_limo requires 3 arguments');
 end
@@ -21,6 +21,10 @@ if ~exist('pop_loadeep')
     p = p(1:findstr(p,'eegplugin_limo.m')-1);
     addpath( p );
     addpath( fullfile(p, 'external') );
+    addpath( fullfile(p, 'external', 'psom') );
+    addpath( fullfile(p, 'limo_cluster_functions') );
+    addpath( fullfile(p, 'help') );
+    addpath( fullfile(p, 'deprecated') );
 end
 
 % create menus
