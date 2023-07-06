@@ -79,7 +79,7 @@ if fig == 1
     plot(sortmaxM,'LineWidth',3); grid on; hold on; 
     
     plot(min(find(sortmaxM==max_th)),max_th,'r*','LineWidth',5)
-    txt = ['bootstrap threashold ' num2str(max_th) '\rightarrow'];
+    txt = ['bootstrap threshold ' num2str(max_th) '\rightarrow'];
     text(min(find(sortmaxM==max_th)),max_th,txt,'FontSize',12,'HorizontalAlignment','right');
     
     [val,loc]=min(abs(sortmaxM-max(M(:)))); 

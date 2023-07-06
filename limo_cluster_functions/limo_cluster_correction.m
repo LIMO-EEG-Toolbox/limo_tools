@@ -59,7 +59,7 @@ U = round((1-p)*nboot); % bootstrap threshold
 if MCC == 2
     minnbchan = 2;
     boot_maxclustersum=zeros(nboot,1); % compute bootstrap clusters
-    disp('getting clusters under H0 boot ...');
+    disp('Getting clusters under H0 boot, please wait...');
     parfor boot = 1:nboot
         [clusterslabel,nclusters] = limo_findcluster((bootP(:,:,boot) <= p),neighbouring_matrix,minnbchan);
         bootM_b = bootM(:,:,boot);

@@ -154,8 +154,30 @@ if nargin <= 1
     if strcmp(option,'contrast only')
         
         % get paths
-        [FileName,PathName,FilterIndex]=uigetfile({'*.txt','Text (*.txt)'; ...
-            '*.mat','MAT-files (*.mat)'}, 'Pick a list of LIMO.mat files');
+        limo_settings_script;
+        FileName = '';
+        if ~isempty(limo_settings.workdir)
+            fileList = dir(fullfile(limo_settings.workdir, 'LIMO_*', 'LIMO_*.txt'));
+            if ~isempty(fileList)
+                for iFile = 1:length(fileList)
+                    fileList(iFile).fullname = fullfile(fileList(iFile).folder,fileList(iFile).name);
+                end
+                uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file' } ...
+                           { 'style' 'popupmenu' 'string' {fileList.name} } };
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+                if ~isempty(res)
+                    FileName = fileList(res{1}).name;
+                    PathName = fileList(res{1}).folder;
+                    FilterIndex = 1;
+                end
+            end
+        end
+        if isempty(FileName)
+            [FileName,PathName,FilterIndex]=uigetfile({'*.txt','Text (*.txt)'; ...
+                '*.mat','MAT-files (*.mat)'}, 'Pick a list of LIMO.mat files');
+        end
+        
+
         if FilterIndex ~=0
             if strcmp(FileName(end-3:end),'.txt')
                 batch_contrast.LIMO_files = importdata(fullfile(PathName, FileName));
@@ -170,18 +192,25 @@ if nargin <= 1
         end
         
         % get the constrasts
-        [FileName,PathName,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; ...
-            '*.txt','Text (*.txt)'}, 'Pick a matrix of contrasts');
-        if FilterIndex ~=0
-            if strcmp(FileName(end-3:end),'.txt')
-                batch_contrast.mat = importdata(FileName);
-            elseif strcmp(FileName(end-3:end),'.mat')
-                FileName = load([PathName FileName]);
-                % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
-                batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
+        limo_settings_script;
+        if isempty(limo_settings.workdir)
+            [FileName,PathName,FilterIndex]=uigetfile('*.*', 'Pick a matrix of contrasts');
+            if FilterIndex ~=0
+                if strcmp(FileName(end-3:end),'.txt')
+                    batch_contrast.mat = importdata(FileName);
+                elseif strcmp(FileName(end-3:end),'.mat')
+                    FileName = load([PathName FileName]);
+                    % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
+                    batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
+                end
+            else
+                disp('limo batch aborded'); return
             end
         else
-            disp('limo batch aborded'); return
+            batch_contrast.mat = limo_contrast_manager(batch_contrast.LIMO_files{1});
+            if isempty(batch_contrast.mat)
+                disp('limo batch aborded'); return
+            end
         end
     end
 elseif nargin > 1

@@ -70,7 +70,7 @@ if MCC == 2 && size(bootM,1)>1
     end
     boot_maxclustersum  = zeros(nboot,1);     % maximum cluster mass at each bootstrap
     
-    disp('getting clusters under H0 boot ...');
+    disp('Getting clusters under H0 boot, please wait...');
     parfor boot = 1:nboot
         % 1st find the cluster, thresholding H0 pvalues <= threshold p
         [posclusterslabelmat,nposclusters] = limo_findcluster((bootP(:,:,boot) <= p),channeighbstructmat,minnbchan);

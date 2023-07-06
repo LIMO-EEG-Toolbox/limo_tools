@@ -485,7 +485,7 @@ switch type
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('paired_samples_ttest_parameter_%s',num2str(parameter')');
+        name = sprintf('paired_samples_ttest_parameter_%d_%d',parameter(1), parameter(end));
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
@@ -643,7 +643,7 @@ switch type
         LIMO.design.status           = 'to do';
         
         if ~exist('answer','var') 
-            answer = questdlg('zscore regressor(s)?','Regression option','Yes','No','Yes');
+            answer = questdlg2( [ 'Do you want to zscore regressor(s)?' 10 '(most useful when using multiple regressors)' ],'Regression option','No','Yes','Yes');
         end
         
         if isempty(answer)
@@ -667,7 +667,7 @@ switch type
         % ------------------------------------------------
         % do the analysis
         if strcmpi(go,'no')
-            go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
+            go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
         end
         close('LIMO design');        
 
@@ -1040,7 +1040,7 @@ switch type
                 imagesc(LIMO.design.X); colormap('gray');
                 title('ANOVA model','FontSize',16);xlabel('regressors');
                 ylabel('subjects'); drawnow;
-                go = questdlg('start the analysis?');
+                go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
                 close('LIMO design')
                 if ~strcmpi(go,'Yes')
                     return
@@ -1276,6 +1276,8 @@ switch type
                 array = find(~isnan(centered_data(:,1,1,1)));
 
                 % preallocation for parfor
+                H0_Rep_ANOVA_Gp_effect_sub = []; % avoid parfor warning
+                tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = []; % avoid parfor warning
                 if type ==1
                     tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 elseif type == 2
