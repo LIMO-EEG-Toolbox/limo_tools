@@ -13,6 +13,7 @@ limo_settings.workdir = 'derivatives';
 % pipeline, ie capture errors and restarts where it failed
 limo_settings.psom = true; 
 
+% overwrite using your own script
 if exist('limo_settings_script_user')
     eval('limo_settings_script_user')
 end
@@ -24,7 +25,6 @@ if isequal(limo_settings.workdir, 'derivatives')
     try
         STUDY=evalin('base','STUDY');
         limo_settings.workdir = fullfile(STUDY.filepath, 'derivatives');
-        %limo_settings.workdir = STUDY.filepath;
     catch
         disp('Failed to find STUDY variable');
         limo_settings.workdir = '';
