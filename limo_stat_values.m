@@ -273,10 +273,14 @@ elseif ~isempty(M) && MCC == 2
             end
             mytitle = sprintf('%s cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
+            l = lasterror
+            l.stack
             errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
             return
         end
     else
+        l = lasterror
+        l.stack
         errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
         return
     end
@@ -405,10 +409,14 @@ if contains(FileName,'Rep_ANOVA')
                 end
                 
             catch ME
+                l = lasterror
+                l.stack
                 errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
                 return
             end
         else
+            l = lasterror
+            l.stack
             errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
             return
         end
