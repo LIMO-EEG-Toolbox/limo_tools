@@ -304,21 +304,30 @@ switch type
             tmp = isnan(data1(e,1,:));
             tmp2 = isnan(data2(e,1,:));
             if length(tmp) == sum(isnan(tmp))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 1 - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 1 - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 1 - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 1 - analysis aborded']);
                 return
             elseif length(tmp2) == sum(isnan(tmp2))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 2 - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' is empty in group 2 - analysis aborded']);
                 return
             elseif (length(tmp2) - sum(isnan(tmp2))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 2 - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects in group 2 - analysis aborded']);
                 return
             end
         end
         clear tmp tmp2
         
+        N = size(data1,3)+size(data2,3);
+        LIMO.design.X                            = zeros(N,3);
+        LIMO.design.X(1:size(data1,3),1)         = 1;
+        LIMO.design.X(end-size(data2,3)+1:end,2) = 1;
+        LIMO.design.X(:,3)                       = 1;
+        LIMO.design.nb_conditions                = 2;
+        LIMO.design.nb_continuous                = 0;
+        LIMO.design.nb_interactions              = 0;
+
         if ~isfield(LIMO.design,'method')
             LIMO.design.method = 'Trimmed Mean';
         end
@@ -466,18 +475,27 @@ switch type
             tmp = isnan(data1(e,1,:));
             tmp2 = isnan(data2(e,1,:));
             if length(tmp) ~= length(isnan(tmp2))
-                errordlg([LIMO.Type ' ' num2str(e) ' has unpaired data - analysis aborded, not a paired t-test']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has unpaired data - analysis aborded, not a paired t-test']);
                 return
             elseif length(tmp) == sum(isnan(tmp))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             end
         end
         clear tmp tmp2
-        
+
+        N = size(data1,3)+size(data2,3);
+        LIMO.design.X                            = zeros(N,3);
+        LIMO.design.X(1:size(data1,3),1)         = 1;
+        LIMO.design.X(end-size(data2,3)+1:end,2) = 1;
+        LIMO.design.X(:,3)                       = 1;
+        LIMO.design.nb_conditions                = 2;
+        LIMO.design.nb_continuous                = 0;
+        LIMO.design.nb_interactions              = 0;
+
         if ~isfield(LIMO.design,'method')
             LIMO.design.method = 'Trimmed Mean';
         end
