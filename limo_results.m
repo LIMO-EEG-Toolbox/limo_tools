@@ -11,15 +11,8 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
-limo_settings_script;
-if limo_settings.newgui
-    guiName = [mfilename '_new'];
-else
-    guiName = mfilename;
-end
-
 gui_Singleton = 1;
-gui_State = struct('gui_Name',guiName, ...
+gui_State = struct('gui_Name','limo_results', ...
     'gui_Singleton',  gui_Singleton, ...
     'gui_OpeningFcn', @limo_results_OpeningFcn, ...
     'gui_OutputFcn',  @limo_results_OutputFcn, ...
@@ -92,11 +85,11 @@ if FilterIndex ~= 0
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 
-% reset selection - but annoying behaviour really
-% uiresume
-% guidata(hObject, handles);
-% delete(handles.figure1)
-% limo_results
+% reset selection 
+uiresume
+guidata(hObject, handles);
+delete(handles.figure1)
+limo_results
 
 % Topoplot
 % ---------------------------------------------------------------
