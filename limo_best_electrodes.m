@@ -26,6 +26,7 @@ function [channel_vector,urchan_vector,freqmap] = limo_best_electrodes(varargin)
 current_dir    = pwd;
 channel_vector = [];
 urchan_vector  = [];
+freqmap        = [];
 
 if nargin == 0
     [name,pathname,FilterIndex]=uigetfile({'*.mat','MAT-files (*.mat)'; '*.txt','Text (*.txt)'}, ...
@@ -159,11 +160,15 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
     % make the figure
     if nargout == 3 && exist('freqmap','var') || ...
         nargout == 0 && exist('freqmap','var')
-        figure('Color','w','NumberTitle','off','Name','limo_tools: best electrode frequency map')
-        imagesc(freqmap,[0 max(freqmap(:))])
-        axis tight;axis square;axis off
-        colormap(limo_color_images(freqmap));
+        figure('Color','w','NumberTitle','off','Name','limo_best_electrodes.m')
+        % imagesc(freqmap,[0 max(freqmap(:))])
+        % axis tight;axis square;axis off
+        % colormap(limo_color_images(freqmap));
+        opt = {'electrodes','on','maplimits','maxmin','verbose','off','colormap', limo_color_images(freqmap)};
+        topoplot(data,expected_chanlocs,opt{:});
+        title('best channels frequency map')
         cd(current_dir)
     end
 end
+
 
