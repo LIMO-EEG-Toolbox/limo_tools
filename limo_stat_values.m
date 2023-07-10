@@ -214,7 +214,7 @@ end
 if ~isempty(M) && MCC == 1
     M       = Pval;
     mask    = Pval <= p;
-    mytitle = sprintf('%s: uncorrected threshold',titlename);
+    mytitle = sprintf('%s\nuncorrected threshold',titlename);
     
     % cluster correction for multiple testing
     % ---------------------------------------
@@ -269,7 +269,7 @@ elseif ~isempty(M) && MCC == 2
             else
                 Mclust = 'clusters';
             end
-            mytitle = sprintf('%s cluster correction (%g %s)', titlename, Nclust, Mclust);
+            mytitle = sprintf('%s\ncluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
             limo_errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
             return
@@ -301,7 +301,7 @@ elseif ~isempty(M) && MCC == 4 % Stat max
             end
             clear H0_data;
             [mask,M] = limo_max_correction(abs(M),abs(bootM),p,plotFlag);
-            mytitle  = sprintf('%s: correction by max',titlename);
+            mytitle  = sprintf('%s\ncorrection by max',titlename);
         catch ME
             limo_errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
             return
@@ -320,7 +320,7 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
             H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
             [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
-            mytitle  = sprintf('%s: correction using TFCE',titlename);
+            mytitle  = sprintf('%s\ncorrection using TFCE',titlename);
         catch ME
             limo_errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
             return
@@ -352,11 +352,11 @@ if contains(FileName,'Rep_ANOVA')
         mask = PVAL <= p;
         M    = PVAL;
         if contains(FileName,'Rep_ANOVA_Interaction')
-            mytitle = sprintf('Interaction F-values uncorrected threshold');
+            mytitle = sprintf('Interaction F-values\nuncorrected threshold');
         elseif contains(FileName,'Rep_ANOVA_Gp_effect')
-            mytitle = sprintf('Gp effect F-values uncorrected threshold');
+            mytitle = sprintf('Gp effect F-values\nuncorrected threshold');
         elseif contains(FileName,'Rep_ANOVA_Main')
-            mytitle = sprintf('Main Effect F-values uncorrected threshold');
+            mytitle = sprintf('Main Effect F-values\nuncorrected threshold');
         end
         
         % cluster correction for multiple testing
@@ -395,23 +395,19 @@ if contains(FileName,'Rep_ANOVA')
                 Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 if contains(FileName,'Rep_ANOVA_Interaction')
-                    mytitle = sprintf('Interaction F-values cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Interaction F-values\ncluster correction (%g %s)', Nclust, Mclust);
                 elseif contains(FileName,'Rep_ANOVA_Gp_effect')
-                    mytitle = sprintf('Gp effect F-values cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Gp effect F-values\ncluster correction (%g %s)', Nclust, Mclust);
                 elseif contains(FileName,'Rep_ANOVA_Main')
-                    mytitle = sprintf('Main effect F-values cluster correction (%g %s)', Nclust, Mclust);
+                    mytitle = sprintf('Main effect F-values\ncluster correction (%g %s)', Nclust, Mclust);
                 end
                 
             catch ME
-                l = lasterror
-                l.stack
-                errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
+                limo_errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
                 return
             end
         else
-            l = lasterror
-            l.stack
-            errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
+            limo_errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
             return
         end
         
@@ -481,7 +477,7 @@ if contains(FileName,'Rep_ANOVA')
                     mytitle = sprintf('Main Effect correction using TFCE');
                 end
             catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
+                limo_errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
                 return
             end
         else
