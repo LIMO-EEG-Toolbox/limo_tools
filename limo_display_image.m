@@ -102,7 +102,6 @@ for c=1:round(n_cluster)
     [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
 
-
 %% get frame information 
 if strcmpi(LIMO.Analysis,'Time')
     if isfield(LIMO.data,'timevect')
@@ -204,6 +203,43 @@ if isempty(g.title)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% return cluster info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+warning off
+if contains(g.title,'cluster')
+    for c=1:n_cluster
+        if strcmpi(LIMO.Analysis,'Time')
+        fprintf('cluster %g starts at %gms ends at %gms, max %g @ %gms channel %s \n', c, ...
+            timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+        elseif strcmpi(LIMO.Analysis,'Frequency')
+        fprintf('cluster %g starts at %gHz ends at %gHz, max %g @ %gHz channel %s \n', c, ...
+            freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+        elseif strcmpi(LIMO.Analysis,'Time-Frequency')
+            f1 = scale(:,cluster_start(c)); f2 = scale(:,cluster_end(c)); f3 = scale(:,cluster_maxf(c));
+            fprintf('cluster %g at %gms %gHz, ends at %gms %gHz, max %g @ %gms %gHz \n', c, ...
+                timevect(cluster_start(c)),freqvect(find(f1==max(f1))), ...
+                timevect(cluster_end(c)), freqvect(find(f2==max(f2))), ...
+                cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3))));
+        end
+    end
+else % no clusters (we have make one )
+    if strcmpi(LIMO.Analysis,'Time')
+        fprintf('1st significant frame at %gms, last signifiant frame at %gms, max %g @ %gms channel %s \n', ...
+            timevect(cluster_start(c)),timevect(cluster_end(c)), cluster_maxv(c), timevect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+    elseif strcmpi(LIMO.Analysis,'Frequency')
+        fprintf('1st significant frame at %gHz, last signifiant frame at %gHz, max %g @ %gHz channel %s \n', ...
+            freqvect(cluster_start(c)),freqvect(cluster_end(c)), cluster_maxv(c), freqvect(cluster_maxf(c)), LIMO.data.chanlocs(cluster_maxe(c)).labels);
+    elseif strcmpi(LIMO.Analysis,'Time-Frequency')
+        f1 = scale(:,cluster_start(c)); f2 = scale(:,cluster_end(c)); f3 = scale(:,cluster_maxf(c));
+        fprintf('1st significant frame at %gms %gHz, last signifiant frame at %gms %gHz, max %g @ %gms %gHz \n', ...
+            timevect(cluster_start(c)),freqvect(find(f1==max(f1))), ...
+            timevect(cluster_end(c)), freqvect(find(f2==max(f2))), ...
+            cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3))));
+    end
+end
+warning on
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isempty(g.fig)
@@ -212,12 +248,16 @@ if isempty(g.fig)
     set(gcf, 'position', [pos(1:2) pos(3)*1.3 pos(4)]);
 
     % figure parameters
-    udat.colorlim = [];
+    udat.colorlim  = [];
     udat.timerange = [];
-    udat.y        = e;
-    if ~isempty(timevect) udat.x = timevect(f); else udat.x = freqvect(f); end    
+    udat.y         = e;
+    if ~isempty(timevect) 
+        udat.x = timevect(f); 
+    else 
+        udat.x = freqvect(f); 
+    end    
 else
-    fig = g.fig;
+    fig  = g.fig;
     udat = get(fig, 'userdata');
     clf(fig)
 end
