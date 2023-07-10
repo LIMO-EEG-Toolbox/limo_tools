@@ -152,10 +152,10 @@ switch type
         for e=1:size(data,1)
             tmp = isnan(data(e,1,:));
             if length(tmp) == sum(isnan(tmp))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             end
         end
@@ -622,13 +622,13 @@ switch type
             end
             
             if length(tmp) == sum(isnan(tmp))
-                errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' is empty - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 3
-                errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
+                limo_errordlg([LIMO.Type ' ' num2str(e) ' has less than 3 subjects - analysis aborded']);
                 return
             elseif (length(tmp) - sum(isnan(tmp))) < 6
-                warndlg([LIMO.Type ' ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
+                limo_warndlg([LIMO.Type ' ' num2str(e) ' has less than 6 subjects - regression results will likely be biased']);
             end
         end
         
@@ -638,7 +638,7 @@ switch type
         LIMO.data.Cont               = regressors;
         LIMO.data.data_dir           = pwd;
         LIMO.design.type_of_analysis = 'Mass-univariate';
-        LIMO.design.method           = 'IRLS'; 
+        LIMO.design.method           = 'IRLS'; % it will automatically change to OLS if not enough observations
         LIMO.design.fullfactorial    = 0;
         LIMO.design.status           = 'to do';
         
