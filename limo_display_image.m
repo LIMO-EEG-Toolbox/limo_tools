@@ -4,14 +4,14 @@ function res = limo_display_image(LIMO,toplot,mask,mytitle,params,varargin)
 % time or frequency (x) and electrodes (y) - for ERSP it precomputes what
 % needs to be plotted and call LIMO_display_image_tf
 %
-% FORMAT: limo_display_image(LIMO,toplot,mask,title,dynamic)
+% FORMAT: limo_display_image('LIMO',LIMOstructure,'toplot',statvalues, ...
+%                              'mask', binary_mask, title, options)
 %
 % INPUTS:
-%   LIMO.mat  = Name of the file to image
-%   toplot    = 2D matrix to plot (typically t/F values)
-%   mask      = areas for which to show data (to show all mask = ones(size(topolot))
-%   title     = title to show
-%   dynamic   = set to 0 for no interaction (default is 1)
+%   LIMOstructure  = LIMO info
+%   statvalues     = 2D matrix to plot (typically t/F values)
+%   binary_mask    = areas for which to show data (to show all mask = ones(size(statvalues))
+%   title          = title to show
 %
 % The colour scales are from https://github.com/CPernet/brain_colours
 % using linear luminance across the range with cool for negative and 
@@ -41,29 +41,24 @@ catch
     error('limo_display_image() error: calling convention {''key'', value, ... } error'); return;
 end
 
-try g.LIMO;      catch, g.LIMO     = [];  end % No default values
 try g.toplot;    catch, g.toplot   = [];  end % No default values
 try g.mask;      catch, g.mask     = [];  end % interactive figure
 try g.title;     catch, g.title    = '';  end % interactive figure
 try g.params;    catch, g.params   = [];  end % interactive figure
 try g.fig;       catch, g.fig      = [];  end % Existing figure
 
-LIMO    = g.LIMO;
-toplot  = g.toplot;
-mask    = g.mask;
-
 %% get some informations for the plots
 
-if sum(toplot(:)) == 0
+if sum(g.toplot(:)) == 0
     error('the image to plot is empty')
 end
 
 % what do we plot?  the data (toplot) masked (tpically of significance)
 res = '';
-scale           = toplot.*single(mask>0);  
+scale           = g.toplot.*single(g.mask>0);  
 scale(scale==0) = NaN;   
-tmpplot = toplot;
-if any(mask(:) == 0)
+tmpplot = g.toplot;
+if any(g.mask(:) == 0)
      tmpplot(1) = NaN;
 end
 cc              = limo_color_images(tmpplot); % get a color map commensurate to that
@@ -76,7 +71,7 @@ end
 
 % for each cluster, get start/end/max value
 % if unthresholded, uncorrected, tfce or max = mask is made up of ones
-n_cluster     = max(mask(:));
+n_cluster     = max(g.mask(:));
 cluster_start = NaN(1,n_cluster); % start of each cluster
 cluster_end   = NaN(1,n_cluster); % end of each cluster
 cluster_maxv  = NaN(1,n_cluster); % max value for each cluster
@@ -86,7 +81,7 @@ freqvect = [];
 timevect = [];
 
 for c=1:round(n_cluster)
-    tmp                               = toplot.*(mask==c);
+    tmp                               = g.toplot.*(g.mask==c);
     tmp(tmp==Inf)                     = NaN;
     tmp(tmp==-Inf)                    = NaN;
     sigframes                         = sum(tmp,1);
@@ -103,6 +98,7 @@ for c=1:round(n_cluster)
 end
 
 %% get frame information 
+LIMO    = g.LIMO;
 if strcmpi(LIMO.Analysis,'Time')
     if isfield(LIMO.data,'timevect')
         timevect = LIMO.data.timevect;
@@ -111,8 +107,8 @@ if strcmpi(LIMO.Analysis,'Time')
         timevect = [];
     end
 
-    if size(timevect,2) ~= size(toplot,2)
-        timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+    if size(timevect,2) ~= size(g.toplot,2)
+        timevect           = linspace(LIMO.data.start,LIMO.data.end,size(g.toplot,2));
         LIMO.data.timevect =  timevect;
         if exist(LIMO.dir,'dir')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
@@ -137,8 +133,8 @@ elseif strcmpi(LIMO.Analysis,'Frequency')
         freqvect = [];
     end
     
-    if size(freqvect,2) ~= size(toplot,2)
-        freqvect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+    if size(freqvect,2) ~= size(g.toplot,2)
+        freqvect           = linspace(LIMO.data.start,LIMO.data.end,size(g.toplot,2));
         LIMO.data.freqlist = freqvect;
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
@@ -161,8 +157,8 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
         timevect = [];
     end
     
-    if size(timevect,2) ~= size(toplot,2)
-        timevect           = linspace(LIMO.data.start,LIMO.data.end,size(toplot,2));
+    if size(timevect,2) ~= size(g.toplot,2)
+        timevect           = linspace(LIMO.data.start,LIMO.data.end,size(g.toplot,2));
         LIMO.data.tf_times = timevect;
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
@@ -184,8 +180,8 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
         freqvect = [];
     end
     
-    if size(freqvect,2) ~= size(toplot,1)
-        freqvect           = linspace(LIMO.data.lowf,LIMO.data.highf,size(toplot,1));
+    if size(freqvect,2) ~= size(g.toplot,1)
+        freqvect           = linspace(LIMO.data.lowf,LIMO.data.highf,size(g.toplot,1));
         LIMO.data.tf_freqs =  freqvect;
         save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
     end
@@ -266,7 +262,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% update with mouse clicks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-opt   = {'maplimits','absmax','verbose','off','colormap', limo_color_images(toplot)};
+opt   = {'maplimits','absmax','verbose','off','colormap', limo_color_images(g.toplot)};
 udat.regressor = g.params.regressor;
 udat.plot3type = g.params.plot3type;
 udat.opt       = opt;
@@ -276,7 +272,7 @@ udat.title     = g.title;
 udat.scale     = scale;
 udat.params    = g.params; % parameters to limo_display_results
 udat.ratio     = ratio;
-udat.toplot    = toplot;
+udat.toplot    = g.toplot;
 udat.timevect  = timevect;
 udat.freqvect  = freqvect;
 udat.frame_zeros = frame_zeros;
