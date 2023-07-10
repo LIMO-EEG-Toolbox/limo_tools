@@ -107,11 +107,8 @@ end
 
 %% plot
 % when nothing is significant, always show why
-if sum(mask(:)) == 0 && isempty(fig)
-    fig = 1 ;
-end
+if sum(mask(:)) == 0 && fig == 1
 
-if fig == 1 
     figure('Name','Correction by clustering: results under H0')
     mass = sort(boot_maxclustersum);
     plot(mass,'LineWidth',3); grid on; hold on; 
