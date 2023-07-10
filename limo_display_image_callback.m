@@ -136,8 +136,7 @@ if length(LIMO.data.chanlocs) > 2
     if isempty(udat.colorlim)
         udat.colorlim = clim;
     end
-    caxis(udat.colorlim);
-    %axcopy(ax);
+    clim(udat.colorlim);
 end
 
 % curve 
@@ -189,7 +188,6 @@ if ~isempty(udat.colorlim)
     ylim(udat.colorlim);
 end
 title(mytitle2,'FontSize',11);
-%axcopy(ax);
 
 % image 
 % -----
@@ -210,7 +208,7 @@ end
 colormap(gca, udat.cc);
 set_imgaxes(LIMO,udat.scale);
 if ~isempty(udat.colorlim)
-    caxis(udat.colorlim);
+    clim(udat.colorlim);
 end
 title(udat.title,'Fontsize',10)
 
@@ -220,8 +218,6 @@ if strcmpi(LIMO.Analysis,'Time')
     h = plot(x, y, 'o');
 elseif strcmpi(LIMO.Analysis,'Frequency')
     h = plot(x, y, 'o');
-elseif strcmpi(LIMO.Analysis,'Time-Frequency')
-    % ?
 end
 set(h,'MarkerSize', 20, 'color', 'k', 'LineWidth', 3);
 
@@ -247,6 +243,7 @@ catch pvalerror
     fprintf('couldn''t figure the stats values?? %s \n',pvalerror.message)
 end
 fprintf('%s\n', strStat)
+
 if ~interactive
     ax = subplot(3,3,9,'replace');
 else
@@ -275,7 +272,7 @@ if ~interactive
     return;
 end
     
-cb_redraw     = 'limo_display_image_callback(gcbf, gcbo)';
+cb_redraw  = 'limo_display_image_callback(gcbf, gcbo)';
 set(h_im , 'ButtonDownFcn', cb_redraw, 'tag', 'image')
 set(fig, 'userdata', udat);
 
