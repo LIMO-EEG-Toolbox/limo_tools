@@ -94,7 +94,6 @@ toplot = toplot.(cell2mat(fieldnames(toplot)));
 params.Type      = Type;
 params.FileName  = FileName;
 params.PathName  = PathName;
-params.LIMO      = LIMO;
 params.p         = p;
 params.MCC       = MCC;
 params.flag      = flag;
@@ -1192,10 +1191,7 @@ elseif LIMO.Level == 2
         
         [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
         
-        if isempty(mask)
-            return
-        elseif sum(mask(:)) == 0
-            limo_errordlg('  no values under threshold  ','no significant effect','modal');
+        if isempty(mask) || sum(mask(:)) == 0
             return
         else
             assignin('base','p_values',squeeze(M))
@@ -1280,8 +1276,8 @@ elseif LIMO.Level == 2
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            % res = limo_display_image(LIMO,toplot,mask,mytitle,params);
-            res = limo_display_image('LIMO',LIMO,'toplot',toplot,'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
+            params.LIMO = LIMO; res = limo_display_image('LIMO',LIMO,'toplot',toplot, ...
+                'mask',mask,'title', mytitle, 'params', params, 'fig', g.fig);
             
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
