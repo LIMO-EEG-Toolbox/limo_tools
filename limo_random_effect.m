@@ -525,8 +525,9 @@ if ~exist('limo_settings_script', 'file')
     pathTmp = fileparts(which('limo_eeg'));
     addpath(fullfile(pathTmp, 'external', 'psom'));
 end
+
 limo_settings_script;
-if ~isempty(limo_settings.workdir)
+if exist(limo_settings.workdir,'dir')
     cd(limo_settings.workdir);
 end
 
