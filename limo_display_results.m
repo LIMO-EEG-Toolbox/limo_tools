@@ -45,7 +45,7 @@ function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varar
 if ~ischar(Type)
     options = { 'type', Type, 'filename', FileName, 'pathname', PathName, 'p', p, 'MCC', MCC, 'LIMO', LIMO, varargin{:} };
 else 
-    options = { Type FileName PathName p MCC LIMO flag varargin{:} };
+    options = {Type FileName PathName p MCC LIMO flag varargin{:} };
 end
 
 try
@@ -55,36 +55,34 @@ try
         end
     end
 catch
-    error('limo_display_results() error: calling convention {''key'', value, ... } error'); return;
+    limo_errordlg('limo_display_results() error: calling convention {''key'', value, ... } error');
+    return
 end
 
-try g.type;      catch, g.type     = 1;  end % 2-D image
-try g.filename;  catch, g.filename = [];  end % No default values
-try g.pathname;  catch, g.pathname = [];  end % No default values
-try g.p;         catch, g.p        = 0.05;  end 
-try g.MCC;       catch, g.MCC      = 1;   end % No correction
-try g.LIMO;      catch, g.LIMO     = [];  end % No default values
-try g.flag;      catch, g.flag     = 1;  end % interactive figure
-
+try g.type;      catch, g.type     = 1;    end % 2-D image
+try g.filename;  catch, g.filename = [];   end % No default values
+try g.pathname;  catch, g.pathname = [];   end % No default values
+try g.p;         catch, g.p        = 0.05; end 
+try g.MCC;       catch, g.MCC      = 1;    end % No correction
+try g.LIMO;      catch, g.LIMO     = [];   end % No default values
+try g.flag;      catch, g.flag     = 1;    end % interactive figure
 try g.channels;  catch, g.channels  = [];  end % No default values
 try g.regressor; catch, g.regressor = [];  end % No default values
 try g.plot3type; catch, g.plot3type = [];  end % No default values
 try g.sumstats;  catch, g.sumstats  = [];  end % No default values
 try g.restrict;  catch, g.restrict  = [];  end % No default values
 try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
-
 try g.fig;       catch, g.fig       = [];  end % Existing figure
 
 % decode inputs given as structure
-if isfield(g, 'type')     Type     = g.type; end
-if isfield(g, 'filename') FileName = g.filename; end
-if isfield(g, 'pathname') PathName = g.pathname; end
-if isfield(g, 'p')        p        = g.p; end
-if isfield(g, 'MCC')      MCC      = g.MCC; end
-if isfield(g, 'LIMO')     LIMO     = g.LIMO; end
-if isfield(g, 'flag')     flag     = g.flag; end
-
-if isequal(g.regressor, 0), g.regressor = []; end
+if isfield(g, 'type');      Type     = g.type;     end
+if isfield(g, 'filename');  FileName = g.filename; end
+if isfield(g, 'pathname');  PathName = g.pathname; end
+if isfield(g, 'p');         p        = g.p;        end
+if isfield(g, 'MCC');       MCC      = g.MCC;      end
+if isfield(g, 'LIMO');      LIMO     = g.LIMO;     end
+if isfield(g, 'flag');      flag     = g.flag;     end
+if isequal(g.regressor, 0); g.regressor = []; end
 if ~isempty(g.plot3type)
     extra = {'Original','Modelled','Adjusted'};
     extra = extra{g.plot3type};
@@ -138,10 +136,10 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
             end
             if contains(FileNameTmp,'one_sample')
                 limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
-                    str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                    str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'two_samples')
                 limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
-                    fullfile(LIMO.dir,'Y1r.mat'), str2num(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                    fullfile(LIMO.dir,'Y1r.mat'), str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
             elseif contains(FileNameTmp,'paired_samples')
                 underScoresPos = strfind(FileNameTmp,'_');
                 param1         = str2num(FileNameTmp(underScoresPos(end-1)+1:underScoresPos(end)-1));
@@ -149,9 +147,9 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
                     fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
             elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
-                LIMO = LIMO; LIMO.design.bootstrap = 1000;
+                LIMO.design.bootstrap = 1000;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-                LIMO = LIMO; limo_eeg(4,LIMO.dir);
+                limo_eeg(4,LIMO.dir);
             elseif contains(FileNameTmp,'ANOVA') && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
                 limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
             elseif contains(FileNameTmp,'Rep_ANOVA')
@@ -160,14 +158,14 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                         limo_contrast([PathName filesep 'Yr.mat'], ...
                             [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 0,3);
                     else
-                        errordlg2('there is no GLM bootstrap file for this contrast file')
+                        limo_errordlg('there is no GLM bootstrap file for this contrast file')
                     end
                 elseif strncmp(FileNameTmp,'ess',3)
                     if exist([PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
                         limo_contrast([PathName filesep 'Yr.mat'], ...
                             [PathName filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], LIMO, 1,3);
                     else
-                        errordlg2('there is no bootstrap file for this contrast file')
+                        limo_errordlg('there is no bootstrap file for this contrast file')
                     end
                 else
                     disp('Bootstraping Repeated Measure ANOVA')
