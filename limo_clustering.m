@@ -122,7 +122,7 @@ if sum(mask(:)) == 0 && fig == 1
     txt = ['biggest observed cluster mass: ' num2str(maxval) '\rightarrow'];
     text(loc,double(maxval),txt,'FontSize',10,'HorizontalAlignment','right');
     
-    title('Cluster-mass Maxima under H0','FontSize',12)
+    title('Cluster-mass Maxima under H0 - no signitifcant results','FontSize',12)
     xlabel('sorted bootstrap iterations','FontSize',12); 
     ylabel('Freq.','FontSize',12)
     box on; set(gca,'Layer','Top')

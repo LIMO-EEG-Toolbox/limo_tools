@@ -70,11 +70,8 @@ for row =1:a
 end
 
 %% figure
-if sum(mask(:)) == 0 && isempty(fig)
-    fig = 1 ; 
-end
+if sum(mask(:)) == 0 && fig == 1 
 
-if fig == 1
     figure('Name','Correction by max: results under H0')
     plot(sortmaxM,'LineWidth',3); grid on; hold on; 
     
@@ -87,7 +84,7 @@ if fig == 1
     txt = ['maximum observed: ' num2str(max(M(:))) '\rightarrow'];
     text(loc,max(M(:)),txt,'FontSize',12,'HorizontalAlignment','right');
     
-    title('Maxima under H0','FontSize',12)
+    title('Maxima under H0 - no signitifcant results','FontSize',12)
     xlabel('sorted bootstrap iterations','FontSize',12); 
     ylabel('Freq.','FontSize',12)
     box on; set(gca,'Layer','Top')

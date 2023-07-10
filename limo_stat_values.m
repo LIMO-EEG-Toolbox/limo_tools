@@ -271,15 +271,11 @@ elseif ~isempty(M) && MCC == 2
             end
             mytitle = sprintf('%s cluster correction (%g %s)', titlename, Nclust, Mclust);
         catch ME
-            l = lasterror
-            l.stack
-            errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
+            limo_errordlg(sprintf('error log: %s \n',ME.message),'cluster correction failure')
             return
         end
     else
-        l = lasterror
-        l.stack
-        errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
+        limo_errordlg(['H0' filesep MCC_data ' not found'],'cluster correction failure')
         return
     end
     
@@ -307,11 +303,11 @@ elseif ~isempty(M) && MCC == 4 % Stat max
             [mask,M] = limo_max_correction(abs(M),abs(bootM),p,plotFlag);
             mytitle  = sprintf('%s: correction by max',titlename);
         catch ME
-            errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
+            limo_errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
             return
         end
     else
-        errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
+        limo_errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
     end
     
     % correction using TFCE
@@ -326,11 +322,11 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
             mytitle  = sprintf('%s: correction using TFCE',titlename);
         catch ME
-            errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
+            limo_errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
             return
         end
     else
-        errordlg('no tfce tfce file was found','missing data')
+        limo_errordlg('no tfce tfce file was found','missing data')
     end
 end
 
