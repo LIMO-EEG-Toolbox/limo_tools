@@ -359,24 +359,17 @@ end
 
 if LIMO.design.bootstrap ~=0
     
-    % being pretty time consuming, let users have one core free
-    if isempty(gcp('nocreate'))
-        parpool(feature('numCores')-1);
-    end
+    limo_check_ppool
     
     % avoid overwriting / recomputing H0 if done
     % (limo_eeg(4) called via the results interface)
     if exist('H0','dir')
-        if ~exist('TFCE','dir') && LIMO.design.tfce == 1
-            overwrite_H0boot = questdlg('H0 present for tfce, overwrite?','limo check','yes','no','no');
+        if ~exist(fullfile(LIMO.dir,'TFCE'),'dir') && LIMO.design.tfce == 1
+            overwrite_H0boot = limo_questdlg('H0 present for tfce, overwrite?','limo check','yes','no','no');
         else
             overwrite_H0boot = questdlg('overwrite H0?','limo check','yes','no','yes');
             if strcmp(overwrite_H0boot,'no') || isempty(overwrite_H0boot)
-                if exist('warndlg2','file')
-                    warndlg2('Analysis stopped - not overwriting H0')
-                else
-                    warndlg('Analysis stopped - not overwriting H0')
-                end
+                limo_warndlg('Analysis stopped - not overwriting H0')
                 return
             end
         end
@@ -741,9 +734,9 @@ end
 % --------------
 if LIMO.design.tfce == 1
     
-    if exist('TFCE','dir')
-        if strcmp(questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No')
-            warndlg2('Analysis stopped - not overwriting TFCE')
+    if exist(fullfile(LIMO.dir,'TFCE'),'dir')
+        if strcmp(limo_questdlg('TFCE directory detected, overwrite?','data check','Yes','No','No'),'No')
+            limo_warndlg('Analysis stopped - not overwriting TFCE')
             return
         end
     end
@@ -772,7 +765,7 @@ if LIMO.design.tfce == 1
         else
             [~, LIMO.data.neighbouring_matrix] = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
             if isempty(LIMO.data.neighbouring_matrix)
-                error('no neighbouring matrix returned, try creating with limo tools')
+                limo_error('no neighbouring matrix returned, try creating with limo tools')
             else
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
             end
