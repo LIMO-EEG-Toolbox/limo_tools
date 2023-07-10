@@ -1,7 +1,7 @@
 function [FileName,PathName,FilterIndex]= limo_get_result_file
 
 % routine to get result file
-%
+% 
 % FORMAT [FileName,PathName,FilterIndex]= limo_get_result_files
 %
 % OUTPUT FileName, PathName, Full File names are returned as string
@@ -22,8 +22,16 @@ if limo_settings.newgui && ~isempty(limo_settings.workdir)
 end
 
 % level 1 or level 2
-options = { 'Level 1', 'Level 2'};
-res = limo_questdlg('Plot level 1 (subject) or level 2 (group) analysis file?', 'Result file', options{:}, options{end});
+options         = { 'Level 1', 'Level 2'};
+options_default = options{end};
+if exist(fullfile(pwd,'LIMO.mat'),'file')
+    LIMO = load(fullfile(pwd,'LIMO.mat'));
+    if LIMO.LIMO.Level == 1
+        options_default = options{1};
+    end
+end
+
+res = limo_questdlg('Plot level 1 (subject) or level 2 (group) analysis file?', 'Result file', options{:}, options_default);
 if isempty(res), return; end
 if contains(res, options{1}) % cancel
     level = 1;
@@ -33,17 +41,44 @@ else
     strGUI = 'pick a result file for level 2 analysis (group analysis)';
 end
 
-
 if level == 1
     dirContent = dir('sub*/eeg/ses*/*/*.mat');
 else
-    dirContent1 = dir('AN(C)OVA*/*.mat');
-    dirContent2 = dir('one_sample_ttest*/*.mat');
-    dirContent3 = dir('one_sample_ttest*/*/*.mat');
-    dirContent4 = dir('paired_ttest*/*.mat');
-    dirContent5 = dir('two_samples_ttest*/*.mat');
-    dirContent6 = dir('regression*/*.mat');
-    dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;dirContent5;dirContent6];
+    % assuming default directory filenames
+    % if scripted, also look for actual filenames, 
+    % when the user if inside a directory
+    dirContent1 = dir('one_sample_ttest*/*.mat');
+    if isempty(dirContent1)
+        dirContent1 = dir('one_sample_ttest*.mat');
+    end
+
+    dirContent2 = dir('paired_ttest*/*.mat');
+    if isempty(dirContent2)
+        dirContent2 = dir('paired_samples_ttest*.mat');
+    end
+
+    dirContent3 = dir('two_samples_ttest*/*.mat');
+    if isempty(dirContent3)
+        dirContent3 = dir('two_samples_ttest*.mat');
+    end
+
+    dirContent4 = dir('regression*/*.mat');
+    dirContent5 = [];
+    if isempty(dirContent4)
+        dirContent4 = dir('Covariate_effect_*.mat');
+    end
+
+    dirContent5 = dir('AN(C)OVA*/*.mat');
+    dirContent6 = [];
+    if isempty(dirContent5)
+        dirContent5 = dir('Condition_effect*.mat');
+        dirContent6 = dir('Covariate_effect_*.mat');
+    end
+
+    dirContent7 = dir('con_*.mat');
+    dirContent8 = dir('ess_*.mat');
+    dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;...
+        dirContent5;dirContent6;dirContent7;dirContent8];
 end
 
 % remove Yr and LIMO files
