@@ -1,5 +1,4 @@
 % Script allowing to custimize LIMO tools behaviour
-%
 % Arnaud Delorme & Cyril Pernet
 
 % new GUI available for plotting and some selection menus

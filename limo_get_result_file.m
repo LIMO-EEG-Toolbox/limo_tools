@@ -14,6 +14,13 @@ FilterIndex = 0;
 FileName = 0;
 PathName = 0;
 
+limo_settings_script;
+if limo_settings.newgui && ~isempty(limo_settings.workdir)
+    if exist(limo_settings.workdir,'dir')
+        cd(limo_settings.workdir);
+    end
+end
+
 % level 1 or level 2
 options = { 'Level 1', 'Level 2'};
 res = limo_questdlg('Plot level 1 (subject) or level 2 (group) analysis file?', 'Result file', options{:}, options{end});
@@ -26,10 +33,7 @@ else
     strGUI = 'pick a result file for level 2 analysis (group analysis)';
 end
 
-limo_settings_script;
-if limo_settings.newgui && ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
-end
+
 if level == 1
     dirContent = dir('sub*/eeg/ses*/*/*.mat');
 else
