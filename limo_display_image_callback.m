@@ -105,7 +105,7 @@ end
 
 % topoplot 
 % --------
-if length(LIMO.data.chanlocs) > 2
+if size(udat.toplot,1) > 1
     if ~interactive
         ax = subplot(3,3,3,'replace');
     else
