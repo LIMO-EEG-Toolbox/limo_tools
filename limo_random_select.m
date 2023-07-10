@@ -151,15 +151,10 @@ for in = 1:2:(nargin-2)
     end
 end
 
-limo_settings_script;
-if limo_settings.newgui
-    analysis_type = 'Full scalp analysis';
-else
+if isempty(analysis_type)
+    analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
     if isempty(analysis_type)
-        analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
-        if isempty(analysis_type)
-            return
-        end
+        return
     end
 end
 
@@ -198,11 +193,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     end
 
     if isempty(parameters)
-        if exist('errordlg2','file')
-            errordlg2('file selection failed or canceled, only Beta and Con files are supported','Selection error'); return
-        else
-            errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error'); return
-        end
+        limo_errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error'); return
     end
 
     % match frames, update LIMO
