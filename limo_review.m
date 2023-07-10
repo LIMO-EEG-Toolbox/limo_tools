@@ -12,18 +12,20 @@ function limo_review(varargin)
 %% Varargin
 
 if isempty(varargin)
-    [file,dir] = uigetfile('LIMO.mat','select a LIMO.mat file');
+    [file,fpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
     if file == 0
         return
     else
         try
-            cd (dir); load LIMO.mat;
+            LIMO = load(fullfile(fpath,'LIMO.mat'));
+            LIMO = LIMO.LIMO;
         catch
             error('file not supported')
         end
     end
 else
-   LIMO = cell2mat(varargin); 
+   LIMO = load(cell2mat(varargin));
+   LIMO = LIMO.LIMO;
 end
 
 %% Display
@@ -48,9 +50,10 @@ else
         elseif ndims(W) == 3
             W = squeeze(mean(mean(W,1),2));
         end
-        X = LIMO.design.X.*repmat(W,1,size(LIMO.design.X,2));
         Xdisplay = LIMO.design.X;
-        N = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
+        X        = LIMO.design.X.*repmat(W,1,size(LIMO.design.X,2));
+        N        = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
+        
         if isfield(LIMO.design, 'nb_continuous')
             if  prod(LIMO.design.nb_continuous) ~= 0
                 REGdisplay = Xdisplay(:,N+1:size(X,2)-1);
