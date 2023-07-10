@@ -123,7 +123,6 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
             else
                 if strcmp(limo_questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
-                    LIMO                  = LIMO;
                     LIMO.design.bootstrap = 800;
                     if handles.tfce == 1
                         LIMO.design.tfce  = 1;
