@@ -11,7 +11,7 @@ function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varar
 %   Type      = type of images/plot to do
 %               1 - 2D images with a intensity plotted as function of time (x) and electrodes (y)
 %               2 - topographic plot a la eeglab
-%               3 - plot the ERP data (original or modeled)
+%               3 - course plot (time or freq) for summary data, stats or subject's original/modelled/adjusted data
 %   Filename  = Name of the file to image
 %   PathName  = Path of the file to image
 %   p         = threshold p value e.g. 0.05
@@ -2243,8 +2243,12 @@ elseif LIMO.Level == 2
                 title(mytitle,'FontSize',16); drawnow;
                 assignin('base','Plotted_data',trimci);
             end
-        else
-            errordlg('this file is not supported for this kind of plot','Nothing plotted')
+        else % might be a summary data file
+            try
+                limo_add_plots(FileName,LIMO)
+            catch no_plot
+                errordlg('course plot failed because %s',no_plot.message)
+            end
         end
     end % closes type
     
