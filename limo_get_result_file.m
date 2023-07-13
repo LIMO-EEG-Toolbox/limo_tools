@@ -1,18 +1,22 @@
 function [FileName,PathName,FilterIndex]= limo_get_result_file
 
-% routine to get result file
-% 
-% FORMAT [FileName,PathName,FilterIndex]= limo_get_result_files
+% routine to get result file(s) either from folder names or within a folder
+% from file names
 %
+% FORMAT [FileName,PathName,FilterIndex]= limo_get_result_files
 % OUTPUT FileName, PathName, Full File names are returned as string
+%
+% Arnaud Delorme & Cyril Pernet
+% ------------------------------
+%  Copyright (C) LIMO Team 2023
 
-Names = {};
-Paths = {};
-Files = {};
-txtFile = '';
+Names       = {};
+Paths       = {};
+Files       = {};
+txtFile     = '';
 FilterIndex = 0;
-FileName = 0;
-PathName = 0;
+FileName    = 0;
+PathName    = 0;
 
 limo_settings_script;
 if limo_settings.newgui && ~isempty(limo_settings.workdir)
@@ -32,13 +36,16 @@ if exist(fullfile(pwd,'LIMO.mat'),'file')
 end
 
 res = limo_questdlg('Plot level 1 (subject) or level 2 (group) analysis file?', 'Result file', options{:}, options_default);
-if isempty(res), return; end
-if contains(res, options{1}) % cancel
-    level = 1;
-    strGUI = 'Pick a result file for level 1 analysis (individual subject)';
+if isempty(res)
+    return
 else
-    level = 2;
-    strGUI = 'pick a result file for level 2 analysis (group analysis)';
+    if contains(res, options{1}) % cancel
+        level = 1;
+        strGUI = 'Pick a result file for level 1 analysis (individual subject)';
+    else
+        level = 2;
+        strGUI = 'pick a result file for level 2 analysis (group analysis)';
+    end
 end
 
 if level == 1
@@ -73,12 +80,13 @@ else
     if isempty(dirContent5)
         dirContent5 = dir('Condition_effect*.mat');
         dirContent6 = dir('Covariate_effect_*.mat');
+        dirContent7 = dir('Rep_ANOVA_*.mat');
     end
 
-    dirContent7 = dir('con_*.mat');
-    dirContent8 = dir('ess_*.mat');
+    dirContent8 = dir('con_*.mat');
+    dirContent9 = dir('ess_*.mat');
     dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;...
-        dirContent5;dirContent6;dirContent7;dirContent8];
+        dirContent5;dirContent6;dirContent7;dirContent8,dirContent9];
 end
 
 % remove Yr and LIMO files
