@@ -3,13 +3,15 @@ function [Names,Paths,Files,txtFile] = limo_get_anova_files(varargin)
 % routine to get multifiles from different directories
 %
 % FORMAT [Names,Paths,Files] = limo_get_anova_files(gp,filter,title)
-%
 % OUTPUT Names , Paths, Full File names are returned as cells
 %
+% Arnaud Delorme 
+% ------------------------------
+%  Copyright (C) LIMO Team 2023
 
-Names = {};
-Paths = {};
-Files = {};
+Names   = {};
+Paths   = {};
+Files   = {};
 txtFile = '';
 
 limo_settings_script;
@@ -19,9 +21,9 @@ end
 dirContent = dir('AN(C)OVA*');
 
 if isempty(dirContent)
-    txt = 'For 2nd-level contrast, you need to run an ANOVA first. What do you want to do instead?'
+    txt     = 'For 2nd-level contrast, you need to run an ANOVA first. What do you want to do instead?';
     options = { 'Cancel     ', 'Run 1st-level contrast', 'Pick ANOVA folder' };
-    res = limo_questdlg(txt, '2nd-level contrast', options{:}, options{end});
+    res     = limo_questdlg(txt, '2nd-level contrast', options{:}, options{end});
 
     if contains(res, options{1}) % cancel
         return
@@ -35,6 +37,7 @@ if isempty(dirContent)
         end
     end
 end
+
 if length(dirContent) > 1
     uiList = { {'style' 'text' 'string' 'Pick an ANOVA folder' } ...
         { 'style' 'popupmenu' 'string' {dirContent.name}  'value', length(dirContent) }};
@@ -49,7 +52,8 @@ if length(dirContent) > 1
     end
 else
     path = fullfile(dirContent.folder, dirContent.name);
-end    
+end   
+
 res = dir(fullfile(path, 'LIMO.mat'));
 if isempty(res)
     limo_errordlg('LIMO.mat file not found in folder')
