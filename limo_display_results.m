@@ -38,9 +38,9 @@ function res = limo_display_results(Type,FileName,PathName,p,MCC,LIMO,flag,varar
 % Cyril Pernet, Guillaume Rousselet, Carl Gaspar,
 % Nicolas Chauveau, Andrew Stewart, Ramon Martinez-Cancino, Arnaud Delorme
 %
-% see also limo_stat_values limo_display_image topoplot limo_course_plot
+% see also limo_stat_values limo_display_image limo_display_image_tf topoplot
 % ----------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2019
+%  Copyright (C) LIMO Team 2023
 
 if ~ischar(Type)
     options = { 'type', Type, 'filename', FileName, 'pathname', PathName, 'p', p, 'MCC', MCC, 'LIMO', LIMO, varargin{:} };
@@ -306,7 +306,7 @@ if LIMO.Level == 1
                         assignin('base','F_values',toplot)
                         
                     else
-                        errordlg2('file not supported');
+                        limo_errordlg('file not supported');
                         return
                     end
                 end
@@ -599,7 +599,7 @@ if LIMO.Level == 1
                         end
                         
                         if min(EEG.freq)<EEG.xmin || max(EEG.freq)>EEG.xmax
-                            errordlg('slected frequency out of bound'); return
+                            limo_errordlg('selected frequency out of bound'); return
                         end
                     end
                 end
@@ -664,7 +664,7 @@ if LIMO.Level == 1
             regressor = sort(regressor);
             
             if max(regressor) > size(LIMO.design.X,2)
-                errordlg('invalid regressor number'); 
+                limo_errordlg('invalid regressor number'); 
             end
             
             categorical = sum(LIMO.design.nb_conditions) + sum(LIMO.design.nb_interactions);
@@ -690,7 +690,7 @@ if LIMO.Level == 1
                 return
             elseif strcmpi(extra,'Original')
                 if regressor == size(LIMO.design.X,2)
-                    errordlg('you can''t plot adjusted mean for original data'); return
+                    limo_errordlg('you can''t plot adjusted mean for original data'); return
                 end
             end
             
@@ -758,9 +758,9 @@ if LIMO.Level == 1
             else
                 channel = eval(cell2mat(channel));
                 if size(channel) > 1
-                    errordlg('invalid channel choice'); return
+                    limo_errordlg('invalid channel choice'); return
                 elseif channel > size(LIMO.data.chanlocs,2) || channel < 1
-                    errordlg('invalid channel number'); return
+                    limo_errordlg('invalid channel number'); return
                 end
                 
                 if ~isempty(frequency)
@@ -1504,7 +1504,7 @@ elseif LIMO.Level == 2
             end
             
             if sum(tmp<=categorical) >=1 && sum(tmp>categorical) >=1
-                errordlg('you can''t plot categorical and continuous regressors together'); return
+                limo_errordlg('you can''t plot categorical and continuous regressors together'); return
             end
             
             % load the effect
@@ -1512,9 +1512,9 @@ elseif LIMO.Level == 2
             data = load(FileName);
             data = data.(cell2mat(fieldnames(data)));
             if numel(size(data)) == 3 && size(data,2) == 1
-                errordlg2('single time point detected, plot aborded'); return
+                limo_errordlg('single time point detected, plot aborded'); return
             elseif numel(size(data)) == 4 && size(data,3) == 1
-                errordlg2('single time point detected, plot aborded'); return
+                limo_errordlg('single time point detected, plot aborded'); return
             end
             
             % which course plot to make
@@ -1531,11 +1531,7 @@ elseif LIMO.Level == 2
                 elseif contains(extra,'Adj','Ignorecase',true)
                     extra = 'Adjusted';
                 else
-                    if exist(errodlg2,'file')
-                        errordlg2(sprintf('input option ''%s'' invalid',extra)); return
-                    else
-                        errordlg(sprintf('input option ''%s'' invalid',extra)); return
-                    end
+                   limo_errordlg(sprintf('input option ''%s'' invalid',extra)); return
                 end
             end
             
@@ -1543,7 +1539,7 @@ elseif LIMO.Level == 2
                 return
             elseif strcmpi(extra,'Original data')
                 if regressor == size(LIMO.design.X,2)
-                    errordlg('you can''t plot adjusted mean for original data'); return
+                    limo_errordlg('you can''t plot adjusted mean for original data'); return
                 end
             end
             
@@ -2024,9 +2020,9 @@ elseif LIMO.Level == 2
                         end
                         
                         if length(channel) > 1
-                            error('1 channel only can be plotted')
+                            limo_errordlg('1 channel only can be plotted'); return
                         elseif channel > size(Rep_ANOVA_Gp_effect,1)
-                            error('channel number invalid')
+                            limo_errordlg('channel number invalid'); return
                         end
                     end
                 else
@@ -2144,9 +2140,9 @@ elseif LIMO.Level == 2
                         end
                         
                         if length(channel) > 1
-                            error('1 channel only can be plotted')
+                            limo_error('1 channel only can be plotted'); return
                         elseif channel > size(Rep_ANOVA_Interaction_with_gp,1)
-                            error('channel number invalid')
+                            limo_error('channel number invalid'); return
                         end
                     end
                 else
