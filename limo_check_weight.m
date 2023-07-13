@@ -1,4 +1,4 @@
-function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
+function limo_check_weight(LIMO_files, expected_chanlocs, varargin)
 
 % general function designed to look at the weights computed for each trial
 % at the each channel for each subject
@@ -33,17 +33,11 @@ function limo_CheckWeight(LIMO_files, expected_chanlocs, varargin)
 limo = struct('PlotRank','on','TestDifference','on','CheckBias','on','SingleSubjectAnalysis','off');
 
 if nargin == 0
+    % list of LIMO files
     [~,~,LIMO_files] = limo_get_files([],'*txt','choose a list of LIMO files');
     if isempty(LIMO_files)
         return
     end
-    [to_load,path] = uigetfile2('expected_chanlocs.mat','load chanlocs'); 
-    if to_load == 0
-        return
-    end
-    chan                          = load([path to_load]);
-    limo.data.chanlocs            = chan.expected_chanlocs;
-    limo.data.neighbouring_matrix = chan.channeighbstructmat;
 end
 
 %% input checks
@@ -58,6 +52,7 @@ elseif ischar(LIMO_files)
 end
 
 % those files are there?
+warning on
 for f = length(LIMO_files):-1:1
     if ~exist(LIMO_files{f},'file')
         error([LIMO_files{f} ' doesn''t exist'])
@@ -65,24 +60,51 @@ for f = length(LIMO_files):-1:1
     
     [limo_paths{f},name,ext]=fileparts(LIMO_files{f});
     if ~strcmp([name ext],'LIMO.mat')
-        error([LIMO_files{f} ' is not a LIMO.mat file'])
+        % might still be a list, user may have pick the wrong one
+        if exist(fullfile(limo_paths{f},"LIMO.mat"))
+            LIMO_files{f} = fullfile(limo_paths{f},"LIMO.mat");
+            warning('wrong selection, changed %s.mat to LIMO.mat',name)
+        else
+            error([LIMO_files{f} ' is not a LIMO.mat file'])
+        end
     end
     
     LIMO_sub = load(LIMO_files{f});
     LIMO_sub = LIMO_sub.LIMO;
-    if f==length(LIMO_files)
+    if f==length(LIMO_files) % 1st in the loop
         limo.Analysis = LIMO_sub.Analysis;
         limo.Type     = LIMO_sub.Type;
-    else
+    else % compare between LIMO files
         if limo.Analysis ~= LIMO_sub.Analysis
-            error('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
+            limo_errordlg('Looks like different type of analyses (Time/Freq/Time-Freq) are mixed up')
+            return
         end
         
         if limo.Type ~= LIMO_sub.Type
-            error('Looks like different type of analyses (Channels/Components) are mixed up')
+            limo_errordlg('Looks like different type of analyses (Channels/Components) are mixed up');
+            return
         end    
     end
+    estimation{f} = LIMO_sub.design.method;
 end
+
+estimation_check = cellfun(@(x) strcmpi(x,'OLS'), estimation);
+if any(estimation_check)
+    limo_errordlg('Can''t compute: at least one subject was estimated using OLS (weights = 1)')
+    warning(sprintf('suject %g model was estimated using OLS\n',find(estimation_check))); %#ok<SPWRN> 
+    return
+end
+
+if strcmpi(limo.Type,'Channels')
+    [to_load,path] = uigetfile2('expected_chanlocs.mat','load chanlocs');
+    if to_load == 0
+        warning('selection cancelled'); return
+    end
+    chan                          = load([path to_load]);
+    limo.data.chanlocs            = chan.expected_chanlocs;
+    limo.data.neighbouring_matrix = chan.channeighbstructmat;
+end
+
 
 if ~isfield(limo,'data')
     if nargin >= 2
@@ -95,7 +117,7 @@ if ~isfield(limo,'data')
         limo.data.chanlocs                = chan.expected_chanlocs;
         limo.data.neighbouring_matrix     = chan.channeighbstructmat;
     catch different_names
-        warndlg('couldn''t read chanlocs: %s\n',different_names.message)
+        limo_warndlg(sprintf('couldn''t read chanlocs: %s',different_names.message))
         FN = fieldnames(chan);
         for i=1:length(FN)
             if isstruct(chan.(FN{i}))
@@ -130,8 +152,19 @@ end
 % -----------
 % Compute
 % ----------
-mkdir('Weights_checking'); cd('Weights_checking'); LIMO.dir = pwd;
-[~,~,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
+[~,current] = fileparts(pwd);
+if ~strcmpi(current,'Weights_checking')
+    if exist(fullfile(pwd,'Weights_checking'),'dir')
+        cd('Weights_checking');
+    else
+        mkdir('Weights_checking'); cd('Weights_checking');
+    end
+end
+
+LIMO.dir = pwd;
+if isfield(limo,'data') % chanlocs & neighbouring_matrix
+    [~,~,subj_chanlocs,limo] = limo_match_frames(limo_paths,limo);
+end
 
 %% Compute
 if strcmpi(limo.Analysis,'Time-Frequency')
@@ -206,7 +239,8 @@ for f=1:length(LIMO_files)
         % limo_add_plots to make the figure - only parameters and subjedcts are
         % reversed because we want to plot per subjects and not per parameters
         if f==length(LIMO_files)
-            clear Data; Data.data = data; Data.limo = limo;
+            clear Data; Data.data = data; 
+            Data.limo = limo; Data.limo.Level = 2;
             save subjects_weighted_data Data
         end
     end % close rank computation
@@ -328,7 +362,7 @@ for f=1:length(LIMO_files)
             end
         end
         
-        if f==length(LIMO_files)
+        if f== length(LIMO_files)
             mkdir('trial_differences'); cd('trial_differences'); save Yr difference; 
             
             % stats
