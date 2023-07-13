@@ -1164,8 +1164,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % Ask for Gp
     % ----------
-    limo_settings_script;
-    if limo_settings.newgui
+    if exist('STUDY','var')
         if length(STUDY.group) < 2 && length(STUDY.session) < 2
             limo_questdlg( [ 'No groups of subject were detected in the STUDY.' 10 ...
                              'If you have groups of subjects, make sure to' 10 ...
