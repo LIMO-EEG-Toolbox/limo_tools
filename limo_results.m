@@ -116,8 +116,15 @@ if FilterIndex == 1
         end
         cd(PathName);
     end
-    tmp = load([PathName filesep 'LIMO.mat']);
-    handles.LIMO = tmp.LIMO; clear tmp
+
+    % check if central_tendency_file otherwise load LIMO.mat
+    tmp = load(FileName);
+    if isfield(tmp,'Data')
+        handles.LIMO = tmp.Data.limo;
+    else
+        tmp = load([PathName filesep 'LIMO.mat']);
+        handles.LIMO = tmp.LIMO; clear tmp
+    end
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -181,12 +188,16 @@ limo_contrast_manager
 % Semi-Partial coef
 % ---------------------------------------------------------------
 function Partial_coef_Callback(hObject, eventdata, handles)
-[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a subject LIMO file');
 if FileName ~=0
     cd(PathName); handles.LIMO = load('LIMO.mat');
     limo_semi_partial_coef(handles.LIMO.LIMO)
 end
 guidata(hObject, handles);
+
+% --- Executes on button press in check_weight.
+function check_weights_Callback(hObject, eventdata, handles)
+limo_check_weight
 
 %------------------------
 %         OTHERS
