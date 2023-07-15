@@ -1168,14 +1168,9 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         gp_nb = size(LIMO.data.data,1);
     else
         if exist('STUDY','var')
-            if length(STUDY.group) < 2 && length(STUDY.session) < 2
-                limo_questdlg( [ 'No groups of subject were detected in the STUDY.' 10 ...
-                    'If you have groups of subjects, make sure to' 10 ...
-                    'use the "group" field in the STUDY editor' ], 'Group information', 'Continue', 'Continue');
-                gp_nb = 1;
-            else
-                gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {'1'}));
-            end
+            gp_nb = length(STUDY.group);
+        else
+            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {'1'}));
         end
     end
 
