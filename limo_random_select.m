@@ -1191,7 +1191,6 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % Ask for Repeated Measures
     % --------------------------
-    factor_names = { 'Factor 1' 'Factor 2' 'Factor 3' };
     if ~isempty(LIMO.design.parameters) % infer factors from parameters
         if size(LIMO.design.parameters,1) == 1 && gp_nb > 1
             LIMO.design.parameters = repmat(LIMO.design.parameters,gp_nb,1);
@@ -1213,19 +1212,20 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         end
     else
         uiList = { { 'style' 'text' 'string' 'Enter repeated factors level' 'fontweight' 'bold'} ...
-                   { 'style' 'text' 'string' '' } ...
+                     { 'style' 'text' 'string' '(for more than 3 factors use command line, see help limo_random_select)' } ...
+                 { 'style' 'text' 'string' '' } ...
                    { 'style' 'text' 'string' 'Name' } ...
-                   { 'style' 'text' 'string' 'Number of values' } ...
+                   { 'style' 'text' 'string' 'Number of measures' } ...
                    { 'style' 'text' 'string' 'Factor 1' } ...
-                   { 'style' 'edit' 'string' 'Face' } ...
+                   { 'style' 'edit' 'string' 'Factor 1' } ...
                    {} { 'style' 'edit' 'string' '3' } {} ...
                    { 'style' 'text' 'string' 'Factor 2 (if any)' } ...
-                   { 'style' 'edit' 'string' 'Rep' } ...
-                   {} { 'style' 'edit' 'string' '3' } {}...
+                   { 'style' 'edit' 'string' '' } ...
+                   {} { 'style' 'edit' 'string' '' } {}...
                    { 'style' 'text' 'string' 'Factor 3 (if any)' } ...
                    { 'style' 'edit' 'string' '' } ...
                    {} { 'style' 'edit' 'string' '' } {} };
-        uiGeom = { [1] [1 1 1] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] };
+        uiGeom = { [1] [1] [1 1 1] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] };
         res = inputgui('uilist', uiList, 'geometry', uiGeom);
         if isempty(res)
             return;
@@ -1235,6 +1235,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         factor_names = { res{1} res{3} res{5} };
     end
 
+    % Cases of wrong input
     try
         factor_nb = eval(['[' factor_nb ']']);
         factor_names = factor_names(1:length(factor_nb));
@@ -1243,10 +1244,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         return
     end
 
-    % Cases of wrong input
     if isempty(factor_nb) || length(factor_nb)==1 && factor_nb == 0
-        disp('no factor entered, Rep. ANOVA aborded');
-        return
+        limo_warndlg('no factor entered, Rep. ANOVA aborded');
     end
 
     % 2nd select data per gp / conditions
@@ -1326,7 +1325,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
         % check if variables names are accessible
         limoFileS1 = fullfile(Paths{1}{1}, 'LIMO.mat');
-        if exist(limoFileS1)
+        if exist(limoFileS1,'file')
             LIMOtmp = load('-mat', limoFileS1);
             if isfield(LIMOtmp.LIMO.design, 'labels')
                 paramLinear = parameters(i,:);
@@ -1335,11 +1334,11 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             end
         end
 
-%         if size(parameters,2) ~= prod(factor_nb)
-%             warning(['the number of parameter chosen (',num2str(size(parameters,2)), ...
-%                 ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
-%             return
-%         end
+        if size(parameters,2) ~= prod(factor_nb)
+            limo_warndlg(['the number of parameter chosen (',num2str(size(parameters,2)), ...
+                ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
+            return
+        end
 
         if size(LIMO.data.data,2) == gp_nb
             LIMO.data.data = LIMO.data.data'; % gps in rows
