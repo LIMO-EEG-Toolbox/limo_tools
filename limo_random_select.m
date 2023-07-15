@@ -1335,8 +1335,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         end
 
         if size(parameters,2) ~= prod(factor_nb)
-            limo_warndlg(['the number of parameter chosen (',num2str(size(parameters,2)), ...
-                ') does not match the total number of levels (',num2str(prod(factor_nb)),')'])
+            limo_warndlg(['the number of beta parameter chosen (',num2str(size(parameters,2)), ...
+                ') does not match the total number of factor levels (',num2str(prod(factor_nb)),')'])
             return
         end
 
@@ -1371,7 +1371,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                     end
 
                     if isempty(Names{i,j})
-                        warning('no files found - selection aborded');
+                        limo_warndlg('no files found - selection aborded');
                         return;
                     else
                         LIMO.data.data_dir{i,j} = Paths{i,j};
@@ -1384,7 +1384,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         if all(gp_param) % comfirms it's all con files
             parameters = repmat(1:length(LIMO.data.data),gp_nb,1);
         else
-            error('Inconsistent Names between groups - all con files expected of 1 parameter to extract')
+            limo_errordlg('Inconsistent Names between groups - all con files expected of 1 parameter to extract');
+            return
         end
     end
     LIMO.design.parameters = parameters; % move from factor to which param in file is picked
