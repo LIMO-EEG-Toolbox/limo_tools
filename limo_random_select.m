@@ -158,6 +158,10 @@ if isempty(analysis_type)
     end
 end
 
+if evalin( 'base', 'exist(''STUDY'',''var'') == 1' )
+    global STUDY %#ok<*GVMIS,TLEV> 
+end
+
 % ----------------------------------
 %%  One sample t-test and regression
 % ----------------------------------
@@ -541,11 +545,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
 
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
-            if exist('errordlg2','file')
-                errordlg2('file selection is corrupted, data sizes don''t match');
-            else
-                errordlg('file selection is corrupted, data sizes don''t match');
-            end
+                limo_errordlg('file selection is corrupted, data sizes don''t match');
             return
         end
 
@@ -644,7 +644,7 @@ elseif strcmpi(stattest,'paired t-test')
     if size(parameters,2) ~= 2
         if isempty(LIMO.design.parameters) && contains(Names{1}{1}, 'Betas')
             % hack only availbale if beta files NOT command line argument
-            errordlg2('Error: for paired t-test, please select 2 parameters','Paired t-test');
+            limo_errordlg('Error: for paired t-test, please select 2 parameters','Paired t-test');
             return
         end
     end
@@ -669,7 +669,7 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         if isempty(Names{2})
-            warning('Could not parse files names - function aborded')
+            limo_warndlg('Could not parse files names - function aborded')
             return
         else
             if ~isempty(LIMO.design.parameters)
@@ -691,11 +691,7 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         if size(Names{1},2) ~= size(Names{2},2)
-            if exist('errordlg2','file')
-                errordlg2('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
-            else
-                errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
-            end
+            limo_errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
         end
     elseif size(parameters,2) ~=2 % if it was beta file one needs a pair of parameters
         if exist('errordlg2','file')
@@ -1168,11 +1164,12 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         gp_nb = size(LIMO.data.data,1);
     else
         if exist('STUDY','var')
-            gp_nb = length(STUDY.group);
+            gp_val = length(STUDY.group);
         else
-            gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {'1'}));
+            gp_val = 1;
         end
     end
+    gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {gp_val}));
 
     if isempty(gp_nb)
         return
