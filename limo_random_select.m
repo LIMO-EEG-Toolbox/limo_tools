@@ -184,7 +184,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     LIMO.data.data_dir = Paths;
 
     if isempty(Names)
-        disp('no files selected')
+        limo_warndlg('no files selected')
         return
     end
 
@@ -197,7 +197,8 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     end
 
     if isempty(parameters)
-        limo_errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error'); return
+        limo_errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error'); 
+        return
     end
 
     % match frames, update LIMO
@@ -216,11 +217,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -----------------------------
     [data,removed] = getdata(1,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO);
     if isempty(data)
-        if exist('errordlg2','file')
-            errordlg2('no data were retreived - check inputs and data files','limo_random_select');
-        else
-            errordlg('no data were retreived - check inputs and data files','limo_random_select');
-        end
+        limo_errordlg('no data were retreived - check inputs and data files','limo_random_select');
         return
     end
 
@@ -426,7 +423,7 @@ elseif strcmpi(stattest,'two-samples t-test')
 
         if gp>2
             msg = 'input must be a cell array of dimension 2 (gps) * N (list)';
-            error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
+            limo_error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
         end
 
         % now read
@@ -440,7 +437,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     end
 
     if isempty(Names{1})
-        warning('Could not parse files names - function aborded')
+        limo_warndlg('Could not parse files names - function aborded')
         return
     end
 
@@ -486,7 +483,7 @@ elseif strcmpi(stattest,'two-samples t-test')
     end
 
     if isempty(Names{2})
-         warning('Could not parse files names - function aborded')
+       limo_warndlg('Could not parse files names - function aborded')
        return
     end
 
@@ -563,11 +560,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
 
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2)
-            if exist('errordlg2','file')
-                errordlg2('file selection is corrupted, data sizes don''t match');
-            else
-                errordlg('file selection is corrupted, data sizes don''t match');
-            end
+            limo_errordlg('file selection is corrupted, data sizes don''t match');
             return
         end
     end
@@ -608,7 +601,8 @@ elseif strcmpi(stattest,'paired t-test')
 
         if pair>2
             msg = 'input must be a cell array of dimension N (list) *2 (pairs)';
-            error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
+            limo_error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
+            return
         end
 
         % now read
@@ -622,7 +616,7 @@ elseif strcmpi(stattest,'paired t-test')
     end
 
     if isempty(Names{1})
-        warning('Could not parse files names - function aborded')
+        limo_warndlg('Could not parse files names - function aborded')
         return
     end
 
@@ -691,23 +685,18 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         if size(Names{1},2) ~= size(Names{2},2)
-            limo_errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); return
+            limo_errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); 
+            return
         end
     elseif size(parameters,2) ~=2 % if it was beta file one needs a pair of parameters
-        if exist('errordlg2','file')
-            errordlg2('2 parameters must be selected for beta files','Paired t-test error'); return
-        else
-            errordlg('2 parameters must be selected for beta files','Paired t-test error'); return
-        end
+            limo_errordlg('2 parameters must be selected for beta files','Paired t-test error'); 
+            return
     else % check Betas match design
         for s = 1:length(Paths{1})
             sub_LIMO = load(fullfile(Paths{1}{s},'LIMO.mat'));
             if max(parameters) > size(sub_LIMO.LIMO.design.X,2)
-                if exist('errordlg2','file')
-                    errordlg2('invalid parameter(s)','Paired t-test error'); return
-                else
-                    errordlg('invalid parameter(s)','Paired t-test error'); return
-                end
+                limo_errordlg('invalid parameter(s)','Paired t-test error'); 
+                return
             end
         end
         cd(LIMO.dir);
@@ -828,33 +817,22 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         if gp_nb == 1 || gp_nb > maxsub % groups are always in row
             LIMO.data.data = LIMO.data.data';
             [gp_nb,maxsub] = size(LIMO.data.data);
-            warning('same number of groups and files (%g) in - be sure groups are in rows',gp_nb)
+            limo_warndlg('same number of groups and files (%g) in - be sure groups are in rows',gp_nb)
         elseif gp_nb == maxsub
             warning('input transposed %g groups',gp_nb)
         elseif gp_nb == 1 && maxsub == 1
-            if exist(errordlg2,'file')
-               errordlg2('only one group detected - wrong input or test'); return
-            else
-               errordlg('only one group detected - wrong input or test'); return
-            end
+            limo_errordlg('only one group detected - wrong input or test'); 
+            return
         end
     else
         gp_nb = cell2mat(limo_inputdlg('How many independent groups? e.g. 3 or [3 2] for nested gps','Groups'));
         if isempty(gp_nb)
             return
         elseif sum(str2double(gp_nb) <= 2) && strcmpi(stattest,'N-Ways ANOVA')
-            if exist('errordlg2','file')
-                errordlg2('at least 3 groups are expected for a N-ways ANOVA')
-            else
-                errordlg('at least 3 groups are expected for a N-ways ANOVA')
-            end
+            limo_errordlg('at least 3 groups are expected for a N-ways ANOVA')
             return
         elseif sum(str2double(gp_nb) <= 1) && strcmpi(stattest,'ANCOVA')
-            if exist('errordlg2','file')
-                errordlg2('at least 2 groups are expected for an ANCOVA')
-            else
-                errordlg('at least 2 groups are expected for an ANCOVA')
-            end
+            limo_errordlg('at least 2 groups are expected for an ANCOVA')
             return
         else
             gp_nb          = str2double(gp_nb);
@@ -908,11 +886,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
 
         if contains(stattest,'ANCOVA','IgnoreCase',true) && ...
             length(parameters) > 1 % this is only group * cov without repeated measures
-            if exist('errordlg2','file')
-                errordlg2(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
-            else
-                errordlg(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
-            end
+            limo_errordlg(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
             return
         end
 
@@ -932,13 +906,15 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     end
 
     if length(parameters)>gp_nb
-        error('%g parameter selected, longer than the number of groups %g',length(parameters),gp_nb)
+        limo_errordlg('%g parameter selected, longer than the number of groups %g',length(parameters),gp_nb)
+        return
     else
         parameters = check_files(Paths, Names,gp_nb,parameters);
     end
 
     if isempty(parameters)
-        error('selected files are not Beta or con files');
+        limo_errordlg('selected files are not Beta or con files');
+        return
     end
     LIMO.data.data_dir     = Paths';
     LIMO.design.parameters = parameters;
