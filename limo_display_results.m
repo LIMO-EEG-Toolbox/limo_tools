@@ -2260,7 +2260,7 @@ elseif LIMO.Level == 2
             end
         else % might be a summary data file
             try
-                limo_add_plots(FileName,LIMO)
+                limo_add_plots({FileName,''},LIMO); 
             catch no_plot
                 limo_errordlg('course plot failed because %s',no_plot.message)
                 return
