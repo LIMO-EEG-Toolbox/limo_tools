@@ -182,6 +182,14 @@ elseif MCC == 3
     end
 end
 
+if ~isfield(LIMO,'Level')
+    if Type == 3 % likely a summary stat file
+        LIMO.Level = 2; % even if for a subject, calls limo_add_plots
+        g.LIMO = LIMO;
+    end
+end
+
+
 % -------------------------------------------------------------------------
 % -------------------      LEVEL 1     ------------------------------------
 % -------------------  SINGLE SUBJECT  ------------------------------------
@@ -2254,7 +2262,8 @@ elseif LIMO.Level == 2
             try
                 limo_add_plots(FileName,LIMO)
             catch no_plot
-                errordlg('course plot failed because %s',no_plot.message)
+                limo_errordlg('course plot failed because %s',no_plot.message)
+                return
             end
         end
     end % closes type
