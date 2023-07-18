@@ -75,44 +75,57 @@ while out == 0
      
     if ~isempty(infile) % allows comand line plot
         if turn <= length(infile)
-            file = infile{turn}; 
-            index = 1; 
+            if isempty(infile{turn})
+                [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
+                file = fullfile(path,file); previous_file = file;
+                if strcmp(file,previous_file) % reselect same file = want to plot a new channel
+                    channel = [];
+                end
+                infile = [];
+            else
+                file = infile{turn};
+                index = 1;
+            end
         else
-            out = 1; return
+            return
         end
     else
         [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
-        file = fullfile(path,file);
+        file = fullfile(path,file); previous_file = file;
         if strcmp(file,previous_file) % reselect same file = want to plot a new channel
             channel = [];
         end
-        previous_file = file;
     end
     
     if index == 0
-        out = 1; return
+        return
     else
         data       = load(file);
         data       = data.(cell2mat(fieldnames(data)));
         if ~isstruct(data)
-            error('limo add plots input(s) must be structures from limo_central_tendency_and_ci.m and limo_plot_difference.m')
+            limo_errordlg('limo add plots input(s) must be structures from limo_central_tendency_and_ci.m and limo_plot_difference.m')
+            return
         end
         datatype   = fieldnames(data);
         datatype   = datatype(cellfun(@(x) strcmp(x,'limo'), fieldnames(data))==0);        
         if sum(strcmpi(datatype,options)) == 0
-            if exist(errordlg2,'file')
-                errordlg2('unknown file to plot');
-            else
-                errordlg('unknown file to plot');
-            end
+            limo_errordlg('unknown file to plot');
             return
         end
-        name{turn} = cell2mat(datatype); 
+        name{turn} = cell2mat(datatype); %#ok<AGROW> 
         tmp        = data.(cell2mat(datatype));
         
         % overwrite metadata if LIMO file provided
         if exist('LIMO','var')
-            if ischar(LIMO); LIMO = load(LIMO); LIMO = LIMO.LIMO; end
+            if isstruct(LIMO)
+                if ~isfield(LIMO,'data') &&  exist(fullfile(pwd,'LIMO.mat'),'File')
+                    LIMO = load('LIMO.mat');
+                    LIMO = LIMO.LIMO;
+                end
+            elseif ischar(LIMO)
+                LIMO = load(LIMO);
+                LIMO = LIMO.LIMO;
+            end
             F    = fieldnames(LIMO);
             for f=1:length(F)
                 data.limo.(cell2mat((F(f)))) = LIMO.(cell2mat((F(f))));
@@ -125,7 +138,8 @@ while out == 0
                 data.limo = LIMO.LIMO; clear LIMO;
                 save(fullfile(path,file),'data')
             else
-                warning('selection aborded'); return
+                limo_warndlg('selection aborded'); 
+                return
             end
         end
         
@@ -171,16 +185,16 @@ while out == 0
         % sorted by their weights - use file name to know which estimator was used
         if isfield(data,'data')
             if contains(file, 'Mean','IgnoreCase',true)
-                name{turn} = 'Subjects'' Means';
+                name{turn} = 'Subjects'' Means'; %#ok<AGROW> 
             elseif contains(file, 'Trimmed mean','IgnoreCase',true)
-                name{turn} = 'Subjects'' Trimmed Means';
+                name{turn} = 'Subjects'' Trimmed Means'; %#ok<AGROW> 
             elseif contains(file, 'HD','IgnoreCase',true)
-                name{turn} = 'Subjects'' Mid Deciles HD';
+                name{turn} = 'Subjects'' Mid Deciles HD'; %#ok<AGROW> 
             elseif contains(file, 'Median','IgnoreCase',true)
-                name{turn} = 'Subjects'' Medians';
+                name{turn} = 'Subjects'' Medians'; %#ok<AGROW> 
             else
                 if strcmpi(file,'subjects_weighted_data.mat')
-                    name{turn} = 'Data plotted per weight';
+                    name{turn} = 'Data plotted per weight'; %#ok<AGROW> 
                 else
                     underscores = strfind(file, '_');
                     if ~isempty(underscores)
@@ -188,7 +202,7 @@ while out == 0
                     end
                     ext = strfind(file, '.');
                     file(max(ext):end) = [];
-                    name{turn} = file;
+                    name{turn} = file; %#ok<AGROW> 
                 end
             end
             subjects_plot = 1; 
@@ -237,7 +251,8 @@ while out == 0
             end
             
             if  subjects_plot == 0 && length(v)>1
-                errordlg2('only 1 parameter value expected'); return
+                limo_errordlg('only 1 parameter value expected'); 
+                return
             else
                 if size(tmp,1) == 1 && size(tmp,3) > 1
                     D           = squeeze(tmp(:,:,v,:));
@@ -358,10 +373,18 @@ while out == 0
     plotted_data.xvect = vect;    
     if turn==1
         if subjects_plot == 1
-            plot(vect,Data,'LineWidth',2); 
+            if length(vect) == length(Data)
+                plot(vect,Data,'LineWidth',2);
+            else
+                plot(Data,'LineWidth',2);
+            end
             plotted_data.data  = Data;
         else
-            plot(vect,Data(:,2)','LineWidth',3);
+            if length(vect) == length(Data(:,2)')
+                plot(vect,Data(:,2)','LineWidth',3);
+            else
+                plot(Data(:,2)','LineWidth',3);
+            end
             plotted_data.data  = Data';
         end
         assignin('base','plotted_data',plotted_data)
