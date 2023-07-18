@@ -1,14 +1,12 @@
 function result=limo_central_tendency_and_ci(varargin)
 
 % The function computes estimates of central tendency (mean, trimmed mean,
-% Harell-Davis 0.5 decile, median) with 95% Baysesian Highest Density Intervals.
-% - If you input EEG data, all trials/sujects will be taken into account.
-% - If you input LIMO files, estimates of the raw data for the categorical
-% variables will be performed (continuous variables are not supported).
-% Non overlap of 95% HDI shows univariate and 'non-corrected' significant
+% Harell-Davis 0.5 decile, median) with 95% Bayesian Highest Density Intervals.
+% INPUTS are either a data matrix, con files or LIMO.mat files. 
+% If you input LIMO files, estimates of the raw data for the 
+% categorical variables will be performed (it makes no sense to summarize continuous
+% variables). Non overlap of 95% HDI shows univariate and 'non-corrected' significant
 % differences. This can also be assessed directly using limo_plot_difference
-% - If you input Betas files, estimates and 95% HDI are computed for the
-% categorical and continuous variables of your choice.
 %
 % FORMAT
 % limo_central_tendency_and_ci(varargin)
@@ -47,6 +45,35 @@ function result=limo_central_tendency_and_ci(varargin)
 %         for single subject the fomat is channel, freq/time, parameters, subjects
 %         for the group it's a structure data.estimator2 name and data.limo
 %
+% Examples Call the GUI
+%          ------------
+%          limo_central_tendency_and_ci('limo_gp_level_chanlocs.mat')
+%
+%          Trimmed mean of Beta parameters
+%          -------------------------------
+%          data = load('Yr.mat'); for instance betas from a rep- measure ANOVAs
+%          % being in the ANOVA directory, it will also use LIMO.mat for extra info
+%          for condition = 1:9
+%              tmp = squeeze(data.Yr(:,:,:,condition));
+%              limo_central_tendency_and_ci(tmp, 'Trimmed mean',[],['Condition' num2str(condition)])
+%          end
+%
+%          Weighed means ERP per subject + group level trimmed mean and 95% HDI
+%          ---------------------------------------------------------------------
+%          Files = fullfile('..derivatives/LIMO_studyname','LIMO_files_face_detection_all_Face_time_GLM_Channels_Time_WLS.txt')
+%          expected_chan_loc = fullfile('.../derivatives','limo_gp_level_chanlocs.mat')
+%          limo_central_tendency_and_ci(Files, [1 2 3], expected_chan_loc, 'Weighted mean', 'Trimmed mean', [], 'ERPs')
+%
+%          Trimmed mean ERP + 95% HDI for a condition for a single subject from EEGLAB .daterp
+%          ------------------------------------------------------------------------------------
+%          data = load('sub-002.daterp','-mat'); % read single trials
+%          index = arrayfun(@(x) contains(x.type,'famous','IgnoreCase',true), data.trialinfo); % get condition of intetest
+%          FN = fieldnames(data); all_channels = find(contains(FN,'chan'));
+%          for channel = length(all_channels):-1:1
+%              data_matrix(channel,:,:) = data.(FN{channel})(:,index); % make a data matrix
+%          end 
+%          limo_central_tendency_and_ci(data_matrix, 'Trimmed mean',[],'Famous_trimmed_mean')
+%
 % Guillaume Rousselet provided the initial code to do the stats
 % Cyril Pernet made the interface, organize to suite EEG data etc - version 1. 18 May 2010
 % June/July 2013 - Fixed some bugs CP / thx to Benedikt Ehinger
@@ -72,13 +99,15 @@ if nargin == 3 || nargin == 4
     data = varargin{1};
     if ischar(data)
         if ~exist(data,'file')
-            error('%s does not exist',data)
+            limo_errordlg('%s does not exist',data); 
+            return
         else
             try
                 data = load(data);
                 data = data.(cell2mat(fieldnames(data)));
             catch
-                error('%s is not a matrix',data)
+                limo_errordlg('%s is not a matrix',data); 
+                return
             end
         end
     end
@@ -87,7 +116,8 @@ if nargin == 3 || nargin == 4
         if ndims(data) == 2
             disp('for 2D data, try using limo_central_estimator.m');
         end
-        error('data in must be 3 or 4 dimensional: [1/all channels], [freq/time] frames, subjects')
+        limo_errordlg('data in must be 3 or 4 dimensional: [1/all channels], [freq/time] frames, subjects'); 
+        return
     elseif ndims(data) == 4
         limo.Analysis = 'Time-Frequency';
          if exist('LIMO.mat','file')
@@ -154,7 +184,8 @@ if nargin == 3 || nargin == 4
             || strcmpi(Estimator2,'All')
         parameters = 1; %#ok<NASGU>
     else
-        error('type of estimator not recognized') ;
+        limo_errordlg('type of estimator not recognized'); 
+        return
     end
     
     selected_channels = varargin{3};
@@ -186,7 +217,8 @@ elseif nargin == 6 || nargin == 7
             [Names,Paths,Files] = limo_get_files([],[],[],Files);
         end
     else
-        error('input file not found')
+        limo_errordlg('input file not found'); 
+        return
     end
     
     parameters = varargin{2};
@@ -336,7 +368,8 @@ elseif nargin == 6 || nargin == 7
     if all(cellfun(@(x) strcmpi(x,limo.Type{1}), limo.Type))
         limo.Type = limo.Type{1};
     else
-        error('despite successful data aggregation, LIMO.Type differ?? channels/compomnents/sources - check your data')
+        limo_errordlg('despite successful data aggregation, LIMO.Type differ?? channels/compomnents/sources - check your data')
+        return
     end
     
 elseif nargin == 1
@@ -369,7 +402,8 @@ elseif nargin == 1
         if isempty(Names)
             return
         elseif size(Names,2) < 3
-            error('LIMO cannot do group bootrap estimates - too few subjects')
+            limo_errordlg('LIMO cannot do group bootrap estimates - too few subjects')
+            return
         end
         
         % check type of files and returns which beta param to test
@@ -402,7 +436,8 @@ elseif nargin == 1
             end
             parameters = 1; 
         else
-            errordlg('file selection failed, only Betas.mat files are supported'); return
+            limo_errordlg('file selection failed, only Betas.mat files are supported'); 
+            return
         end
         
         % match frames
@@ -439,7 +474,8 @@ elseif nargin == 1
                 selected_channels = eval(cell2mat(channel));
                 expected_chanlocs = limo.data.expected_chanlocs(selected_channels);
             else
-                errordlg('the nb of channels does not match the number of subjects','channel error'); return;
+                limo_errordlg('the nb of channels does not match the number of subjects','channel error'); 
+                return
             end
         else
             expected_chanlocs = limo.data.expected_chanlocs;
@@ -500,7 +536,8 @@ elseif nargin == 1
         if isempty(Names)
             return
         elseif size(Names,2) < 3
-            error('LIMO cannot do group bootrap estimates - too few subjects')
+            limo_errordlg('LIMO cannot do group bootrap estimates - too few subjects')
+            return
         end
         
         % check it's LIMO.mat files and which param to test
@@ -515,9 +552,9 @@ elseif nargin == 1
         if (isempty(is_limo)) == 0 && sum(is_limo) == size(Names,2)
             Q = questdlg('Type of merging','Options','Evaluate single conditions','Pool Conditions','Evaluate single conditions');
             if strcmpi(Q,'Evaluate single conditions')
-                parameters = inputdlg('which parameters to test e.g [1:3]','parameters option');
+                parameters = limo_inputdlg('which parameters to test e.g [1:3]','parameters option');
             else
-                parameters = inputdlg('which parameters to pool e.g [1 3 5]','parameters option');
+                parameters = limo_inputdlg('which parameters to pool e.g [1 3 5]','parameters option');
             end
             
             if isempty(parameters)
@@ -530,7 +567,8 @@ elseif nargin == 1
             end
         
         else
-            errordlg('file selection failed, only LIMO.mat files are supported'); return
+            limo_errordlg('file selection failed, only LIMO.mat files are supported'); 
+            return
         end
         
         % check what type of analysis
@@ -564,7 +602,8 @@ elseif nargin == 1
                 selected_channels = eval(cell2mat(channel));
                 expected_chanlocs = expected_chanlocs.expected_chanlocs(selected_channels);
             else
-                errordlg('the nb of channels does not match the number of subjects','channel error'); return;
+                limo_errordlg('the nb of channels does not match the number of subjects','channel error'); 
+                return;
             end
         else
             selected_channels = [];
@@ -743,7 +782,8 @@ elseif nargin == 1
     end
     
 else
-    error('nb of arguments incorrect')
+    limo_errordlg('nb of arguments incorrect');
+    return
 end % closes varargin
 
 
@@ -775,9 +815,11 @@ if ~isempty(data)
     
     n = size(data,ndims(data)); % number of subjects always last
     if ndims(data) < 4 
-        error('an unexpected issue occured, the number of dimensions is too low, likely caused by selected only 1 subject')
+        limo_errordlg('an unexpected issue occured, the number of dimensions is too low, likely caused by selected only 1 subject')
+        return
     elseif n < 3
-        error('LIMO cannot do group bootrap estimates - too few subjects')
+        limo_errordlg('LIMO cannot do group bootrap estimates - too few subjects')
+        return
     end
     
     if n<=10 && strcmpi(Estimator2,'HD')
@@ -1064,7 +1106,8 @@ if ~isempty(data)
         end
     end
 elseif isempty(data(:))
-    error('computed central tendency is empty - nothing obtained')
+    limo_errordlg('computed central tendency is empty - nothing obtained')
+    return
 end
 
 % ------------------------------
