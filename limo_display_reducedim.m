@@ -14,7 +14,7 @@ function [dataout,channel,freq,time] = limo_display_reducedim(datain,LIMO,channe
 %
 % OUTPUT dataout are the data to plot
 %        channel is the channel/component number selected
-%        time_or_freq is the time frame or frequency selected
+%        freq and time are the frames selected
 %
 % Cyril Pernet 
 % ------------------------------
