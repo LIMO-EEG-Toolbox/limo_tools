@@ -58,6 +58,9 @@ else
     if isempty(dirContent1)
         dirContent1 = dir('one_sample_ttest*.mat');
     end
+    if isempty(dirContent1)
+        dirContent1 = dir('one_sample_ttest*/*/*.mat');
+    end
 
     dirContent2 = dir('paired_ttest*/*.mat');
     if isempty(dirContent2)
