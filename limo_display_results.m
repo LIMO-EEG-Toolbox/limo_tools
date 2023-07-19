@@ -130,6 +130,10 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
             if ~strcmp(res,'Continue')
                 return;
             end
+            if ~isfield(LIMO.design, 'bootstrap') || LIMO.design.bootstrap == 1
+                fprintf('Bootstrap repetition set to 1000')
+                LIMO.design.bootstrap = 1000;
+            end
             if contains(FileNameTmp,'one_sample')
                 limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
                     str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
@@ -143,7 +147,6 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
                     fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
             elseif contains(FileNameTmp,'Covariate_effect') && contains(LIMO.design.name,'Regression')
-                LIMO.design.bootstrap = 1000;
                 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
                 limo_eeg(4,LIMO.dir);
             elseif contains(FileNameTmp,'ANOVA') && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)

@@ -77,6 +77,7 @@ else
 
     dirContent5 = dir('AN(C)OVA*/*.mat');
     dirContent6 = [];
+    dirContent7 = [];
     if isempty(dirContent5)
         dirContent5 = dir('Condition_effect*.mat');
         dirContent6 = dir('Covariate_effect_*.mat');
