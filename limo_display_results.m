@@ -101,9 +101,6 @@ params.plot3type = g.plot3type;
 params.regressor = g.regressor;
 params.flag      = flag;
 
-choice = 'use theoretical p values'; % threshold based on what is computed since H0 is used for clustering
-% see limo_stat_values - discontinuated empirical threshold (misleading)
-
 % Load LIMO structure if a path was provided
 if ischar(LIMO)
     load(LIMO, 'LIMO');
@@ -244,7 +241,7 @@ if LIMO.Level == 1
                 % ------------------
                 if data_cached == 0
 
-                    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO,choice);
+                    [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
 
                     if isempty(mask)
                         disp('no values computed'); return
@@ -1017,10 +1014,10 @@ if LIMO.Level == 1
                                 end
                             else
                                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(squeeze(mask(channel,freq_index,:))); sig(sig==0)=NaN;
                                 else
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO,choice);
+                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(mask(channel,:)); sig(sig==0)=NaN;
                                 end
                             end
