@@ -3,11 +3,11 @@ function [Names,Paths,Files,txtFile] = limo_get_files(varargin)
 % routine to get multifiles from different directories
 %
 % FORMAT [Names,Paths,Files] = limo_get_files(gp,filter,title)
+%        [Names,Paths,Files] = limo_get_files([],[],[],'file_list.txt')
 %
 % INPUT can be left empty, in the case ask for .mat or .txt
 %       gp  is a simple numerical value, so the selection question reminds
-%           the user which group is getting selected (useful for eg anova
-%           analyses)
+%           the user which group is getting selected 
 %       filter allows to specify the type of files to load,
 %              for instance {'*.txt;*.set'} means load mat or txt
 %              supported formats are .mat .txt .set .study
@@ -30,7 +30,7 @@ function [Names,Paths,Files,txtFile] = limo_get_files(varargin)
 
 %% defaults and inputs
 gp        = [];
-guititle  = 'select a subject file or list file';
+guititle  = 'select a file or list file';
 filter    = {'*.mat;*.txt'};
 path2file = [];
 txtFile   = '';
@@ -60,12 +60,12 @@ if nargin == 4
     end
 end
 
-go = 1; index = 1;
+go = 1; index = 1; 
 Names = []; Paths = []; Files = [];
 while go == 1
     if isempty(path2file)
-        if ~isempty(gp)
-            guititle = ['Select a subject file or list file gp: ' num2str(gp)];
+        if ~isempty(gp) 
+            guititle = ['Select a file or list file gp: ' num2str(gp)];
         end
         % propose files to user
         limo_settings_script;
@@ -88,6 +88,7 @@ while go == 1
                 end
             end
         end
+        
         if isempty(name)
             [name,path] = uigetfile(filter,guititle);
         end
@@ -97,7 +98,8 @@ while go == 1
             [path,filename,filext] = fileparts(path2file);
             name = [filename filext]; clear filename filext;
         else
-            error('A valid path to the file must be provided \n %s not found',path2file);
+            limo_error('A valid path to the file must be provided \n %s not found',path2file);
+            return
         end
     end
     
@@ -126,7 +128,12 @@ while go == 1
         end
         index = f; go = 0;
     else
-        errordlg('format not supported'); go = 0;
+        limo_errordlg('format not supported'); go = 0; 
+        return
+    end
+
+    if gp == 1 %% since it was set as one group donæt ask again
+        go = 0;
     end
 end
 
