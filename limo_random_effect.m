@@ -398,22 +398,26 @@ end
 % ----------------------
 function go = update_dir(handles,test)
 
+if isempty(handles.dir) && ...
+        strcmpi(fullfile(fileparts(pwd), test),pwd) % already at the right place
+    if exist(fullfile(pwd,'LIMO.mat'),'file')
+        res = limo_questdlg(sprintf('The directory "%s" already contains stat files, do you want to overwrite them?',test), ...
+            'Directory containing results', 'Cancel', 'Overwrite', 'Overwrite');
+        if strcmpi(res, 'Cancel')
+            go = 0;
+            return;
+        else
+            handles.dir = pwd; go = 1; %#ok<*NASGU>
+        end
+    else
+        handles.dir = pwd; go = 1;
+    end
+    return
+end
+
 if isempty(handles.dir)
     go_to_working_dir; % no effect if limo_settings.workdir is empty
-    if strcmpi(fullfile(fileparts(pwd), test),pwd) % already at the right place
-        if exist(fullfile(pwd,'LIMO.mat'),'file')
-            res = limo_questdlg(sprintf('The directory "%s" already contains stat files, do you want to overwrite them?',test), ...
-                'Directory containing results', 'Cancel', 'Overwrite', 'Overwrite');
-            if strcmpi(res, 'cancel')
-                go = 0;
-                return;
-            else
-                go = 1;
-            end
-        else
-            go = 1;
-        end
-    elseif exist(fullfile(pwd, test),'dir')
+    if exist(fullfile(pwd, test),'dir')
         count = 2;
         while exist([ test num2str(count)],'dir')
             count = count + 1;
@@ -434,6 +438,7 @@ if isempty(handles.dir)
         end
     end
     mkdir(test); cd(test); handles.dir = pwd; go = 1;
+
 else
     if exist(fullfile(handles.dir,'LIMO.mat'),'file')
         res = limo_questdlg(sprintf('The directory "%s" already contains stat files, do you want to overwrite them?',handles.dir), ...
