@@ -111,7 +111,7 @@ guidata(hObject, handles);
 
 function Bootstrap_Checkbox_Callback(hObject, ~, handles)
 
-if get(hObject, 'value')
+if get(hObject, 'value') % tick box on
     handles.b = str2double(get(findobj(hObject.Parent, 'tag', 'bootstrap'),'String'));
     set(findobj(hObject.Parent, 'tag', 'TFCE'),'enable','on');
     set(findobj(hObject.Parent, 'tag', 'bootstrap'),'enable','on');
@@ -121,10 +121,11 @@ else
     set(findobj(hObject.Parent, 'tag', 'TFCE'),'enable','off');
     set(findobj(hObject.Parent, 'tag', 'bootstrap'),'enable','off');
 end
+guidata(hObject, handles);
 
 % get the number of bootstraps
 % ---------------------------------------------------------------
-function bootstrap_Callback(hObject, ~, handles)
+function handles = bootstrap_Callback(hObject, ~, handles)
 
 handles.b = str2double(get(hObject,'String'));
 if isempty(handles.b)
@@ -155,7 +156,6 @@ elseif M == 0
     disp('tfce is off');
 end
 guidata(hObject, handles);
-
 
 %-------------------------
 %         TESTS_PANEL
