@@ -188,6 +188,8 @@ else
         if go
             limo_random_select('one sample t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
         end
+    else
+        limo_random_select('one sample t-test',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
 end
 
@@ -200,9 +202,13 @@ if go == 0
     return
 else
     if strcmpi(handles.type,'Channels')
-        test_chan_loc(handles)
+        go = test_chan_loc(handles);
+        if go
+            limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
+        end
+    else
+        limo_random_select('two-samples t-test',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
-    limo_random_select('two-samples t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
 end
 
 
@@ -216,9 +222,13 @@ if go == 0
     return
 else
     if strcmpi(handles.type,'Channels')
-        test_chan_loc(handles)
+        go = test_chan_loc(handles);
+        if go
+            limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
+        end
+    else
+        limo_random_select('paired t-test',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
-    limo_random_select('paired t-test',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
 end
 
 % Regression
@@ -231,9 +241,13 @@ if go == 0
     return
 else
     if strcmpi(handles.type,'Channels')
-        test_chan_loc(handles)
+        go = test_chan_loc(handles);
+        if go
+            limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
+        end
+    else
+        limo_random_select('regression',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
-    limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
 end
 
 % ANOVA/ANCOVA
@@ -244,6 +258,7 @@ function ANOVA_Callback(~, ~, handles)
 
 answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
     '     N-Ways ANOVA     ','ANCOVA','Repeated Measures ANOVA','Repeated Measures ANOVA');
+
 if strcmpi(answer,'Repeated Measures ANOVA')
     go = update_dir(handles,'Rep_Meas_ANOVA');
 elseif strcmpi(answer,'     N-Ways ANOVA     ')
@@ -257,13 +272,14 @@ end
 if go == 0
     return
 else
-    if ~isempty(answer)
+    if strcmpi(handles.type,'Channels')
         if strcmpi(handles.type,'Channels')
-             test_chan_loc(handles)
-        end
-
-        if ~isempty(handles.chan_file)
-            limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
+            go = test_chan_loc(handles);
+            if go
+                limo_random_select(answer,handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
+            end
+        else
+            limo_random_select(answer,[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
         end
     end
 end
