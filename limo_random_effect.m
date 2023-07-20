@@ -65,18 +65,18 @@ varargout{1} = 'LIMO random effect terminated';
 % ---------------------------------------------------------------
 function Central_tendency_and_CI_Callback(hObject, ~, handles)
 
-if strcmpi(handles.type,'channel')
-    test_chan_loc(handles)
-    if isempty(handles.dir)
-        savedir = uigetdir('pwd','where to save data?');
-        if savedir == 0
-            return
-        else
-            cd(savedir)
+if strcmpi(handles.type,'Channels')
+    go = test_chan_loc(handles);
+    if go
+        if isempty(handles.dir)
+            go = update_dir(handles,'Summary_stat');
+            if go == 0
+                return
+            end
         end
+        limo_central_tendency_and_ci(handles.chan_file);
+        guidata(hObject, handles);
     end
-    limo_central_tendency_and_ci(handles.chan_file);
-    guidata(hObject, handles);
 else
     disp('Currently only supporting channel anaysis type')
 end
@@ -86,15 +86,17 @@ end
 % ---------------------------------------------------------------
 function differences_Callback(hObject, ~, handles)
 
-if strcmpi(handles.type,'channel')
-    test_chan_loc(handles)
-    if isempty(handles.dir)
-        savedir = uigetdir('pwd','where to save data?');
-        if savedir == 0
-            return
-        else
-            cd(savedir)
+if strcmpi(handles.type,'Channels')
+    go = test_chan_loc(handles);
+    if go
+        if isempty(handles.dir)
+            go = update_dir(handles,'Difference_stat');
+            if go == 0
+                return
+            end
         end
+        limo_central_tendency_and_ci(handles.chan_file);
+        guidata(hObject, handles);
     end
     limo_plot_difference;
     guidata(hObject, handles);
@@ -238,14 +240,22 @@ end
 % --- Executes on button press in ANOVA.
 function ANOVA_Callback(~, ~, handles)
 
-go = update_dir(handles,'AN(C)OVA');
+answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
+    '     N-Ways ANOVA     ','ANCOVA','Repeated Measures ANOVA','Repeated Measures ANOVA');
+if strcmpi(answer,'Repeated Measures ANOVA')
+    go = update_dir(handles,'Rep_Meas_ANOVA');
+elseif strcmpi(answer,'     N-Ways ANOVA     ')
+    go = update_dir(handles,'ANOVA');
+elseif strcmpi(answer,'ANCOVA')
+    go = update_dir(handles,'ANCOVA');
+else
+    return
+end
+
 if go == 0
     return
 else
-    answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
-        '     N-Ways ANOVA     ','ANCOVA','Repeated Measures ANOVA','Repeated Measures ANOVA');
     if ~isempty(answer)
-       
         if strcmpi(handles.type,'Channels')
              test_chan_loc(handles)
         end
@@ -286,7 +296,7 @@ guidata(hObject, handles);
 
 
 % --- Executes on button press in chan_cluster_neighbours.
-function chan_cluster_neighbours_Callback(hObject, ~, handles)
+function handles = chan_cluster_neighbours_Callback(hObject, ~, handles)
 
 [chan_file,chan_path,sts]=uigetfile('expected_chanlocs.mat','Select channel location file');
 if sts == 1
