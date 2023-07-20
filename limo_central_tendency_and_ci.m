@@ -379,7 +379,7 @@ elseif nargin == 1
     expected_chanlocs = load(varargin{1});
     
     % check if Betas/Con 
-    option = questdlg('type of analysis','what data to analyse?','Raw Data','Betas','Con','Raw Data');
+    option = limo_questdlg('type of analysis','what data to analyse?','Raw Data','Betas','Con','Betas');
     if isempty(option)
         return
     end
@@ -390,7 +390,7 @@ elseif nargin == 1
     if strcmpi(option,'Betas') || strcmpi(option,'Con')
         
         Estimator1 = option;
-        Estimator2 = questdlg('Estimation option','which estimator?','Mean','Trimmed mean','HD/Median','Trimmed mean');
+        Estimator2 = limo_questdlg('Estimation option','which estimator?','Mean','Trimmed mean','HD/Median','Trimmed mean');
         if strcmpi(Estimator2,'HD/Median')
             Estimator2 = 'HD';
         end
@@ -420,17 +420,23 @@ elseif nargin == 1
         
         if (isempty(is_betas)) == 0 && sum(is_betas) == size(Names,2)
             if strcmpi(Estimator1,'Con')
-                warndlg('you indicated computation for contrasts, but all files are beta parameters - still computing though',...
+                limo_warndlg('you indicated computation for contrasts, but all files are beta parameters - still computing though',...
                     'selection warning');
                 Estimator1 = 'Betas';
             end
-            parameters = eval(cell2mat(inputdlg('which parameters to test e.g [1:3]','parameters option')));
+            parameters = limo_inputdlg('which parameters to test e.g [1:3]','parameters option');
             if isempty(parameters)
                 return
+            else
+                parameters = cell2mat(parameters);
+                if ~strcmp(parameters(1),'[') && ~strcmp(parameters(end),']')
+                    parameters = ['[' parameters ']'];
+                end
+                parameters = eval(parameters);
             end
         elseif (isempty(is_con)) == 0 && sum(is_con) == size(Names,2)
             if strcmpi(Estimator1,'Betas')
-                warndlg('you indicated computation for Betas, but all files are contrasts - still computing though',...
+                limo_warndlg('you indicated computation for Betas, but all files are contrasts - still computing though',...
                     'selection warning')
                 Estimator1 = 'Con';
             end
@@ -449,13 +455,13 @@ elseif nargin == 1
         
         % match channels
         % --------------
-        Analysis_type   = questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
+        Analysis_type   = limo_questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
         if isempty(Analysis_type)
             return
         end
         
         if strcmpi(Analysis_type,'1 channel only')
-            channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
+            channel = limo_inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
                 [file,dirf,index] = uigetfile('*.mat','select your channel file');
                 if index == 0
@@ -550,7 +556,7 @@ elseif nargin == 1
         end
         
         if (isempty(is_limo)) == 0 && sum(is_limo) == size(Names,2)
-            Q = questdlg('Type of merging','Options','Evaluate single conditions','Pool Conditions','Evaluate single conditions');
+            Q = limo_questdlg('Type of merging','Options','Evaluate single conditions','Pool Conditions','Evaluate single conditions');
             if strcmpi(Q,'Evaluate single conditions')
                 parameters = limo_inputdlg('which parameters to test e.g [1:3]','parameters option');
             else
@@ -573,7 +579,7 @@ elseif nargin == 1
         
         % check what type of analysis
         % ---------------------------
-        Analysis_type   = questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
+        Analysis_type   = limo_questdlg('Rdx option','type of analysis?','Full brain analysis','1 channel only','Full brain analysis');
         if isempty(Analysis_type)
             return;
         else
@@ -582,7 +588,7 @@ elseif nargin == 1
         
         limo.data.neighbouring_matrix  = expected_chanlocs.channeighbstructmat;
         if strcmpi(Analysis_type,'1 channel only')
-           channel = inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
+           channel = limo_inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
                 [file,dir,index] = uigetfile('*.mat','select your channel file');
                 if isempty(file)
@@ -613,13 +619,13 @@ elseif nargin == 1
         
         % select method
         % -------------
-        [Estimator1,Estimator2]  = limo_central_tendency_questdlg(varargin);
+        [Estimator1,Estimator2]  = limo_central_tendency_questdlg;
         if isempty(Estimator1) && isempty(Estimator2)
             return
         end
         
         if strcmpi(Estimator1,'All') || strcmpi(Estimator1,'Mean')
-            weighted_mean = questdlg('do you want to use weights to compute means?','saving option','yes','no','yes');
+            weighted_mean = limo_questdlg('do you want to use weights to compute means?','saving option','yes','no','yes');
         end
         
         % match frames
@@ -832,7 +838,7 @@ if ~isempty(data)
         if exist('savename','var')
             name = savename;
         else
-            name = cell2mat(inputdlg('save as [?]','name option'));
+            name = cell2mat(limo_inputdlg('save as [?]','name option'));
             if isempty(name)
                 disp('no name selected - aborded'); return
             end
