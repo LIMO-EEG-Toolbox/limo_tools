@@ -58,6 +58,9 @@ else
     if isempty(dirContent1)
         dirContent1 = dir('one_sample_ttest*.mat');
     end
+    if isempty(dirContent1)
+        dirContent1 = dir('one_sample_ttest*/*/*.mat');
+    end
 
     dirContent2 = dir('paired_ttest*/*.mat');
     if isempty(dirContent2)
@@ -77,6 +80,7 @@ else
 
     dirContent5 = dir('AN(C)OVA*/*.mat');
     dirContent6 = [];
+    dirContent7 = [];
     if isempty(dirContent5)
         dirContent5 = dir('Condition_effect*.mat');
         dirContent6 = dir('Covariate_effect_*.mat');
