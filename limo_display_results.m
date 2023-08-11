@@ -339,7 +339,9 @@ if LIMO.Level == 1
                         LIMO.cache.fig.pval       = M;
                         LIMO.cache.fig.mask       = mask;
                         LIMO.cache.fig.title      = mytitle;
-                        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+                        if exist(LIMO.dir,"dir")
+                            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO','-v7.3')
+                        end
                     end
 
                     if ndims(toplot)==3
