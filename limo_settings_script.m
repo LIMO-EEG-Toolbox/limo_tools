@@ -23,7 +23,7 @@ end
 if isequal(limo_settings.workdir, 'derivatives')
     try
         STUDY=evalin('base','STUDY');
-        limo_settings.workdir = fullfile(STUDY.filepath, 'derivatives');
+        limo_settings.workdir = STUDY.filepath;
     catch
         disp('Failed to find STUDY variable');
         limo_settings.workdir = '';
