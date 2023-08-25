@@ -1265,7 +1265,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                 warndlg2('files names not loaded'); return
             end
         
-        if isfield(LIMO.design,'parameters') && ~isempty(LIMO.design.parameters)
+            if isfield(LIMO.design,'parameters') && ~isempty(LIMO.design.parameters)
                 if length(factor_nb) <=2
                     parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
                 else % cell of cells
@@ -1275,16 +1275,18 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                     end
                     parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(all_param));
                 end
-            else
+            else % GUI
                 if i > 1
                     parameters(i,:) = parameters(1,:); % copy design for other groups
                 else
                     [parameters(i,:),betas] = check_files(Paths{i}, Names{i},1,[], '');
-                    paramTmp  = reorganize_params(parameters(i,:), betas,factor_names, factor_nb);
-                    if ~isempty(paramTmp)
-                        parameters(i,:) = paramTmp;
-                    else 
-                        return
+                    if length(factor_nb) > 1
+                        paramTmp  = reorganize_params(parameters(i,:), betas,factor_names, factor_nb);
+                        if ~isempty(paramTmp)
+                            parameters(i,:) = paramTmp;
+                        else
+                            return
+                        end
                     end
                 end
             end
