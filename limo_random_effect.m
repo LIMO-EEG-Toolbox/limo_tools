@@ -179,6 +179,11 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function One_Sample_t_test_Callback(~, ~, handles)
 
+limo_settings_script; % set STUDY and limo_settings
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
+
 go = update_dir(handles,'one_sample_ttest');
 if go == 0
     return
@@ -192,10 +197,18 @@ else
         limo_random_select('one sample t-test',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
 end
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
 
 % Two_Samples_t_test
 % ---------------------------------------------------------------
 function Two_Samples_t_test_Callback(~, ~, handles)
+
+limo_settings_script; % set STUDY and limo_settings
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
 
 go = update_dir(handles,'two_samples_ttest');
 if go == 0
@@ -217,6 +230,11 @@ end
 % --- Executes on button press in Paired_t_test.
 function Paired_t_test_Callback(~, ~, handles)
 
+limo_settings_script; % set STUDY and limo_settings
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
+
 go = update_dir(handles,'paired_ttest');
 if go == 0
     return
@@ -235,6 +253,11 @@ end
 % ---------------------------------------------------------------
 % --- Executes on button press in Regression.
 function Regression_Callback(~, ~, handles)
+
+limo_settings_script; % set STUDY and limo_settings
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
 
 go = update_dir(handles,'regression');
 if go == 0
@@ -255,6 +278,11 @@ end
 
 % --- Executes on button press in ANOVA.
 function ANOVA_Callback(~, ~, handles)
+
+limo_settings_script; % set STUDY and limo_settings
+if ~isempty(limo_settings.workdir)
+    cd(limo_settings.workdir);
+end
 
 answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
     '     N-Ways ANOVA     ','ANCOVA','Repeated Measures ANOVA','Repeated Measures ANOVA');
@@ -374,27 +402,21 @@ limo_results
 % ----------------------
 function handles = get_chan_loc(handles)
 
-if strcmpi(handles.type,'channel')
-    try
-        S=evalin('base','STUDY');
-        handles.chan_file = S.design.limo.chanloc; clear S
-    catch
-        try
-            S=evalin('base','gp_level_chanlocs');
-            handles.chan_file = S;
-        catch
-            go_to_working_dir;
-            tmpChanFile = fullfile(pwd, 'limo_gp_level_chanlocs.mat');
-            if exist(tmpChanFile, 'file')
-                handles.chan_file = tmpChanFile;
-            else
-                handles.chan_file = [];
-            end
+limo_settings_script; % set STUDY and limo_settings
+
+if strcmpi(handles.type,'channels')
+    chan_file = fullfile(limo_settings.workdir, 'limo_gp_level_chanlocs.mat');
+    if exist(chan_file, 'file')
+        handles.chan_file = chan_file;
+    end
+    if ~isempty(STUDY) && isfield(STUDY, 'limo') && isfield(STUDY.limo, 'chanloc')
+        if ~isempty(STUDY.limo.chanloc)
+            handles.chan_file = STUDY.limo.chanloc;
         end
     end
-    if ~isempty(handles.chan_file)
-        fprintf('using study channel location file \n%s\n',handles.chan_file);
-    end
+end
+if ~isempty(handles.chan_file)
+    fprintf('using study channel location file \n%s\n',handles.chan_file);
 end
 
 % -----------------------------------------------------------------------

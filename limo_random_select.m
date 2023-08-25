@@ -225,7 +225,6 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     % -------------------------------
     if strcmpi(stattest,'regression')
         if isempty(regressor_file)
-            limo_settings_script; % set STUDY and limo_settings
 
             FilterIndex = 0;
             if ~isempty(STUDY)
@@ -862,7 +861,6 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
 
     if isempty(LIMO.design.parameters)
         % if all con - no need to ask
-        % limo_settings_script;
         if ~isempty(STUDY) && ~any(contains(Names{1}, 'con_'))
             [param,~] = get_beta_indices('selectmulti', fullfile(Paths{1}{1}, Names{1}{1}));
         else
@@ -967,7 +965,6 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     % now load covariates and check it matches data
     if strcmpi(stattest,'ANCOVA')
         if isempty(regressor_file)
-            limo_settings_script;
             if ~isempty(STUDY)
                 indvars = pop_listfactors(STUDY, 'gui', 'off', 'level', 'two', 'vartype', 'continuous');
                 if ~isempty(indvars)
