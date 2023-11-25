@@ -231,7 +231,36 @@ elseif nargin == 6 || nargin == 7
     if all(is_con) && parameters ~=1; parameters = 1; 
         warning on; warning('all con files in, parameter set to 1'); warning off
     end
-            
+
+    if exist(fullfile(pwd,'LIMO.mat'),'file')
+        disp('updating data structure with local LIMO.mat')
+        LIMO                    = load('LIMO.mat');
+        limo.Level              = LIMO.LIMO.Level;
+        limo.Analysis           = LIMO.LIMO.Analysis;
+        limo.data.sampling_rate = LIMO.LIMO.data.sampling_rate;
+        limo.data.trim1         = LIMO.LIMO.data.trim1;
+        limo.data.trim2         = LIMO.LIMO.data.trim2;
+        limo.data.start         = LIMO.LIMO.data.start;
+        limo.data.end           = LIMO.LIMO.data.end;
+        if isfield(LIMO.LIMO.data, 'timevect')
+            limo.data.timevect = LIMO.LIMO.data.timevect;
+        end
+        if isfield(LIMO.LIMO.data, 'freqlist')
+            limo.data.expected_chanlocs = LIMO.LIMO.data.freqlist;
+        end
+        if isfield(LIMO.LIMO.data, 'neighbouring_matrix')
+            limo.data.neighbouring_matrix = LIMO.LIMO.data.neighbouring_matrix;
+        end
+        if isfield(LIMO.LIMO.data, 'expected_chanlocs')
+            limo.data.expected_chanlocs = LIMO.LIMO.data.expected_chanlocs;
+        end
+        if isfield(LIMO.LIMO.data, 'chanlocs')
+            limo.data.expected_chanlocs = LIMO.LIMO.data.chanlocs;
+        end
+    else
+        limo.Analysis = 'Time or Frequency';
+    end
+
     expected_chanlocs   = varargin{3};
     if ischar(expected_chanlocs)
         expected_chanlocs             = load(expected_chanlocs);
