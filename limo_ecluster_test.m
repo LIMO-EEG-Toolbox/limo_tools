@@ -47,7 +47,7 @@ end
 Ne = size(orif,1); % electrodes or frequencies
 Nf = size(orif,2); % time frames
 
-%% threshold the data base on the maximum cluster sum obtained over the 1st dimension
+%% threshold the data based on the maximum cluster sum obtained over the 1st dimension
 if isfield(th, 'max') 
 
     sigcluster.max_mask = zeros(Ne,Nf);
@@ -75,7 +75,7 @@ if isfield(th, 'max')
     end 
 end
 
-%% threshold the data base on the maximum of cluster sum obtained over each electrode
+%% threshold the data based on the maximum of cluster sum obtained over each electrode
 if isfield(th, 'elec') 
 
     sigcluster.elec_mask = zeros(Ne,Nf);
