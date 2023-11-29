@@ -126,8 +126,7 @@ elseif nargin == 2
         % if could results into lambda = P*lambda, but still
         % no real life test include this term
         if C(end) ~= 0
-            disp('the contrast requested include the constant term, which LIMO consider as faulty')
-            error('contrast not allowed in LIMO eeg (edit this error break to allow)')
+            error('the contrast requested include the constant term, which is not possible')
         end        
     end
 else
