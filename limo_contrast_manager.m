@@ -190,8 +190,8 @@ else
     if isempty(Xdisplay)
         uiresume; guidata(hObject, handles);
     else
-        %allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
-        allhandles = findobj(hObject.Parent.Parent,'tag', 'LIMOmatrix');
+        allhandles = get(get(get(hObject,'Parent'),'Parent'),'Children');
+        %allhandles = findobj(hObject.Parent.Parent,'tag', 'LIMOmatrix');
         axes(allhandles(end));
         imagesc(Xdisplay); colormap('gray');
         title('design matrix'); drawnow
@@ -238,8 +238,7 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Factorlist1_Callback(hObject, eventdata, handles)
 
-selection1 = get(hObject,'value');
-
+selection1 = get(hObject,'value')
 Factorlist2  = findobj(hObject.Parent,'tag','Factorlist2');
 selection2 = get(Factorlist2, 'value');
 selection2 = setdiff(selection2, selection1);
