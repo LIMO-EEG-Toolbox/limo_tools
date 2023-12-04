@@ -33,6 +33,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                            use ones for con files, e.g. {[1 1],[1 1]}
 %                            Add nested cells for more repetition levels.
 %       --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
+%                (at the expection of paired t-test where group applies ie use rows)
 %                'regressor_file' a file or matrix of data to regress when stattest = 4
 %                'analysis_type' is 'Full scalp analysis' or '1 channel/component only'
 %                'channel' Index of the electrode(s) to use if '1 channel/component only'
@@ -50,14 +51,22 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 % OUTPUT filepath is the Path to the LIMO structure.
 %        all files are created where the function is called (ie no directory as argument)
 %
-% Example for a repeated measure ANOVA with command line
+% Examples
+% - repeated measure ANOVA with command line using Betas
 % LIMOPath = limo_random_select('Repeated Measures ANOVA',chanlocs,'LIMOfiles',...
 %     {'F:\WakemanHenson_Faces\eeg\derivatives\LIMO_Face_detection\Beta_files_FaceRepAll_GLM_Channels_Time_WLS.txt'},...
 %     'analysis type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
 %     'factor names',{'face','repetition'},'type','Channels','nboot',0,'tfce',0);
+% - t-test with command line using con files
+%     for N=length(STUDY.subject):-1:1
+%         data{1,N} = con1_files{N}(1);
+%         data{2,N} = con2_files{N}(2); 
+%     end
+%     LIMOPath = limo_random_select('paired t-test',STUDY.limo.chanloc,...
+%         'LIMOfiles',data,'analysis_type','Full scalp analysis', 'type','Channels','nboot',101,'tfce',1);
 %
-% Cyril Pernet - The University of Edinburgh
-% Ramon Martinez-Cancino - UC San Diego
+% Cyril Pernet, Ramon Martinez-Cancino, Arnaud Delorme
+%
 % ----------------------------------------
 %  Copyright (C) LIMO Team 2020
 
