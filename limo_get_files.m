@@ -98,7 +98,7 @@ while go == 1
             [path,filename,filext] = fileparts(path2file);
             name = [filename filext]; clear filename filext;
         else
-            limo_error('A valid path to the file must be provided \n %s not found',path2file);
+            limo_errordlg(sprintf('A valid path to the file must be provided \n %s not found',path2file));
             return
         end
     end
