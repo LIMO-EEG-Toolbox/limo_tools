@@ -149,7 +149,7 @@ for in = 1:2:(nargin-2)
         else
             LIMO.design.parameters = {varargin{in+1}};
         end
-    elseif strcmpi(varargin{in},'factor names')
+    elseif contains(varargin{in},'factor')
         LIMO.design.factor_names = varargin{in+1};
     elseif strcmpi(varargin{in},'type')
         LIMO.Type = varargin{in+1};
@@ -1142,6 +1142,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % Ask for Gp
     % ----------
+    gp_nb = [];
     if ~isempty(LIMO.data.data)
         gp_nb = size(LIMO.data.data,1);
     else
@@ -1150,8 +1151,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         else
             gp_val = 1;
         end
+        gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {gp_val}));
     end
-    gp_nb = cell2mat(limo_inputdlg('How many independent groups of subjects or session per subject?','Groups', 1, {gp_val}));
 
     if isempty(gp_nb)
         return
@@ -1212,6 +1213,9 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % Cases of wrong input
     try
         factor_nb = eval(['[' factor_nb ']']);
+        if ~exist('factor_names','var')
+            factor_names = LIMO.design.factor_names;
+        end
         factor_names = factor_names(1:length(factor_nb));
     catch ME
         limo_errordlg(sprintf('log error: %s',ME.message),'could not evaluate factors')
