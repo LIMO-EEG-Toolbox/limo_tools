@@ -85,7 +85,11 @@ if isfield(g, 'flag');      flag     = g.flag;     end
 if isequal(g.regressor, 0); g.regressor = []; end
 if ~isempty(g.plot3type)
     extra = {'Original','Modelled','Adjusted'};
-    extra = extra{g.plot3type};
+    if isnumeric(g.plot3type)
+        extra = extra{g.plot3type};
+    else
+        extra(contains(extra,g.plot3type,'IgnoreCase',true));
+    end
 end
 res = '';
 toplot = load(fullfile(PathName,FileName));
