@@ -397,7 +397,7 @@ switch type
                         end
                     else % if strcmpi(LIMO.design.method,'Mean')
                         parfor b=1:LIMO.design.bootstrap
-                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(2,Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)));
+                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(2,Y1(1,:,boot_table1{channel}(:,b)),Y2(1,:,boot_table2{channel}(:,b)),.05);
                         end
                     end
                     
