@@ -25,7 +25,10 @@ function result=limo_central_tendency_and_ci(varargin)
 %
 % limo_central_tendency_and_ci(Files, parameters, expected_chan_loc, 'Estimator1', 'Estimator2', selected_channels,savename)
 %                Files are the full names (with paths) of LIMO.mat files or con files
-%                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]; for con files parameter is 1
+%                parameters are which part of the raw data to analyse based on the design matrix, e.g. [1 2]; 
+%                           it can also be 'con_X' (x being the contrast number) meaning that the columns of the design matrix spanned by 
+%                           computed contrasts will be used (useful when the design change among subjects)
+%                           if Files are contrast files, parameter must be 1              
 %                expected_chan_loc is the channel structure from EEGLAB but for the group of subjects
 %                Estimator should be 'Mean', 'Weighted mean', 'Trimmed mean', 'HD' or 'Median' (doesn't matter for con files)
 %                Estimator 1 is applied to trials within-subjects
@@ -308,9 +311,20 @@ elseif nargin == 6 || nargin == 7
         end
         
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
-                max(parameters) == size(LIMO.design.X,2) % any categorial or the constant
+                max(parameters) == size(LIMO.design.X,2) || ...% any categorial or the constant
+                contains(parameters,'con')
             if all(is_limo)
-                index = logical(sum(LIMO.design.X(:,parameters)==1,2));
+                if isnumeric(parameters)
+                    index = logical(sum(LIMO.design.X(:,parameters)==1,2));
+                else
+                    if contains(parameters,'con')
+                        tmp=find(LIMO.contrast{str2double(parameters(5:end))}.C);
+                        index = logical(sum(LIMO.design.X(:,tmp)==1,2)); clear tmp
+                    else
+                        limo_error('unrecognized input parameter')
+                    end
+                end
+
                 for channel=size(Yr,1):-1:1
                     if strcmpi(Estimator1,'Weighted Mean')
                         if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -1151,5 +1165,3 @@ if isempty(result)
 else
     disp('computation done');
 end
-
-
