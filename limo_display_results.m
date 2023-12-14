@@ -1214,7 +1214,8 @@ elseif LIMO.Level == 2
         [M, mask, mytitle] = limo_stat_values(FileName,p,MCC,LIMO);
 
         if isempty(mask) || sum(mask(:)) == 0
-            return
+            p = 1; mask = zeros(size(M));
+            assignin('base','p_values',squeeze(M))
         else
             assignin('base','p_values',squeeze(M))
             assignin('base','mask',squeeze(mask))
@@ -2427,4 +2428,3 @@ else % freq
     end
 end
 end
-
