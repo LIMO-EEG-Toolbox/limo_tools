@@ -1,5 +1,4 @@
 function varargout = limo_results(varargin)
-
 % Result GUI for the LIMO_eeg toolbox
 % Created using GUIDE
 % Cyril Pernet 20-03-2009 v1
@@ -12,6 +11,7 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+
 gui_Singleton = 1;
 gui_State = struct('gui_Name','limo_results', ...
     'gui_Singleton',  gui_Singleton, ...
@@ -47,6 +47,10 @@ handles.dir       = pwd;
 handles.bootstrap = 0;
 handles.tfce      = 0;
 handles.filter    = {'*.mat'};
+
+% set(handles.add_bootstrap,'Enable','off')
+% set(handles.add_tfce,'Enable','off')
+
 guidata(hObject, handles);
 %uiwait(handles.figure1);
 
@@ -78,9 +82,16 @@ if FilterIndex ~= 0
     end
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
+    handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
+
+% reset selection - but annoying behaviour really
+% uiresume
+% guidata(hObject, handles);
+% delete(handles.figure1)
+% limo_results
 
 % Topoplot
 % ---------------------------------------------------------------
@@ -99,6 +110,7 @@ if FilterIndex == 1
     end
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
+    check_boot_and_tfce(handles,fullfile(PathName,FileName))
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -116,7 +128,7 @@ if FilterIndex == 1
         end
         cd(PathName);
     end
-
+    
     % check if central_tendency_file otherwise load LIMO.mat
     tmp = load(FileName);
     if isfield(tmp,'Data')
@@ -125,6 +137,7 @@ if FilterIndex == 1
         tmp = load([PathName filesep 'LIMO.mat']);
         handles.LIMO = tmp.LIMO; clear tmp
     end
+    check_boot_and_tfce(handles,fullfile(PathName,FileName));
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
 guidata(hObject, handles);
@@ -169,6 +182,45 @@ test        = isempty(handles.MCC);
 if test == 1
     handles.MCC = 1;
 end
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function add_bootstrap_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to add_bootstrap (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% --- Executes on button press in add_bootstrap.
+function add_bootstrap_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.bootstrap = 1000;
+    disp('bootstrap is on');
+elseif M == 0
+    handles.bootstrap = 0;
+    disp('boostrap is off');
+end
+
+guidata(hObject, handles);
+
+% --- Executes on button press in add_tfce.
+function add_tfce_Callback(hObject, eventdata, handles)
+M = get(hObject,'Value');
+if M == 1
+    handles.tfce = 1;
+    disp('tfce is on');
+elseif M == 0
+    handles.tfce = 0;
+    disp('tfce is off');
+end
+guidata(hObject, handles);
+
+% Model Selection (multivariate).
+% ---------------------------------------------------------------
+function Model_Selection_Callback(hObject, eventdata, handles)
+[FileName,PathName,FilterIndex]=uigetfile('LIMO.mat','Select a LIMO file');
+cd(PathName); handles.LIMO = load('LIMO.mat');
+limo_model_selection(handles.LIMO.LIMO,1);
 guidata(hObject, handles);
 
         
@@ -216,4 +268,87 @@ clc; uiresume
 guidata(hObject, handles);
 delete(handles.figure1)
 limo_gui
+
+% -----------------------------------------------------------
+% subroutine to check bootstrap and tfce on any button clicks
+% ------------------------------------------------------------
+function handles = check_boot_and_tfce(handles,currentfile)
+if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
+        handles.tfce == 1 && handles.MCC == 3    
+   
+    handles.LIMO.design.bootstrap = handles.bootstrap;
+    handles.LIMO.design.tfce      = handles.tfce;
+    
+    [filepath,filename,ext] = fileparts(currentfile);
+
+    % deal with bootstrap
+    if handles.bootstrap ~= 0
+        if ~exist([filepath filesep 'H0' filesep 'H0_' filename ext],'file')
+            if handles.LIMO.Level == 1
+                if strncmp(filename,'con',3) || strncmp(filename,'ess',3)
+                    if exist('warndlg2','file')
+                        warndlg2(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                    else
+                        warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                    end
+                else
+                    if strcmp(questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
+                        LIMO                  = handles.LIMO;
+                        LIMO.design.bootstrap = 800;
+                        if handles.tfce == 1
+                            LIMO.design.tfce  = 1;
+                        end
+                        save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+                        limo_eeg(4);
+                    end
+                end
+            else % handles.LIMO.Level == 2
+                if contains(filename,'one_sample')
+                        limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
+                            str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                elseif contains(filename,'two_samples')
+                        limo_random_robust(2,fullfile(handles.LIMO.dir,'Yr1.mat'),...
+                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                elseif contains(filename,'paired_samples')
+                        limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
+                            fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                elseif contains(filename,'Covariate_effect') && contains(handles.LIMO.design.name,'Regression') 
+                    LIMO = handles.LIMO; LIMO.design.bootstrap = 1000;
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 
+                    handles.LIMO = LIMO; limo_eeg(4,handles.LIMO.dir); clear LIMO
+                elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
+                        limo_random_robust(5,fullfile(handles.LIMO.dir,'Yr.mat'),...
+                            handles.LIMO.data.Cat,handles.LIMO.data.Cont,handles.LIMO,'go','yes');
+                elseif contains(filename,'Rep_ANOVA')
+                    if strncmp(filename,'con',3)
+                        if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                            limo_contrast([filepath filesep 'Yr.mat'], ...
+                                [filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], handles.LIMO, 0,3);
+                        else
+                            errordlg2('there is no GLM bootstrap file for this contrast file')
+                        end
+                    elseif strncmp(filename,'ess',3)
+                        if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
+                            limo_contrast([filepath filesep 'Yr.mat'], ...
+                                [filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], handles.LIMO, 1,3);
+                        else
+                            errordlg2('there is no bootstrap file for this contrast file')
+                        end
+                    else
+                        disp('Bootstraping Repeated Measure ANOVA')
+                        limo_random_robust(6,fullfile(filepath,'Yr.mat'),handles.LIMO.data.Cat, ...
+                            handles.LIMO.design.repeated_measure, handles.LIMO, 'go','yes')
+                    end
+                end
+            end
+        end
+    end
+    
+    % deal with tfce
+    if handles.tfce == 1
+        if ~exist([filepath filesep 'tfce' filesep 'tfce_' filename ext],'file')
+            limo_tfce_handling(currentfile,'checkfile','yes')
+        end
+    end
+end            
 
