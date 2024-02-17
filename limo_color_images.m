@@ -4,7 +4,7 @@ function out = limo_color_images(varargin)
 %
 % FORMAT out = limo_color_images(in,'legacymode',legacyvalue)
 %
-% INPUT in - the 2D matrix to color (if map masked by NaN, last value if gray)
+% INPUT in - the 2D matrix to color (if map masked by NaN, last value is gray)
 %          - a single value
 %       optional is to indicate the 'legacymode' as 'off' (default) or 'on'
 %
