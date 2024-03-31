@@ -1307,7 +1307,7 @@ switch type
                 else
                     tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
                     H0_Rep_ANOVA_Gp_effect_sub = NaN(size(centered_data,1),size(centered_data,2),2);
-                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_dataa,1),size(centered_data,2),length(C),2);
+                    tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = NaN(size(centered_data,1),size(centered_data,2),length(C),2);
                 end
  
                 for e = 1:length(array)
