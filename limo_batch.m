@@ -595,10 +595,7 @@ else % parallel call to the pipeline , the usual way
             end
         end
     end
-
-    if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "UniformOutput",false)))
-        poolobj = gcp('nocreate'); delete(poolobj); % close parallel pool 
-    end
+    try; poolobj = gcp('nocreate'); delete(poolobj); % close parallel pool; end
 end
 
 %% Save txt files
