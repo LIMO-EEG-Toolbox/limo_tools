@@ -10,7 +10,7 @@ addons = ver;
 
 if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "UniformOutput",false)))
     
-    if isempty(N) || numel(N)==1
+    if isempty(N)
         p = gcp('nocreate');
         if isempty(p) % i.e. the parallel toolbox is not already on
             
@@ -25,13 +25,17 @@ if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "Unifo
             
             % check and set the local profile NumWorkers
             % ----------------------------------
-            c            = parcluster;
+            c            = parcluster('local');
             c.NumWorkers = N;
             % saveProfile(c);
             
             % go
             % --
-            c.parpool(N-1);
+            if N>1
+              c.parpool(N-1);
+            else
+              disp('Parallel toolbox not started - nothing to worry about (except slower computation in some cases)');
+            end
         end
     else
         try
