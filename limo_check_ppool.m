@@ -10,7 +10,7 @@ addons = ver;
 
 if any(strcmpi('Parallel Computing Toolbox',arrayfun(@(x) x.Name, addons, "UniformOutput",false)))
     
-    if isempty(N)
+    if isempty(N) || numel(N)==1
         p = gcp('nocreate');
         if isempty(p) % i.e. the parallel toolbox is not already on
             
