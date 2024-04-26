@@ -6,16 +6,16 @@ function limo_eeg(varargin)
 % In this function is also implemented the call to the GLM, creating files
 % etc .. see input
 %
-% LIMO_EEGLIMO is designed to perform a hierarchical LInear MOdeling of EEGLIMO data
+% LIMO_EEG is designed to perform a hierarchical LInear MOdeling of EEGLIMO data
 % All analyses can be performed with this toolbox but the visualization
-% relies heavily on EEGLIMOlab functions http://sccn.ucsd.edu/eeglab/
-% In addition, the data format is the one used by EEGLIMOlab.
+% relies heavily on EEGLAB functions http://sccn.ucsd.edu/eeglab/
+% In addition, the data format is the one used by EEGLAB.
 %
 % INPUT limo_eeg(value,option)
 %                 1 - load the GUI
 %                 2,X - call limo_import (time X=1 or freuqency X=2), creating LIMO.mat file and call limo_egg(3)
 %                 3 - call limo_design_matrix and populate LIMO.design
-%                 4,fullfile - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
+%                 4,fullfile - call limo_glm (mass univariate) or limo_mglm (multivariate) 
 %                 5 - shortcut to limo_results, look at possible results and print a report
 %                 6,C - shortcut to limo_contrast for the current directory,
 %                 ask for a list of contrasts if not given as 2nd argument) and run them all
@@ -24,9 +24,8 @@ function limo_eeg(varargin)
 %
 % Cyril Pernet & Andrew Stewart v6 21/01/2014
 % Cyril Pernet & Ramon Martinez-Cancino 23-10-2014 updates for components (ICA)
-%
 % ------------------------------
-%  Copyright (C) LIMO Team 2020
+%  Copyright (C) LIMO Team 2024
 
 % make sure paths are ok
 root = fileparts(which('limo_eeg'));
@@ -42,7 +41,6 @@ if onPath == 0
     addpath([root filesep 'help'])
     addpath([root filesep 'deprecated'])
 end
-
 
 % in case data are already there
 if isempty(varargin)
@@ -63,12 +61,12 @@ switch varargin{1}
         
         disp(' ')
         disp('LIMO_EEG was primarily designed by Cyril Pernet and Guillaume Rousselet.');
-        disp('Current maintenance is performed by Cyril Pernet, with support from Arnaud Delorme for EEGLAB integration');
+        disp('Current maintenance is performed by Cyril Pernet, with support from Arnaud Delorme');
         disp('The list of contributors is in the contributors.md file');
         disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/blob/master/contributors.md');
         disp('All these authors are thereafter referred to as the LIMO Team');
         disp(' ')
-        disp('LIMO_EEG  Copyright (C) 2021  LIMO TEAM');
+        disp('LIMO_EEG  Copyright (C) 2024  LIMO TEAM');
         disp('This program comes with ABSOLUTELY NO WARRANTY.');
         disp('This is free software, and you are welcome to redistribute');
         disp('it under certain conditions - type help limo_eeg for details');
@@ -77,7 +75,7 @@ switch varargin{1}
         disp('https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki/Reporting-methods-and-results')
         disp('References are in the citations.nbid file')
         disp(' ')
-        limo_gui
+        limo_gui_App
         
         %------
     case {2}
@@ -85,7 +83,7 @@ switch varargin{1}
         % ------------------------------------------------------------------------
         %                       IMPORT
         % ------------------------------------------------------------------------
-        % the EEGLIMO data are not imported but path / name is saved in LIMO.mat
+        % the EEGLAB data are not imported but path / name is saved in LIMO.mat
         % Cat and Cont are imported manually from a txt or mat file
         % Other informations are i) the starting time point (sec), ii) the method to
         % use (if multivariate stats have to be computed) and iii) the working

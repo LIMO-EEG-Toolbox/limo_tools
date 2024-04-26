@@ -133,10 +133,9 @@ if nargin <= 1
             '*.txt','Text (*.txt)'}, 'Pick a matrix of contrasts');
         if FilterIndex ~=0
             if strcmp(FileName(end-3:end),'.txt')
-                batch_contrast.mat = importdata(FileName);
+                batch_contrast.mat = importdata(fullfile(PathName,FileName));
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
-                % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
                 batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
             end
         else
@@ -183,7 +182,6 @@ if nargin <= 1
                 batch_contrast.LIMO_files = importdata(fullfile(PathName, FileName));
             elseif strcmp(FileName(end-3:end),'.mat')
                 FileName = load([PathName FileName]);
-                % batch_contrast.LIMO_files = getfield(FileName,cell2mat(fieldnames(FileName)));
                 batch_contrast.LIMO_files = FileName.(cell2mat(fieldnames(FileName)));
             end
             LIMO_files.LIMO = PathName;
@@ -200,7 +198,6 @@ if nargin <= 1
                     batch_contrast.mat = importdata(FileName);
                 elseif strcmp(FileName(end-3:end),'.mat')
                     FileName = load([PathName FileName]);
-                    % batch_contrast.mat = getfield(FileName,cell2mat(fieldnames(FileName)));
                     batch_contrast.mat = FileName.(cell2mat(fieldnames(FileName)));
                 end
             else
@@ -250,10 +247,7 @@ end
 if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
     STUDY = evalin('base', 'STUDY');
     if ~isstruct(STUDY); clear STUDY; end
-end
-
-if isempty(STUDY)
-    clear STUDY
+    if isempty(STUDY); clear STUDY; end
 end
 
 if exist('STUDY','var')

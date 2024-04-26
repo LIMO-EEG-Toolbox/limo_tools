@@ -51,7 +51,7 @@ handles.start               = [];
 handles.end                 = [];
 handles.lowf                = [];
 handles.highf               = [];
-handles.Analysis            = [];
+handles.AnalysisPanel            = [];
 handles.type                = 'Channels';
 handles.type_of_analysis    = 'Mass-univariate';
 handles.method              = 'WLS';
@@ -114,7 +114,7 @@ if FilterIndex ~= 0
     elseif strcmp(FileName(end-3:end),'.txt') ||  strcmp(FileName(end-3:end),'.mat') % use .mat or .txt
         
         if strcmp(FileName(end-3:end),'.txt')
-            FileName = importdata(FileName);
+            FileName = importdata(fullfile(PathName,FileName));
         elseif strcmp(FileName(end-3:end),'.mat')
             FileName = load([PathName FileName]);
             FileName = getfield(FileName,cell2mat(fieldnames(FileName)));
@@ -147,19 +147,19 @@ function analysis_type_Callback(hObject, eventdata, handles)
 
 content = get(hObject,'Value');
 if content == 2
-    handles.Analysis = 'Time';
+    handles.AnalysisPanel = 'Time';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
     set(handles.low_freq,'Enable','off')
     set(handles.high_freq,'Enable','off')
 elseif content == 3
-    handles.Analysis = 'Frequency';
+    handles.AnalysisPanel = 'Frequency';
     set(handles.Starting_point,'Enable','off')
     set(handles.ending_point,'Enable','off')
     set(handles.low_freq,'Enable','on')
     set(handles.high_freq,'Enable','on')
 elseif content == 4
-    handles.Analysis = 'Time-Frequency';
+    handles.AnalysisPanel = 'Time-Frequency';
     set(handles.Starting_point,'Enable','on')
     set(handles.ending_point,'Enable','on')
     set(handles.low_freq,'Enable','on')
@@ -168,7 +168,7 @@ end
 guidata(hObject, handles);
 
 
-% get the starting time point of the analysis
+% get the starting time point of the analysispanel
 % ---------------------------------------------------------------
 function Starting_point_CreateFcn(hObject, eventdata, handles)
 
@@ -183,7 +183,7 @@ handles.start = str2double(get(hObject,'String'));
 guidata(hObject, handles);
 
 
-% get the ending time point of the analysis
+% get the ending time point of the analysispanel
 % ---------------------------------------------------------------
 function ending_point_CreateFcn(hObject, eventdata, handles)
 
@@ -198,7 +198,7 @@ handles.end = str2double(get(hObject,'String'));
 guidata(hObject, handles);
 
 
-% get the starting frequency point of the analysis
+% get the starting frequency point of the analysispanel
 % ---------------------------------------------------------------
 function low_freq_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -211,7 +211,7 @@ handles.lowf = str2double(get(hObject,'String'));
 guidata(hObject, handles);
 
 
-% get the ending frequency point of the analysis
+% get the ending frequency point of the analysispanel
 % ---------------------------------------------------------------
 function high_freq_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
@@ -224,38 +224,23 @@ handles.highf = str2double(get(hObject,'String'));
 guidata(hObject, handles);
 
 %---------------------------
-%      ANALYSIS
+%      ANALYSISPANEL
 % --------------------------
-% --- Executes on button press in scalp_data.
-function scalp_data_Callback(hObject, eventdata, handles)
+% --- Executes on button press in source.
+function source_Callback(hObject, eventdata, handles)
 h = get(hObject,'Value');
 if h == 0
     handles.type = 'Components';
     set(handles.component_data,'Value',1)
-    set(handles.scalp_data,'Value',0)
+    set(handles.source,'Value',0)
 elseif h == 1
     handles.type = 'Channels';
     set(handles.component_data,'Value',0)
-    set(handles.scalp_data,'Value',1)
+    set(handles.source,'Value',1)
 end
 guidata(hObject, handles);
 
-% --- Executes on button press in component_data.
-function component_data_Callback(hObject, eventdata, handles)
-h = get(hObject,'Value');
-if h == 0
-    handles.type = 'Channels';
-    set(handles.component_data,'Value',0)
-    set(handles.scalp_data,'Value',1)
-elseif h == 1
-    handles.type = 'Components';
-    set(handles.component_data,'Value',1)
-    set(handles.scalp_data,'Value',0)
-end
-guidata(hObject, handles);
-
-
-% type of analysis
+% type of analysispanel
 % --- Executes on selection change in type_of_analysis.
 % --- Executes during object creation, after setting all properties.
 function type_of_analysis_CreateFcn(hObject, eventdata, handles)
@@ -435,12 +420,12 @@ guidata(hObject, handles);
 % ---------------------------------------------------------------
 function Done_Callback(hObject, eventdata, handles)
   
-if isempty(handles.Analysis)
+if isempty(handles.AnalysisPanel)
         errordlg('choose a type of analysis to perfom','error')
     return
 end
 
-defaults.analysis          = handles.Analysis;  
+defaults.analysis          = handles.AnalysisPanel;  
 defaults.fullfactorial     = handles.fullfactorial;
 defaults.zscore            = handles.zscore;
 defaults.start             = handles.start;
@@ -494,7 +479,7 @@ if isempty(handles.CatName) && isempty(handles.ContName)
 end
 uiresume
 guidata(hObject, handles);
-limo_gui
+limo_gui_App
 
 % --- Executes on button press in Quit.
 % ---------------------------------------------------------------
@@ -505,9 +490,4 @@ clc
 uiresume
 handles.quit = 1;
 guidata(hObject, handles);
-limo_gui
-
-
-
-
-
+limo_gui_App
