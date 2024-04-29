@@ -312,7 +312,7 @@ elseif nargin == 6 || nargin == 7
         
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
                 max(parameters) == size(LIMO.design.X,2) || ...% any categorial or the constant
-                contains(parameters,'con')
+                (~isnumeric(parameters) && contains(parameters,'con'))
             if all(is_limo)
                 if isnumeric(parameters)
                     index = logical(sum(LIMO.design.X(:,parameters)==1,2));
