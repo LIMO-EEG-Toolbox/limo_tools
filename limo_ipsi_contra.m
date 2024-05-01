@@ -70,7 +70,8 @@ end
 if exist('Files','var') % betas
     LIMO.data.data     = Files;
     LIMO.data.data_dir = Paths;
-    limo_errordlg('using betas is not coded yet')
+    error('not implemented for Betas yet')
+
 else % con
     [first_frame,last_frame,subj_chanlocs,LIMO] = limo_match_frames(Paths{1},LIMO);
     % LIMO.data.start,LIMO.data.end
@@ -81,12 +82,22 @@ else % con
              limo_errordlg('Only Channel type of analysis supported')
          end
         tmp = load(LIMO.data.data{1}{subject});
+        if size(tmp.con,2) == length(first_frame(subject):last_frame(subject))
+            first = 1; last = size(tmp.con,2);
+        else
+            first = first_frame(subject); last = last_frame(subject);
+        end
         data1(:,:,subject) = limo_match_elec(subj_chanlocs(subject).chanlocs,...
-            LIMO.data.chanlocs,first_frame,last_frame,...
+            LIMO.data.chanlocs,first,last,...
             squeeze(tmp.con(:,:,1)));
         tmp = load(LIMO.data.data{2}{subject});
+        if size(tmp.con,2) == length(first_frame(subject):last_frame(subject))
+            first = 1; last = size(tmp.con,2);
+        else
+            first = first_frame(subject); last = last_frame(subject);
+        end
         data2(:,:,subject) = limo_match_elec(subj_chanlocs(subject).chanlocs,...
-            LIMO.data.chanlocs,first_frame,last_frame,...
+            LIMO.data.chanlocs,first,last,...
             squeeze(tmp.con(:,:,1)));
     end
 
@@ -112,3 +123,4 @@ LIMO.design.bootstrap         = 1000;
 LIMO.design.tfce              = 1;
 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
 limo_random_robust(3,contralateral,ipsilateral,[1 2],LIMO);
+
