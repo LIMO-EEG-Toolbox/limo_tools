@@ -50,7 +50,9 @@ else
     for current=1:length(c_elec)
         for expected=1:size(e_elec,2)
             test = strfind(e_elec(expected).labels,'EEG');
-            if test == 1; test = 0; end % basically renamed EEG00X
+            if isempty(test) || (test == 1)
+                test = 0; 
+            end % basically renamed EEG00X
             if strcmpi(c_elec(current).labels,e_elec(expected).labels) || ...
                     strcmpi(c_elec(current).labels,e_elec(expected).labels([1:test, test+4:end]))
                 out(expected,:,:) = data(current,a_beg:a_end,:);
