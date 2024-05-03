@@ -595,7 +595,10 @@ else % parallel call to the pipeline , the usual way
             end
         end
     end
-    poolobj = gcp('nocreate'); delete(poolobj); % close parallel pool 
+    try
+        poolobj = gcp('nocreate'); 
+        delete(poolobj); % close parallel pool;
+    end
 end
 
 %% Save txt files

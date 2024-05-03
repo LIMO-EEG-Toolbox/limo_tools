@@ -35,10 +35,6 @@ end
 % ----- Colormap --------
 maxval = max(abs(max(udat.scale(:))),abs(min(udat.scale(:))));
 if isempty(udat.colorlim) 
-%     || min(abs(udat.colorlim)) < maxval
-%     if ~isempty(udat.colorlim) && min(abs(udat.colorlim)) < maxval
-%         fprintf(2, 'Color limits changed so clipped data is displayed properly');
-%     end
     if max(udat.scale(:)) < 0
         udat.colorlim = [-maxval 0];
     elseif min(udat.scale(:)) > 0 
@@ -78,26 +74,29 @@ else
     end
 end
 
-if strcmpi(LIMO.Analysis,'Time-Frequency')
-    % course plot at selected frequency
-    y          = round(y);
-    [~,yframe] = min(abs(freqvect - y));
-    if size(udat.toplot,1)> 1 && yframe>size(udat.toplot,1)
-        yframe = size(udat.toplot,1);
-        y      = freqvect(yframe);
-    elseif size(udat.toplot,1)> 1 && y<1
-        yframe = 1;
-        y      = freqvect(yframe);
-    end
-else
-    % course plot at selected  channel
-    y = round(y);
-    if size(udat.toplot,1)> 1 && y>size(udat.toplot,1)
-        y = size(udat.toplot,1);
-    elseif size(udat.toplot,1)> 1 && y<1
-        y = 1;
+if ~isempty(x) && ~isempty(y)
+    if strcmpi(LIMO.Analysis,'Time-Frequency')
+        % course plot at selected frequency
+        y          = round(y);
+        [~,yframe] = min(abs(freqvect - y));
+        if size(udat.toplot,1)> 1 && yframe>size(udat.toplot,1)
+            yframe = size(udat.toplot,1);
+            y      = freqvect(yframe);
+        elseif size(udat.toplot,1)> 1 && y<1
+            yframe = 1;
+            y      = freqvect(yframe);
+        end
+    else
+        % course plot at selected  channel
+        y = round(y);
+        if size(udat.toplot,1)> 1 && y>size(udat.toplot,1)
+            y = size(udat.toplot,1);
+        elseif size(udat.toplot,1)> 1 && y<1
+            y = 1;
+        end
     end
 end
+
 frame = udat.frame_zeros + floor(x / udat.ratio);
 if frame <= 0
     frame = 1;
@@ -136,7 +135,10 @@ if size(udat.toplot,1) > 1
     if isempty(udat.colorlim)
         udat.colorlim = clim;
     end
-    clim(udat.colorlim);
+
+    if ~any(isnan(udat.colorlim))
+        clim(udat.colorlim);
+    end
 end
 
 % curve 
@@ -146,48 +148,52 @@ if ~interactive
 else
     ax = subplot(3,4,7,'replace');
 end
-if size(udat.toplot,2) == 1
-    bar(udat.toplot(y,1)); grid on; axis([0 2 0 max(udat.toplot(:))+0.2]); ylabel('stat value')
-    if isfield(LIMO,'Type')
-        if strcmpi(LIMO.Type,'Components')
-            mytitle2 = sprintf('component %g', y);
-        elseif strcmpi(LIMO.Type,'Channels')
+
+if ~isempty(y)
+    if size(udat.toplot,2) == 1
+        bar(udat.toplot(y,1)); grid on; axis([0 2 0 max(udat.toplot(:))+0.2]); ylabel('stat value')
+        if isfield(LIMO,'Type')
+            if strcmpi(LIMO.Type,'Components')
+                mytitle2 = sprintf('component %g', y);
+            elseif strcmpi(LIMO.Type,'Channels')
+                mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+            end
+        else
             mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
         end
     else
-        mytitle2 = sprintf('channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
-    end
-else
-    if strcmpi(LIMO.Analysis,'Time')
-        plot(udat.timevect(frameRange),udat.toplot(y,frameRange),'LineWidth',3);
-    elseif strcmpi(LIMO.Analysis,'Frequency')
-        plot(udat.freqvect(frameRange),udat.toplot(y,frameRange),'LineWidth',3);
-    elseif strcmpi(LIMO.Analysis,'Time-Frequency')
-        plot(udat.timevect(frameRange),udat.toplot(yframe,frameRange),'LineWidth',3);
-        mytitle2 = sprintf('stat values @ %g Hz', y);
-    end
-    grid on; axis tight
+        if strcmpi(LIMO.Analysis,'Time')
+            plot(udat.timevect(frameRange),udat.toplot(y,frameRange),'LineWidth',3);
+        elseif strcmpi(LIMO.Analysis,'Frequency')
+            plot(udat.freqvect(frameRange),udat.toplot(y,frameRange),'LineWidth',3);
+        elseif strcmpi(LIMO.Analysis,'Time-Frequency')
+            plot(udat.timevect(frameRange),udat.toplot(yframe,frameRange),'LineWidth',3);
+            mytitle2 = sprintf('stat values @ %g Hz', y);
+        end
+        grid on; axis tight
 
-    if ~strcmpi(LIMO.Analysis,'Time-Frequency')
-        if isfield(LIMO,'Type')
-            if strcmpi(LIMO.Type,'Components')
-                mytitle2 = sprintf('stat values @ \n component %g', y);
-            elseif strcmpi(LIMO.Type,'Channels')
-                mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
-            end
-        else
-            try
-                mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
-            catch
-                mytitle2 = sprintf('stat values @ \n y=%g)', y);
+        if ~strcmpi(LIMO.Analysis,'Time-Frequency')
+            if isfield(LIMO,'Type')
+                if strcmpi(LIMO.Type,'Components')
+                    mytitle2 = sprintf('stat values @ \n component %g', y);
+                elseif strcmpi(LIMO.Type,'Channels')
+                    mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                end
+            else
+                try
+                    mytitle2 = sprintf('stat values @ \n channel %s (%g)', LIMO.data.chanlocs(y).labels,y);
+                catch
+                    mytitle2 = sprintf('stat values @ \n y=%g)', y);
+                end
             end
         end
     end
+
+    if ~isempty(udat.colorlim)
+        ylim(udat.colorlim);
+    end
+    title(mytitle2,'FontSize',11);
 end
-if ~isempty(udat.colorlim)
-    ylim(udat.colorlim);
-end
-title(mytitle2,'FontSize',11);
 
 % image 
 % -----
@@ -207,19 +213,21 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
 end
 colormap(gca, udat.cc);
 set_imgaxes(LIMO,udat.scale);
-if ~isempty(udat.colorlim)
+if ~isempty(udat.colorlim) && ~any(isnan(udat.colorlim))
     clim(udat.colorlim);
 end
 title(udat.title,'Fontsize',10)
 
 % circled region
-hold on;
-if strcmpi(LIMO.Analysis,'Time')
-    h = plot(x, y, 'o');
-elseif strcmpi(LIMO.Analysis,'Frequency')
-    h = plot(x, y, 'o');
+if ~isempty(x) && ~isempty(y)
+    hold on;
+    if strcmpi(LIMO.Analysis,'Time')
+        h = plot(x, y, 'o');
+    elseif strcmpi(LIMO.Analysis,'Frequency')
+        h = plot(x, y, 'o');
+    end
+    set(h,'MarkerSize', 20, 'color', 'k', 'LineWidth', 3);
 end
-set(h,'MarkerSize', 20, 'color', 'k', 'LineWidth', 3);
 
 % stats text
 % -----------
@@ -230,13 +238,13 @@ try
         if ~isnan(p_values(yframe,frame))
             strStat = sprintf('Stat value: %g, p value: %g',udat.toplot(yframe,frame),p_values(yframe,frame));
         else
-            strStat = sprintf('Stat value: %g, p value: NaN?',udat.toplot(yframe,frame));
+            strStat = sprintf('p value below threshold');
         end
     else
         if ~isnan(p_values(round(y),frame))
             strStat = sprintf('Stat value: %g, p value: %g',udat.toplot(round(y),frame),p_values(round(y),frame));
         else
-            strStat = sprintf('Stat value: %g, p value: NaN?',udat.toplot(round(y),frame));
+            strStat = sprintf('p value below threshold');
         end
     end
 catch pvalerror
@@ -399,5 +407,3 @@ else
         set(gca,'YTickLabel', Ylabels);
     end
 end
-
-
