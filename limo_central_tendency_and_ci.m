@@ -319,17 +319,9 @@ elseif nargin == 6 || nargin == 7
             ends_at = size(Yr,2) - (last_frame(i) - min(last_frame));
         end
         
-        if parameters == 1
-            parameters = '1'; % temporarily turn into a string for if below
-        end
-
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
                 max(parameters) == size(LIMO.design.X,2) || ...% any categorial or the constant
-                any(contains(parameters,{'1','con'})) % or all con files
-
-            if strcmp(parameters,'1')
-                parameters = 1; % back to numeric
-            end
+                any(contains(num2str(parameters),{'1','con'})) % or all con files
 
             if all(is_limo)               
                 if isnumeric(parameters)
