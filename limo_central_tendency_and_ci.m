@@ -321,7 +321,7 @@ elseif nargin == 6 || nargin == 7
         
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
                 max(parameters) == size(LIMO.design.X,2) || ...% any categorial or the constant
-                any(contains(num2str(parameters),{'1','con'})) % or all con files
+                any([contains(num2str(parameters),{'con'}) strcmp(num2str(parameters),'1')]) % or all con files or 1 
 
             if all(is_limo)               
                 if isnumeric(parameters)
