@@ -270,6 +270,15 @@ elseif nargin == 6 || nargin == 7
         limo.data.neighbouring_matrix = expected_chanlocs.channeighbstructmat;
         limo.data.expected_chanlocs   = expected_chanlocs.expected_chanlocs;
         expected_chanlocs             = limo.data.expected_chanlocs;
+    else
+        if isfield(expected_chanlocs,'expected_chanlocs') && ...
+                isfield(expected_chanlocs,'channeighbstructmat')
+            limo.data.neighbouring_matrix = expected_chanlocs.channeighbstructmat;
+            limo.data.expected_chanlocs   = expected_chanlocs.expected_chanlocs;
+            expected_chanlocs             = limo.data.expected_chanlocs;
+        else
+            limo.data.expected_chanlocs   = expected_chanlocs;
+        end
     end
     Estimator1          = varargin{4};
     Estimator2          = varargin{5};
@@ -312,8 +321,9 @@ elseif nargin == 6 || nargin == 7
         
         if max(parameters) <= sum(LIMO.design.nb_conditions+LIMO.design.nb_interactions) || ...
                 max(parameters) == size(LIMO.design.X,2) || ...% any categorial or the constant
-                contains(parameters,'con')
-            if all(is_limo)
+                any([contains(num2str(parameters),{'con'}) strcmp(num2str(parameters),'1')]) % or all con files or 1 
+
+            if all(is_limo)               
                 if isnumeric(parameters)
                     index = logical(sum(LIMO.design.X(:,parameters)==1,2));
                 else
@@ -1165,3 +1175,5 @@ if isempty(result)
 else
     disp('computation done');
 end
+
+
