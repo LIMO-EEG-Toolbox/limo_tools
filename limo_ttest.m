@@ -30,7 +30,7 @@ nd = ndims(data1);
 switch (type)
  
     case(1)
-        if data2 ~= 0
+        if any(data2 ~= 0,'all')
             if ~any(size(data1)==size(data2))
                 error('data1 and data2 are of different dimensions')
             else
