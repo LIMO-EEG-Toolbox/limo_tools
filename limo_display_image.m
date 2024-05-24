@@ -11,7 +11,7 @@ function limo_display_image(LIMO,toplot,varargin)
 %   LIMO         = the LIMO data structure
 %   toplot       = 2D matrix to plot (typically t/F values)
 %   optional arguments
-%   M            = areas for which to show data - default is ones(size(topolot))
+%   M            = areas for which to show data - default is ones(size(toplot))
 %   mytitle      = title to use (default is empty)
 %   dynamic      = set to 0 for no interaction (default is 1)
 %   colormapname = 'BWR' (blue-white-red, the default), 'BGY' (blue-gray-yellow)
@@ -30,7 +30,7 @@ function limo_display_image(LIMO,toplot,varargin)
 if sum(toplot(:)) == 0
     error('the image to plot is empty')
 end
-mask         = ones(size(topolot));
+mask         = ones(size(toplot));
 mytitle      = [];
 dynamic      = 1;
 colormapname = 'BWR';
@@ -41,17 +41,17 @@ else
 end
 
 % arguments in
-for n = 3:2:nargin
-    if strcmpi(varargin{n},'mask')
-        mask = varargin{n+1};
-    elseif strcmpi(varargin{n},'title')
-        mytitle = varargin{n+1};
-    elseif strcmpi(varargin{n},'dynamic')
-        dynamic = varargin{n+1};
-    elseif strcmpi(varargin{n},'color')
-        colormapname = varargin{n+1};
-    elseif strcmpi(varargin{n},'channel')
-        Ylabels = varargin{n+1};
+for n = 3:2:(nargin-1)
+    if strcmpi(varargin{n-2},'mask')
+        mask = varargin{n-1};
+    elseif strcmpi(varargin{n-2},'title')
+        mytitle = varargin{n-1};
+    elseif strcmpi(varargin{n-2},'dynamic')
+        dynamic = varargin{n-1};
+    elseif strcmpi(varargin{n-2},'color')
+        colormapname = varargin{n-1};
+    elseif strcmpi(varargin{n-2},'channel')
+        Ylabels = varargin{n-1};
     end
 end
 

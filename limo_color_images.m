@@ -33,7 +33,7 @@ if nargin == 0
     help limo_color_images
     return
 elseif nargin > 1
-    colormapname = 'varargin{2}';
+    colormapname = varargin{2};
 end
 
 %% get the colors
