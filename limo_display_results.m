@@ -332,9 +332,9 @@ if LIMO.Level == 1
                     end
 
                     if ndims(toplot)==3
-                        res = limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
+                        limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
-                        res = limo_display_image(LIMO,toplot,mask,mytitle,flag);
+                        limo_display_image(LIMO,toplot,'mask',mask,'title',mytitle,'dynamic',flag)
                     end
                 end
 
@@ -504,8 +504,7 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z1','Fontsize',14); colormap(z1, 'hot');
                     end
-                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),abs(Discriminant_coeff(:,:,1)),'Discriminant coefficients Z1',flag)
-
+                    limo_display_image(LIMO,abs(Discriminant_coeff(:,:,1)),'mask',abs(Discriminant_coeff(:,:,1)),'title','Discriminant coefficients Z1','dynamic',flag)
                     %                     figure;set(gcf,'Color','w');
                     %                     for t=1:size(Discriminant_coeff,2)
                     %                     topoplot(Discriminant_coeff(:,t,1),LIMO.data.chanlocs, 'electrodes','numbers','style','map');
@@ -1275,14 +1274,14 @@ elseif LIMO.Level == 2
         % image all results
         % ------------------
         if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle,flag)
+            limo_display_image(LIMO,toplot,'mask',mask,'title',mytitle,'dynamic',flag)
 
         elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
                 Type == 1 && strcmpi(LIMO.Analysis,'ITC')
             if ndims(toplot)==3
                 limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
             else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
+                limo_display_image(LIMO,squeeze(toplot),'mask',squeeze(mask),'title',mytitle,'dynamic',flag)
             end
 
         elseif Type == 2
