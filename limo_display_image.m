@@ -1,44 +1,66 @@
-function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
+function limo_display_image(LIMO,toplot,varargin)
 
 % This function displays images with a intensity plotted as function of
 % time or frequency (x) and electrodes (y) - for ERSP it precomputes what
 % needs to be plotted and call LIMO_display_image_tf
 %
-% FORMAT: limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
+% FORMAT: limo_display_image(LIMO,toplot,'mask',M,'title','mytitle', 'dynamic',0/1, ...
+%                       'colormap','colormapname','channelorder',Ylabels)
 %
 % INPUTS:
-%   LIMO.mat  = Name of the file to image
-%   toplot    = 2D matrix to plot (typically t/F values)
-%   mask      = areas for which to show data (to show all mask = ones(size(topolot))
-%   mytitle   = title to show
-%   dynamic   = set to 0 for no interaction (default is 1)
+%   LIMO         = the LIMO data structure
+%   toplot       = 2D matrix to plot (typically t/F values)
+%   optional arguments
+%   M            = areas for which to show data - default is ones(size(topolot))
+%   mytitle      = title to use (default is empty)
+%   dynamic      = set to 0 for no interaction (default is 1)
+%   colormapname = 'BWR' (blue-white-red, the default), 'BGY' (blue-gray-yellow)
+%                   or 'Hot' (black-red-yellow/white)
+%   Ylabels      = the order in which toplot is presented (names based on LIMO)
 %
 % The colour scales are from https://github.com/CPernet/brain_colours
-% using linear luminance across the range with cool for negative and 
-% hot for positive maps and the divergent BWR scale for negative and positive
-% maps. Note that masked values are always gray.
-%
-% Reference: Pernet & Madan (2019). Data visualization for inference in
-% tomographic brain imaging. 
-% https://onlinelibrary.wiley.com/doi/full/10.1111/ejn.14430
+% using linear luminance across the range. Note that masked values are always gray.
+% see limo_color_images. Reference: Pernet & Madan (2019). Data visualization for 
+% inference in tomographic brain imaging. https://onlinelibrary.wiley.com/doi/full/10.1111/ejn.14430
 %
 % ----------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if nargin == 4
-    dynamic = 1;
+%% defaults
+if sum(toplot(:)) == 0
+    error('the image to plot is empty')
+end
+mask         = ones(size(topolot));
+mytitle      = [];
+dynamic      = 1;
+colormapname = 'BWR';
+if isfield(LIMO.data, 'chanlocs')
+    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.chanlocs, 'UniformOutput', false);
+else
+    Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
+end
+
+% arguments in
+for n = 3:2:nargin
+    if strcmpi(varargin{n},'mask')
+        mask = varargin{n+1};
+    elseif strcmpi(varargin{n},'title')
+        mytitle = varargin{n+1};
+    elseif strcmpi(varargin{n},'dynamic')
+        dynamic = varargin{n+1};
+    elseif strcmpi(varargin{n},'color')
+        colormapname = varargin{n+1};
+    elseif strcmpi(varargin{n},'channel')
+        Ylabels = varargin{n+1};
+    end
 end
 
 %% get some informations for the plots
 
-if sum(toplot(:)) == 0
-    error('the image to plot is empty')
-end
-
-% what do we plot?  the data (toplot) masked (tpically of significance)
+% what do we plot?  the data (toplot) masked (typically of significance)
 scale           = toplot.*single(mask>0);  
 scale(scale==0) = NaN;   
-cc              = limo_color_images(scale); % get a color map commensurate to that
+cc              = limo_color_images(scale,colormapname); % get a color map commensurate to that
 
 v = max(scale(:));       % from the 2D data to plot, find max
 [e,f]=find(scale==v);    % which channel and time/frequency frame
@@ -71,7 +93,6 @@ for c=1:n_cluster
     end
     [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
-
 
 %% get frame information 
 if strcmpi(LIMO.Analysis,'Time')
@@ -288,7 +309,7 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
     imagesc(timevect,freqvect,scale);
     colormap(gca, cc);
 end
-set_imgaxes(LIMO,scale);
+set_imgaxes(LIMO,scale,Ylabels);
 title(mytitle,'Fontsize',12)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -471,7 +492,7 @@ end
 
 %% set axes and labels 
 % -------------------------------------------------------------------------
-function set_imgaxes(LIMO,scale)
+function set_imgaxes(LIMO,scale,Ylabels)
 
 img_prop = get(gca);
 set(gca,'LineWidth',2)
@@ -501,11 +522,11 @@ else
         end
     end
     
-    if isfield(LIMO.data, 'chanlocs')
-        Ylabels = arrayfun(@(x)(x.labels), LIMO.data.chanlocs, 'UniformOutput', false);
-    else
-        Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
-    end
+%     if isfield(LIMO.data, 'chanlocs')
+%         Ylabels = arrayfun(@(x)(x.labels), LIMO.data.chanlocs, 'UniformOutput', false);
+%     else
+%         Ylabels = arrayfun(@(x)(x.labels), LIMO.data.expected_chanlocs, 'UniformOutput', false);
+%     end
     
     newticks = round(linspace(1,length(Ylabels),length(img_prop.YTick)*2));
     newticks = unique(newticks);
@@ -522,11 +543,11 @@ end
 try
     maxval = max(abs(max(scale(:))),abs(min(scale(:))));
     if max(scale(:)) < 0
-        caxis([-maxval 0])
+        clim([-maxval 0])
     elseif min(scale(:)) > 0 
-        caxis([0 maxval])
+        clim([0 maxval])
     else
-        caxis([-maxval maxval])
+        clim([-maxval maxval])
     end
 catch caxiserror
     fprintf('axis issue: %s\n',caxiserror.message)
