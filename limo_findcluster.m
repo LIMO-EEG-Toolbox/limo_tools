@@ -11,6 +11,7 @@ function [cluster, num] = limo_findcluster(onoff, spatdimneighbstructmat, vararg
 %        spatdimneighbselmat is a special neighbourhood matrix that is used for selecting
 %                            channels/combinations on the basis of the minnbchan criterium
 %        minnbchan the minimum number of neighbouring channels/combinations
+%        clusterconnectivity connectivity for bwlabeln
 %
 % The neighbourhood structure for the first dimension is specified using
 % spatdimneighbstructmat, which is a 2D (N1xN1) matrix. Each row and each column corresponds
@@ -59,8 +60,17 @@ minnbchan=2;
 if length(varargin)==1
     minnbchan           = varargin{1};
 elseif length(varargin)==2
+    if all(size(varargin{1}) == [1 1])
+        minnbchan           = varargin{1};
+        clusterconnectivity = varargin{2};
+    else
+        spatdimneighbselmat = varargin{1};
+        minnbchan           = varargin{2};
+    end
+elseif length(varargin)==3
     spatdimneighbselmat = varargin{1};
     minnbchan           = varargin{2};
+    clusterconnectivity = varargin{3};
 end
 
 if minnbchan>0
@@ -68,11 +78,10 @@ if minnbchan>0
     % neighbours this channel has. If a significant channel has less than minnbchan
     % significant neighbours, then this channel is removed from onoff.
     
-    if length(varargin)==1
-        selectmat = single(spatdimneighbstructmat | spatdimneighbstructmat');
-    end
-    if length(varargin)==2
+    if exist('spatdimneighbselmat','var')
         selectmat = single(spatdimneighbselmat | spatdimneighbselmat');
+    else    
+        selectmat = single(spatdimneighbstructmat | spatdimneighbstructmat');
     end
     nremoved=1;
     while nremoved>0
@@ -98,7 +107,7 @@ if exist('spm_bwlabel','file') == 3   % axs - preferentially use spm_bwlabel mex
     
 elseif exist('bwlabeln','file') == 2 && exist('spm_bwlabel','file') ~= 3
     for spatdimlev=1:spatdimlength
-        [labelmat(spatdimlev, :, :), num] = bwlabeln(reshape(onoff(spatdimlev, :, :), nfreq, ntime), 4);
+        [labelmat(spatdimlev, :, :), num] = bwlabeln(reshape(onoff(spatdimlev, :, :), nfreq, ntime), clusterconnectivity);
         labelmat(spatdimlev, :, :) = labelmat(spatdimlev, :, :) + (labelmat(spatdimlev, :, :)~=0)*total;
         total = total + num;
     end

@@ -1,4 +1,4 @@
-function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav)
+function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,boot_maxclustersum,channeighbstructmat,minnbchan,alphav,clusterconnectivity)
 
 % limo_cluster_test finds clusters of significant F values, computes the
 % sum of F values inside each cluster, and compares that sum to a threshold
@@ -11,7 +11,8 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 %         boot_maxclustersum = distribution of cluster maxima observed under H0 
 %         channeighbstructmat = output of limo_ft_neighbourselection
 %         minnbchan = minimum number of channels, default = 2
-%         alpha level, default 0.05
+%         alpha level, default = 0.05
+%         clusterconnectivity connectivity for bwlabeln, default = 4
 %
 % OUTPUTS: mask = 3D or 2D logical matrix of significant effects corrected
 %                 for multiple comparisons by a cluster test
@@ -25,12 +26,12 @@ function [mask, pval, maxval, maxclustersum_th] = limo_cluster_test(ori_f,ori_p,
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 
-
-if nargin<5; alphav=.05;  end
-if nargin<4; minnbchan=2; end
+if nargin<6; clusterconnectivity=4; end
+if nargin<5; alphav=.05;            end
+if nargin<4; minnbchan=2;           end
 
 % find clusters in the observed data
-[posclusterslabelmat,nposclusters] = limo_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan);
+[posclusterslabelmat,nposclusters] = limo_findcluster(ori_p<=alphav,channeighbstructmat,minnbchan,clusterconnectivity);
 
 % get bootstrap parameters
 nboot                              = length(boot_maxclustersum);
