@@ -19,7 +19,7 @@ addpath([limo_folder filesep 'external' filesep 'psom']);
 addpath([limo_folder filesep 'help']); addpath([limo_folder filesep 'deprecated']
 ```
 
-LIMO 3.0 has been tested with EEGLAB 2021.0. This [test script](https://github.com/sccn/eeglab-testcases/blob/master/unittesting_limo/limo_preproc_stats_hw.m) runs nightly to make sure LIMO remains stable.
+LIMO 4.0 has been tested with EEGLAB 2021.0. This [test script](https://github.com/sccn/eeglab-testcases/blob/master/unittesting_limo/limo_preproc_stats_hw.m) runs nightly to make sure LIMO remains stable.
 
 ## Documentation
 The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
