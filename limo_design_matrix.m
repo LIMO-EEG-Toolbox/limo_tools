@@ -293,7 +293,7 @@ if ~isempty(Cat)
             errordlg(sprintf('the design is too unbalanced to be corrected \n can''t run full factorial'))
             nb_interactions = 0; X = [full_design ones(size(Yr,3),1)];
             full_factorial = 0; LIMO.design.fullfactorial = 0;
-            save('LIMO.mat','LIMO')
+            save('LIMO.mat','LIMO',"-v7.3")
         else
             nb_trials = sum(higher_interaction);
             if length(unique(nb_trials)) > 1
@@ -355,7 +355,7 @@ try
     % only for univariate analyses
     if strcmp(type_of_analysis,'Mass-univariate')
         R2 = NaN(size(Yr,1),size(Yr,2),3);
-        save('R2.mat','R2');
+        save('R2.mat','R2',"-v7.3")
     end
     
     % these ones will be created in limo_eeg
@@ -371,10 +371,10 @@ try
         tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
     end
     
-    save('Yhat.mat','Yhat');   clear Yhat
-    save('Betas.mat','Betas'); clear Betas
-    save('Res.mat','Res');     clear Res
-    save('Yr.mat','Yr') ;      clear Yr R2
+    save('Yhat.mat','Yhat',"-v7.3");   clear Yhat
+    save('Betas.mat','Betas',"-v7.3"); clear Betas
+    save('Res.mat','Res',"-v7.3");     clear Res
+    save('Yr.mat','Yr',"-v7.3");      clear Yr R2
     
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end

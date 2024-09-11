@@ -279,7 +279,7 @@ if strcmp(LIMO.design.status,'to do')
     if ~isfield(LIMO.design,'name')
         LIMO.design.name    = 'GLM';
     end
-    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO',"-v7.3");
     
     if strcmpi(LIMO.Analysis,'Time-Frequency')
         Yhat  = limo_tf_4d_reshape(Yhat);
@@ -759,7 +759,7 @@ if LIMO.design.tfce == 1
                     error('no neighbouring matrix ''channeighbstructmat'' found')
                 else
                     LIMO.data.neighbouring_matrix = getfield(tmp,fn{index});
-                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO',"-v7.3");
                 end
             end
         else
@@ -767,7 +767,7 @@ if LIMO.design.tfce == 1
             if isempty(LIMO.data.neighbouring_matrix)
                 limo_error('no neighbouring matrix returned, try creating with limo tools')
             else
-                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO',"-v7.3")
             end
         end
     end
