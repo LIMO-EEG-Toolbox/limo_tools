@@ -783,8 +783,8 @@ switch type
                 end
                 Yhat             = NaN(size(data));
                 Condition_effect = NaN(size(data,1),size(data,2),2);
-                LIMO.design.df    = NaN(size(data,1),1);
-                LIMO.design.dfe   = NaN(size(data,1),size(data,2));
+                LIMO.design.df   = NaN(size(data,1),1);
+                LIMO.design.dfe  = NaN(size(data,1),size(data,2));
                 array            = find(~isnan(data(:,1,1)));
                 for e=1:size(array,1)
                     channel = array(e); fprintf('processing channel %g \n',channel);
@@ -1294,8 +1294,11 @@ switch type
                 array = find(~isnan(centered_data(:,1,1,1)));
 
                 % preallocation for parfor
-                H0_Rep_ANOVA_Gp_effect_sub = []; % avoid parfor warning
                 tmp_boot_H0_Rep_ANOVA_Interaction_with_gp_sub = []; % avoid parfor warning
+                if type ==3 || type == 4
+                    H0_Rep_ANOVA_Gp_effect_sub = []; % avoid parfor warning
+                end
+
                 if type ==1
                     tmp_boot_H0_Rep_ANOVA_sub = NaN(size(centered_data,1),size(centered_data,2),1,2);
                 elseif type == 2
