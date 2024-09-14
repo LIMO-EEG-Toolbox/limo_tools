@@ -332,9 +332,9 @@ if LIMO.Level == 1
                     end
 
                     if ndims(toplot)==3
-                        res = limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
+                        limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
                     else
-                        res = limo_display_image(LIMO,toplot,mask,mytitle,flag);
+                        limo_display_image(LIMO,toplot,mask,mytitle,flag);
                     end
                 end
 
