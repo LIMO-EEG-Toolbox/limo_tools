@@ -135,12 +135,15 @@ if ~isempty(Cat)
 end
 
 if ~isempty(Cont)
-    check         = find(sum(isnan(Cont),2)==size(Cont,2));
-    Cont(check,:) = [];
-    if ~isempty(Cat)
-        Cat(check,:) = [];
+    check  = find(sum(isnan(Cont),2));
+    if ~isempty(check)
+        warning('NaN values found in the continuous variable(s), trimming data')
+        Cont(check,:) = [];
+        if ~isempty(Cat)
+            Cat(check,:) = [];
+        end
+        Y(:,:,check) = [];
     end
-    Y(:,:,check) = [];
 end
 
 % additional checking for regressions
