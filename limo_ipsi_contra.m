@@ -7,8 +7,8 @@ function limo_ipsi_contra(varargin)
 % those type of analyses are common for lateralized experiments like e.g.
 % N2pc https://en.wikipedia.org/wiki/N2pc
 %
-% FORMAT LIMO_LI(betafiles,'parameters',[A B],'chanlocs',chanstruct,'channelpairs',channelindices)
-%        LIMO_LI(confiles1,confiles2,'chanlocs',chanstruct,'channelpairs',channelindices)
+% FORMAT limo_ipsi_contra(betafiles,'parameters',[A B],'chanlocs',chanstruct,'channelpairs',channelindices,nboot,tfce)
+%        limo_ipsi_contra(confiles1,confiles2,'chanlocs',chanstruct,'channelpairs',channelindices,nboot,tfce))
 %
 % INPUTS List of beta files + parameters (ie column of the design matrix) or two lists of con files
 %       'channelpairs' key matches the channelindices values, a n*2 matrix for chanloc to pair
@@ -25,7 +25,7 @@ function limo_ipsi_contra(varargin)
 LIMO.dir  = pwd;
 LIMO.Type = 'Channels'; % in theory we could do source as well
 
-if nargin == 6 % con files
+if nargin == 8 % con files
     [Names{1},Paths{1},LIMO.data.data{1}] = limo_get_files([],[],[],varargin{1});
     LIMO.data.data_dir{1}                 = Paths{1};
     [Names{2},Paths{2},LIMO.data.data{2}] = limo_get_files([],[],[],varargin{2});
@@ -47,7 +47,7 @@ if nargin == 6 % con files
     end
     LIMO.design.parameters = [1 2];
 
-elseif nargin == 7 % beta files
+elseif nargin == 9 % beta files
     [~,Paths,Files] = limo_get_files([],[],[],varargin{1});
     for n=2:2:7
         if contains(varargin{n},'parameter','IgnoreCase',true)
@@ -62,6 +62,9 @@ elseif nargin == 7 % beta files
         end
     end
 end
+
+nboot = varargin{end-1};
+tfce  = varargin{end};
 
 %% iterate through subjects to create files
 % contralateral = (right hemisphere channels condition 1 + left hemisphere channels for condition 2) / 2
@@ -119,8 +122,8 @@ for n = size(channelindices,1):-1:1
 end
 LIMO.data.neighbouring_matrix = LIMO.data.neighbouring_matrix(channelindices(:,1),channelindices(:,1));
 LIMO.design.name              = ['Paired t-test all ' LIMO.Type(1:end-1)];
-LIMO.design.bootstrap         = 1000;
-LIMO.design.tfce              = 1;
+LIMO.design.bootstrap         = nboot;
+LIMO.design.tfce              = tfce;
 save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
 limo_random_robust(3,contralateral,ipsilateral,[1 2],LIMO);
 
