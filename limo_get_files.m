@@ -52,7 +52,7 @@ end
 if nargin >= 3
     guititle = varargin{3};
 end
-
+ 
 if nargin == 4
     path2file = varargin{4};
     if iscell(path2file)
