@@ -39,6 +39,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                'channel' Index of the electrode(s) to use if '1 channel/component only'
 %                            is selected in analysis_type
 %                'type' is 'Channels' or 'Component'
+%                'method': 'robust','weighted','mean'; 
 %                'nboot' is the number of bootstrap to do (default = 1000)
 %                'tfce' 0/1 indicates to computes tfce or not (default = 0)
 %                'zscore' for regression design, default [] will ask user
@@ -116,6 +117,7 @@ LIMO.design.tfce       = 0;
 LIMO.design.electrode  = [];
 LIMO.design.component  = [];
 LIMO.design.parameters = [];
+LIMO.design.method     = [];
 regressor_file         = [];
 analysis_type          = [];
 zopt                   = [];
@@ -151,6 +153,12 @@ for in = 1:2:(nargin-2)
         end
     elseif contains(varargin{in},'factor')
         LIMO.design.factor_names = varargin{in+1};
+    elseif strcmpi(varargin{in},'method')
+        if any(strcmpi(varargin{in+1},{'robust','weighted','mean'}))
+            LIMO.design.method = varargin{in+1};
+        else
+            error('unrecognized method selected')
+        end
     elseif strcmpi(varargin{in},'type')
         LIMO.Type = varargin{in+1};
     elseif strcmpi(varargin{in},'nboot')
@@ -375,7 +383,15 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             Yr                 = tmp_data; clear tmp_data
             LIMO.design.name   = 'Robust one sample t-test';
             LIMO.design.X      = ones(size(data,4),1);
-            LIMO.design.method = 'Trimmed mean';
+            if strcmpi(LIMO.design.method,'robust')
+                LIMO.design.method = 'Trimmed mean';
+            elseif strcmpi(LIMO.design.method,'weighted')
+                LIMO.design.method = 'Weighted mean';
+                [LIMO.design.weight.global,LIMO.design.weight.local] = ...
+                    limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs);
+            else
+                LIMO.design.method = 'Mean';
+            end
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             save(fullfile(LIMO.dir,'Yr.mat'),'Yr','-v7.3');
             tmpname = limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
@@ -790,7 +806,16 @@ elseif strcmpi(stattest,'paired t-test')
         end
     end
 
-    LIMO.design.method = 'Yuen t-test (Trimmed means)';
+    if strcmpi(LIMO.design.method,'Robust')
+        LIMO.design.method = 'Yuen t-test (Trimmed means)';
+    elseif strcmpi(LIMO.design.method,'weighted')
+        LIMO.design.method = 'Weighted mean';
+        [LIMO.design.weight.global,LIMO.design.weight.local] = ...
+            limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs);
+    else
+        LIMO.design.method = 'Mean';
+    end
+
     if strcmp(LIMO.Analysis,'Time-Frequency')
         LIMO.data.size3D = [size(tmp_data1,1) size(tmp_data1,2)*size(tmp_data1,3) 5];
         LIMO.data.size4D = [size(tmp_data1,1) size(tmp_data1,2) size(tmp_data1,3) 5];

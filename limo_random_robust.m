@@ -181,7 +181,11 @@ switch type
                 if strcmpi(LIMO.design.method,'Trimmed Mean')
                     [one_sample(channel,:,4),one_sample(channel,:,1),~,one_sample(channel,:,2), ...
                         one_sample(channel,:,5),~,one_sample(channel,:,3)] = limo_trimci(Y);
-                elseif strcmpi(LIMO.design.method,'Mean')
+                elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
+                    if strcmpi(LIMO.design.method,{'Weighted mean'})
+                        W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
+                        Y = Y.*repmat(size(Y,1),W); % weights are subjects repeat over time
+                    end
                     [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
                         one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
                     one_sample(channel,:,2) = sd./sqrt(n);
@@ -218,7 +222,11 @@ switch type
                 % create centered data to estimate H0
                 if strcmpi(LIMO.design.method,'Trimmed Mean')
                     centered_data = data - repmat(limo_trimmed_mean(data),[1 1 size(data,3)]);
-                elseif strcmpi(LIMO.design.method,'Mean')    
+                elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
+                    if strcmpi(LIMO.design.method,{'Weighted mean'})
+                        W = LIMO.design.weight.local;
+                        data = data.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
+                    end
                     centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
                 end
                 % get boot table
@@ -235,7 +243,7 @@ switch type
                         parfor b=1:LIMO.design.bootstrap
                             [t{b},~,~,~,p{b},~,~] = limo_trimci(Y(1,:,boot_table{channel}(:,b)));
                         end
-                    elseif strcmpi(LIMO.design.method,'Mean')
+                    elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
                         parfor b=1:LIMO.design.bootstrap
                             [~,~,~,~,~,t{b},p{b}] = limo_ttest(1,Y(1,:,boot_table{channel}(:,b)),0,5/100);
                         end
@@ -509,12 +517,25 @@ switch type
         for e = 1:size(array,1)
             channel = array(e);
             fprintf('analyse parameter %s channel %g',num2str(parameter')', channel); disp(' ');
-            tmp = data1(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-            tmp = data2(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+            tmp = data1(channel,:,:); 
+            Y1 = tmp(1,:,find(~isnan(tmp(1,1,:))));
+            if strcmpi(LIMO.design.method,'Weighted mean')
+                W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
+                Y1 = Y1.*repmat(size(Y1,1),W); % weights are subjects repeat over time
+            end
+            clear tmp
+            tmp = data2(channel,:,:); 
+            Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); 
+            if strcmpi(LIMO.design.method,'Weighted mean')
+                W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
+                Y2 = Y1.*repmat(size(Y2,1),W); % weights are subjects repeat over time
+            end
+            clear tmp
+
             if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                 [paired_samples(channel,:,4),paired_samples(channel,:,1),paired_samples(channel,:,2),...
                     ~,paired_samples(channel,:,5),~,paired_samples(channel,:,3)]=limo_yuend_ttest(Y1,Y2); 
-            else % strcmpi(LIMO.design.method,'Mean')
+            elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
                 [paired_samples(channel,:,1),paired_samples(channel,:,3),~,sd,n,paired_samples(channel,:,4),...
                     paired_samples(channel,:,5)]=limo_ttest(1,Y1,Y2,.05);
                 paired_samples(channel,:,2) = sd./sqrt(n);
@@ -548,7 +569,12 @@ switch type
                 if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                     data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
-                else % if strcmpi(LIMO.design.method,'Mean')
+                else 
+                    if strcmpi(LIMO.design.method,{'Weighted mean'})
+                        W = LIMO.design.weight.local;
+                        data1 = data1.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
+                        data2 = data2.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
+                    end
                     data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 end
