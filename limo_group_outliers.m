@@ -1,5 +1,5 @@
 function [all_weights, channel_weights, all_errors, channel_errors, outliers,...
-    recon_beta, recon_beta_all_weighted, recon_beta_channel_weighted] = ...
+    recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
          limo_group_outliers(Beta_files,expected_chanlocs)
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
@@ -94,10 +94,10 @@ all_errors = zeros(1, nSubj);            % per-subject global error
 channel_errors = zeros(nChan, nSubj);    % per-channel, per-subject error
 
 % We will also store the final reconstructions for reference
-recon_beta  = recon_all;   % same shape as betas
+recon_betas  = recon_all;   % same shape as betas
 % Weighted versions:
-recon_beta_all_weighted      = zeros(size(recon_all));
-recon_beta_channel_weighted  = zeros(size(recon_all));
+recon_betas_all_weighted      = zeros(size(recon_all));
+recon_betas_channel_weighted  = zeros(size(recon_all));
 
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
@@ -111,7 +111,7 @@ for iSubj = 1:nSubj
     sub_error = orig_subj - recon_subj; 
     
     
-    % If X_matrix is size (trials, nBeta)
+    % If X_matrix is size (nTrials, nBeta)
     X_transposed = X_matrix(1:nBeta, :)';  
     % X_transposed has shape (someDim, nBeta).
     % sub_error we want to multiply along the "beta" dimension. 
@@ -165,7 +165,7 @@ channel_weights = exp(-channel_errors_normalized);    % size = (nChan, nSubj)
 
 %% 7) Second loop: Apply weights to reconstructions
 %  recon_beta is already the unweighted reconstruction = recon_all
-recon_beta = recon_all;  % shape (nBeta, nChan, nTime, nSubj)
+recon_betas = recon_all;  % shape (nBeta, nChan, nTime, nSubj)
 
 % Weighted arrays (same shape)
 for iSubj = 1:nSubj
@@ -174,15 +174,15 @@ for iSubj = 1:nSubj
     
     for iBeta = 1:nBeta
         % Extract the reconstruction for subject iSubj, beta iBeta
-        recon_iBeta = recon_beta(iBeta, :,:, iSubj);  % shape (1, nChan, nTime)
+        recon_iBeta = recon_betas(iBeta, :,:, iSubj);  % shape (1, nChan, nTime)
         
         % -- (a) Subject-level (global) weighting:
-        recon_beta_all_weighted(iBeta, :,:, iSubj) = w_subj * recon_iBeta;
+        recon_betas_all_weighted(iBeta, :,:, iSubj) = w_subj * recon_iBeta;
         
         % -- (b) Channel-wise weighting:
         % Multiply each channel by w_chan(ch).
         for ch = 1:nChan
-            recon_beta_channel_weighted(iBeta, ch, :, iSubj) = w_chan(ch) * recon_iBeta(:,ch, :);
+            recon_betas_channel_weighted(iBeta, ch, :, iSubj) = w_chan(ch) * recon_iBeta(:,ch, :);
         end
     end
 end
