@@ -1,6 +1,6 @@
-function [all_weights, channel_weights, all_errors, channel_errors, outliers,...
+function [globalWeights, localWeights, all_errors, channel_errors, outliers, ...
     recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
-         limo_group_outliers(Beta_files,expected_chanlocs)
+         limo_group_outliers(Beta_files, expected_chanlocs, X_matrix)
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
 %
@@ -65,6 +65,35 @@ if ischar(expected_chanlocs)
 %     data(:,:,:,subject) = limo_match_elec(LIMO.data.chanloc,data.expected_chanlocs,a_beg,a_end,betas)
 % end
 
+%% Check for design matrix (X_matrix)
+if nargin < 3 || isempty(X_matrix)
+    % Try to retrieve LIMO.design.X from the base workspace
+    try 
+        X_matrix = evalin('base','LIMO.design.X');
+    catch
+        error('Design matrix X_matrix is required. Pass it as the third argument or set LIMO.design.X in the base workspace.');
+    end
+end
+
+%% 0) Load beta values from Beta_files
+if ischar(Beta_files)
+    beta_data = load(Beta_files);
+    if isfield(beta_data, 'betas')
+         betas = beta_data.betas;
+    else
+         error('The file %s does not contain variable "betas".', Beta_files);
+    end
+elseif isstruct(Beta_files)
+    if isfield(Beta_files, 'betas')
+         betas = Beta_files.betas;
+    else
+         error('Beta_files structure does not contain variable "betas".');
+    end
+else
+    error('Beta_files must be a filename or a structure.');
+end
+% For the autoencoder call, we use beta_values (assumed to have same content as betas)
+beta_values = betas;
 
 
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
