@@ -90,12 +90,23 @@ end
 
 try
     if ischar(expected_chanlocs)
-        LIMO.data = load(expected_chanlocs);
-        if isfield(LIMO.data,'expected_chanlocs')
-            LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+        tmp = load(expected_chanlocs);
+        FN  = fieldnames(tmp);
+        if length(FN) ==1 
+            if ~any(contains(FN{1},{'expected_chanlocs','channeighbstructmat'}))
+                tmp = tmp.(FN{1});
+            end
         end
-        if isfield(LIMO.data,'channeighbstructmat')
-            LIMO.data = renameStructField(LIMO.data, 'channeighbstructmat', 'neighbouring_matrix');
+
+        if any(isfield(tmp,{'expected_chanlocs','channeighbstructmat'}))
+            if any(isfield(tmp,'expected_chanlocs'))
+                LIMO.data.expected_chanlocs = tmp.expected_chanlocs;
+            end
+            if any(isfield(tmp,'channeighbstructmat'))
+                LIMO.data.neighbouring_matrix = tmp.channeighbstructmat;
+            end
+        else
+            error("Can't find the channel information from %s",expected_chanlocs)
         end
     else
         LIMO.data.chanlocs            = expected_chanlocs.expected_chanlocs;
@@ -811,7 +822,7 @@ elseif strcmpi(stattest,'paired t-test')
     elseif strcmpi(LIMO.design.method,'weighted')
         LIMO.design.method = 'Weighted mean';
         [LIMO.design.weight.global,LIMO.design.weight.local] = ...
-            limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs,LIMO.design.X);
+            limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,LIMO.data.neighbouring_matrix);
     else
         LIMO.design.method = 'Mean';
     end
