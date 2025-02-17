@@ -63,7 +63,7 @@ end
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
-learned_betas = pyrunfile("NiPyAEoutliers.py", data, ...
+learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
     datain = data, binatry_matrix = adjacency_matrix);
 
 
