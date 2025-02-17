@@ -1,6 +1,6 @@
 function [globalWeights, localWeights, all_errors, channel_errors, outliers, ...
     recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
-         limo_group_outliers(Beta_files, expected_chanlocs)
+         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix)
 
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
@@ -22,7 +22,9 @@ function [globalWeights, localWeights, all_errors, channel_errors, outliers, ...
 %       expected_chanlocs - A file name or struct with expected channel
 %                          locations -- allows having same channels for all
 %                          subhects
-%       adjacency matrix  - binary neighbouring matrix fo the graph
+%       framestart        - 1st frame in time or freq, or [freq time]
+%       frameend          - last frame in time or freq, or [freq time]
+%       adjacency_matrix  - binary neighbouring matrix fo the graph
 %
 %   OUTPUTS:
 %       all_weights                  : 1 x nSubj array containing the global
@@ -44,9 +46,15 @@ function [globalWeights, localWeights, all_errors, channel_errors, outliers, ...
 
 %% organize inputs
 
-for subject = 1:N
+for subject = 1:max(size(Beta_files))
+    tmp = load(Beta_files{subject}); S.Betas = tmp.Betas;
+    tmp = load(fullfile(fileparts(Beta_files{subject}),'LIMO.mat')); S.LIMO = tmp.LIMO;
     % load LIMO.mat of the subject use LIMO.data.chanloc
-    data(:,:,:,subject) = limo_match_elec(LIMO.data.chanloc,data.expected_chanlocs,a_beg,a_end,betas)
+    out = limo_match_elec(S.LIMO.data.chanlocs, ...
+        expected_chanlocs,framestart,frameend,S.Betas);
+    for nb = 1:size(out,3) 
+        data(nb,:,:,subject) = squeeze(out(:,:,nb))';
+    end
 end
 
 
@@ -55,8 +63,8 @@ end
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
-learned_betas = pyrunfile("NiPyAEoutliers.py", learned_betas, ...
-    datain = beta_values, binatry_matrix = neighbourgh_matrix);
+learned_betas = pyrunfile("NiPyAEoutliers.py", data, ...
+    datain = data, binatry_matrix = adjacency_matrix);
 
 
 %% 2) Extract or reorder 'learned_betas' from the Python struct

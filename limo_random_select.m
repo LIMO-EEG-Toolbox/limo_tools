@@ -822,7 +822,8 @@ elseif strcmpi(stattest,'paired t-test')
     elseif strcmpi(LIMO.design.method,'weighted')
         LIMO.design.method = 'Weighted mean';
         [LIMO.design.weight.global,LIMO.design.weight.local] = ...
-            limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,LIMO.data.neighbouring_matrix);
+            limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,...
+            first_frame,last_frame,LIMO.data.neighbouring_matrix);
     else
         LIMO.design.method = 'Mean';
     end
