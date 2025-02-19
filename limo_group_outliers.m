@@ -55,20 +55,19 @@ for subject = 1:max(size(Beta_files))
     for nb = 1:size(out,3) 
         data(nb,:,:,subject) = squeeze(out(:,:,nb))';
     end
+    clear tmp S out
 end
-
-
-
 
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
+warning('be patient - running the GAE ... ')
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
     datain = data, binatry_matrix = adjacency_matrix);
-
+% save learned_betas
 
 %% 2) Extract or reorder 'learned_betas' from the Python struct
-[nBeta, nChan, nTime, nSubj] = size(betas);
+[nBeta, nChan, nTime, nSubj] = size(learned_betas);
 %    with shape [nBeta, nSubj, nChan, nTime].
 if isfield(learned_betas, 'reconstructed')
     recon_all = learned_betas.reconstructed; % shape: (nBeta, nSubj, nChan, nTime)

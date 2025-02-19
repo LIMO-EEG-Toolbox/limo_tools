@@ -53,10 +53,12 @@ else
             if isempty(test) || (test == 1)
                 test = 0; 
             end % basically renamed EEG00X
+            warning off
             if strcmpi(c_elec(current).labels,e_elec(expected).labels) || ...
                     strcmpi(c_elec(current).labels,e_elec(expected).labels([1:test, test+4:end]))
                 out(expected,:,:) = data(current,a_beg:a_end,:);
             end
+            warning on
         end
     end
 end
