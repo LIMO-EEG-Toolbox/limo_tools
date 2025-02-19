@@ -458,7 +458,7 @@ elseif strcmpi(stattest,'two-samples t-test')
 
         if gp>2
             msg = 'input must be a cell array of dimension 2 (gps) * N (list)';
-            limo_error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
+            limo_errordlg(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
         end
 
         % now read
@@ -636,7 +636,7 @@ elseif strcmpi(stattest,'paired t-test')
 
         if pair>2
             msg = 'input must be a cell array of dimension N (list) *2 (pairs)';
-            limo_error(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
+            limo_errordlg(sprintf('%s\n observed input is %g * %g',msg,size(LIMO.data.data)))
             return
         end
 
@@ -823,7 +823,7 @@ elseif strcmpi(stattest,'paired t-test')
         LIMO.design.method = 'Weighted mean';
         [LIMO.design.weight.global,LIMO.design.weight.local] = ...
             limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,...
-            first_frame,last_frame,LIMO.data.neighbouring_matrix);
+            first_frame,last_frame,LIMO.data.neighbouring_matrix,LIMO.design.X);
     else
         LIMO.design.method = 'Mean';
     end

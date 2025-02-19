@@ -1,6 +1,6 @@
-function [globalWeights, localWeights, all_errors, channel_errors, outliers, ...
+function [all_weights, channel_weights, all_errors, channel_errors, outliers, ...
     recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
-         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix)
+         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix,X_matrix)
 
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
@@ -62,12 +62,16 @@ end
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
 warning('be patient - running the GAE ... ')
+
+% pyenv('Version',"your python path")
+
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
     datain = data, binatry_matrix = adjacency_matrix);
+learned_betas = struct(learned_betas);
 % save learned_betas
 
 %% 2) Extract or reorder 'learned_betas' from the Python struct
-[nBeta, nChan, nTime, nSubj] = size(learned_betas);
+
 %    with shape [nBeta, nSubj, nChan, nTime].
 if isfield(learned_betas, 'reconstructed')
     recon_all = learned_betas.reconstructed; % shape: (nBeta, nSubj, nChan, nTime)
@@ -79,17 +83,22 @@ end
 % --> we permute dimensions 2 <-> 4:
 % original: (1=nBeta, 2=nSubj, 3=nChan, 4=nTime)
 % desired:  (1=nBeta, 2=nChan, 3=nTime, 4=nSubj)
-recon_all = permute(recon_all, [1 3 4 2]);  % now shape = (nBeta, nChan, nTime, nSubj)
+recon_all_mat = double(recon_all);
+recon_all_mat = permute(recon_all_mat, [1 3 4 2]);  % now shape = (nBeta, nChan, nTime, nSubj)
+[nBeta, nChan, nTime, nSubj] = size(recon_all_mat);
+
 
 %% 3) Initialize error containers
 all_errors = zeros(1, nSubj);            % per-subject global error
 channel_errors = zeros(nChan, nSubj);    % per-channel, per-subject error
 
+
+
 % We will also store the final reconstructions for reference
-recon_betas  = recon_all;   % same shape as betas
+recon_betas  = recon_all_mat;   % same shape as betas
 % Weighted versions:
-recon_betas_all_weighted      = zeros(size(recon_all));
-recon_betas_channel_weighted  = zeros(size(recon_all));
+recon_betas_all_weighted      = zeros(size(recon_betas));
+recon_betas_channel_weighted  = zeros(size(recon_betas));
 
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
@@ -98,8 +107,9 @@ for iSubj = 1:nSubj
     %    for all betas simultaneously.
     %    shape: (nBeta, nChan, nTime)
     % -------------------------------------
+    betas = permute(data, [1 3 2 4]);
     orig_subj = betas(:,:,:,iSubj);    % (nBeta, nChan, nTime)
-    recon_subj = recon_all(:,:,:,iSubj); 
+    recon_subj = recon_betas(:,:,:,iSubj); 
     sub_error = orig_subj - recon_subj; 
     
     
@@ -157,7 +167,7 @@ channel_weights = exp(-channel_errors_normalized);    % size = (nChan, nSubj)
 
 %% 7) Second loop: Apply weights to reconstructions
 %  recon_beta is already the unweighted reconstruction = recon_all
-recon_betas = recon_all;  % shape (nBeta, nChan, nTime, nSubj)
+recon_betas = recon_all_mat;  % shape (nBeta, nChan, nTime, nSubj)
 
 % Weighted arrays (same shape)
 for iSubj = 1:nSubj
