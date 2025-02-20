@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # NiPyAEoutliers.py
+# Renxiang Qiu
 
 import numpy as np
 import torch
@@ -123,7 +124,7 @@ class GraphAutoencoder(nn.Module):
 # ===========================================
 # 6) Training and evaluation
 # ===========================================
-def train_model_all(model, train_loader, device, num_epochs=300):
+def train_model_all(model, train_loader, device, num_epochs):
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.SmoothL1Loss()
@@ -172,8 +173,9 @@ def evaluation_model(model, data_sample, edge_index, device):
 #    4) Store reconstruction in a final array.
 # ===========================================
 
-num_features = nTime  # if each channel is a node, and feature vector = [nTime]
-num_epochs   = 300     # set as needed
+num_features = nTime   # if each channel is a node, and feature vector = [nTime]
+num_epochs   = 200     # number of training - set as needed
+batch_size   = 4;      # dataset/batch to update hyperparameters
 
 models = []
 reconstructions_list = []  # will hold arrays of shape [nSubject, nChan, nTime] for each beta
@@ -181,9 +183,9 @@ reconstructions_list = []  # will hold arrays of shape [nSubject, nChan, nTime] 
 for iBeta in range(nBeta):
     print(f"\n=== Building dataset/model for Beta {iBeta} ===")
     # Build dataset & loader
-    full_dataset_i = build_concat_dataset_for_beta(datain, iBeta)
+    full_dataset_i  = build_concat_dataset_for_beta(datain, iBeta)
     graph_dataset_i = EEGGraphDataset(full_dataset_i, edge_index)
-    full_loader_i = GeometricDataLoader(graph_dataset_i, batch_size=4, shuffle=True)
+    full_loader_i   = GeometricDataLoader(graph_dataset_i, batch_size=batch_size, shuffle=True)
 
     # Init model & train
     model_i = GraphAutoencoder(num_features=num_features, embedding_dim=32)
