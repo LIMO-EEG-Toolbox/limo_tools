@@ -521,14 +521,14 @@ switch type
             Y1 = tmp(1,:,find(~isnan(tmp(1,1,:))));
             if strcmpi(LIMO.design.method,'Weighted mean')
                 W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
-                Y1 = Y1.*repmat(size(Y1,1),W); % weights are subjects repeat over time
+                Y1 = squeeze(Y1).*repmat(W',[1 size(Y1,1)])'; % weights are subjects repeat over time
             end
             clear tmp
             tmp = data2(channel,:,:); 
             Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); 
             if strcmpi(LIMO.design.method,'Weighted mean')
                 W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
-                Y2 = Y1.*repmat(size(Y2,1),W); % weights are subjects repeat over time
+                Y2 = squeeze(Y2).*repmat(W',[1 size(Y2,1)])'; % weights are subjects repeat over time
             end
             clear tmp
 
@@ -572,8 +572,8 @@ switch type
                 else 
                     if strcmpi(LIMO.design.method,{'Weighted mean'})
                         W = LIMO.design.weight.local;
-                        data1 = data1.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
-                        data2 = data2.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
+                        data1 = data1.*repmat(size(data1,2),W); % weights are channel*subjects repeat over time
+                        data2 = data2.*repmat(size(data2,2),W); % weights are channel*subjects repeat over time
                     end
                     data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);

@@ -823,7 +823,7 @@ elseif strcmpi(stattest,'paired t-test')
         LIMO.design.method = 'Weighted mean';
         [LIMO.design.weight.global,LIMO.design.weight.local] = ...
             limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,...
-            first_frame,last_frame,LIMO.data.neighbouring_matrix,LIMO.design.X);
+            first_frame,last_frame,LIMO.data.neighbouring_matrix);
     else
         LIMO.design.method = 'Mean';
     end
@@ -1656,7 +1656,7 @@ function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match
 %         channeighbstructmat the neighbourg matrices
 %
 % the LIMO structure is also updated the reflect the smallest interval(s) across subjects,
-% which is used for the second leve analysis
+% which is used for the second level analysis
 
 channeighbstructmat = [];
 disp('match frames between subjects ...')
