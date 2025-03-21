@@ -1170,7 +1170,7 @@ elseif LIMO.Level == 2
             end
         catch no_cache
             data_cached = 0;
-            limo_errordlg(no_cache,'failed to chache data %s',no_cache.message)
+            limo_errordlg(no_cache,'failed to use cached data %s',no_cache.message)
         end
     end
 
