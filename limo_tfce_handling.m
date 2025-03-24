@@ -11,13 +11,18 @@ function [tfce_score,thresholded_maps] = limo_tfce_handling(varargin)
 % OUTPUTS tfce_* files are saved on the drive in a tfce folder
 %         H0_tfce_* files are saved on the drive in the H0 folder
 %         tfce_score is the tfce_score for the data of the file in
-%         thresholded_maps is all the thresholded maps i.e. for each dh
+% ------------------------------------------------------------------
+% Cyril R. Pernet - Copyright (C) LIMO Team 2020
+
+
+% FOR TFCE VALIDATION - get all the maps before integrating cluster mass
+% ----------------------------------------------------------------------
+% FORMAT  [tfce_score,thresholded_maps] = limo_tfce_handling(filename,'checkfile','yes')
+% OUTPUT  thresholded_maps is all the thresholded maps i.e. for each dh
 %                          value in sum(extent(h)^E*height^H*dh)
 %         if a boostrap file exist, thresholded_maps is a 1 * 2 cell array
 %         with {1} the maps for the observed data and {2} a cell of cells
 %         with the maps of each boostrap
-% ------------------------------------------------------------------
-% Cyril R. Pernet - Copyright (C) LIMO Team 2020
 
 %% Check inputs
 
