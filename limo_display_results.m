@@ -1274,36 +1274,34 @@ elseif LIMO.Level == 2
 
         % image all results
         % ------------------
-        if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
-            limo_display_image(LIMO,toplot,mask,mytitle,flag)
+        if sum(mask(:)) ~=0
+            if Type == 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency') && ~strcmpi(LIMO.Analysis,'ITC')
+                limo_display_image(LIMO,toplot,mask,mytitle,flag)
 
-        elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
-                Type == 1 && strcmpi(LIMO.Analysis,'ITC')
-            if ndims(toplot)==3
-                limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
-            else
-                limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
-            end
+            elseif Type == 1 && strcmpi(LIMO.Analysis,'Time-Frequency') || ...
+                    Type == 1 && strcmpi(LIMO.Analysis,'ITC')
+                if ndims(toplot)==3
+                    limo_display_image_tf(LIMO,toplot,mask,mytitle,flag);
+                else
+                    limo_display_image(LIMO,squeeze(toplot),squeeze(mask),mytitle,flag)
+                end
 
-        elseif Type == 2
-            %--------------------------
-            % topoplot
-            %--------------------------
+            elseif Type == 2
+                %--------------------------
+                % topoplot
+                %--------------------------
 
-            if strcmpi(LIMO.Analysis,'Time-Frequency')
-                errordlg('topoplot not supported for time-frequency analyses')
-            else
-                if isfield(LIMO.design,'channel')  % not full scalp
-                    if ~isempty(LIMO.design.electrode)
-                        msgbox('Only one channel found','No topoplot')
-                        return
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    errordlg('topoplot not supported for time-frequency analyses')
+                else
+                    if isfield(LIMO.design,'channel')  % not full scalp
+                        if ~isempty(LIMO.design.electrode)
+                            msgbox('Only one channel found','No topoplot')
+                            return
+                        end
                     end
                 end
-            end
 
-            if sum(mask(:)) == 0
-                limo_errordlg('no values under threshold','no significant effect');
-            else
                 EEG.data     = toplot;
                 EEG.setname  = mytitle;
                 EEG.chanlocs = LIMO.data.chanlocs;
