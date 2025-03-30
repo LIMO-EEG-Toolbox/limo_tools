@@ -448,12 +448,12 @@ if contains(FileName,'Rep_ANOVA')
                     mytitle = sprintf('Main Effect correction by T max');
                 end
             catch ME
-                errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
+                limo_errordlg(sprintf('error log: %s \n',ME.message),'max correction failure')
                 return
             end
             
         else
-            errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
+            limo_errordlg(['H0' filesep MCC_data ' not found'],'max correction failure')
             return
         end
         
@@ -468,7 +468,15 @@ if contains(FileName,'Rep_ANOVA')
                 tfce_data    = tfce_data.(cell2mat(fieldnames(tfce_data)));
                 H0_tfce_data = load(H0_tfce_data);
                 H0_tfce_data = H0_tfce_data.(cell2mat(fieldnames(H0_tfce_data)));
-                [mask,M]     = limo_max_correction(tfce_data, H0_tfce_data,p,plotFlag);
+                if strcmpi(LIMO.Analysis,'Time-Frequency')
+                    [mask,M] = limo_max_correction(reshape(tfce_data, ...
+                        [size(tfce_data, 1), size(tfce_data, 2)*size(tfce_data, 3)]), ...
+                        limo_tf_4d_reshape(H0_tfce_data),p,plotFlag);
+                    mask = reshape(mask,[size(tfce_data, 1), size(tfce_data, 2), size(tfce_data, 3)]);
+                    M    = reshape(M,[size(tfce_data, 1), size(tfce_data, 2), size(tfce_data, 3)]);
+                else
+                    [mask,M] = limo_max_correction(tfce_data, H0_tfce_data,p,plotFlag);
+                end
                 if strncmp(FileName,'Rep_ANOVA_Interaction',21)
                     mytitle = sprintf('Interaction correction using TFCE');
                 elseif strncmp(FileName,'Rep_ANOVA_Gp_effect',19)
@@ -481,7 +489,7 @@ if contains(FileName,'Rep_ANOVA')
                 return
             end
         else
-            errordlg('no tfce file or bootstrap file was found to compute the max distribution','missing data')
+            limo_errordlg('no tfce file or bootstrap file was found to compute the tfce distribution','missing data')
             return
         end
     end

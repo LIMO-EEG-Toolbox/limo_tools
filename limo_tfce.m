@@ -653,9 +653,9 @@ switch type
                     try close(f); end
                     if nargout == 2
                         thresholded_maps = tfce;
-                        thresholded_maps(:,:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                        thresholded_maps(:,:,:,squeeze(sum(squeeze(sum(squeeze(sum(thresholded_maps,1)),1)),1))==0) = [];
                     end
-                    
+
                 else
                     
                     pos_data = (data > 0).*data;
@@ -721,7 +721,7 @@ switch type
                             size(neg_tfce,3)+size(pos_tfce,3));
                         thresholded_maps(:,:,size(neg_tfce,3):-1:1)  = neg_tfce;
                         thresholded_maps(:,:,size(neg_tfce,3)+1:end) = pos_tfce;
-                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(thresholded_maps,1)),1))==0) = [];
+                        thresholded_maps(:,:,squeeze(sum(squeeze(sum(squeeze(sum(thresholded_maps,1)),1)),1))==0) = [];
                     end
                end
                 

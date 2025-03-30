@@ -12,8 +12,8 @@ function limo_eeg(varargin)
 % In addition, the data format is the one used by EEGLIMOlab.
 %
 % INPUT limo_eeg(value,option)
-%                 1 - load the GUI
-%                 2,X - call limo_import (time X=1 or freuqency X=2), creating LIMO.mat file and call limo_egg(3)
+%                 1 - call the main GUI
+%                 2 - print current version
 %                 3 - call limo_design_matrix and populate LIMO.design
 %                 4,fullfile - call limo_glm (mass univariate) or limo_glm2 (multivariate) 
 %                 5 - shortcut to limo_results, look at possible results and print a report
@@ -82,66 +82,7 @@ switch varargin{1}
         %------
     case {2}
         
-        % ------------------------------------------------------------------------
-        %                       IMPORT
-        % ------------------------------------------------------------------------
-        % the EEGLIMO data are not imported but path / name is saved in LIMO.mat
-        % Cat and Cont are imported manually from a txt or mat file
-        % Other informations are i) the starting time point (sec), ii) the method to
-        % use (if multivariate stats have to be computed) and iii) the working
-        % directory where all informations will be saved
-        
-        clc; 
-        if varargin{2} == 1
-           out = limo_import_t;  % Data from electrodes over time in each trial
-        elseif varargin{2} == 2
-            out = limo_import_f;  % Data from electrodes spectral power in each trial
-        elseif varargin{2} == 3
-            out = limo_import_tf; % Data from electrodes spectral power over time in each trial
-        end
-        
-        % if bootstrap with tfce - get the neighbourghing matrix now so
-        % the estimation and results can be all computed without any other
-        % input from user (see limo_eeg(5))
-        % if bootstrap do TFCE
-        if ~strcmp(out,'LIMO import aborded')
-            try
-                load LIMO
-                if LIMO.design.bootstrap == 1
-                    if ~isfield(LIMO.data,'neighbouring_matrix')
-                        answer = questdlg('load or compute neighbouring matrix?','channel neighbouring definition','Load','Compute','Compute');
-                        if strcmp(answer,'Load')
-                            [file,newpath,whatsup] = uigetfile('*.mat','select neighbourghing matrix (or expected chanloc file)');
-                            if whatsup == 0
-                                disp('selection aborded');
-                                return
-                            else
-                                channeighbstructmat = load(sprintf('%s%s',chan_path,chan_file));
-                                fn = fieldnames(channeighbstructmat);
-                                index = find(ismember(fn,'channeighbstructmat'));
-                                channeighbstructmat = getfield(channeighbstructmat,fn{index});
-                                cd(LIMO.dir);
-                            end
-                        else
-                            channeighbstructmat = limo_expected_chanlocs(LIMO.data.data, LIMO.data.data_dir);
-                        end
-                        LIMO.data.neighbouring_matrix = channeighbstructmat;
-                        save LIMO LIMO
-                    end
-                end
-                disp('import done');
-                
-            catch
-                disp('errors related to bootstrap ?? ');
-                return
-            end
-            
-            % now estimate the design matrix
-            limo_eeg(3)
-        else
-            disp('import aborded')
-        end
-        
+        fprintf('LIMO MEEG tools "Master" i.e. above v4.0\n')
         
         %------
     case {3}
@@ -154,16 +95,20 @@ switch varargin{1}
         
         % get the LIMO.mat
         try
-            load LIMO
+            if exist(fullfile(pwd,'LIMO.mat'),"file")
+                warning on
+                warning('using limo_eeg(3) shortcut, loading local LIMO.mat from \n%s',pwd)
+                load(fullfile(pwd,'LIMO.mat')) %#ok<LOAD>
+            end
         catch
-            [file,dir_newpath] = uigetfile('LIMO.mat','select a LIMO.mat file');
+            [file,filepath] = uigetfile('LIMO.mat','select a LIMO.mat file');
             if file ==0
                 return
             else
-                cd (dir_newpath); load LIMO.mat;
+                load(fullfile(filepath,'LIMO.mat')) %#ok<LOAD>
             end
         end
-        cd (LIMO.dir);
+        cd(LIMO.dir); %#ok<NODEF>
         
         
         % Check data where specified and load
