@@ -472,6 +472,8 @@ if contains(FileName,'Rep_ANOVA')
                     [mask,M] = limo_max_correction(reshape(tfce_data, ...
                         [size(tfce_data, 1), size(tfce_data, 2)*size(tfce_data, 3)]), ...
                         limo_tf_4d_reshape(H0_tfce_data),p,plotFlag);
+                    mask = reshape(mask,[size(tfce_data, 1), size(tfce_data, 2), size(tfce_data, 3)]);
+                    M    = reshape(M,[size(tfce_data, 1), size(tfce_data, 2), size(tfce_data, 3)]);
                 else
                     [mask,M] = limo_max_correction(tfce_data, H0_tfce_data,p,plotFlag);
                 end
