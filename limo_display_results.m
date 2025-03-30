@@ -1192,6 +1192,7 @@ elseif LIMO.Level == 2
             p = 1; mask = zeros(size(M));
             assignin('base','p_values',squeeze(M))
             limo_warndlg('  no values under threshold  ','no significant effect','modal');
+            return
         else
             assignin('base','p_values',squeeze(M))
             assignin('base','mask',squeeze(mask))
