@@ -374,10 +374,17 @@ try
         tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
     end
     
-    save('Yhat.mat','Yhat',"-v7.3");   clear Yhat
-    save('Betas.mat','Betas',"-v7.3"); clear Betas
-    save('Res.mat','Res',"-v7.3");     clear Res
-    save('Yr.mat','Yr',"-v7.3");      clear Yr R2
+    if contains(LIMO.dir,'sub-')
+        subname = extractAfter(LIMO.dir,'sub-');
+        subname = ['sub' subname(min(subname)) '_desc-'];
+    else
+        subname = [];
+    end
+
+    save([subname 'Yhat.mat'],'Yhat',"-v7.3");   clear Yhat
+    save([subname 'Betas.mat'],'Betas',"-v7.3"); clear Betas
+    save([subname 'Res.mat'],'Res',"-v7.3");     clear Res
+    save([subname 'Yr.mat'],'Yr',"-v7.3");       clear Yr R2
     
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end

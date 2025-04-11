@@ -16,11 +16,11 @@ warning on;
 %% Compute GLM and save stats files
 
 if strcmp(LIMO.design.status,'to do')
-    Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
-    Yhat  = load('Yhat');  Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
-    Res   = load('Res');   Res   = Res.(cell2mat(fieldnames(Res)));
-    R2    = load('R2');    R2    = R2.(cell2mat(fieldnames(R2)));
-    Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
+    Yr    = load('*Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
+    Yhat  = load('*Yhat');  Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
+    Res   = load('*Res');   Res   = Res.(cell2mat(fieldnames(Res)));
+    R2    = load('*R2');    R2    = R2.(cell2mat(fieldnames(R2)));
+    Betas = load('*Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
     
     % check method and change parameters accordingly
     % -----------------------------------------------
