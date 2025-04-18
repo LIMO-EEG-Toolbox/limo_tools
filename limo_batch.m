@@ -164,7 +164,7 @@ if nargin <= 1
                 end
                 uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
-                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+                res = inputgui('uilist', uiList, 'geometry', {1 1}, 'cancel', 'Browse');
                 if ~isempty(res)
                     FileName = fileList(res{1}).name;
                     PathName = fileList(res{1}).folder;
@@ -391,11 +391,15 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             for l=min(length(LIMO_files.LIMO),length(root)):-1:1
                 common(l) = root(l) == LIMO_files.LIMO(l);
             end
-            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); %#ok<MXFND>
+            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); 
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
-        
+        subname = limo_get_subname(pipeline(subject).import.files_in);
+        if ~isempty(subname)
+            subname = [subname '_desc-'];
+        end
+
         if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
@@ -413,19 +417,19 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
-        LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
+        LIMO_files.Beta{subject} = [root filesep glm_name filesep subname 'Betas.mat'];
         
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
         pipeline(subject).design.command = command;
         pipeline(subject).design.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
+        pipeline(subject).design.files_out = [root filesep glm_name filesep subname 'Yr.mat'];
         
         % run GLM
         command = 'limo_eeg(4,files_in)';
         pipeline(subject).glm.command = command;
         pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
+        pipeline(subject).glm.files_out = [root filesep glm_name filesep subname 'Betas.mat'];
     end
     
 end
@@ -459,7 +463,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         end
         
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c+start) '.mat'];
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname 'con_' num2str(c+start) '.mat'];
         end
         pipeline(subject).n_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
@@ -518,9 +522,9 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         
         psom_pipeline_debug(pipeline(subject));
         if strcmp(option,'contrast only')
-            name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+            name = fileparts(batch_contrast.LIMO_files{subject}); 
         else
-            [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
+            [~,name]=fileparts(model.set_files{subject}); 
         end
         sub = min(strfind(name,'sub-'));
         ses = min(strfind(name,'ses-'));
@@ -560,7 +564,7 @@ else % parallel call to the pipeline , the usual way
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
             if strcmp(option,'contrast only')
-                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS>
             else
                 [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
             end
@@ -598,6 +602,8 @@ else % parallel call to the pipeline , the usual way
     try
         poolobj = gcp('nocreate'); 
         delete(poolobj); % close parallel pool;
+    catch closepool
+        disp('no parpool to close %s\n',closepool.message)
     end
 end
 
@@ -620,7 +626,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 LIMO = load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
                 if isfield(LIMO,'contrast')
-                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); % if several identical contrasts, take max
+                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); %#ok<*MXFND> % if several identical contrasts, take max
                 else
                     con_num = c;
                 end
@@ -634,7 +640,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         name = name';
         
         if ~all(remove_con)
-            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
+            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:)); %#ok<*FNDSB>
         end
     end
 end
@@ -687,7 +693,7 @@ if exist('STUDY','var')
                     end
                     
                     if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
-                        if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
+                        if length(STUDY.group) > 1 && length(sesvalues)==1 %#ok<*ISCL> % only groups
                             if any(subset)
                                 cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
                                 cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));

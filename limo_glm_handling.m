@@ -13,14 +13,19 @@ function limo_glm_handling(LIMO)
 cd(LIMO.dir);
 warning on;
 
+subname = limo_get_subname(LIMO.dir);
+if ~isempty(subname)
+    subname = [subname '_desc-'];
+end
+
 %% Compute GLM and save stats files
 
 if strcmp(LIMO.design.status,'to do')
-    Yr    = load('*Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
-    Yhat  = load('*Yhat');  Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
-    Res   = load('*Res');   Res   = Res.(cell2mat(fieldnames(Res)));
-    R2    = load('*R2');    R2    = R2.(cell2mat(fieldnames(R2)));
-    Betas = load('*Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
+    file = dir('*Yr.mat');    Yr    = load(file.name); Yr    = Yr.(cell2mat(fieldnames(Yr)));
+    file = dir('*Yhat.mat');  Yhat  = load(file.name); Yhat  = Yhat.(cell2mat(fieldnames(Yhat)));
+    file = dir('*Res.mat');   Res   = load(file.name); Res   = Res.(cell2mat(fieldnames(Res)));
+    file = dir('*R2.mat');    R2    = load(file.name); R2    = R2.(cell2mat(fieldnames(R2)));
+    file = dir('*Betas.mat'); Betas = load(file.name); Betas = Betas.(cell2mat(fieldnames(Betas)));
     
     % check method and change parameters accordingly
     % -----------------------------------------------
@@ -237,7 +242,7 @@ if strcmp(LIMO.design.status,'to do')
             Betas(channel,:,:)    = model.betas';
             
             if prod(LIMO.design.nb_conditions) ~=0
-                if length(LIMO.design.nb_conditions) == 1
+                if length(LIMO.design.nb_conditions) == 1 %#ok<*ISCL>
                     tmp_Condition_effect(channel,:,1,1) = model.conditions.F;
                     tmp_Condition_effect(channel,:,1,2) = model.conditions.p;
                 else
@@ -287,15 +292,16 @@ if strcmp(LIMO.design.status,'to do')
         R2    = limo_tf_4d_reshape(R2);
         Betas = limo_tf_4d_reshape(Betas);
     end
-    save(fullfile(LIMO.dir,'Yhat.mat'),  'Yhat',  '-v7.3');
-    save(fullfile(LIMO.dir,'Res.mat'),   'Res',   '-v7.3');
-    save(fullfile(LIMO.dir,'Betas.mat'), 'Betas', '-v7.3');
-    save(fullfile(LIMO.dir,'R2.mat'),    'R2',    '-v7.3');
+
+    save(fullfile(LIMO.dir,[subname 'Yhat.mat']),  'Yhat',  '-v7.3');
+    save(fullfile(LIMO.dir,[subname 'Res.mat']),   'Res',   '-v7.3');
+    save(fullfile(LIMO.dir,[subname 'Betas.mat']), 'Betas', '-v7.3');
+    save(fullfile(LIMO.dir,[subname 'R2.mat']),    'R2',    '-v7.3');
     clear Yhat Res Betas R2
     
     if prod(LIMO.design.nb_conditions) ~=0
         for i=1:length(LIMO.design.nb_conditions)
-            name = sprintf('Condition_effect_%g.mat',i);
+            name = sprintf('%sCondition_effect_%g.mat',subname,i);
             if size(tmp_Condition_effect,1) == 1
                 tmp                     = squeeze(tmp_Condition_effect(1,:,i,:));
                 Condition_effect        = NaN(1,size(tmp_Condition_effect,2),2);
@@ -314,7 +320,7 @@ if strcmp(LIMO.design.status,'to do')
     
     if LIMO.design.fullfactorial == 1
         for i=1:length(LIMO.design.nb_interactions)
-            name = sprintf('Interaction_effect_%g.mat',i);
+            name = sprintf('%sInteraction_effect_%g.mat',subname,i);
             if size(tmp_Interaction_effect,1) == 1
                 tmp                       = squeeze(tmp_Interaction_effect(1,:,i,:));
                 Interaction_effect        = NaN(1,size(tmp_Interaction_effect,2),2);
@@ -333,7 +339,7 @@ if strcmp(LIMO.design.status,'to do')
     
     if LIMO.design.nb_continuous ~=0
         for i=1:LIMO.design.nb_continuous
-            name = sprintf('Covariate_effect_%g.mat',i);
+            name = sprintf('%sCovariate_effect_%g.mat',subname,i);
             if size(tmp_Covariate_effect,1) == 1
                 tmp                     = squeeze(tmp_Covariate_effect(1,:,i,:));
                 Covariate_effect        = NaN(1,size(tmp_Covariate_effect,2),2);
@@ -382,8 +388,9 @@ if LIMO.design.bootstrap ~=0
             mkdir H0;
             fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Bootstrapping GLM, ... \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
             
-            Yr = load('Yr');
-            Yr = Yr.Yr; % reload in any cases - ensuring right dimensions
+            file = dir('*Yr.mat');
+            Yr   = load(file.name); 
+            Yr   = Yr.(cell2mat(fieldnames(Yr)));
             if size(Yr,1) == 1 % in any cases, just one channel/component
                 array = 1;
             else
@@ -464,7 +471,7 @@ if LIMO.design.bootstrap ~=0
                         if strcmp(LIMO.design.method,'WLS') || strcmp(LIMO.design.method,'OLS')
                             Y = squeeze(Yr(channel,:,:,:));
                             index = find(~isnan(Y(1,1,:))); % because across subjects, we can have missing data
-                            for f=1:size(Yr,2)
+                            for f=size(Yr,2):-1:1
                                 Weights = squeeze(LIMO.design.weights(channel,f,index));
                                 model{f} = limo_glm_boot(squeeze(Y(f,:,index))',X(index,:), Weights,...
                                     LIMO.design.nb_conditions,LIMO.design.nb_interactions,LIMO.design.nb_continuous,...
@@ -628,14 +635,14 @@ if LIMO.design.bootstrap ~=0
             clear Yr
             
             % save data on the disk and clear out
-            save([LIMO.dir filesep 'H0' filesep 'H0_R2.mat'],'H0_R2','-v7.3');
-            save([LIMO.dir filesep 'H0' filesep 'boot_table.mat'],'boot_table');
-            save([LIMO.dir filesep 'H0' filesep 'H0_Betas.mat'],'H0_Betas','-v7.3');
+            save([LIMO.dir filesep 'H0' filesep subname 'H0_R2.mat'],'H0_R2','-v7.3');
+            save([LIMO.dir filesep 'H0' filesep subname 'boot_table.mat'],'boot_table');
+            save([LIMO.dir filesep 'H0' filesep subname 'H0_Betas.mat'],'H0_Betas','-v7.3');
             clear H0_R2 boot_table H0_Betas
             
             if prod(LIMO.design.nb_conditions) ~=0
                 for i=1:length(LIMO.design.nb_conditions)
-                    name = sprintf('H0_Condition_effect_%g',i);
+                    name = sprintf('%sH0_Condition_effect_%g',subname,i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
                     else
@@ -664,7 +671,7 @@ if LIMO.design.bootstrap ~=0
             
             if LIMO.design.fullfactorial == 1
                 for i=1:length(LIMO.design.nb_interactions)
-                    name = sprintf('H0_Interaction_effect_%g',i);
+                    name = sprintf('%sH0_Interaction_effect_%g',subname,i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
                     else
@@ -693,7 +700,7 @@ if LIMO.design.bootstrap ~=0
             
             if LIMO.design.nb_continuous ~=0
                 for i=1:LIMO.design.nb_continuous
-                    name = sprintf('H0_Covariate_effect_%g',i);
+                    name = sprintf('%sH0_Covariate_effect_%g',subname,i);
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
                     else
@@ -754,11 +761,15 @@ if LIMO.design.tfce == 1
             else
                 tmp   = load(fullfile(newpath,file));
                 fn    = fieldnames(tmp);
+                if size(fn,1) == 1 
+                    tmp = tmp.(fn{1});
+                    fn  = fieldnames(tmp);
+                end
                 index = find(ismember(fn,'channeighbstructmat'));
                 if isempty(index)
                     error('no neighbouring matrix ''channeighbstructmat'' found')
                 else
-                    LIMO.data.neighbouring_matrix = getfield(tmp,fn{index});
+                    LIMO.data.neighbouring_matrix = getfield(tmp,fn{index}); %#ok<GFLD>
                     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO',"-v7.3");
                 end
             end
@@ -774,14 +785,15 @@ if LIMO.design.tfce == 1
     
     fprintf('\n %%%%%%%%%%%%%%%%%%%%%%%% \n Computing TFCE for GLM takes a while, be patient .. \n %%%%%%%%%%%%%%%%%%%%%%%% \n')
     mkdir tfce;
+    limo_check_ppool
     
     % R2
-    limo_tfce_handling(fullfile(LIMO.dir,'R2.mat'),'checkfile','no');
+    limo_tfce_handling(fullfile(LIMO.dir,[subname 'R2.mat']),'checkfile','no');
     
     % conditions
     if prod(LIMO.design.nb_conditions) ~=0
         for i=1:length(LIMO.design.nb_conditions)
-            name = sprintf('Condition_effect_%g.mat',i);
+            name = sprintf('%sCondition_effect_%g.mat',subname,i);
             limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no');
         end
     end
@@ -789,7 +801,7 @@ if LIMO.design.tfce == 1
     % interactions
     if LIMO.design.fullfactorial == 1
         for i=1:length(LIMO.design.fullfactorial)
-            name = sprintf('Interaction_effect_%g.mat',i);
+            name = sprintf('%sInteraction_effect_%g.mat',subname,i);
             limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no');
         end
     end
@@ -797,11 +809,8 @@ if LIMO.design.tfce == 1
     % covariates / continuous regressors
     if LIMO.design.nb_continuous ~=0
         for i=1:LIMO.design.nb_continuous
-            name = sprintf('Covariate_effect_%g.mat',i);
+            name = sprintf('%sCovariate_effect_%g.mat',subname,i);
             limo_tfce_handling(fullfile(LIMO.dir,name),'checkfile','no')
         end
     end
 end
-
-
-

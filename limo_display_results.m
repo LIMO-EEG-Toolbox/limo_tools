@@ -76,7 +76,7 @@ if ~isempty(g.plot3type)
     if isnumeric(g.plot3type)
         extra = extra{g.plot3type};
     else
-        extra(contains(extra,g.plot3type,'IgnoreCase',true));
+        extra(contains(extra,g.plot3type,'IgnoreCase',true)); %#ok<NOEFF>
     end
 end
 res = '';
@@ -91,17 +91,25 @@ choice = 'use theoretical p values'; % threshold based on what is computed since
 % see limo_stat_values - discontinuated empirical threshold (misleading)
 
 % Load LIMO structure if a path was provided
-% Load LIMO structure if a path was provided
 if ischar(LIMO)
     load(LIMO, 'LIMO');
 end
 
+subname = limo_get_subname(FileName);
+if ~isempty(subname)
+    subname = [subname '_desc-'];
+end
+
 [~,FileNameTmp,ext] = fileparts(FileName);
+if contains(FileNameTmp,'_desc-')
+    FileNameTmp = extractAfter(FileNameTmp,'_desc-');
+end
+
 if MCC == 2 || MCC == 4 % cluster and MAX correction
     LIMO.design.bootstrap = 1;
 
     % deal with bootstrap
-    if ~exist([PathName filesep 'H0' filesep 'H0_' FileNameTmp ext],'file')
+    if ~exist([PathName filesep 'H0' filesep subname 'H0_' FileNameTmp ext],'file')
         if LIMO.Level == 1
             if strncmp(FileNameTmp,'con',3) || strncmp(FileNameTmp,'ess',3)
                 limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
@@ -167,7 +175,8 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
 elseif MCC == 3
     LIMO.design.tfce      = 1;
     currentfile = fullfile(PathName, FileName);
-    if ~exist([PathName filesep 'H0' filesep 'tfce_H0_' FileNameTmp ext],'file')
+    if ~exist([PathName filesep 'H0' filesep subname 'tfce-H0_' FileNameTmp ext],'file') ...
+            && ~exist([PathName filesep 'H0' filesep subname 'tfce_H0_' FileNameTmp ext],'file') % -H0 or _H0 legacy non bids
         limo_tfce_handling(currentfile,'checkfile','yes')
     end
 end
