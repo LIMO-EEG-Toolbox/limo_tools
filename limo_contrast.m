@@ -73,8 +73,9 @@ if type == 1 || type == 2
         Betas = Betas.(cell2mat(fieldnames(Betas)));
         if type == 2 && size(Betas,numel(size(Betas))) < 101
             warning('input Betas file is not a H0 one, checking for a H0 boostraps file')
-            if exist(fullfile(fileparts(varargin{2}),['H0' filesep 'H0_Betas.mat']),'file')
-                Betas = load(fullfile(fileparts(varargin{2}),['H0' filesep 'H0_Betas.mat']));
+            H0_file = dir(fullfile(fileparts(varargin{2}),'*H0_Betas.mat'));
+            if exist(fullfile(H0_file.folder,H0_file.name),'file')
+                Betas = load(fullfile(H0_file.folder,H0_file.name));
                 Betas = Betas.(cell2mat(fieldnames(Betas)));    
                 if size(Betas,numel(size(Betas))) < 101
                     error('loading H0_Betas.mat but this seems to have less than 101 bootstraps?')
@@ -90,6 +91,10 @@ if type == 1 || type == 2
     if ischar(LIMO)
         LIMO = load(varargin{3});
         LIMO = LIMO.LIMO;
+    end
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
     end
     
     if contains(LIMO.design.name,'Repeated','IgnoreCase',true)
@@ -202,6 +207,10 @@ elseif type == 3 || type == 4
         error('2nd level Analysis but not a Repeated measure Analysis ; switch analysis type');
     end
     gp_values  = LIMO.design.nb_conditions;
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
+    end
     
     if nargin == 4 && type == 3
         if isfield(LIMO,'contrast')
@@ -241,9 +250,8 @@ switch type
         % -----------------------------------------------------------------
         % Contrast for 1st level analyses and 2nd level regression/ANOVA/ANCOVA
         % -----------------------------------------------------------------
-        
         % get residuals
-        Res   = load([LIMO.dir filesep 'Res.mat']);   
+        Res   = load([LIMO.dir filesep subname 'Res.mat']);   
         Res   = Res.(cell2mat(fieldnames(Res)));
         
         % string time-frequency for OLS and IRLS
@@ -432,15 +440,15 @@ switch type
                 result = ess;
             else
                 if Test == 0
-                    save(fullfile(LIMO.dir,filename),'con'); clear con
+                    save(fullfile(LIMO.dir,[subname filename]),'con'); clear con
                 else
-                    save (fullfile(LIMO.dir,filename),'ess'); clear ess
+                    save (fullfile(LIMO.dir,[subname filename]),'ess'); clear ess
                 end
             end
             
             if LIMO.design.tfce == 1
-                if ~exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]),'file')
-                    limo_tfce_handling(fullfile(LIMO.dir,filename));
+                if ~exist(fullfile(LIMO.dir,['tfce' filesep subname 'tfce_' filename]),'file')
+                    limo_tfce_handling(fullfile(LIMO.dir,[subname filename]));
                 end
             end
             
@@ -492,14 +500,14 @@ switch type
             Y  = limo_tf_4d_reshape(Y);
         end
          
-         % make data files
+        % make data files
         % ----------------
         if Test == 0
             H0_con   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = t/p
-            filename = sprintf('H0_con_%g.mat',size(LIMO.contrast,2));
+            filename = [subname sprintf('H0_con_%g.mat',size(LIMO.contrast,2))];
         else
             H0_ess   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = F/p
-            filename = sprintf('H0_ess_%g.mat',size(LIMO.contrast,2));
+            filename = [subname sprintf('H0_ess_%g.mat',size(LIMO.contrast,2))];
         end
         
         
@@ -656,7 +664,9 @@ switch type
         end
         
         if LIMO.design.tfce == 1
-            if ~exist(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' filename]),'file')
+            tfce_file = dir(fullfile(LIMO.dir,['H0' filesep subname 'tfce*' ...
+                sprintf('_con_%g.mat',size(LIMO.contrast,2))]));
+            if ~exist(fullfile(tfce_file.folder,tfce_file.name),'file')
                 limo_tfce_handling(fullfile(LIMO.dir,filename(4:end)),'checkfile','no');
             end
         end
@@ -839,7 +849,7 @@ switch type
         if strcmp(LIMO.Analysis,'Time-Frequency') 
             ess = limo_tf_4d_reshape(ess);
         end
-        save(filename, 'ess', '-v7.3');
+        save([subname filename], 'ess', '-v7.3');
         
         if exist('ess2','var')
             if strcmp(LIMO.Analysis,'Time-Frequency')
@@ -848,7 +858,7 @@ switch type
                 ess = ess2;
             end
             filename2 = sprintf('ess_gp_interaction_%g.mat',index);
-            save(filename2, 'ess', '-v7.3');
+            save([subname filename2], 'ess', '-v7.3');
         end
         
         % tfce if needed
@@ -918,7 +928,7 @@ switch type
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 H0_ess = limo_tf_5d_reshape(H0_ess,LIMO);
             end
-            save(filename, 'H0_ess', '-v7.3');
+            save([subname filename], 'H0_ess', '-v7.3');
 
         else %% group*repeated measures
             

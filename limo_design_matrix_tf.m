@@ -362,8 +362,13 @@ try
     Betas = zeros(size4D(1),size4D(2),size4D(3),size(X,2));
     
     % only for univariate analyses
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];    
+    end    
     if strcmp(type_of_analysis,'Mass-univariate')
-        R2 = zeros(size4D(1),size4D(2),size4D(3),3); save R2 R2 -v7.3;
+        R2 = zeros(size4D(1),size4D(2),size4D(3),3); 
+        save([subname 'R2.mat'],'R2',"-v7.3")
     end
     
     if nb_conditions ~=0
@@ -380,11 +385,12 @@ try
     
     % note - overwritten in limo_eeg_tf
     disp('saving 4D files to disk, be patient ...')
-    Yr=limo_tf_4d_reshape(Yr);
-    save Yr Yr -v7.3; clear Yr
-    save Yhat Yhat -v7.3; clear Yhat
-    save Res Res -v7.3; clear Res
-    save Betas Betas -v7.3; clear Betas
+    Yr = limo_tf_4d_reshape(Yr);
+    save([subname 'Yhat.mat'],'Yhat',"-v7.3");   clear Yhat
+    save([subname 'Betas.mat'],'Betas',"-v7.3"); clear Betas
+    save([subname 'Res.mat'],'Res',"-v7.3");     clear Res
+    save([subname 'Yr.mat'],'Yr',"-v7.3");       clear Yr R2
+
     if strcmp(type_of_analysis,'Mass-univariate'); clear R2; end
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end
