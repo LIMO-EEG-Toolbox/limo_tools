@@ -25,14 +25,26 @@ function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 % ----------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if nargin == 4
+if nargin <= 4
     dynamic = 1;
+end
+
+if ~exist('mytitle',"var")
+    if isfield(LIMO.design,'name')
+        mytitle = LIMO.design.name;
+    else
+        mytitle = ' ';
+    end
 end
 
 %% get some informations for the plots
 
 if sum(toplot(:)) == 0
     error('the image to plot is empty')
+end
+
+if isempty(mask)
+    mask = ones(size(toplot));
 end
 
 % what do we plot?  the data (toplot) masked (tpically of significance)
@@ -163,14 +175,6 @@ elseif strcmpi(LIMO.Analysis,'Time-Frequency')
     
 else
     error('LIMO.Analysis unspecfied')
-end
-
-if isempty(mytitle)
-    if isfield(LIMO.design,'name')
-        mytitle = LIMO.design.name;
-    else
-        mytitle = ' ';
-    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
