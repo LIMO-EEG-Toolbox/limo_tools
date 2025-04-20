@@ -8,6 +8,10 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 %
 % INPUTS  file: is a result file like a t-test or ANOVA
 %         mask: is optional ([] by default) and is a N-ary matrix of clusters
+%         (the mask is generated and available in the workspace
+%         each time you visualize results, or you can get it direclty
+%         calling limo_stat_values - if in the worksapce, it is loaded 
+%         automtically)
 %
 % OUTPUTS name: is the name of the file created
 %              [file_name]_effectsize.mat is created with Cohen's d or patial
@@ -26,10 +30,12 @@ function [name,clusters] = limo_get_effect_size(file,mask)
 %  If a mask variable exist in workspace, the user is asked if one should
 %  use it, if so the variable clusters_summary_stats is returned in the
 %  worspace, in addition of the effec_size file writen on the hard drive.
-%
-% Cyril Pernet 2022
+%  Note: effect size files can be seen doing
+%            limo_display_image(LIMO,effect_size,[]) 
+%            limo_display_image_tf(LIMO,effect_size,[]) 
+% Cyril Pernet 2025
 % ------------------------------
-%  Copyright (C) LIMO Team 2022
+%  Copyright (C) LIMO Team 2025
 
 name     = [];
 clusters = [];
