@@ -214,13 +214,16 @@ if nargin == 3 || nargin == 4
 elseif nargin == 6 || nargin == 7
     % ---------------------------
     
-    if exist(varargin{1},'file')
+    if iscell(varargin{1})
         Files = varargin{1};
-        if size(Files,1) == 1 % select a txt file listing all files
-            [Names,Paths,Files] = limo_get_files([],[],[],Files);
+        Paths = cellfun(@(x) fileparts(x), varargin{1}, 'UniformOutput', false);
+        for s = length(Files):-1:1
+            Names{s} = extractAfter(Files{s},[Paths{s} filesep]);
         end
+    elseif exist(varargin{1},'file') % select a txt file listing all files
+        [Names,Paths,Files] = limo_get_files([],[],[],varargin{1});
     else
-        limo_errordlg('input file not found'); 
+        limo_errordlg('input not found');
         return
     end
     
@@ -304,7 +307,13 @@ elseif nargin == 6 || nargin == 7
         limo.Type{i} = LIMO.Type;
 
         if all(is_limo)
-            Yr = load(fullfile(Paths{i},'Yr.mat'));   
+            if exist(fullfile(Paths{i},'Yr.mat'),'file')
+                Yr = load(fullfile(Paths{i},'Yr.mat'));
+            elseif exist(fullfile(LIMO.dir,'Yr.mat'),'file')
+                Yr = load(fullfile(LIMO.dir,'Yr.mat'));
+            else
+                limo_errordlg('cannot find data associated to LIMO file')
+            end
         elseif all(is_con)
             Yr = load(Files{i}); 
         end
@@ -356,11 +365,11 @@ elseif nargin == 6 || nargin == 7
                 if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
                     tmp = limo_trimmed_mean(tmp,20);
                 elseif strcmpi(Estimator1,'Median') % median raw data
-                    tmp = nanmedian(tmp,3);
+                    tmp = median(tmp,3,"omitnan");
                 elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                     tmp = limo_harrell_davis(tmp,0.5);
                 elseif strcmpi(Estimator1,'Mean') || strcmpi(Estimator1,'Weighted Mean') % mean of raw data
-                    tmp = nanmean(tmp,3);
+                    tmp = mean(tmp,3,"omitnan");
                 end
             else
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
@@ -729,11 +738,11 @@ elseif nargin == 1
                         if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
                             tmp = limo_trimmed_mean(tmp,20);
                         elseif strcmpi(Estimator1,'Median') % median raw data
-                            tmp = nanmedian(tmp,3);
+                            tmp = median(tmp,3,"omitnan");
                         elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                             tmp = limo_harrell_davis(tmp,0.5);
                         elseif strcmpi(Estimator1,'Mean') % mean of raw or weighted data
-                            tmp = nanmean(tmp,3);
+                            tmp = mean(tmp,3,"omitnan");
                         end
                         
                         if strcmpi(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
@@ -797,11 +806,11 @@ elseif nargin == 1
                     if strcmpi(Estimator1,'Trimmed mean') % trim raw data @ 20%
                         tmp=limo_trimmed_mean(tmp,20);
                     elseif strcmpi(Estimator1,'Median') % median raw data
-                        tmp = nanmedian(tmp,3);
+                        tmp = median(tmp,3,"omitnan");
                     elseif strcmpi(Estimator1,'HD') % mid-decile Harrell-Davis of raw data
                         tmp = limo_harrell_davis(tmp,0.5);
                     elseif strcmpi(Estimator1,'Mean') % mean of raw data on which we do across subjects TM, HD and Median
-                        tmp = nanmean(tmp,3);
+                        tmp = mean(tmp,3,"omitnan");
                     end
                     
                     if strcmpi(Analysis_type,'Full brain analysis') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
@@ -957,9 +966,9 @@ if ~isempty(data)
                     tmp              = squeeze(data(channel,:,k,:));
                     Y                = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]         = limo_central_estimator(Y,'mean');
-                    M(channel,:,k,1) = ci(1,:);
-                    M(channel,:,k,2) = est;
-                    M(channel,:,k,3) = ci(2,:);
+                    M(channel,:,k,1) = squeeze(ci(1,:));
+                    M(channel,:,k,2) = squeeze(est);
+                    M(channel,:,k,3) = squeeze(ci(2,:));
                 end
             end
         end
@@ -1018,9 +1027,9 @@ if ~isempty(data)
                     tmp               = squeeze(data(channel,:,k,:));
                     Y                 = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]          = limo_central_estimator(Y,'trimmed mean');
-                    TM(channel,:,k,1) = ci(1,:);
-                    TM(channel,:,k,2) = est;
-                    TM(channel,:,k,3) = ci(2,:);
+                    TM(channel,:,k,1) = squeeze(ci(1,:));
+                    TM(channel,:,k,2) = squeeze(est);
+                    TM(channel,:,k,3) = squeeze(ci(2,:));
                 end
             end
         end
@@ -1080,9 +1089,9 @@ if ~isempty(data)
                     tmp               = squeeze(data(channel,:,k,:));
                     Y                 = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]          = limo_central_estimator(Y,'HD');
-                    HD(channel,:,k,1) = ci(1,:);
-                    HD(channel,:,k,2) = est;
-                    HD(channel,:,k,3) = ci(2,:);
+                    HD(channel,:,k,1) = squeeze(ci(1,:));
+                    HD(channel,:,k,2) = squeeze(est);
+                    HD(channel,:,k,3) = squeeze(ci(2,:));
                 end
             end
         end
@@ -1141,9 +1150,9 @@ if ~isempty(data)
                     tmp                = squeeze(data(channel,:,k,:));
                     Y                  = tmp(:,~isnan(tmp(1,:)));
                     [est,ci]           = limo_central_estimator(Y,'median');
-                    Med(channel,:,k,1) = ci(1,:);
-                    Med(channel,:,k,2) = est;
-                    Med(channel,:,k,3) = ci(2,:);
+                    Med(channel,:,k,1) = squeeze(ci(1,:));
+                    Med(channel,:,k,2) = squeeze(est);
+                    Med(channel,:,k,3) = squeeze(ci(2,:));
                 end
             end
         end

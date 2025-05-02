@@ -37,11 +37,11 @@ if onPath == 0
     addpath([root filesep 'help'])
 end
 
-FileName  = varargin{1}; % Name of the file selected
-p         = varargin{2}; % p value
-MCC       = varargin{3}; % multiple comparison option
-LIMO      = varargin{4}; % LIMO.mat
-plotFlag  = true;        % always display if clustering fails
+FileName   = varargin{1}; % Name of the file selected
+p          = varargin{2}; % p value
+MCC        = varargin{3}; % multiple comparison option
+LIMO       = varargin{4}; % LIMO.mat
+plotFlag   = true;        % always display if clustering fails
 
 % check the appropriate method is used
 % -----------------------------------
@@ -53,9 +53,11 @@ if isfield(LIMO,'Type')
 end
 
 % check that a neighbouring matrix is there for clustering
+% set the default clustering method
 % -------------------------------------------------------
 if MCC == 2
     limo_check_neighbourghs(LIMO)
+    clustering_method = 2; % statio-temporal clustering by default, change to 3 for temporal
 end
 
 % load data and set outputs to empty
@@ -272,9 +274,9 @@ elseif ~isempty(M) && MCC == 2
             
             % finally get cluster mask and corrected p-values
             if contains(FileName,'ttest') || contains(FileName,'LI_Map')
-                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
+                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
             else
-                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
+                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
             end
                 
             Nclust   = unique(mask); 
@@ -410,11 +412,7 @@ if contains(FileName,'Rep_ANOVA')
                     end
                 end
                 
-                if size(M,1) == 1
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p,plotFlag); % temporal clustering
-                else
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,2,p,plotFlag); % spatial-temporal clustering
-                end
+                [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,clustering_method,p,plotFlag); % spatial-temporal clustering
                 Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 if contains(FileName,'Rep_ANOVA_Interaction')

@@ -40,11 +40,17 @@ elseif isfile(stringin)
     end
     if ~isempty(fpath)
         subname_from_path = limo_get_subname(fpath);
-        valid = strcmp(subname_from_path,subname);
-        if strcmpi(mode,'interruptive') && valid == 0
+        if isempty(subname)
+            invalid = 1;
+        else
+            invalid = strcmp(subname_from_path,subname);
+        end
+        if strcmpi(mode,'interruptive') && invalid == 0
             limo_errordlg('conflict in sub- name between path and file')
             error('%s',subname)
         end
+    else
+        
     end        
 else
      limo_errordlg('the string passed in is not valid')

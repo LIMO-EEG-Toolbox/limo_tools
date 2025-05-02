@@ -56,7 +56,7 @@ end
 
 % sample with replacement from Dirichlet
 % sampling = number of observations, e.g. participants
-n = size(Y,2); 
+n  = size(Y,2); 
 bb = zeros(size(Y,1),Nb);
 parfor boot=1:Nb % bootstrap loop
     if legacy_mode
@@ -106,7 +106,7 @@ if legacy_mode
     HDI(2,:) = sorted_data(index);
 else
     % lim = quantile(oneframe, [alphav, 1 - alphav]);
-    HDI(:, 1) = bb(:,round(alphav*Nb));
-    HDI(:, 2) = bb(:,round((1-alphav)*Nb));
+    HDI(1,:) = bb(:,round(alphav*Nb));
+    HDI(2,:) = bb(:,round((1-alphav)*Nb));
 end
 
