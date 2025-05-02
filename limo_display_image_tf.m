@@ -37,6 +37,9 @@ handles.output     = hObject;
 handles.LIMO       = varargin{1};
 handles.data3d     = varargin{2};
 handles.mask       = varargin{3};
+if isempty(handles.mask)
+    handles.mask   = ones(size(varargin{2}));
+end
 scale              = handles.data3d.*single(handles.mask>0);
 scale(scale==0)    = NaN;
 handles.cc         = limo_color_images(scale);
