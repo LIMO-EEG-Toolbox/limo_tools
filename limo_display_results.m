@@ -101,7 +101,7 @@ if ~isempty(subname)
 end
 
 [~,FileNameTmp,ext] = fileparts(FileName);
-if contains(FileNameTmp,'_desc-')
+if contains(FileNameTmp,'sub-')
     FileNameTmp = extractAfter(FileNameTmp,'_desc-');
 end
 
@@ -109,73 +109,78 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
     LIMO.design.bootstrap = 1;
 
     % deal with bootstrap
-    if ~exist([PathName filesep 'H0' filesep subname FileNameTmp '_desc-H0' ext],'file')
-        if LIMO.Level == 1
-            if contains(FileNameTmp,'con_') || contains(FileNameTmp,'ess_')
-                limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
-            else
-                if strcmp(limo_questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
-                    LIMO.design.bootstrap = 800;
-                    if handles.tfce == 1
-                        LIMO.design.tfce  = 1;
-                    end
-                    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
-                    limo_eeg(4);
+    if LIMO.Level == 1 && ...
+            ~exist([PathName filesep 'H0' filesep subname FileNameTmp 'H0' ext],'file')
+
+        if contains(FileNameTmp,'con_') || contains(FileNameTmp,'ess_')
+            limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+        else
+            if strcmp(limo_questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
+                LIMO.design.bootstrap = 800;
+                if handles.tfce == 1
+                    LIMO.design.tfce  = 1;
                 end
+                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO')
+                limo_eeg(4);
             end
-        else % LIMO.Level == 2
-            res = limo_questdlg('This option requires to compute bootstraps (this may take time)','Bootstraping data','Cancel','Continue','Continue');
-            if ~strcmp(res,'Continue')
-                return;
-            end
-            if ~isfield(LIMO.design, 'bootstrap') || LIMO.design.bootstrap == 1
-                fprintf('Bootstrap repetition set to 1000')
-                LIMO.design.bootstrap = 1000;
-            end
-            if contains(FileNameTmp,'one_sample','IgnoreCase',true)
-                limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
-                    str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
-            elseif contains(FileNameTmp,'two_samples','IgnoreCase',true)
-                limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
-                    fullfile(LIMO.dir,'Y1r.mat'), str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
-            elseif contains(FileNameTmp,'paired_samples','IgnoreCase',true)
-                underScoresPos = strfind(FileNameTmp,'_');
-                param1         = str2double(FileNameTmp(underScoresPos(end-1)+1:underScoresPos(end)-1));
-                param2         = str2double(FileNameTmp(underScoresPos(end)+1:end));
-                limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
-                    fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
-            elseif contains(FileNameTmp,'Covariate_effect','IgnoreCase',true) && contains(LIMO.design.name,'Regression','IgnoreCase',true)
-                save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
-                limo_eeg(4,LIMO.dir);
-            elseif contains(FileNameTmp,'ANOVA','IgnoreCase',true) && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
-                limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
-            elseif contains(FileNameTmp,'Rep_ANOVA','IgnoreCase',true)
-                if contains(FileNameTmp,'con_')
-                    if exist([PathName filesep 'H0' filesep 'Betas_desc-H0.mat'],'file')
-                        limo_contrast([PathName filesep 'Yr.mat'], ...
-                            [PathName filesep 'H0' filesep 'Betas_desc-H0.mat'], LIMO, 0,3);
-                    else
-                        limo_errordlg('there is no GLM bootstrap file for this contrast file')
-                    end
-                elseif contains(FileNameTmp,'ess_')
-                    if exist([PathName filesep 'H0' filesep 'Betas_desc-H0.mat'],'file')
-                        limo_contrast([PathName filesep 'Yr.mat'], ...
-                            [PathName filesep 'H0' filesep 'Betas_desc-H0.mat'], LIMO, 1,3);
-                    else
-                        limo_errordlg('there is no bootstrap file for this contrast file')
-                    end
+        end
+    elseif LIMO.Level == 2 && ...
+            ~exist([PathName filesep 'H0' filesep FileNameTmp '_desc-H0' ext],'file')
+        res = limo_questdlg('This option requires to compute bootstraps (this may take time)','Bootstraping data','Cancel','Continue','Continue');
+        if ~strcmp(res,'Continue')
+            return;
+        end
+        if ~isfield(LIMO.design, 'bootstrap') || LIMO.design.bootstrap == 1
+            fprintf('Bootstrap repetition set to 1000')
+            LIMO.design.bootstrap = 1000;
+        end
+        if contains(FileNameTmp,'one_sample','IgnoreCase',true)
+            limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),...
+                str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+        elseif contains(FileNameTmp,'two_samples','IgnoreCase',true)
+            limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
+                fullfile(LIMO.dir,'Y1r.mat'), str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+        elseif contains(FileNameTmp,'paired_samples','IgnoreCase',true)
+            underScoresPos = strfind(FileNameTmp,'_');
+            param1         = str2double(FileNameTmp(underScoresPos(end-1)+1:underScoresPos(end)-1));
+            param2         = str2double(FileNameTmp(underScoresPos(end)+1:end));
+            limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
+                fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
+        elseif contains(FileNameTmp,'Covariate_effect','IgnoreCase',true) && contains(LIMO.design.name,'Regression','IgnoreCase',true)
+            save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
+            limo_eeg(4,LIMO.dir);
+        elseif contains(FileNameTmp,'ANOVA','IgnoreCase',true) && ~strncmpi(FileNameTmp,'Rep_ANOVA',9)
+            limo_random_robust(5,fullfile(LIMO.dir,'Yr.mat'), LIMO.data.Cat,LIMO.data.Cont,LIMO,'go','yes');
+        elseif contains(FileNameTmp,'Rep_ANOVA','IgnoreCase',true)
+            if contains(FileNameTmp,'con_')
+                if exist([PathName filesep 'H0' filesep 'Betas_desc-H0.mat'],'file')
+                    limo_contrast([PathName filesep 'Yr.mat'], ...
+                        [PathName filesep 'H0' filesep 'Betas_desc-H0.mat'], LIMO, 0,3);
                 else
-                    disp('Bootstraping Repeated Measure ANOVA')
-                    limo_random_robust(6,fullfile(PathName,'Yr.mat'),LIMO.data.Cat, ...
-                        LIMO.design.repeated_measure, LIMO, 'go','yes')
+                    limo_errordlg('there is no GLM bootstrap file for this contrast file')
                 end
+            elseif contains(FileNameTmp,'ess_')
+                if exist([PathName filesep 'H0' filesep 'Betas_desc-H0.mat'],'file')
+                    limo_contrast([PathName filesep 'Yr.mat'], ...
+                        [PathName filesep 'H0' filesep 'Betas_desc-H0.mat'], LIMO, 1,3);
+                else
+                    limo_errordlg('there is no bootstrap file for this contrast file')
+                end
+            else
+                disp('Bootstraping Repeated Measure ANOVA')
+                limo_random_robust(6,fullfile(PathName,'Yr.mat'),LIMO.data.Cat, ...
+                    LIMO.design.repeated_measure, LIMO, 'go','yes')
             end
         end
     end
 elseif MCC == 3
     LIMO.design.tfce      = 1;
     currentfile = fullfile(PathName, FileName);
-    if ~exist([PathName filesep 'H0' filesep subname FileNameTmp '_desc-tfceH0' ext],'file') ...
+    if LIMO.Level == 1 && ...
+            ~exist([PathName filesep 'H0' filesep subname FileNameTmp 'tfceH0' ext],'file')
+        limo_tfce_handling(currentfile,'checkfile','yes')
+    elseif LIMO.Level == 2 && ...
+            ~exist([PathName filesep 'H0' filesep FileNameTmp '_desc-tfceH0' ext],'file')
         limo_tfce_handling(currentfile,'checkfile','yes')
     end
 end
@@ -1178,7 +1183,7 @@ elseif LIMO.Level == 2
             end
         catch no_cache
             data_cached = 0;
-            limo_errordlg(no_cache,'failed to use cached data %s',no_cache.message)
+            warning('failed to use cached data %s',no_cache.message) %#ok<MEXCEP>
         end
     end
 

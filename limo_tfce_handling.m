@@ -63,9 +63,10 @@ end
 % files to create
 if LIMO.Level == 1
     subname      = limo_get_subname([filename ext]);
-    tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-tfce_' extractAfter(fname,'desc-')]);
-    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep subname '_desc-tfceH0_' extractAfter(fname,'desc-')]);
-    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-H0_' extractAfter(fname,'desc-') '.mat']); % .mat as exists 'on disk'
+    stat_type    = extractAfter(fname,'desc-');
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-' stat_type 'tfce']);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep subname '_desc-' stat_type 'tfceH0']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-' stat_type 'H0.mat']); % .mat as exists 'on disk'
 else
     tfce_file    = fullfile(LIMO.dir,['tfce' filesep fname '_desc-tfce']);
     H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep fname '_desc-tfceH0']);

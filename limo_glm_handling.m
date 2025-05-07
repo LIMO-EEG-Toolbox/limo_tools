@@ -635,14 +635,23 @@ if LIMO.design.bootstrap ~=0
             clear Yr
             
             % save data on the disk and clear out
-            save([LIMO.dir filesep 'H0' filesep subname 'R2_desc-H0.mat'],'H0_R2','-v7.3');
+            if LIMO.Level == 1
+                save([LIMO.dir filesep 'H0' filesep subname 'R2H0.mat'],'H0_R2','-v7.3');
+                save([LIMO.dir filesep 'H0' filesep subname 'BetasH0.mat'],'H0_Betas','-v7.3');
+            else
+                save([LIMO.dir filesep 'H0' filesep 'R2_desc-H0.mat'],'H0_R2','-v7.3');
+                save([LIMO.dir filesep 'H0' filesep 'Betas_desc-H0.mat'],'H0_Betas','-v7.3');
+            end
             save([LIMO.dir filesep 'H0' filesep subname 'boot_table.mat'],'boot_table');
-            save([LIMO.dir filesep 'H0' filesep subname 'Betas_desc-H0.mat'],'H0_Betas','-v7.3');
             clear H0_R2 boot_table H0_Betas
             
             if prod(LIMO.design.nb_conditions) ~=0
                 for i=1:length(LIMO.design.nb_conditions)
-                    name = sprintf('%sCondition_effect_%g_desc-H0',subname,i);
+                    if LIMO.Level == 1
+                        name = sprintf('%sCondition_effect_%gH0',subname,i);
+                    else
+                        name = sprintf('Condition_effect_%g_desc-H0',i);
+                    end
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Conditions(:,:,:,i,:,:));
                     else
@@ -671,7 +680,11 @@ if LIMO.design.bootstrap ~=0
             
             if LIMO.design.fullfactorial == 1
                 for i=1:length(LIMO.design.nb_interactions)
-                    name = sprintf('%sInteraction_effect_%g_desc-H0',subname,i);
+                    if LIMO.Level == 1
+                        name = sprintf('%sInteraction_effect_%gH0',subname,i);
+                    else
+                        name = sprintf('Interaction_effect_%g_desc-H0',i);
+                    end
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Interaction_effect(:,:,:,i,:,:));
                     else
@@ -700,7 +713,11 @@ if LIMO.design.bootstrap ~=0
             
             if LIMO.design.nb_continuous ~=0
                 for i=1:LIMO.design.nb_continuous
-                    name = sprintf('%sCovariate_effect_%g_desc-H0',subname,i);
+                    if LIMO.Level == 1
+                        name = sprintf('%sdesc-Covariate_effect_%gH0',subname,i);
+                    else
+                        name = sprintf('Covariate_effect_%g_desc-H0',i);
+                    end
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         tmp = squeeze(tmp_H0_Covariates(:,:,:,i,:,:));
                     else
