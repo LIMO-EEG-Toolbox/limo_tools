@@ -103,6 +103,7 @@ end
 
 %% Deal with each case of FileName
 subname = limo_get_subname(FileName);
+[~,FileName,ext] = fileparts(FileName);
 if ~isempty(subname)
     subname = [subname '_desc-'];
 end
@@ -150,11 +151,11 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         Pval      = squeeze(matfile.con(:,:,:,5));
         MCC_data  = sprintf('%gcon_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
+    elseif contains(FileName,'Ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
-        MCC_data  = sprintf('%g%s_desc-H0',subname,FileName);
+        MCC_data  = sprintf('%g%s_desc-H0.mat',subname,FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
@@ -208,11 +209,11 @@ else  % same with one less dimention
         Pval      = squeeze(matfile.con(:,:,5));
         MCC_data  = sprintf('%gcon_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
+    elseif contains(FileName,'Ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,4); % T values
         Pval      = matfile(:,:,5);
-        MCC_data  = sprintf('%g%s_desc-H0',subname,FileName);
+        MCC_data  = sprintf('%g%s_desc-H0.mat',subname,FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s T values',name);
@@ -330,18 +331,16 @@ elseif ~isempty(M) && MCC == 4 % Stat max
     % correction using TFCE
     % --------------------------
 elseif ~isempty(M) && MCC == 3 % Stat max
-    [~,FileNameTmp,ext] = fileparts(FileName);
-    if contains(FileNameTmp,'_desc-')
+    [~,FileNameTmp] = fileparts(FileName);
+    if contains(FileNameTmp,'sub-')
         FileNameTmp = extractAfter(FileNameTmp,'_desc-');
     end
-    if exist(fullfile(LIMO.dir,['tfce' filesep subname 'tfce_' FileNameTmp ext]),'file')
+    if exist(fullfile(LIMO.dir,['tfce' filesep subname FileNameTmp '_desc-tfce' ext]),'file')
         try
-            score    = load(fullfile(LIMO.dir,['tfce' filesep subname 'tfce_' FileNameTmp ext]));
+            score    = load(fullfile(LIMO.dir,['tfce' filesep subname FileNameTmp '_desc-tfce' ext]));
             score    = score.(cell2mat(fieldnames(score)));
-            if isfile(fullfile(LIMO.dir,['H0' filesep subname 'tfce-H0_' FileNameTmp ext]))
-                H0_score = load(fullfile(LIMO.dir,['H0' filesep subname 'tfce-H0_' FileNameTmp ext]));
-            else
-                H0_score = load(fullfile(LIMO.dir,['H0' filesep subname 'tfce_H0_' FileNameTmp ext])); % legacy non bids
+            if isfile(fullfile(LIMO.dir,['H0' filesep subname FileNameTmp '_desc-tfceH0' ext]))
+                H0_score = load(fullfile(LIMO.dir,['H0' filesep subname FileNameTmp '_desc-tfceH0' ext]));
             end
             H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
             [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
