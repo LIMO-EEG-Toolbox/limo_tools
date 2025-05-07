@@ -416,7 +416,7 @@ if contains(FileName,'Rep_ANOVA')
         M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,1);
         PVAL = matfile.(cell2mat(fieldnames(matfile)))(:,:,2);
     end
-    MCC_data = fullfile(LIMO.dir,['H0' filesep 'H0_' FileName]);
+    MCC_data = fullfile(LIMO.dir,['H0' filesep FileName '_desc-H0.mat']);
     
     % no correction for multiple testing
     % -----------------------------------
@@ -528,8 +528,8 @@ if contains(FileName,'Rep_ANOVA')
         % Correction using TFCE
         % -------------------------------------
     elseif MCC == 3 % Stat tfce
-        tfce_data    = sprintf('tfce%stfce_%s',filesep, FileName);
-        H0_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
+        tfce_data    = sprintf('tfce%s%s_desc-tfce.mat',filesep, FileName);
+        H0_tfce_data = sprintf('H0%s%s_desc-tfceH0.mat', filesep, FileName);
         if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
             try
                 tfce_data    = load(tfce_data);     
