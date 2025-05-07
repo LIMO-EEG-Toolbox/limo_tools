@@ -65,11 +65,11 @@ if LIMO.Level == 1
     subname      = limo_get_subname([filename ext]);
     tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-tfce_' extractAfter(fname,'desc-')]);
     H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep subname '_desc-tfceH0_' extractAfter(fname,'desc-')]);
-    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-H0_' extractAfter(fname,'desc-') '.mat']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-H0_' extractAfter(fname,'desc-') '.mat']); % .mat as exists 'on disk'
 else
-    tfce_file    = fullfile(LIMO.dir,['tfce' filesep fname '_desc-tfce.mat']);
-    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep fname '_desc-tfceH0.mat']);
-    H0filename   = fullfile(LIMO.dir,['H0'   filesep fname '_desc-H0']);
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep fname '_desc-tfce']);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep fname '_desc-tfceH0']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep fname '_desc-H0.mat']);
 end
 
 if strcmpi(checkfile,'yes')
