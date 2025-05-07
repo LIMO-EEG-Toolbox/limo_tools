@@ -59,13 +59,18 @@ end
 if isempty(fpath)
     filename = fullfile(LIMO.dir,fname);
 end
-subname = limo_get_subname([filename ext]);
 
 % files to create
-tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-tfce_' extractAfter(fname,'desc-')]);
-H0_tfce_file = fullfile(LIMO.dir,['H0' filesep subname '_desc-tfce-H0_' extractAfter(fname,'desc-')]);
-% given filename input, we expect H0 to be
-H0filename   = fullfile(LIMO.dir,['H0' filesep subname '_desc-H0_' extractAfter(fname,'desc-') '.mat']);
+if LIMO.Level == 1
+    subname      = limo_get_subname([filename ext]);
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-tfce_' extractAfter(fname,'desc-')]);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep subname '_desc-tfceH0_' extractAfter(fname,'desc-')]);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-H0_' extractAfter(fname,'desc-') '.mat']);
+else
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep fname '_desc-tfce.mat']);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep fname '_desc-tfceH0.mat']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep fname '_desc-H0']);
+end
 
 if strcmpi(checkfile,'yes')
     if exist(tfce_file,'file')

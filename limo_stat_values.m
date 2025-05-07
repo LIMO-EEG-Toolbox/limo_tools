@@ -113,48 +113,48 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
     if contains(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,:,2)); % F values
         Pval      = squeeze(matfile.R2(:,:,:,3)); % P values
-        MCC_data  = 'H0_R2.mat';
+        MCC_data  = [subname 'R2_desc-H0.mat'];
         titlename = 'R^2 Coef';
     elseif contains(FileName,'Condition_effect')
         effect_nb = extractAfter(FileName,'Condition_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Condition_effect(:,:,:,1));
         Pval      = squeeze(matfile.Condition_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gCondition_effect_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Condition effect %g  F values',effect_nb);
     elseif contains(FileName,'Covariate_effect')
         effect_nb = extractAfter(FileName,'Covariate_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Covariate_effect(:,:,:,1));
         Pval      = squeeze(matfile.Covariate_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gCovariate_effect_%g.mat',subname,effect_nb);
         titlename = sprintf('Covariate effect %g  F values',effect_nb);
     elseif contains(FileName,'Interaction_effect')
         effect_nb = extractAfter(FileName,'Interaction_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Interaction_effect(:,:,:,1));
         Pval      = squeeze(matfile.Interaction_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gInteraction_effect_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Interaction effect %g  F values',effect_nb);
     elseif contains(FileName,'semi_partial_coef')
         effect_nb = extractAfter(FileName,'semi_partial_coef_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.semi_partial_coef(:,:,:,2));
         Pval      = squeeze(matfile.semi_partial_coef(:,:,:,3));
-        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gsemi_partial_coef_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Semi Partial Coef %g',effect_nb);
     elseif contains(FileName,'con_')
         effect_nb = extractAfter(FileName,'con_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.con(:,:,:,4));
         Pval      = squeeze(matfile.con(:,:,:,5));
-        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gcon_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
     elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
-        MCC_data  = sprintf('H0_%s', FileName);
+        MCC_data  = sprintf('%g%s_desc-H0',subname,FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
@@ -163,7 +163,7 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.ess(:,:,:,end-1));
         Pval      = squeeze(matfile.ess(:,:,:,end));
-        MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gess_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Contrast %g F values',effect_nb);
     end
     
@@ -171,48 +171,48 @@ else  % same with one less dimention
     if contains(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,2)); % F values
         Pval      = squeeze(matfile.R2(:,:,3)); % P values
-        MCC_data  = 'H0_R2.mat';
+        MCC_data  = [subname 'R2_desc-H0.mat'];
         titlename = 'R^2 Coef';
     elseif contains(FileName,'Condition_effect')
         effect_nb = extractAfter(FileName,'Condition_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Condition_effect(:,:,1));
         Pval      = squeeze(matfile.Condition_effect(:,:,2));
-        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gCondition_effect_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Condition effect %g  F values',effect_nb);
     elseif contains(FileName,'Covariate_effect')
         effect_nb = extractAfter(FileName,'Covariate_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Covariate_effect(:,:,1));
         Pval      = squeeze(matfile.Covariate_effect(:,:,2));
-        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gCovariate_effect_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Covariate effect %g  F values',effect_nb);
     elseif contains(FileName,'Interaction_effect')
         effect_nb = extractAfter(FileName,'Interaction_effect_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.Interaction_effect(:,:,1));
         Pval      = squeeze(matfile.Interaction_effect(:,:,2));
-        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gInteraction_effect_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Interaction effect %g  F values',effect_nb);
     elseif contains(FileName,'semi_partial_coef')
         effect_nb = extractAfter(FileName,'semi_partial_coef_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.semi_partial_coef(:,:,2));
         Pval      = squeeze(matfile.semi_partial_coef(:,:,3));
-        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gsemi_partial_coef_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Semi Partial Coef %g',effect_nb);
     elseif contains(FileName,'con_')
         effect_nb = extractAfter(FileName,'con_');
         effect_nb = eval(effect_nb(1:end-4));
         M         = squeeze(matfile.con(:,:,4));
         Pval      = squeeze(matfile.con(:,:,5));
-        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
+        MCC_data  = sprintf('%gcon_%g_desc-H0.mat',subname,effect_nb);
         titlename = sprintf('Contrast %g T values',effect_nb);
     elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,4); % T values
         Pval      = matfile(:,:,5);
-        MCC_data  = sprintf('H0_%s', FileName);
+        MCC_data  = sprintf('%g%s_desc-H0',subname,FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s T values',name);
