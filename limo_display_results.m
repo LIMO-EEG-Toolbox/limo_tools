@@ -297,7 +297,7 @@ if LIMO.Level == 1
                             assignin('base','F_values',toplot)
                         end
 
-                    elseif strcmpi(FileName(1:4),'con_')
+                    elseif contains(FileName,'con_')
                         if strcmpi(LIMO.Analysis,'Time-Frequency')
                             toplot = squeeze(toplot(:,:,:,4)); % plot T values
                         else
@@ -305,7 +305,7 @@ if LIMO.Level == 1
                         end
                         assignin('base','T_values',toplot)
 
-                    elseif strcmpi(FileName(1:4),'ess_')
+                    elseif contains(FileName,'ess_')
                         if strcmpi(LIMO.Analysis,'Time-Frequency')
                             toplot = squeeze(toplot(:,:,:,end-1)); % plot F values
                         else
