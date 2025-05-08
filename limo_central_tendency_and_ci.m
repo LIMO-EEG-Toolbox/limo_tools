@@ -307,10 +307,11 @@ elseif nargin == 6 || nargin == 7
         limo.Type{i} = LIMO.Type;
 
         if all(is_limo)
+            Ydir = dir(fullfile(LIMO.dir,'*Yr.mat'));
             if exist(fullfile(Paths{i},'Yr.mat'),'file')
                 Yr = load(fullfile(Paths{i},'Yr.mat'));
-            elseif exist(fullfile(LIMO.dir,'Yr.mat'),'file')
-                Yr = load(fullfile(LIMO.dir,'Yr.mat'));
+            elseif ~isempty(fullfile(Ydir.folder,Ydir.name))
+                Yr = load(fullfile(Ydir.folder,Ydir.name));
             else
                 limo_errordlg('cannot find data associated to LIMO file')
             end
@@ -652,11 +653,11 @@ elseif nargin == 1
         if strcmpi(Analysis_type,'1 channel only')
            channel = limo_inputdlg('which channel to analyse [?]','channel option'); % can be 1 nb or a vector of channels (channel optimized analysis)
             if isempty(cell2mat(channel))
-                [file,dir,index] = uigetfile('*.mat','select your channel file');
+                [file,directory,index] = uigetfile('*.mat','select your channel file');
                 if isempty(file)
                     return
                 else
-                    cd(dir); 
+                    cd(directory); 
                     channel_vector = load(file);
                     channel_vector = channel_vector.getfield(channel_vector);
                     % check the vector has the same length as the number of files
