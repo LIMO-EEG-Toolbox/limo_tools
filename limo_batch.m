@@ -462,6 +462,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             start = 0;
         end
         
+        subname = STUDY.datasetinfo(subject).subject;
         for c=1:size(batch_contrast.mat,1)
             name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname 'con_' num2str(c+start) '.mat'];
         end
