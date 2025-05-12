@@ -94,19 +94,11 @@ function contrasts_Callback(hObject, eventdata, handles)
 
 clc; uiresume
 guidata(hObject, handles);
-opt = questdlg('run constrasts for all subjects or open one subject?','option','all','one','all');
+opt = limo_questdlg('run constrast(s) for all subjects or open one model (GLM/ANOVA)?','option','all','one','all');
 delete(handles.figure1)
 if strcmp(opt,'one')
     limo_contrast_manager
 else
-% to do
-% -----
-%     if evalin( 'base', 'exist(''STUDY'',''var'')' )
-%         pop_limo() % call std contrast GUI
-%     else
-%         limo_batch('contrast only');
-%     end
-    
     limo_batch('contrast only');
 end
 
