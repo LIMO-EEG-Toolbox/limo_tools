@@ -29,6 +29,8 @@ function [sigcluster,pval,maxval] = limo_ecluster_test(orif,orip,th,alpha_value,
 %               taking the max cluster across electrodes; this is a
 %               more conservative way to control for multiple comparisons 
 %               than using a spatial-temporal clustering technique.
+%           pval is the pvalue computed per channel cluster
+%           maxval_channel is the maximum temporal cluster value
 %
 % Guillaume Rousselet, Marianne Latinus, Cyril Pernet 
 % -------------------------------------------------------
@@ -44,15 +46,16 @@ if nargin < 5
     boot_maxclustersum = [];
 end
 
-Ne = size(orif,1); % electrodes or frequencies
-Nf = size(orif,2); % time frames
+pval   = [];
+maxval = [];
+Ne     = size(orif,1); % electrodes or frequencies
+Nf     = size(orif,2); % time frames
 
 %% threshold the data based on the maximum cluster sum obtained over the 1st dimension
-if isfield(th, 'max') 
+% even if temporal clustering is done initially, we still just use the max across the 1st dim
+if isfield(th, 'max')
 
     sigcluster.max_mask = zeros(Ne,Nf);
-    ME = [];
-    
     for E = 1:Ne % for each electrode or frequency
         if exist('spm_bwlabel','file') == 3
             [L,NUM] = spm_bwlabel(double(orip(E,:)<=alpha_value), 6); % find clusters
@@ -61,7 +64,7 @@ if isfield(th, 'max')
         else
             errordlg('You need either the Image Processing Toolbox or SPM in your path'); return
         end
-        
+
         maxval = zeros(1,NUM);
         cluster_label = 1;
         for C = 1:NUM % for each cluster compute cluster sums & compare to bootstrap threshold
@@ -71,45 +74,47 @@ if isfield(th, 'max')
                 cluster_label =  cluster_label + 1;
             end
         end
-        maxval = max(maxval);
-    end 
+        maxval= max(maxval);
+    end
 end
 
 %% threshold the data based on the maximum of cluster sum obtained over each electrode
 if isfield(th, 'elec') 
 
     sigcluster.elec_mask = zeros(Ne,Nf);
-    pval = nan(Ne,Nf);
-    ME = [];
-    try
-        [L,NUM] = bwlabeln(orip<=alpha_value); % find clusters
-    catch ME
-        try
-            [L,NUM] = spm_bwlabel(double(orip<=alpha_value), 6);
-        catch ME
+    maxval_channel       = zeros(Ne,1);
+    pval                 = nan(Ne,Nf);
+    cluster_label        = 1;
+    for channel = 1:Ne
+        if exist('bwlabeln','file')~=0
+            [L,NUM] = bwlabeln(orip(channel,:)<=alpha_value); % find clusters
+        else
             errordlg('You need either the Image Processing Toolbox or SPM in your path'); return
         end
-    end
 
-    maxval = zeros(1,NUM);
-    cluster_label = 1;
-    for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
-        maxval(C) = sum(abs(orif(L==C)));
-        if maxval(C) >= th.elec
-            sigcluster.elec_mask(L==C)= cluster_label; % flag clusters above threshold
-             cluster_label =  cluster_label+1;
-            if ~isempty(boot_maxclustersum)
-                p = 1 - sum(maxval(C) >= boot_maxclustersum)/length(boot_maxclustersum);            
-                if p ==0
-                    p = 1/length(boot_maxclustersum);
+        maxval = zeros(1,NUM);
+        for C = 1:NUM % compute cluster sums & compare to bootstrap threshold
+            maxval(C) = sum(abs(orif(channel,L==C)));
+            if maxval(C) >= th.elec(channel)
+                sigcluster.elec_mask(channel,L==C)= cluster_label; % flag clusters above threshold
+                cluster_label =  cluster_label+1;
+                if ~isempty(squeeze(boot_maxclustersum(channel,:)))
+                    p = 1 - sum(maxval(C) >= squeeze(boot_maxclustersum(channel,:)))./length(boot_maxclustersum);
+                    if p==0
+                        p = 1/length(boot_maxclustersum);
+                    end
+                    pval(channel,L==C) = p;
                 end
-                pval(L==C) = p;
             end
         end
+        if ~isempty(maxval)
+            maxval_channel(channel) = max(maxval);
+        else
+            maxval_channel(channel) = 0;
+        end
     end
-    maxval = max(maxval);
+    maxval = maxval_channel;
 end
-
 
 
 
