@@ -85,6 +85,13 @@ if isfield(th, 'elec')
     maxval_channel       = zeros(Ne,1);
     pval                 = nan(Ne,Nf);
     cluster_label        = 1;
+    
+    % we still to control over the entire space, so the max across channels
+    if size(boot_maxclustersum,1) > 1
+        boot_maxclustersum = max(boot_maxclustersum,[],1);
+    end
+    
+    % but cluster one channel at a time
     for channel = 1:Ne
         if exist('bwlabeln','file')~=0
             [L,NUM] = bwlabeln(orip(channel,:)<=alpha_value); % find clusters
@@ -98,13 +105,11 @@ if isfield(th, 'elec')
             if maxval(C) >= th.elec(channel)
                 sigcluster.elec_mask(channel,L==C)= cluster_label; % flag clusters above threshold
                 cluster_label =  cluster_label+1;
-                if ~isempty(squeeze(boot_maxclustersum(channel,:)))
-                    p = 1 - sum(maxval(C) >= squeeze(boot_maxclustersum(channel,:)))./length(boot_maxclustersum);
-                    if p==0
-                        p = 1/length(boot_maxclustersum);
-                    end
-                    pval(channel,L==C) = p;
+                p = 1 - sum(maxval(C) >= boot_maxclustersum)./length(boot_maxclustersum);
+                if p==0
+                    p = 1/length(boot_maxclustersum);
                 end
+                pval(channel,L==C) = p;
             end
         end
         if ~isempty(maxval)
