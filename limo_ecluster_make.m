@@ -34,22 +34,21 @@ function [th,boot_values] = limo_ecluster_make(bootf,bootp,alphav)
 % Marianne Latinus adding spm_bwlabel 2012
 % Cyril Pernet - removed some useless computations to speed things up, June 2014
 % GAR - commented out last line which crashed the function - September 2015
-% CP added boot_values to then compute the p values
+% CP added boot_values out, then compute the p values
 % ------------------------------
 %  Copyright (C) LIMO Team 2019
 %
 % See also LIMO_TFCLUSTER_MAKE LIMO_ECLUSTER_TEST
 
-cluster_val = [];
 if nargin < 3
     alphav = 0.05;
 end
 
 if ndims(bootf)==3 % electrode*time/freq*boot 
-    b = size(bootf,3);
-    U = round((1-alphav)*b);
-    Ne = size(bootf,1);
-    boot_values = zeros(b,Ne);
+    b           = size(bootf,3);
+    U           = round((1-alphav)*b);
+    Ne          = size(bootf,1);
+    boot_values = zeros(Ne,b);
 
     for E = 1:Ne % electrodes/freq
         for kk=1:b % bootstrap samples
@@ -77,17 +76,16 @@ if ndims(bootf)==3 % electrode*time/freq*boot
         end % bootstrap loop
     end % electrode loop
 
-    sortSC = sort(boot_values,2);
-    th.elec = sortSC(:,U); % threshold at each electrode
-    maxSC = max(boot_values,[],1); % max across electrodes
+    sortSC    = sort(boot_values,2);
+    th.elec   = sortSC(:,U); % threshold at each electrode
+    maxSC     = max(boot_values,[],1); % max across electrodes
     sortmaxSC = sort(maxSC);
-    th.max = sortmaxSC(U); % threshold of max across electrodes
+    th.max    = sortmaxSC(U); % threshold of max across electrodes
     
+elseif ndims(bootf)==2 %#ok<ISMAT> % 1 electrode * time/freq
 
-elseif ndims(bootf)==2 % 1 electrode * time/freq
-
-    b = size(bootf,2);
-    U = round((1-alphav)*b);
+    b           = size(bootf,2);
+    U           = round((1-alphav)*b);
     boot_values = zeros(b,1);
 
     for kk=1:b % bootstrap samples
@@ -102,10 +100,9 @@ elseif ndims(bootf)==2 % 1 electrode * time/freq
         else
             boot_values(kk) = 0;
         end
-
     end % bootstrap loop
 
-    sortSC = sort(boot_values);
+    sortSC  = sort(boot_values);
     th.elec = sortSC(U); % threshold at the unique electrode
 
 else

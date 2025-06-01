@@ -9,7 +9,8 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 %         p        = p value for thresholding
 %         MCC      = multiple comparisons option
 %                    1 none
-%                    2 clustering
+%                    2 clustering (spatial-temporal, unless one
+%                    channel/IC/source) ; HACK for temporal only line 61
 %                    3 TFCE
 %                    4 Max
 %         LIMO     = LIMO.mat structure
@@ -108,8 +109,8 @@ if ~isempty(subname)
     subname = [subname '_desc-'];
 end
 % -------------------------------
-%% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA
-% ------------------------------------------------------------------------
+%% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA, any contrasts
+% ------------------------------------------------------------------------------
 if strcmpi(LIMO.Analysis,'Time-Frequency')
     if contains(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,:,2)); % F values

@@ -66,7 +66,7 @@ cluster_end   = NaN(1,n_cluster); % end of each cluster
 cluster_maxv  = NaN(1,n_cluster); % max value for each cluster
 cluster_maxe  = NaN(1,n_cluster); % channel location of the max value of each cluster
 cluster_maxf  = NaN(1,n_cluster); % frame location of the max value of each cluster
-
+warning off
 for c=1:n_cluster
     tmp                               = toplot.*(mask==c);
     tmp(tmp==Inf)                     = NaN;
@@ -83,7 +83,7 @@ for c=1:n_cluster
     end
     [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
 end
-
+warning on
 
 %% get frame information 
 if strcmpi(LIMO.Analysis,'Time')

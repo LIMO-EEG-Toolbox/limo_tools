@@ -112,7 +112,7 @@ if type == 1 || type == 2
     else
         dfe = size(Y,1)-rank(X); %% happens for 2nd level N-way ANOVA or ANCOVA
     end
-    if length(dfe) == 1 %#ok<ISCL>
+    if length(dfe) == 1 
         dfe = repmat(dfe,1,size(Y,1)); % dfe per channel
     end
     
@@ -202,9 +202,9 @@ elseif type == 3 || type == 4
         LIMO = LIMO.LIMO;
     end
     if LIMO.Level == 1
-        error('1st level Analysis detected - limo_contrast wrong case ; switch analysis type');
+        limo_errordlg('1st level Analysis detected - limo_contrast wrong case ; switch analysis type');
     elseif ~contains(LIMO.design.name,'Repeated','IgnoreCase',true)
-        error('2nd level Analysis but not a Repeated measure Analysis ; switch analysis type');
+        limo_errordlg('2nd level Analysis but not a Repeated measure Analysis ; switch analysis type');
     end
     gp_values  = LIMO.design.nb_conditions;
     subname = limo_get_subname(LIMO.dir);
@@ -470,6 +470,7 @@ switch type
                 try
                     C0 = eye(rank(X)+1) - c*pinv(c);
                 catch ME
+                    warning(ME.identifier,"adjusting df %s\n",ME.message)
                     C0 = eye(rank(X)) - c*pinv(c);
                 end
                 X0 = X*C0;
@@ -707,6 +708,7 @@ switch type
                     try
                         C0 = eye(rank(X)+1) - c*pinv(c);
                     catch ME
+                        warning(ME.identifier,"adjusting df %s\n",ME.message)
                         C0 = eye(rank(X)) - c*pinv(c);
                     end
                     X0 = X*C0;
@@ -748,7 +750,7 @@ switch type
         % [mean value, se, df, F, p])
         if gp_values == 1
             ess = zeros(size(Yr,1),size(Yr,2),5);
-            array = find(sum(squeeze((Yr(:,1,:,1))),2),"omitnan");    
+            array = find(sum(squeeze((Yr(:,1,:,1))),2,"omitnan"));    
             for c = 1:length(array)
                 channel = array(c);
                 fprintf('channel %g \n',channel);
@@ -876,7 +878,7 @@ switch type
         %              bootstrap
         % ---------------------------------------------
         
-        filename = fullfile(LIMO.dir,['H0' filesep 'H0_ess_' num2str(index) '.mat']);
+        filename = fullfile(LIMO.dir,['H0' filesep 'ess_' num2str(index) '_desc-H0.mat']);
         % prepare the boostrap with centering the data
         cd([LIMO.dir filesep 'H0']);
         if ~exist('centered_data.mat','file') || ~exist('boot_table.mat','file')
@@ -884,8 +886,16 @@ switch type
         else
             centered_data = load('centered_data'); centered_data = centered_data.(cell2mat(fieldnames(centered_data)));
             boot_table    = load('boot_table');    boot_table = boot_table.(cell2mat(fieldnames(boot_table)));
+            nboot         = size(boot_table{1},2);
+            if LIMO.design.bootstrap ~= nboot
+                warning('LIMO structure updated setting the right booststrap value %g -->%g', ...
+                    LIMO.design.bootstrap,nboot)
+                LIMO.design.bootstrap = nboot;
+                save(fullfile(LIMO.dir,'LIMO'),'LIMO','-v7.3');
+            end
         end
         
+
         if gp_values == 1
             if strcmp(LIMO.Analysis,'Time-Frequency')
                 H0_ess = NaN(size(Yr,1),size(Yr,2)*size(Yr,3),2,LIMO.design.bootstrap);
