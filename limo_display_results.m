@@ -95,9 +95,13 @@ if ischar(LIMO)
     load(LIMO, 'LIMO');
 end
 
-subname = limo_get_subname(FileName);
-if ~isempty(subname)
-    subname = [subname '_desc-'];
+if LIMO.Level == 1
+    subname = limo_get_subname(FileName);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
+    end
+else
+    subname = [];
 end
 
 [~,FileNameTmp,ext] = fileparts(FileName);

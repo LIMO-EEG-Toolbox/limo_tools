@@ -103,10 +103,14 @@ end
 
 
 %% Deal with each case of FileName
-subname = limo_get_subname(FileName);
-[~,FileName,ext] = fileparts(FileName);
-if ~isempty(subname)
-    subname = [subname '_desc-'];
+if LIMO.Level == 1
+    subname = limo_get_subname(FileName);
+    [~,FileName,ext] = fileparts(FileName);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
+    end
+else
+    subname = [];
 end
 % -------------------------------
 %% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA, any contrasts
