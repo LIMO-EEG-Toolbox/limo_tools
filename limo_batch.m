@@ -262,7 +262,9 @@ if exist('STUDY','var')
     end
     cd(STUDY.filepath); % go to study
     current = pwd;
-    if isempty(strfind(STUDY.filepath,'derivatives'))
+
+    [~,foldername] = fileparts(STUDY.filepath);
+    if ~strcmp(foldername,'derivatives')
         % derivatives should have been created by std_limo if not already in the path
         if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
             mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]);
@@ -281,7 +283,8 @@ if exist('STUDY','var')
         LIMO_files.LIMO = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     end
 else % if not part of a EEGLAB STUDY - e.g. run locally or FieldTrip
-    if ~contains(pwd,'derivatives') % make a derivatives folder
+    [~,foldername] = fileparts(pwd);
+    if ~strcmp(foldername,'derivatives') % make a derivatives folder
         mkdir('derivatives'); cd derivatives
     end
     current = pwd;
@@ -464,7 +467,7 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
         
         subname = STUDY.datasetinfo(subject).subject;
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname 'con_' num2str(c+start) '.mat'];
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname '_desc-con_' num2str(c+start) '.mat'];
         end
         pipeline(subject).n_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
@@ -609,11 +612,25 @@ else % parallel call to the pipeline , the usual way
 end
 
 %% Save txt files
-% save as txt file the list of .set, Betas, LIMO and con
-% these lists can then be used in second level analyses
 cd(LIMO_files.LIMO)
-
 if strcmp(option,'model specification') || strcmp(option,'both')
+    % check that the dimensions of the model are identical otherwise tell the
+    % user -- condition might be missing from design or from preprocessing
+    good_subjects = find(remove_limo==0);
+    for s = 1:length(good_subjects)
+        LIMO = load(LIMO_files.mat{good_subjects(s)});
+        design_dim(s) = size(LIMO.LIMO.design.X,2);
+        names{s} = limo_get_subname(LIMO.LIMO.dir);
+    end
+    if length(unique(design_dim)) > 1
+        limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
+        for s = 1:length(good_subjects)
+            warning('subject %s design with %g regressors', names{s},design_dim(s));
+        end
+    end
+
+    % save as txt file the list of .set, Betas, LIMO and con
+    % these lists can then be used in second level analyses
     if ~all(remove_limo)
         cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
         cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
@@ -663,7 +680,10 @@ else
     if sum(failed) == N % all subjects
         warning('LIMO batch done but all subjects failed. This can be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
     else
-        warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
+        failed = find(failed);
+        for s = 1:length(failed)
+            warning('LIMO batch done, some errors where detected\ncheck limo batch report %s',limo_get_subname(fileparts(pipeline(failed(s)).n_contrast.files_in)));
+        end
     end
 end
 
