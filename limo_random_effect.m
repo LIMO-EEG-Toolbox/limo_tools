@@ -46,7 +46,7 @@ handles.tfce      = 0;
 handles.type      = 'Channels';
 handles.dir       = [];
 handles.chan_file = [];
-handles         = get_chan_loc(handles);
+handles           = get_chan_loc(handles);
 guidata(hObject, handles);
 % uiwait(handles.figure1);
 
@@ -412,12 +412,11 @@ if strcmpi(handles.type,'channels')
     if ~isempty(STUDY) && isfield(STUDY, 'limo') && isfield(STUDY.limo, 'chanloc')
         if ~isempty(STUDY.limo.chanloc)
             handles.chan_file = STUDY.limo.chanloc;
+            warning('using study channel location from STUDY');
         end
     end
 end
-if ~isempty(handles.chan_file)
-    fprintf('using study channel location file \n%s\n',handles.chan_file);
-end
+
 
 % -----------------------------------------------------------------------
 % subfunction called before calling the others to test chanlocs is loaded

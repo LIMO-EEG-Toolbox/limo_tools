@@ -648,9 +648,11 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
                 else
                     con_num = c;
                 end
-                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
+                path = fileparts(pipeline(subject).n_contrast.files_in);
+                name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
             else
-                name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
+                path = fileparts(pipeline(subject).glm.files_out);
+                name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
                 con_num = c;
             end
             index = index + 1;
@@ -665,8 +667,6 @@ end
 
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
-
-cd(current);
 failed = zeros(1,N);
 for subject=1:N
     if strfind(report{subject},'failed')

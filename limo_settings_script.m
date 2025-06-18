@@ -23,7 +23,12 @@ end
 if isequal(limo_settings.workdir, 'derivatives')
     try
         STUDY=evalin('base','STUDY');
-        limo_settings.workdir = STUDY.filepath;
+        default_folder = [STUDY.filepath filesep 'derivatives'];
+        if exist(fullfile(default_folder,['LIMO_' extractBefore(STUDY.filename,'.study')]),"dir")
+            limo_settings.workdir = fullfile(default_folder,['LIMO_' extractBefore(STUDY.filename,'.study')]);
+        else
+            limo_settings.workdir = default_folder;
+        end
     catch
         disp('Failed to find STUDY variable');
         limo_settings.workdir = '';
