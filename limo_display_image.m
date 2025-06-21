@@ -312,7 +312,7 @@ if contains(mytitle,'cluster')
             fprintf('cluster %g at %gms %gHz, ends at %gms %gHz, max %g @ %gms %gHz \n', c, ...
                 timevect(cluster_start(c)),freqvect(find(f1==max(f1))), ...
                 timevect(cluster_end(c)), freqvect(find(f2==max(f2))), ...
-                cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3))));
+                cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3)))); %#ok<*FNDSB>
         end
     end
 else % no clusters (we have make one )
@@ -470,13 +470,12 @@ if dynamic == 1
         end
     end
 end
-res = true;
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%
 %% set axes and labels 
-% -------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%
 function set_imgaxes(LIMO,scale)
-
 img_prop = get(gca);
 set(gca,'LineWidth',2)
 
@@ -522,19 +521,20 @@ else
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
 % ----- Colormap --------
+%%%%%%%%%%%%%%%%%%%%%%%%%
 try
     maxval = max(abs(max(scale(:))),abs(min(scale(:))));
     if max(scale(:)) < 0
-        caxis([-maxval 0])
+        clim([-maxval 0])
     elseif min(scale(:)) > 0 
-        caxis([0 maxval])
+        clim([0 maxval])
     else
-        caxis([-maxval maxval])
+        clim([-maxval maxval])
     end
 catch caxiserror
     fprintf('axis issue: %s\n',caxiserror.message)
 end
 
 end
-

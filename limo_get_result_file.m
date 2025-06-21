@@ -10,10 +10,6 @@ function [FileName,PathName,FilterIndex]= limo_get_result_file
 % ------------------------------
 %  Copyright (C) LIMO Team 2023
 
-Names       = {};
-Paths       = {};
-Files       = {};
-txtFile     = '';
 FilterIndex = 0;
 FileName    = 0;
 PathName    = 0;
@@ -54,48 +50,54 @@ else
     % assuming default directory filenames
     % if scripted, also look for actual filenames, 
     % when the user if inside a directory
-    dirContent1 = dir('one_sample_ttest*/*.mat');
+    dirContent1 = dir('One_Sample_Ttest*/*.mat');
     if isempty(dirContent1)
-        dirContent1 = dir('one_sample_ttest*.mat');
+        dirContent1 = dir('One_Sample_Ttest*.mat');
     end
     if isempty(dirContent1)
-        dirContent1 = dir('one_sample_ttest*/*/*.mat');
+        dirContent1 = dir('One_Sample_Ttest*/*/*.mat'); % since we can run many one samples at once these get nested
     end
 
-    dirContent2 = dir('paired_ttest*/*.mat');
+    dirContent2 = dir('Paired_Samples_Ttest*/*.mat');
     if isempty(dirContent2)
-        dirContent2 = dir('paired_samples_ttest*.mat');
+        dirContent2 = dir('Paired_Samples_Ttest*.mat');
     end
 
-    dirContent3 = dir('two_samples_ttest*/*.mat');
+    dirContent3 = dir('Two_Samples_Ttest*/*.mat');
     if isempty(dirContent3)
-        dirContent3 = dir('two_samples_ttest*.mat');
+        dirContent3 = dir('Two_Samples_Ttest*.mat');
     end
 
-    dirContent4 = dir('regression*/*.mat');
+    dirContent4 = dir('Regression*/*.mat');
     dirContent5 = [];
     if isempty(dirContent4)
-        dirContent4 = dir('regression*Covariate_effect_*.mat');
-        dirContent5 = dir('regression*con*.mat');
+        dirContent4 = dir('Regression*Covariate_effect_*.mat');
+        dirContent5 = dir('Regression*con*.mat');
     end
 
-    dirContent6 = dir('AN(C)OVA*/*.mat');
+    dirContent6 = dir('ANOVA*/*.mat');
     dirContent7 = [];
-    dirContent8 = [];
-    if isempty(dirContent5)
-        dirContent7 = dir('AN(C)OVA*Condition_effect*.mat');
-        dirContent8 = dir('AN(C)OVA*Covariate_effect_*.mat');
+    if isempty(dirContent6)
+        dirContent7 = dir('ANOVA*Condition_effect*.mat');
     end
 
-    dirContent9 = dir('Rep_Meas_ANOVA*/*.mat');
+    dirContent8 = dir('ANCOVA*/*.mat');
+    dirContent9 = [];
     dirContent10 = [];
-    if isempty(dirContent9)
-        dirContent10 = dir('Rep_Meas_ANOVA*Rep_ANOVA*.mat');
+    if isempty(dirContent8)
+        dirContent9 = dir('ANCOVA*Condition_effect*.mat');
+        dirContent10 = dir('ANCOVA*Covariate_effect_*.mat');
+    end
+
+    dirContent11 = dir('Rep_Meas_ANOVA*/*.mat');
+    dirContent12 = [];
+    if isempty(dirContent11)
+        dirContent12 = dir('Rep_Meas_ANOVA*Rep_ANOVA*.mat');
     end
 
     dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;...
         dirContent5;dirContent6;dirContent7;dirContent8,...
-        dirContent9,dirContent10];
+        dirContent9,dirContent10,dirContent11,dirContent12];
 end
 
 % remove Yr and LIMO files
@@ -128,7 +130,7 @@ if isempty(dirContent)
 else
     uiList = { {'style' 'text'       'string'  strGUI } ...
                { 'style' 'popupmenu' 'string' {dirContent.fullname}  'value', 1 } };
-    res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+    res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse'); %#ok<NBRAK2>
     if ~isempty(res)
         FileName = dirContent(res{1}).name;
         PathName = dirContent(res{1}).folder;

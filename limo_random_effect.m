@@ -184,7 +184,7 @@ if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
 
-go = update_dir(handles,'one_sample_ttest');
+go = update_dir(handles,'One_Sample_Ttest');
 if go == 0
     return
 else
@@ -210,7 +210,7 @@ if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
 
-go = update_dir(handles,'two_samples_ttest');
+go = update_dir(handles,'Two_Samples_Ttest');
 if go == 0
     return
 else
@@ -235,7 +235,7 @@ if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
 
-go = update_dir(handles,'paired_ttest');
+go = update_dir(handles,'Paired_Samples_Ttest');
 if go == 0
     return
 else
@@ -259,7 +259,7 @@ if ~isempty(limo_settings.workdir)
     cd(limo_settings.workdir);
 end
 
-go = update_dir(handles,'regression');
+go = update_dir(handles,'Regression');
 if go == 0
     return
 else

@@ -412,7 +412,8 @@ end
 % ------------------------
 
 if contains(FileName,'Rep_ANOVA')
-    
+    [~,FileName] = fileparts(FileName);
+
     % all files have dim electrode x [freq/time] frames x F/p
     if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
         M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,:,1);
