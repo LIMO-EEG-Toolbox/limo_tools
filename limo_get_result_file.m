@@ -75,22 +75,27 @@ else
     dirContent4 = dir('regression*/*.mat');
     dirContent5 = [];
     if isempty(dirContent4)
-        dirContent4 = dir('Covariate_effect_*.mat');
+        dirContent4 = dir('regression*Covariate_effect_*.mat');
+        dirContent5 = dir('regression*con*.mat');
     end
 
-    dirContent5 = dir('AN(C)OVA*/*.mat');
-    dirContent6 = [];
+    dirContent6 = dir('AN(C)OVA*/*.mat');
     dirContent7 = [];
+    dirContent8 = [];
     if isempty(dirContent5)
-        dirContent5 = dir('Condition_effect*.mat');
-        dirContent6 = dir('Covariate_effect_*.mat');
-        dirContent7 = dir('Rep_ANOVA_*.mat');
+        dirContent7 = dir('AN(C)OVA*Condition_effect*.mat');
+        dirContent8 = dir('AN(C)OVA*Covariate_effect_*.mat');
     end
 
-    dirContent8 = dir('con_*.mat');
-    dirContent9 = dir('ess_*.mat');
+    dirContent9 = dir('Rep_Meas_ANOVA*/*.mat');
+    dirContent10 = [];
+    if isempty(dirContent9)
+        dirContent10 = dir('Rep_Meas_ANOVA*Rep_ANOVA*.mat');
+    end
+
     dirContent = [dirContent1;dirContent2;dirContent3;dirContent4;...
-        dirContent5;dirContent6;dirContent7;dirContent8,dirContent9];
+        dirContent5;dirContent6;dirContent7;dirContent8,...
+        dirContent9,dirContent10];
 end
 
 % remove Yr and LIMO files
@@ -98,7 +103,7 @@ for iFile = length(dirContent):-1:1
     if contains(dirContent(iFile).name, 'LIMO.mat') || contains(dirContent(iFile).name, 'Yr.mat') || ...
             contains(dirContent(iFile).name, 'Yhat.mat') || contains(dirContent(iFile).name, 'R2.mat') || ...
             contains(dirContent(iFile).name, 'Y1r.mat') || contains(dirContent(iFile).name, 'Y2r.mat') || ...
-            contains(dirContent(iFile).name, 'Betas.mat')
+            contains(dirContent(iFile).name, 'Betas.mat') 
         dirContent(iFile) = [];
     else
         relPath = strrep(dirContent(iFile).folder, pwd, './');
