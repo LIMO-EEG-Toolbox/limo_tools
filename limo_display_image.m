@@ -72,16 +72,17 @@ for c=1:n_cluster
     tmp(tmp==Inf)                     = NaN;
     tmp(tmp==-Inf)                    = NaN;
     sigframes                         = sum(tmp,1);
-    cluster_start(c)                  = find(sigframes,1,'first');
-    cluster_end(c)                    = find(sigframes,1,'last');
+    cluster_start(n_cluster+1-c)      = find(sigframes,1,'first');
+    cluster_end(n_cluster+1-c)        = find(sigframes,1,'last');
     [V,type]                          = max([abs(min(tmp(:))) max(tmp(:))]);
     if type == 2
-        cluster_maxv(c)               = V(1);
+        cluster_maxv(n_cluster+1-c)   = V(1);
     else
         V = -V;
-        cluster_maxv(c)               = V(1);
+        cluster_maxv(n_cluster+1-c)   = V(1);
     end
-    [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
+    [cluster_maxe(n_cluster+1-c),cluster_maxf(n_cluster+1-c)] = ...
+        ind2sub(size(tmp),find(tmp==V(1)));
 end
 warning on
 
