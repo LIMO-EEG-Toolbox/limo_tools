@@ -101,11 +101,10 @@ if MCC ~= 1
     fprintf('computing corrected statistics at %s...\n',datetime('now','Format','hh:mm:ss'));
 end
 
-
 %% Deal with each case of FileName
+[~,FileName,ext] = fileparts(FileName);
 if LIMO.Level == 1
     subname = limo_get_subname(FileName);
-    [~,FileName,ext] = fileparts(FileName);
     if ~isempty(subname)
         subname = [subname '_desc-'];
     end
@@ -412,7 +411,6 @@ end
 % ------------------------
 
 if contains(FileName,'Rep_ANOVA')
-    [~,FileName] = fileparts(FileName);
 
     % all files have dim electrode x [freq/time] frames x F/p
     if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
