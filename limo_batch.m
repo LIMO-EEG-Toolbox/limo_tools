@@ -654,9 +654,9 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
                 path = fileparts(pipeline(subject).n_contrast.files_in);
                 name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
             else
+                con_num = c;
                 path = fileparts(pipeline(subject).glm.files_out);
                 name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
-                con_num = c;
             end
             index = index + 1;
         end
