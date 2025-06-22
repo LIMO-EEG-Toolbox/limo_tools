@@ -63,7 +63,7 @@ end
 
 % ERSP hack
 if length(infile) == 1 && ...
-        ~isempty(restrict) && length(dimvalue) > 1
+        ~isempty(restrict) && length(dimvalue) > 1 %#ok<*ISCL>
     infile = repmat(infile,[1,length(dimvalue)]);
 end
         
@@ -73,24 +73,30 @@ while out == 0
 
     %% Data selection
      
-    if ~isempty(infile) % allows comand line plot
+    if ~isempty(infile{turn}) % allows comand line plot
         if turn <= length(infile)
             file = infile{turn}; 
             index = 1; 
         else
-            out = 1; return
+            out = 1; 
         end
     else
-        [file,path,index]=uigetfile('*mat',['Select Central tendency file n:' num2str(turn) '']);
-        file = fullfile(path,file);
+        [file,path,index] = uigetfile('*mat',sprintf('Select %g Central tendency file',turn));
+        if isempty(index) || index == 0
+            return
+        else
+            file = fullfile(path,file);
+        end
         if strcmp(file,previous_file) % reselect same file = want to plot a new channel
             channel = [];
+        else
+            infile{turn} = fullfile(path,file); 
         end
         previous_file = file;
     end
     
     if index == 0
-        out = 1; return
+        out = 1; 
     else
         data       = load(file);
         data       = data.(cell2mat(fieldnames(data)));
@@ -100,14 +106,10 @@ while out == 0
         datatype   = fieldnames(data);
         datatype   = datatype(cellfun(@(x) strcmp(x,'limo'), fieldnames(data))==0);        
         if sum(strcmpi(datatype,options)) == 0
-            if exist(errordlg2,'file')
-                errordlg2('unknown file to plot');
-            else
-                errordlg('unknown file to plot');
-            end
+            limo_errordlg('unknown file to plot');
             return
         end
-        name{turn} = cell2mat(datatype); 
+        name{turn} = cell2mat(datatype); %#ok<*AGROW>
         tmp        = data.(cell2mat(datatype));
         
         % overwrite metadata if LIMO file provided
@@ -230,7 +232,7 @@ while out == 0
                 end
                 
                 if isempty(v)
-                    out = 1; return
+                    out = 1; 
                 elseif ischar(v)
                     v = eval(v);
                 end
@@ -250,7 +252,6 @@ while out == 0
         end
     end
     clear tmp
-    
     
     %% prep figure the 1st time rounnd
     % ------------------------------
@@ -410,6 +411,7 @@ while out == 0
     
     % updates
     turn = turn+1;
+    infile{turn} = ''; 
     if colorindex <7
         colorindex = colorindex + 1;
     else
