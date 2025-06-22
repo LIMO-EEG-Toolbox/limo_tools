@@ -2220,9 +2220,9 @@ betas = {};
 
 if nargin > 1
     try
-        limoFile = strrep(betaFile, 'Betas.mat', 'LIMO.mat');
-        LIMO = load('-mat', limoFile);
-        betas = { LIMO.LIMO.design.labels.description };
+        limoFile = fullfile(fileparts(betaFile),'LIMO.mat');
+        LIMO     = load('-mat', limoFile);
+        betas    = { LIMO.LIMO.design.labels.description };
     catch
         disp('Warning: could not find associated LIMO file');
     end
@@ -2325,7 +2325,6 @@ if gp == 1
             if isempty(factorname) || length(factorname) > 2
                 [parameters,betas] = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
             end
-            %parameters = { [1 2 3] [4 5 6] [7 8 9] };
             if isempty(parameters)
                 return
             end
