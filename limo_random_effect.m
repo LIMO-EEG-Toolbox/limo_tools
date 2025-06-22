@@ -37,6 +37,7 @@ end
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_random_effect_OpeningFcn(hObject, ~, handles, varargin)
+set(hObject, 'DockControls', 'off', 'WindowStyle', 'normal');
 handles.output = hObject;
 guidata(hObject, handles);
 
