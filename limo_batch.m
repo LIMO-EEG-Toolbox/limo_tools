@@ -767,9 +767,9 @@ if exist('STUDY','var')
         end
     catch writtingerr
         if sum(failed) == 0
-            warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            limo_warndlg(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
         else
-            warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            limo_warndlg(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
         end
     end
 end
