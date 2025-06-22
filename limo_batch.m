@@ -622,10 +622,13 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         design_dim(s) = size(LIMO.LIMO.design.X,2);
         names{s} = limo_get_subname(LIMO.LIMO.dir);
     end
-    if length(unique(design_dim)) > 1
-        limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
-        for s = 1:length(good_subjects)
-            warning('subject %s design with %g regressors', names{s},design_dim(s));
+    
+    if exist("design_dim","var")
+        if length(unique(design_dim)) > 1
+            limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
+            for s = 1:length(good_subjects)
+                warning('subject %s design with %g regressors', names{s},design_dim(s));
+            end
         end
     end
 
