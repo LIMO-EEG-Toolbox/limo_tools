@@ -55,7 +55,7 @@ if ~exist(fullfile(filepath,filename),'file')
 end
 
 if ~exist(fullfile(filepath,'LIMO.mat'),'file')
-    error('cannot find a LIMO.mat in the same filder as this file, this is required for this function to work')
+    error('cannot find a LIMO.mat in the same folder as this file, this is required for this function to work')
 else
     LIMO = load(fullfile(filepath,'LIMO.mat'));
     LIMO = LIMO.LIMO;

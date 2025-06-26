@@ -29,7 +29,7 @@ function [neighbours,channeighbstructmat] = limo_get_channeighbstructmat(EEG,nei
 %  Copyright (C) LIMO Team 2019
 
 if nargin < 2
-    error('missing inpouts')
+    error('missing inputs')
 end
 
 if isempty(EEG.chanlocs) || isfield(EEG,'chanlocs') == 0
