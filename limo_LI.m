@@ -244,7 +244,7 @@ end
 
 %% figure
 if strcmpi(fig_option,'on')
-    figure;
+    hfig = figure;
     subplot(3,6,1:12); plot(LI_stats.thresholds,LI_stats.LI,'LineWidth',3); grid on; box on
     xlabel('TFCE thresholds'); ylabel('lateralization index'); ax = get(gca);
     if length(LI_stats.mean) == 1

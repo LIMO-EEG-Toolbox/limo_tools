@@ -142,5 +142,6 @@ for cluster = max(nclusters):-1:1
 end
 staple_thmap = sum(all_maps,ndims(all_maps));
 save(fullfile(pwd,'staple_thmap_labelled.mat'),'staple_thmap')
-figure; imagesc(staple_thmap);
+hfig = figure;
+imagesc(staple_thmap);
 title('Binary STAPLE map')

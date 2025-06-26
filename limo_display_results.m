@@ -440,7 +440,8 @@ if LIMO.Level == 1
                         end
                     end
 
-                    figure; set(gcf,'Color','w');
+                    hfig = figure;
+                    set(hfig,'Color','w');
                     % imagesc eigen values
                     subplot(3,3,[4 5 7 8]);
                     timevect = linspace(LIMO.data.start,LIMO.data.end,size(EV,2));
@@ -491,7 +492,8 @@ if LIMO.Level == 1
                     k = LIMO.design.nb_conditions;
 
                     if k>2
-                        figure;set(gcf,'Color','w');
+                        hfig = figure;
+                        set(hfig,'Color','w');
                         subplot(2,2,[1 2]); % 2D plot of two discriminant functions
                         gscatter(squeeze(Discriminant_scores(1,t,:)), squeeze(Discriminant_scores(2,t,:)), class, groupcolors(1:k), groupsymbols(1:k));
                         grid on; axis tight;
@@ -507,7 +509,8 @@ if LIMO.Level == 1
                         topoplot(Discriminant_coeff(:,t,2),LIMO.data.chanlocs, 'electrodes','off','style','map','whitebk', 'on','colormap',cc);colorbar;
                         title('Z2','Fontsize',14); colormap(z2, 'hot');
                     elseif k==2
-                        figure;set(gcf,'Color','w');
+                        hfig = figure;
+                        set(hfig,'Color','w');
                         subplot(2,2,[1 2]); % 1D plot of two discriminant functions
                         data = squeeze(Discriminant_scores(1,t,:));
                         class1 = data(class == 1);
@@ -540,7 +543,8 @@ if LIMO.Level == 1
                     Linear_Classification = Linear_Classification.Linear_Classification;
                     [~, mask, mytitle] = limo_mstat_values(Type,FileName,p,MCC,LIMO,choice);
                     timevect = linspace(LIMO.data.start,LIMO.data.end,size(Linear_Classification,1));
-                    figure;set(gcf,'Color','w');
+                    hfig = figure;
+                    set(hfig,'Color','w');
                     subplot(3,1,[1 2]); % lineplot
                     plot(timevect,Linear_Classification(:,2),'LineWidth',3);title(mytitle, 'Fontsize', 18);
                     ylabel('decoding accuracies', 'Fontsize', 14);grid on; axis tight; hold on;
@@ -558,7 +562,8 @@ if LIMO.Level == 1
                     Quadratic_Classification = load(fullfile(LIMO.dir,'Quadratic_Classification'));
                     Quadratic_Classification = Quadratic_Classification.Quadratic_Classification;
                     timevect = linspace(LIMO.data.start,LIMO.data.end,size(Quadratic_Classification,1));
-                    figure;set(gcf,'Color','w');
+                    hfig = figure;
+                    set(hfig,'Color','w');
                     subplot(3,1,[1 2]); % lineplot
                     plot(timevect,Quadratic_Classification(:,2),'LineWidth',3);title('CV quadratic decoding accuracies +/- 2SD', 'Fontsize', 18);
                     ylabel('decoding accuracies', 'Fontsize', 14);grid on; axis tight; hold on
@@ -971,7 +976,8 @@ if LIMO.Level == 1
 
             % make the figure(s)
             % ------------------
-            figure;set(gcf,'Color','w')
+            hfig = figure;
+            set(hfig,'Color','w')
             if sum(regressor <= categorical) == length(regressor)
                 for i=1:size(average,1)
                     if i==1
@@ -1112,7 +1118,10 @@ if LIMO.Level == 1
 
             else
                 for i=1:size(continuous,1)
-                    if i > 1; figure;set(gcf,'Color','w'); end
+                    if i > 1
+                        hfig = figure;
+                        set(hfig,'Color','w');
+                    end
                     index = find(~isnan(squeeze(continuous(i,1,:))));
 
                     if strcmpi(LIMO.Analysis,'Frequency')
@@ -1335,7 +1344,8 @@ elseif LIMO.Level == 2
                             opt = {'maplimits','absmax','electrodes','off','verbose','off'};
                         end
                     end
-                    figure; set(gcf,'Color','w','InvertHardCopy','off');
+                    hfig = figure;
+                    set(hfig,'Color','w','InvertHardCopy','off');
                     topoplot(toplot(:,1),EEG.chanlocs,opt{:});
                     title('Topoplot','FontSize',12)
                 else
@@ -1455,8 +1465,8 @@ elseif LIMO.Level == 2
                     end
                 end
 
-                figure;
-                set(gcf,'Color','w')
+                hfig = figure;
+                set(hfig,'Color','w')
                 plot(xvect,squeeze(trimci(:,2)),'LineWidth',3);
                 fillhandle = patch([xvect,fliplr(xvect)], [trimci(:,1)' fliplr(trimci(:,3)')], [1 0 0]);
                 set(fillhandle,'EdgeColor',[1 0 1],'FaceAlpha',0.2,'EdgeAlpha',0.8);% set edge color
@@ -1777,7 +1787,8 @@ elseif LIMO.Level == 2
 
                 % make the figure(s)
                 % ------------------
-                figure;set(gcf,'Color','w')
+                hfig = figure;
+                set(hfig,'Color','w')
                 if regressor <= length(LIMO.design.nb_conditions) && ...
                         LIMO.design.nb_conditions ~= 0 % for categorical variables
                     brewcolours = limo_color_images(size(average,1));
@@ -1822,7 +1833,10 @@ elseif LIMO.Level == 2
 
                 else % 3D plots
                     for i=1:size(continuous,1)
-                        if i > 1; figure;set(gcf,'Color','w'); end
+                        if i > 1
+                            hfig = figure;
+                            set(hfig,'Color','w');
+                        end
                         index = find(~isnan(squeeze(continuous(i,1,:))));
                         if strcmpi(LIMO.Analysis,'Time') || strcmpi(LIMO.Analysis,'Time-Frequency')
                             if strcmpi(LIMO.Analysis,'Time')
@@ -1982,7 +1996,8 @@ elseif LIMO.Level == 2
                         end
                     end
 
-                    figure;set(gcf,'Color','w')
+                    hfig = figure;
+                    set(hfig,'Color','w')
                     for cond = 1:size(c,2)
                         plot(xvect,avg(:,cond)','LineWidth',3,'color',brewcolours(cond,:));
                         fillhandle = patch([xvect fliplr(xvect)], [c(:,cond)',fliplr(b(:,cond)')], brewcolours(cond,:));
@@ -2109,7 +2124,8 @@ elseif LIMO.Level == 2
                         end
                     end
 
-                    figure;set(gcf,'Color','w'); hold on
+                    hfig = figure;
+                    set(hfig,'Color','w'); hold on
                     brewcolours = limo_color_images(size(Effect,2));
                     if strcmpi(LIMO.Analysis,'Time')
                         xvect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
@@ -2213,7 +2229,8 @@ elseif LIMO.Level == 2
                         end
                     end
 
-                    figure; set(gcf,'Color','w'); hold on
+                    hfig = figure;
+                    set(hfig,'Color','w'); hold on
                     if strcmpi(LIMO.Analysis,'Time')
                         xvect = LIMO.data.start:(1000/LIMO.data.sampling_rate):LIMO.data.end; % in sec
                     else
@@ -2284,7 +2301,8 @@ elseif strcmpi(LIMO.Level,'LI')
                 scale(scale==0)=NaN;
             end
 
-            figure; set(gcf,'Color','w');
+            hfig = figure;
+            set(hfig,'Color','w');
             timevect = linspace(LIMO.data.start*1000,LIMO.data.end*1000,size(M,2));
             imagesc(timevect,1:size(M,1),scale);
             title(mytitle,'FontSize',18);
@@ -2401,7 +2419,7 @@ if strcmpi(Domain,'Time')
     % set(gca,'Colormap',limo_color_images(EEG.data),'CLim',[min(EEG.data(:)),max(EEG.data(:))])
 else % freq
     N = size(EEG.freq,2);
-    figure;
+    hfig = figure;
     for f=1:N
         if N<=6
             subplot(1,N,f)
