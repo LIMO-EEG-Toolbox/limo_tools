@@ -452,6 +452,7 @@ defaults.type_of_analysis  = handles.type_of_analysis;
 defaults.bootstrap         = handles.bootstrap;  
 defaults.tfce              = handles.tfce;  
 defaults.type              = handles.type; 
+defaults.verbose           = '';
 
 % -----------------------------------------
 % load the expected channel locations

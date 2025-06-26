@@ -30,6 +30,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
+%       model.defaults.verbose is '' or noGUI for feeback type on errors and logfiles
 %       - contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
@@ -60,6 +61,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            model.defaults.method= 'WLS'
 %                            model.defaults.Level= 1
 %                            model.defaults.type_of_analysis= 'Mass-univariate'
+%                            model.defaults.verbose = '';
 %                            model.cat_files: {n×1 cell};
 %                                  model.cat_files{n}' = [1 1 1 2 2 3 4 4 2 3 ....];
 %                            model.cont_files: []
@@ -71,7 +73,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            contrast.LIMO_files = 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
 %                            contrast.mat = [0 1 0 1 ; 1 0 1 0; 1 -1 1 -1];
 %
-% see also limo_eeg limo_import_t limo_import_f limo_import_tf
+% see also limo_batch* functions
 % see also psom in external folder
 %
 % Reference for pipeline engine
@@ -84,8 +86,9 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % CP 24-06-2013 updated to be even more automatic + fix for new designs
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
+% Cyril Pernet and Arnaud Delorme 2018 onward, various STUDY and GUI related changes
 % ----------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2022
+%  Copyright (C) LIMO Team 2025
 
 % programmer help
 % ---------------
@@ -611,8 +614,12 @@ else % parallel call to the pipeline , the usual way
     end
 end
 
-%% Save txt files
+%% Save txt files and warn users
+if ~isfield(model.defaults,'verbose')
+    model.defaults.verbose = ''; % if not specified, assume GUI feedback
+end
 cd(LIMO_files.LIMO)
+
 if strcmp(option,'model specification') || strcmp(option,'both')
     % check that the dimensions of the model are identical otherwise tell the
     % user -- condition might be missing from design or from preprocessing
@@ -625,7 +632,12 @@ if strcmp(option,'model specification') || strcmp(option,'both')
     
     if exist("design_dim","var")
         if length(unique(design_dim)) > 1
-            limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
+            if strcmpi(model.defaults.verbose,'noGUI')
+                warning('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not')
+            else
+                limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
+            end
+            % in any case print design dimensionality
             for s = 1:length(good_subjects)
                 warning('subject %s design with %g regressors', names{s},design_dim(s));
             end
@@ -681,9 +693,19 @@ if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
     if sum(failed) == N % all subjects
-        warning('LIMO batch done but all subjects failed. This can be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
+        if strcmpi(model.defaults.verbose,'noGUI')
+            warning('LIMO batch done but all subjects failed.')
+            warning('This is typically due to low number of trials, setting estimation to OLS solves this.')
+            warning('It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
+        else
+            limo_warndlg(sprintf('LIMO batch done but all subjects failed.\n\n- This is typically due to low number of trials, setting estimation to OLS solves this.\n- It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m'))
+        end
     else
         failed = find(failed);
+        if isempty(model.defaults.verbose)
+            limo_warndlg('Some subjects failed - see ID/subject number in command line and psom report')
+        end
+        % in any case print subject IDs
         for s = 1:length(failed)
             warning('LIMO batch done, some errors where detected\ncheck limo batch report %s',limo_get_subname(fileparts(pipeline(failed(s)).n_contrast.files_in)));
         end
@@ -766,10 +788,18 @@ if exist('STUDY','var')
             end
         end
     catch writtingerr
-        if sum(failed) == 0
-            limo_warndlg(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+        if strcmpi(model.defaults.verbose,'noGUI')
+            if sum(failed) == 0
+                warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            else
+                warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            end
         else
-            limo_warndlg(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            if sum(failed) == 0
+                limo_warndlg(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            else
+                limo_warndlg(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            end
         end
     end
 end
