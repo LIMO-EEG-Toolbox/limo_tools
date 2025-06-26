@@ -57,6 +57,10 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %     {'F:\WakemanHenson_Faces\eeg\derivatives\LIMO_Face_detection\Beta_files_FaceRepAll_GLM_Channels_Time_WLS.txt'},...
 %     'analysis type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
 %     'factor names',{'face','repetition'},'type','Channels','nboot',0,'tfce',0);
+%
+% as explained above, parameters use cell nesting, for instance a 2 x 2 x 2
+% design would use for instance 'parameters',{{[1 2],[3 4]},{[5 6],[7 8]}}
+%
 % - t-test with command line using con files
 %     for N=length(STUDY.subject):-1:1
 %         data{1,N} = con1_files{N}(1);
@@ -1496,11 +1500,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % last re-check dimensions
     if sum(single(isnan(data(:)))) == numel(data)
-        if exist('errordlg2','file')
-            errordlg2('the data matrix is empty! either betas.mat/con.mat files are empty or there is a bug'); return
-        else
-            errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
-        end
+        limo_errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
     end
     
     if gp_nb ==1 && size(data,numel(size(data))-1) <= 2
@@ -1602,7 +1602,10 @@ end % closes the function
 %                                   ROUTINES
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% fileparts for multiple cell entries in row (ie per group)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Names,Paths,Files] = breaklimofiles(cellfiles)
 for ifiles = length(cellfiles):-1:1
     if ~isempty(cellfiles{ifiles})
@@ -1613,7 +1616,9 @@ for ifiles = length(cellfiles):-1:1
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% frame matching
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match_frames(Paths,LIMO)
 
 % once we have all the files, we need to collect information to match the frames across subjects
@@ -1802,7 +1807,9 @@ end
 cd(LIMO.dir)
 end
 
-%% match channels and update LIMO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% channels matching and update LIMO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function LIMO = match_channels(stattest,analysis_type,LIMO)
 
 % note channel can be a singleton or a vector (channel/component optimized analysis)
@@ -1924,7 +1931,9 @@ else % Full scalp
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% assemble the data matrix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO)
 
 data    = [];
@@ -2195,7 +2204,9 @@ elseif stattest == 2 % several samples
 end
 end
 
-%% repeated measure levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% get repeated measure levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function levels = getlevels(params)
 % drill-down the cell array of repeated measures parameters
 if ~iscell(params)
@@ -2208,8 +2219,9 @@ else
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get beta indices from study
-% ---------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [param,betas] = get_beta_indices(selectmode, betaFile,factorname,factorn) %#ok<INUSD>
 
 param = [];
@@ -2220,9 +2232,9 @@ betas = {};
 
 if nargin > 1
     try
-        limoFile = strrep(betaFile, 'Betas.mat', 'LIMO.mat');
-        LIMO = load('-mat', limoFile);
-        betas = { LIMO.LIMO.design.labels.description };
+        limoFile = fullfile(fileparts(betaFile),'LIMO.mat');
+        LIMO     = load('-mat', limoFile);
+        betas    = { LIMO.LIMO.design.labels.description };
     catch
         disp('Warning: could not find associated LIMO file');
     end
@@ -2262,7 +2274,9 @@ else
 end
 end
 
-%% reorder parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% reorder parameters from repreated measures ANOVA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function parameters = reorganize_params(parameters, betas, factorname, factorn)
 
 % simple selection
@@ -2283,7 +2297,9 @@ if isempty(res), parameters = []; return; end
 parameters = parameters(cell2mat(res));
 end
 
-%% file checking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% file checking all betas or all con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [parameters,betas] = check_files(Paths,Names,gp,parameters,selectmode)
 % after selecting file, check they are all the same type (betas or con)
 % return parameters that match with files (eg 1 for con, or whatever value 
@@ -2325,7 +2341,6 @@ if gp == 1
             if isempty(factorname) || length(factorname) > 2
                 [parameters,betas] = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
             end
-            %parameters = { [1 2 3] [4 5 6] [7 8 9] };
             if isempty(parameters)
                 return
             end

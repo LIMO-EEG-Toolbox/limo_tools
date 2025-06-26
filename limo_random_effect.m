@@ -37,6 +37,7 @@ end
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_random_effect_OpeningFcn(hObject, ~, handles, varargin)
+set(hObject, 'DockControls', 'off', 'WindowStyle', 'normal');
 handles.output = hObject;
 guidata(hObject, handles);
 
@@ -74,7 +75,9 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
+        set(hObject, 'Visible', 'off'); 
         limo_central_tendency_and_ci(handles.chan_file);
+        set(hObject, 'Visible', 'on'); 
         guidata(hObject, handles);
     end
 else
@@ -95,10 +98,14 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
+        set(hObject, 'Visible', 'off'); 
         limo_central_tendency_and_ci(handles.chan_file);
+        set(hObject, 'Visible', 'on'); 
         guidata(hObject, handles);
     end
+    set(hObject, 'Visible', 'off'); 
     limo_plot_difference;
+    set(hObject, 'Visible', 'on'); 
     guidata(hObject, handles);
 else
     disp('Currently only supporting channel anaysis type')
@@ -180,8 +187,12 @@ guidata(hObject, handles);
 function One_Sample_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 go = update_dir(handles,'One_Sample_Ttest');
@@ -206,8 +217,12 @@ end
 function Two_Samples_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 go = update_dir(handles,'Two_Samples_Ttest');
@@ -231,8 +246,12 @@ end
 function Paired_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 go = update_dir(handles,'Paired_Samples_Ttest');
@@ -255,8 +274,12 @@ end
 function Regression_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 go = update_dir(handles,'Regression');
@@ -280,8 +303,12 @@ end
 function ANOVA_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...

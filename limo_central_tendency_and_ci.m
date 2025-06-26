@@ -439,7 +439,11 @@ elseif nargin == 1
     % ---------------------------
     
     % Expected_chanlocs
-    expected_chanlocs = load(varargin{1});
+    if ischar(varargin{1})
+        expected_chanlocs = load(varargin{1});
+    else
+        expected_chanlocs = varargin{1};
+    end
     
     % check if Betas/Con 
     option = limo_questdlg('type of analysis','what data to analyse?','Raw Data','Betas','Con','Betas');
