@@ -171,7 +171,8 @@ switch type
             x0 = repmat(eye(nb_subjects),nb_conditions,1); % error
             X = [x x0];
             if flag == 1
-                figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc(X);
+                hfig = figure('Name','Design matrix');
+                set(hfig,'Color','w'); imagesc(X);
                 colormap('gray');  title('ANOVA model','FontSize',16);xlabel('regressors'); 
                 ylabel('scaled model values'); drawnow; 
                 go = questdlg('start the analysis?');
@@ -299,7 +300,8 @@ switch type
         end
         
         if flag == 1
-            figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc([X Subjects]);
+            hfig = figure('Name','Design matrix');
+            set(hfig,'Color','w'); imagesc([X Subjects]);
             colormap('gray');  title('ANOVA model','FontSize',16);xlabel('regressors');
             ylabel('scaled model values'); drawnow;
             go = questdlg('start the analysis?');
@@ -421,7 +423,8 @@ switch type
         
         X = [Gp x XGp S];
         if flag == 1
-            figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc(X);
+            hfig = figure('Name','Design matrix');
+            set(hfig,'Color','w'); imagesc(X);
             colormap('gray');  title('ANOVA model','FontSize',16);xlabel('regressors');
             ylabel('scaled model values'); drawnow;
             go = questdlg('start the analysis?');
@@ -615,7 +618,8 @@ switch type
         end
         
         if flag == 1
-            figure('Name','Design matrix'); set(gcf,'Color','w'); imagesc([X Subjects]);
+            hfig = figure('Name','Design matrix');
+            set(hfig,'Color','w'); imagesc([X Subjects]);
             colormap('gray');  title('ANOVA model','FontSize',16);xlabel('regressors');
             ylabel('scaled model values'); drawnow;
             go = questdlg('start the analysis?');

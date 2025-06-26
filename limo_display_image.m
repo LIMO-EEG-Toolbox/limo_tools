@@ -181,7 +181,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure; set(gcf,'Color','w','InvertHardCopy','off');
+hfig = figure;
+set(hfig,'Color','w','InvertHardCopy','off');
 
 % course plot at best electrode
 ax(3) = subplot(3,3,9);

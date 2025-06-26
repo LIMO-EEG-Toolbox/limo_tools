@@ -687,7 +687,7 @@ switch type
         if strcmpi(go,'no')
             go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
         end
-        close('LIMO design');        
+        close(findobj('Name','LIMO design'));
 
         if strcmpi(go,'Yes')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
@@ -774,7 +774,7 @@ switch type
                 go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
             end
         end
-        close('LIMO design');
+        close(findobj('Name','LIMO design'));
         
         if strcmpi(go,'Yes')
             if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
@@ -1054,12 +1054,13 @@ switch type
             % check the design with user
             % --------------------------
             if ~strcmpi(go,'Yes')
-                figure('Name','LIMO design'); set(gcf,'Color','w');
+                hfig = figure('Name','LIMO design');
+                set(hfig,'Color','w');
                 imagesc(LIMO.design.X); colormap('gray');
                 title('ANOVA model','FontSize',16);xlabel('regressors');
                 ylabel('subjects'); drawnow;
                 go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
-                close('LIMO design')
+                close(hfig)
                 if ~strcmpi(go,'Yes')
                     return
                 end

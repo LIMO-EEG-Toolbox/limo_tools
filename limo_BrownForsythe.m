@@ -88,7 +88,7 @@ if nargout == 0
    save('BrownForsythe_test.mat','dataout','-v7.3') 
 end
 
-figure;
+hfig = figure;
 mask = (squeeze(dataout(:,:,2)) <= 0.05);
 toplot = squeeze(dataout(:,:,1));
 imagesc(toplot.*mask);
@@ -96,7 +96,7 @@ xlabel('frames'); ylabel('channels')
 toplot(mask==0)=NaN;
 colormap(limo_color_images(toplot))
 title('Variance Homogeneity test')
-drawnow; saveas(gcf, 'BrownForsythe','fig'); close(gcf)
+drawnow; saveas(hfig, 'BrownForsythe','fig'); close(hfig)
 
 
 
