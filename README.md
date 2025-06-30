@@ -19,8 +19,6 @@ addpath([limo_folder filesep 'external' filesep 'psom']);
 addpath([limo_folder filesep 'help']); addpath([limo_folder filesep 'deprecated']
 ```
 
-LIMO 3.0 has been tested with EEGLAB 2021.0. This [test script](https://github.com/sccn/eeglab-testcases/blob/master/unittesting_limo/limo_preproc_stats_hw.m) runs nightly to make sure LIMO remains stable.
-
 ## Documentation
 The [wiki](https://github.com/LIMO-EEG-Toolbox/limo_eeg/wiki) provides documentation on the various tools available and files created.  
 We also have a full [tutorial](https://github.com/LIMO-EEG-Toolbox/limo_meeg/wiki) taking you through an analysis.
@@ -36,6 +34,10 @@ Published papers related to the method(s) used here are listed in the [citations
 ## LIMO tutorial dataset
 The tutorial uses data prepared using [EEG-BIDS](https://www.nature.com/articles/s41597-019-0104-8) avaialble here: https://openneuro.org/datasets/ds002718/versions/1.0.2.
 There is also an older dataset that can be downloaded here: http://datashare.is.ed.ac.uk/handle/10283/2189. 
+
+# LIMO versions
+
+4.1 - Updated data workflow and BIDS compliance
 
 ## Contribute
 
