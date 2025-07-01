@@ -576,7 +576,7 @@ elseif nargin == 1
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     data(:,:,:,:,i) = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,:,parameters)));
                 else
-                    data(:,:,i)     = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,parameters)));
+                    data(:,:,:,i)     = limo_match_elec(subj_chanlocs(i).chanlocs,expected_chanlocs,begins_at,ends_at,squeeze(Yr(:,:,parameters)));
                 end
             elseif strcmpi(Analysis_type,'1 channel only')
                 if size(selected_channels,2) == 1
