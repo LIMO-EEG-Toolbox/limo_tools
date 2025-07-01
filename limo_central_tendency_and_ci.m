@@ -706,7 +706,9 @@ elseif nargin == 1
         for i=size(Paths,2):-1:1 % for each subject
             fprintf('processing subject %g',i); disp(' ')
             LIMO = load(fullfile(Paths{i},'LIMO.mat')); LIMO = LIMO.LIMO;
-            Yr   = load(fullfile(Paths{i},'Yr.mat'));   Yr = Yr.Yr;
+            subname = limo_get_subname(LIMO.dir);
+            subname = [subname '_desc-'];
+            Yr   = load(fullfile(Paths{i},[subname 'Yr.mat']));   Yr = Yr.Yr;
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 begins_at = fliplr((max(first_frame) - first_frame(i,:) + 1)); % returns time/freq/or freq-time
                 ends_at(1) = size(Yr,2) - (last_frame(i,2) - min(last_frame(:,2)));

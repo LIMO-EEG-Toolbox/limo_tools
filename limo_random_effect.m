@@ -75,10 +75,11 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
-        set(hObject, 'Visible', 'off'); 
-        limo_central_tendency_and_ci(handles.chan_file);
-        set(hObject, 'Visible', 'on'); 
+        uiresume
         guidata(hObject, handles);
+        delete(handles.figure1)
+        limo_central_tendency_and_ci(handles.chan_file);
+
     end
 else
     disp('Currently only supporting channel anaysis type')
@@ -98,10 +99,10 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
-        set(hObject, 'Visible', 'off'); 
-        limo_central_tendency_and_ci(handles.chan_file);
-        set(hObject, 'Visible', 'on'); 
+        uiresume
         guidata(hObject, handles);
+        delete(handles.figure1)
+        limo_central_tendency_and_ci(handles.chan_file);
     end
     set(hObject, 'Visible', 'off'); 
     limo_plot_difference;
