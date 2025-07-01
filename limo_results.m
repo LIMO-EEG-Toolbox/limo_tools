@@ -84,15 +84,12 @@ if FilterIndex ~= 0
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
     handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
-
-% reset selection - but annoying behaviour really
-% uiresume
-% guidata(hObject, handles);
-% delete(handles.figure1)
-% limo_results
+limo_results
 
 % Topoplot
 % ---------------------------------------------------------------
@@ -112,9 +109,12 @@ if FilterIndex == 1
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
     check_boot_and_tfce(handles,fullfile(PathName,FileName))
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
+limo_results
 
 % course plots
 % ---------------------------------------------------------------
@@ -139,9 +139,12 @@ if FilterIndex == 1
         handles.LIMO = tmp.LIMO; clear tmp
     end
     check_boot_and_tfce(handles,fullfile(PathName,FileName));
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
+limo_results
 
 % Review Design
 % --------------
