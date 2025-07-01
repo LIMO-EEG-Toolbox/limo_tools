@@ -1152,8 +1152,12 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if ~isempty(LIMO.data.data)
         gp_nb = size(LIMO.data.data,1);
     else
-        if exist('STUDY','var')
-            gp_val = length(STUDY.group);
+        if exist('STUDY','var') 
+            if isfield(STUDY,'group')
+                gp_val = length(STUDY.group);
+            else
+                gp_val = 1;
+            end
         else
             gp_val = 1;
         end
