@@ -11,6 +11,7 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+set(groot,'DefaultUicontrolFontSize',8);   % tweak the font size, fix 2025a bug
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name','limo_results', ...
