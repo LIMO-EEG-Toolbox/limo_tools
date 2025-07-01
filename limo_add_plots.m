@@ -72,13 +72,15 @@ while out == 0
     subjects_plot = 0;
 
     %% Data selection
-     
-    if ~isempty(infile{turn}) % allows comand line plot
-        if turn <= length(infile)
-            file = infile{turn}; 
-            index = 1; 
-        else
-            out = 1; 
+    
+    if ~isempty(infile)
+        if ~isempty(infile{turn}) % allows comand line plot
+            if turn <= length(infile)
+                file = infile{turn};
+                index = 1;
+            else
+                out = 1;
+            end
         end
     else
         [file,path,index] = uigetfile('*mat',sprintf('Select %g Central tendency file',turn));
