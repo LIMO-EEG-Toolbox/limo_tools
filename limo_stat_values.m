@@ -61,12 +61,25 @@ if MCC == 2
     clustering_method = 2; % statio-temporal clustering by default, change to 3 for temporal
 end
 
+%% Deal with each case of FileName
+[~,FileName,ext] = fileparts(FileName);
+if LIMO.Level == 1
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
+    end
+else
+    subname = [];
+end
+
 % load data and set outputs to empty
 % ----------------------------------
-if exist(FileName,'file')
+if exist([FileName ext],'file')
     matfile = load(FileName);
-else
+elseif exist(fullfile(LIMO.dir,[FileName ext]),'file')
     matfile = load(fullfile(LIMO.dir,FileName));
+else
+    matfile = load(fullfile(LIMO.dir,[subname FileName ext]));
 end
 M       = []; 
 mask    = []; 
@@ -101,16 +114,6 @@ if MCC ~= 1
     fprintf('computing corrected statistics at %s...\n',datetime('now','Format','hh:mm:ss'));
 end
 
-%% Deal with each case of FileName
-[~,FileName,ext] = fileparts(FileName);
-if LIMO.Level == 1
-    subname = limo_get_subname(FileName);
-    if ~isempty(subname)
-        subname = [subname '_desc-'];
-    end
-else
-    subname = [];
-end
 % -------------------------------
 %% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA, any contrasts
 % ------------------------------------------------------------------------------

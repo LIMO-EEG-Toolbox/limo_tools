@@ -662,6 +662,9 @@ if LIMO.Level == 1
             % Time course / Power
             %--------------------------
 
+            subname = limo_get_subname(LIMO.dir);
+            subname = [subname '_desc-'];
+
             % which variable(s) to plot
             % ----------------------
             if isempty(g.regressor)
@@ -736,7 +739,7 @@ if LIMO.Level == 1
 
             if strcmpi(channel,'') || strcmpi(frequency,'')
                 disp('looking for max');
-                R2 = load(fullfile(LIMO.dir,'R2.mat'));
+                R2 = load(fullfile(LIMO.dir,[subname 'R2.mat']));
                 R2 = R2.R2;
                 if strcmpi(LIMO.Analysis,'Time-Frequency')
                     tmp = squeeze(R2(:,:,:,1)); clear R2
@@ -774,7 +777,7 @@ if LIMO.Level == 1
                 channel = eval(cell2mat(channel));
                 if size(channel) > 1
                     limo_errordlg('invalid channel choice'); return
-                elseif channel > size(LIMO.data.chanlocs,2) || channel < 1
+                elseif channel > max(size(LIMO.data.chanlocs)) || channel < 1
                     limo_errordlg('invalid channel number'); return
                 end
 
@@ -848,7 +851,7 @@ if LIMO.Level == 1
                 z = norminv(probs);
 
                 if strcmpi(extra,'Original')
-                    Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
+                    Yr = load(fullfile(LIMO.dir,[subname 'Yr.mat'])); Yr = Yr.Yr;
                     if sum(regressor <= categorical) == length(regressor) % for categorical variables
                         for i=length(regressor):-1:1
                             index{i} = find(LIMO.design.X(:,regressor(i)));
@@ -883,7 +886,7 @@ if LIMO.Level == 1
                     end
                     clear Yr
                 elseif strcmpi(extra,'Modelled')
-                    Betas = load(fullfile(LIMO.dir,'Betas.mat'));
+                    Betas = load(fullfile(LIMO.dir,[subname 'Betas.mat']));
                     Betas = Betas.Betas;
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
                         Betas = squeeze(Betas(channel,freq_index,:,:));
@@ -893,7 +896,7 @@ if LIMO.Level == 1
                     Yh = (LIMO.design.X*Betas')'; % modelled data
 
                     if sum(regressor <= categorical) == length(regressor) % for categorical variables
-                        Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
+                        Yr = load(fullfile(LIMO.dir,[subname 'Yr.mat'])); Yr = Yr.Yr;
                         if strcmpi(LIMO.Analysis,'Time-Frequency')
                             Yr = squeeze(Yr(:,freq_index,:,:));
                         end
@@ -931,15 +934,13 @@ if LIMO.Level == 1
                 else % Adjusted
                     allvar = 1:size(LIMO.design.X,2)-1;
                     allvar(regressor)=[];
+                    Yr    = load(fullfile(LIMO.dir,[subname 'Yr.mat']));
+                    Betas = load(fullfile(LIMO.dir,[subname 'Betas.mat']));
                     if strcmpi(LIMO.Analysis,'Time-Frequency')
-                        Yr    = load(fullfile(LIMO.dir,'Yr.mat'));
                         Yr    = squeeze(Yr.Yr(channel,freq_index,:,:));
-                        Betas = load(fullfile(LIMO.dir,'Betas.mat'));
                         Betas = squeeze(Betas.Betas(channel,freq_index,:,:));
                     else
-                        Yr    = load(fullfile(LIMO.dir,'Yr.mat'));
                         Yr    = squeeze(Yr.Yr(channel,:,:));
-                        Betas = load(fullfile(LIMO.dir,'Betas.mat'));
                         Betas = squeeze(Betas.Betas(channel,:,:));
                     end
                     confounds = (LIMO.design.X(:,allvar)*Betas(:,allvar)')';
@@ -1012,7 +1013,7 @@ if LIMO.Level == 1
                     if length(regressor) == length(effect)
                         if mean(regressor == effect) == 1
                             name = sprintf('Condition_effect_%g.mat',i);
-                            % load(name);
+                            % load(name); 
                             if isfield(LIMO,'cache') && isfield(LIMO,'fig')
                                 if strcmpi(LIMO.cache.fig.name,name) && ...
                                         LIMO.cache.fig.MCC == MCC && ...
@@ -1024,11 +1025,10 @@ if LIMO.Level == 1
                                     end
                                 end
                             else
+                                [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                 if strcmpi(LIMO.Analysis,'Time-Frequency')
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(squeeze(mask(channel,freq_index,:))); sig(sig==0)=NaN;
                                 else
-                                    [~, mask] = limo_stat_values(name,p,MCC,LIMO);
                                     sig = single(mask(channel,:)); sig(sig==0)=NaN;
                                 end
                             end
