@@ -45,7 +45,10 @@ else
 end
 
 if level == 1
-    dirContent = dir('sub*/eeg/ses*/*/*.mat');
+    dirContent = dir('sub*/eeg/ses*/*/sub-*.mat');
+    if isempty(dirContent)
+         dirContent = dir('sub-*.mat');
+    end
 else
     % assuming default directory filenames
     % if scripted, also look for actual filenames, 
