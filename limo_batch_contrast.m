@@ -12,6 +12,9 @@ cd(LIMO.dir)
 
 %% 1st check the contrasts 
 disp('contrast checking ..')
+if isstruct(C)
+    C = C.C;
+end
 for j=1:size(C,1)
     out(j,:) = limo_contrast_checking(LIMO.dir, LIMO.design.X, C(j,:));
     go = limo_contrast_checking(out(j,:),LIMO.design.X);
