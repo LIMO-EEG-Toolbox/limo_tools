@@ -1191,5 +1191,4 @@ if isempty(result)
 else
     disp('computation done');
 end
-
-
+limo_random_effect
