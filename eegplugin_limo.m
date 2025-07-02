@@ -9,7 +9,7 @@ function version = eegplugin_limo(fig,try_strings,catch_strings)
 % ---------------------------------------------
 %  Copyright (C) LIMO Team 2022
 
-version ='limo4.1';
+version ='limo4.1.1';
 if nargin < 3
     error('eegplugin_limo requires 3 arguments');
 end
