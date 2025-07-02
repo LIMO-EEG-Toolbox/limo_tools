@@ -32,10 +32,10 @@ function [est,HDI,bb] = limo_central_estimator(Y,estimator,prob_coverage,legacy_
 Nb = 1000; % number of bootstrap samples 
 
 if nargin == 3
-    legacy_mode = false; 
+    legacy_mode = true; 
 elseif nargin == 2
     prob_coverage = 0.95;
-    legacy_mode = false; 
+    legacy_mode = true; 
 elseif nargin == 1
     prob_coverage = 0.95;
     estimator = 'Trimmed mean';

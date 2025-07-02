@@ -290,12 +290,15 @@ else
     if strcmpi(handles.type,'Channels')
         go = test_chan_loc(handles);
         if go
+            uiresume
             limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
         end
     else
+        uiresume
         limo_random_select('regression',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
 end
+
 
 % ANOVA/ANCOVA
 % ---------------------------------------------------------------
