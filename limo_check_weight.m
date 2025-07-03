@@ -180,7 +180,8 @@ for f=1:length(LIMO_files)
     LIMO_sub = load(LIMO_files{f});
     LIMO_sub = LIMO_sub.LIMO;
     W{f}     = LIMO_sub.design.weights;
-    Yr       = load([LIMO_sub.dir filesep 'Yr.mat']);
+    subname  = limo_get_subname(LIMO_sub.data.data_dir);
+    Yr       = load(fullfile(LIMO_sub.dir,[subname '_desc-Yr.mat']));
     Yr       = Yr.Yr;
     
     %% make averages
@@ -371,10 +372,10 @@ for f=1:length(LIMO_files)
             LIMO.design.electrode = []; LIMO.design.name = 'one sample ttest'; 
             LIMO.design.type_of_analysis = 'Mass-univariate'; LIMO.design.tfce = 0; 
             save LIMO LIMO; limo_random_robust(1,fullfile(LIMO.dir,'Yr.mat'),0,LIMO);
-            movefile(fullfile(LIMO.dir,'one_sample_ttest_parameter_0.mat'),...
-                fullfile(LIMO.dir,'one_sample_ttest_low_vs_high_weight_trials.mat'));
-            movefile(fullfile(LIMO.dir,[filesep 'H0' filesep 'H0_one_sample_ttest_parameter_0.mat']),...
-                fullfile(LIMO.dir,[filesep 'H0' filesep 'H0_one_sample_ttest_low_vs_high_weight_trials.mat']));
+            movefile(fullfile(LIMO.dir,'One_Sample_Ttest_parameter_0.mat'),...
+                fullfile(LIMO.dir,'One_Sample_Ttest_low_vs_high_weight_trials.mat'));
+            movefile(fullfile(LIMO.dir,[filesep 'H0' filesep 'One_Sample_Ttest_parameter_0_desc-H0.mat']),...
+                fullfile(LIMO.dir,[filesep 'H0' filesep 'One_Sample_Ttest_low_vs_high_weight_trials.mat']));
             cd ..; clear LIMO; 
         end
     end % close test difference
