@@ -243,8 +243,13 @@ elseif ~isempty(M) && MCC == 2
                     bootM = squeeze(H0_data(:,:,2,:)); % get all F values under H0
                     bootP = squeeze(H0_data(:,:,3,:)); % get all P values under H0
                 else
-                    bootM = squeeze(H0_data(:,:,1,:));
-                    bootP = squeeze(H0_data(:,:,2,:));
+                    if size(M,1) == 1 % added to include 1 channel  analyses
+                        bootM = squeeze(H0_data(:,1,:));
+                        bootP = squeeze(H0_data(:,2,:));
+                    else
+                        bootM = squeeze(H0_data(:,:,1,:));
+                        bootP = squeeze(H0_data(:,:,2,:));
+                    end
                 end
                 
                 if size(M,1) == 1
