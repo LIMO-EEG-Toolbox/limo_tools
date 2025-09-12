@@ -100,7 +100,8 @@ while go == 1
             end
             
             plotted_data = limo_trimmed_mean(squeeze(data(:,:,p,:)),20/100);
-            figure('Name',['Plot of 20% trimmed mean ',num2str(p)]); set(gcf,'Color','w');
+            hfig = figure('Name',['Plot of 20% trimmed mean ',num2str(p)]);
+            set(hfig,'Color','w');
             surf(plotted_data); axis tight, grid on; shading interp
             ylabel('electrodes') ; xlabel('frames'); set(gca,'FontSize',14);
             assignin('base','Plotted_data',plotted_data)
@@ -129,8 +130,8 @@ while go == 1
             [r,pval] = corr(x,y,'type','Spearman'); % get r and p and mask of significant values after bootsrap
             [pID,pN] = limo_FDR(pval(pval<0.5),.05); % correct for multiple comparisons
             r(pval<pN)=NaN;
-            figure('Name',['Correlation of trimmed mean parameters ',num2str(p)]);
-            set(gcf,'Color','w'); subplot(1,2,1); imagesc(r); xlabel('time');ylabel('time')
+            hfig = figure('Name',['Correlation of trimmed mean parameters ',num2str(p)]);
+            set(hfig,'Color','w'); subplot(1,2,1); imagesc(r); xlabel('time');ylabel('time')
             axis square; title({['correlations across electrodes']; ['with FDR correction']},'Fontsize',15);
 
             % for each electrode across frames
@@ -187,7 +188,8 @@ while go == 1
             
             % make figure
             % ideally the axes would be labelled with time_info =time_vector(frames);
-            figure('Name',['Joint scatter of trimmed mean parameters ',num2str(p)]); set(gcf,'Color','w');
+            hfig = figure('Name',['Joint scatter of trimmed mean parameters ',num2str(p)]);
+            set(hfig,'Color','w');
             subplot(2,2,1); plotmatrix(x); xlabel('time'); ylabel('time'); title(sprintf('scatter plots per frame parameter %g',p(1)),'Fontsize',12);
             subplot(2,2,2); plotmatrix(x,y); title('joint scatter plots of parameters','Fontsize',12);
             subplot(2,2,4); plotmatrix(y); xlabel('time'); ylabel('time'); title(sprintf('scatter plots per frame parameter %g',p(2)),'Fontsize',12);
@@ -246,7 +248,8 @@ while go == 1
             % do the figures
             time_info = time_vector(frames);
             for i = 1:length(frames)
-                figure('Name','Parameter boxplot');set(gcf,'Color','w')
+                hfig = figure('Name','Parameter boxplot');
+                set(hfig,'Color','w')
                 % boxplot(squeeze(data(electrode,frames(i),p,:))','notch','on');
                 [est,HDI]=data_plot(squeeze(data(electrode,frames(i),p,:))','estimator','trimmed mean')
                 xlabel('Regressor(s)','FontSize',16)

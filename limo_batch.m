@@ -30,6 +30,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %       model.defaults.bootstrap 0/1
 %       model.defaults.tfce 0/1
 %       model.defaults.neighbouring_matrix neighbouring matrix use for clustering (necessary if bootstrap = 1)
+%       model.defaults.verbose is '' or noGUI for feeback type on errors and logfiles
 %       - contrast is a structure that specify which contrasts to run for which subject
 %       contrast.LIMO_files: a list of LIMO.mat (full path) for the different subjects
 %                            this is optional if option 'both' is selected
@@ -60,6 +61,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            model.defaults.method= 'WLS'
 %                            model.defaults.Level= 1
 %                            model.defaults.type_of_analysis= 'Mass-univariate'
+%                            model.defaults.verbose = '';
 %                            model.cat_files: {n×1 cell};
 %                                  model.cat_files{n}' = [1 1 1 2 2 3 4 4 2 3 ....];
 %                            model.cont_files: []
@@ -71,7 +73,7 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 %                            contrast.LIMO_files = 'D:\EEG\mysuperdataset\derivatives\LIMOstuff\LIMO_files.txt';
 %                            contrast.mat = [0 1 0 1 ; 1 0 1 0; 1 -1 1 -1];
 %
-% see also limo_eeg limo_import_t limo_import_f limo_import_tf
+% see also limo_batch* functions
 % see also psom in external folder
 %
 % Reference for pipeline engine
@@ -84,8 +86,9 @@ function [LIMO_files, procstatus] = limo_batch(varargin)
 % CP 24-06-2013 updated to be even more automatic + fix for new designs
 % Cyril Pernet May 2014 - fully redesigned with a GUI and using psom
 % Cyril Pernet and Ramon Martinez-Cancino, October 2014 updates for EEGLAB STUDY
+% Cyril Pernet and Arnaud Delorme 2018 onward, various STUDY and GUI related changes
 % ----------------------------------------------------------------------
-%  Copyright (C) LIMO Team 2022
+%  Copyright (C) LIMO Team 2025
 
 % programmer help
 % ---------------
@@ -164,7 +167,7 @@ if nargin <= 1
                 end
                 uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
-                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }, 'cancel', 'Browse');
+                res = inputgui('uilist', uiList, 'geometry', {1 1}, 'cancel', 'Browse');
                 if ~isempty(res)
                     FileName = fileList(res{1}).name;
                     PathName = fileList(res{1}).folder;
@@ -262,7 +265,9 @@ if exist('STUDY','var')
     end
     cd(STUDY.filepath); % go to study
     current = pwd;
-    if isempty(strfind(STUDY.filepath,'derivatives'))
+
+    [~,foldername] = fileparts(STUDY.filepath);
+    if ~strcmp(foldername,'derivatives')
         % derivatives should have been created by std_limo if not already in the path
         if exist(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)],'dir') ~= 7
             mkdir(['derivatives' filesep 'LIMO_' STUDY.filename(1:end-6)]);
@@ -281,7 +286,8 @@ if exist('STUDY','var')
         LIMO_files.LIMO = [current filesep ['LIMO_' STUDY.filename(1:end-6)]];
     end
 else % if not part of a EEGLAB STUDY - e.g. run locally or FieldTrip
-    if ~contains(pwd,'derivatives') % make a derivatives folder
+    [~,foldername] = fileparts(pwd);
+    if ~strcmp(foldername,'derivatives') % make a derivatives folder
         mkdir('derivatives'); cd derivatives
     end
     current = pwd;
@@ -391,11 +397,15 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             for l=min(length(LIMO_files.LIMO),length(root)):-1:1
                 common(l) = root(l) == LIMO_files.LIMO(l);
             end
-            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); %#ok<MXFND>
+            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); 
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
-        
+        subname = limo_get_subname(pipeline(subject).import.files_in);
+        if ~isempty(subname)
+            subname = [subname '_desc-'];
+        end
+
         if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             batch_contrast.LIMO_files = batch_contrast.LIMO_files';
@@ -413,19 +423,19 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         end
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
-        LIMO_files.Beta{subject} = [root filesep glm_name filesep 'Betas.mat'];
+        LIMO_files.Beta{subject} = [root filesep glm_name filesep subname 'Betas.mat'];
         
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
         pipeline(subject).design.command = command;
         pipeline(subject).design.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).design.files_out = [root filesep glm_name filesep 'Yr.mat'];
+        pipeline(subject).design.files_out = [root filesep glm_name filesep subname 'Yr.mat'];
         
         % run GLM
         command = 'limo_eeg(4,files_in)';
         pipeline(subject).glm.command = command;
         pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).glm.files_out = [root filesep glm_name filesep 'Betas.mat'];
+        pipeline(subject).glm.files_out = [root filesep glm_name filesep subname 'Betas.mat'];
     end
     
 end
@@ -458,8 +468,9 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             start = 0;
         end
         
+        subname = STUDY.datasetinfo(subject).subject;
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep 'con_' num2str(c+start) '.mat'];
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname '_desc-con_' num2str(c+start) '.mat'];
         end
         pipeline(subject).n_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
@@ -518,9 +529,9 @@ if model.defaults.bootstrap ~= 0 || ~limo_settings.psom % debugging mode, serial
         
         psom_pipeline_debug(pipeline(subject));
         if strcmp(option,'contrast only')
-            name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+            name = fileparts(batch_contrast.LIMO_files{subject}); 
         else
-            [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
+            [~,name]=fileparts(model.set_files{subject}); 
         end
         sub = min(strfind(name,'sub-'));
         ses = min(strfind(name,'ses-'));
@@ -560,7 +571,7 @@ else % parallel call to the pipeline , the usual way
             % limo_batch_contrast(pipeline(subject).n_contrast.files_in,pipeline(subject).n_contrast.opt.C)
             
             if strcmp(option,'contrast only')
-                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS,PFTUSW>
+                name = fileparts(batch_contrast.LIMO_files{subject}); %#ok<PFBNS>
             else
                 [~,name]=fileparts(model.set_files{subject}); %#ok<PFBNS>
             end
@@ -598,15 +609,43 @@ else % parallel call to the pipeline , the usual way
     try
         poolobj = gcp('nocreate'); 
         delete(poolobj); % close parallel pool;
+    catch closepool
+        disp('no parpool to close %s\n',closepool.message)
     end
 end
 
-%% Save txt files
-% save as txt file the list of .set, Betas, LIMO and con
-% these lists can then be used in second level analyses
+%% Save txt files and warn users
+if ~isfield(model.defaults,'verbose')
+    model.defaults.verbose = ''; % if not specified, assume GUI feedback
+end
 cd(LIMO_files.LIMO)
 
 if strcmp(option,'model specification') || strcmp(option,'both')
+    % check that the dimensions of the model are identical otherwise tell the
+    % user -- condition might be missing from design or from preprocessing
+    good_subjects = find(remove_limo==0);
+    for s = 1:length(good_subjects)
+        LIMO = load(LIMO_files.mat{good_subjects(s)});
+        design_dim(s) = size(LIMO.LIMO.design.X,2);
+        names{s} = limo_get_subname(LIMO.LIMO.dir);
+    end
+    
+    if exist("design_dim","var")
+        if length(unique(design_dim)) > 1
+            if strcmpi(model.defaults.verbose,'noGUI')
+                warning('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not')
+            else
+                limo_warndlg(sprintf('Some subjects have different design dimensions.\nThis might be a feature of experiment (like encoding errors but some subjects have none) but is often not'))
+            end
+            % in any case print design dimensionality
+            for s = 1:length(good_subjects)
+                warning('subject %s design with %g regressors', names{s},design_dim(s));
+            end
+        end
+    end
+
+    % save as txt file the list of .set, Betas, LIMO and con
+    % these lists can then be used in second level analyses
     if ~all(remove_limo)
         cell2csv([LIMO_files.LIMO filesep 'LIMO_files_' glm_name '.txt'], LIMO_files.mat(find(~remove_limo),:))
         cell2csv([LIMO_files.LIMO filesep 'Beta_files_' glm_name '.txt'], LIMO_files.Beta(find(~remove_limo),:))
@@ -620,29 +659,29 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             if strcmp(option,'contrast only')
                 LIMO = load([fileparts(pipeline(subject).n_contrast.files_in) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
                 if isfield(LIMO,'contrast')
-                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); % if several identical contrasts, take max
+                    con_num = max(find(cellfun(@(x) isequal(x.C,limo_contrast_checking(LIMO.dir,LIMO.design.X,batch_contrast.mat(c,:))),LIMO.contrast))); %#ok<*MXFND> % if several identical contrasts, take max
                 else
                     con_num = c;
                 end
-                name{index} = [fileparts(pipeline(subject).n_contrast.files_in) filesep 'con_' num2str(con_num) '.mat'];
+                path = fileparts(pipeline(subject).n_contrast.files_in);
+                name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
             else
-                name{index} = [fileparts(pipeline(subject).glm.files_out) filesep 'con_' num2str(c) '.mat'];
                 con_num = c;
+                path = fileparts(pipeline(subject).glm.files_out);
+                name{index} = fullfile(path,[limo_get_subname(path) '_desc-con_' num2str(con_num) '.mat']);
             end
             index = index + 1;
         end
         name = name';
         
         if ~all(remove_con)
-            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:));
+            cell2csv([LIMO_files.LIMO filesep 'con_' num2str(con_num) '_files_' glm_name '.txt'], name(find(~remove_con),:)); %#ok<*FNDSB>
         end
     end
 end
 
 % save the report from psom
 cell2csv([LIMO_files.LIMO filesep 'limo_batch_report' filesep 'batch_report_' glm_name '.txt'], report')
-
-cd(current);
 failed = zeros(1,N);
 for subject=1:N
     if strfind(report{subject},'failed')
@@ -654,9 +693,22 @@ if sum(failed) == 0
     disp('LIMO batch processing finished succesfully')
 else
     if sum(failed) == N % all subjects
-        warning('LIMO batch done but all subjects failed. This can be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
+        if strcmpi(model.defaults.verbose,'noGUI')
+            warning('LIMO batch done but all subjects failed.')
+            warning('This is typically due to low number of trials, setting estimation to OLS solves this.')
+            warning('It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
+        else
+            limo_warndlg(sprintf('LIMO batch done but all subjects failed.\n\n- This is typically due to low number of trials, setting estimation to OLS solves this.\n- It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m'))
+        end
     else
-        warning('LIMO batch done, some errors where detected\ncheck limo batch report subjects %s',num2str(find(failed)))
+        failed = find(failed);
+        if isempty(model.defaults.verbose)
+            limo_warndlg('Some subjects failed - see ID/subject number in command line and psom report')
+        end
+        % in any case print subject IDs
+        for s = 1:length(failed)
+            warning('LIMO batch done, some errors where detected\ncheck limo batch report %s',limo_get_subname(fileparts(pipeline(failed(s)).n_contrast.files_in)));
+        end
     end
 end
 
@@ -687,7 +739,7 @@ if exist('STUDY','var')
                     end
                     
                     if isfield(LIMO_files,'mat') && isfield(LIMO_files,'Beta')
-                        if length(STUDY.group) > 1 && length(sesvalues)==1 % only groups
+                        if length(STUDY.group) > 1 && length(sesvalues)==1 %#ok<*ISCL> % only groups
                             if any(subset)
                                 cell2csv(fullfile(LIMO_files.LIMO, ['LIMO_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.mat(subset));
                                 cell2csv(fullfile(LIMO_files.LIMO, ['Beta_files_Gp-' STUDY.group{g} '_' glm_name '.txt']), LIMO_files.Beta(subset));
@@ -736,10 +788,18 @@ if exist('STUDY','var')
             end
         end
     catch writtingerr
-        if sum(failed) == 0
-            warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+        if strcmpi(model.defaults.verbose,'noGUI')
+            if sum(failed) == 0
+                warning(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            else
+                warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            end
         else
-            warning(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            if sum(failed) == 0
+                limo_warndlg(writtingerr.identifier,'all LIMO files created but failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            else
+                limo_warndlg(writtingerr.identifier,'also failing to write some metadata txt files ''%s''\n ',writtingerr.message);
+            end
         end
     end
 end

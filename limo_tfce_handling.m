@@ -53,15 +53,25 @@ for i=2:2:nargin
     end
 end
 
-
 %% quick user check
 % ----------------
+[fpath,fname,ext] = fileparts(filename);
+if isempty(fpath)
+    filename = fullfile(LIMO.dir,fname);
+end
 
 % files to create
-tfce_file    = fullfile(LIMO.dir,['tfce' filesep 'tfce_' filename]);
-H0_tfce_file = fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' filename]);
-% given filename input, we expect H0 to be
-H0filename   = fullfile(LIMO.dir,['H0' filesep 'H0_' filename]);
+if LIMO.Level == 1
+    subname      = limo_get_subname([filename ext]);
+    stat_type    = extractAfter(fname,'desc-');
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep subname '_desc-' stat_type 'tfce']);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep subname '_desc-' stat_type 'tfceH0']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep subname '_desc-' stat_type 'H0.mat']); % .mat as exists 'on disk'
+else
+    tfce_file    = fullfile(LIMO.dir,['tfce' filesep fname '_desc-tfce']);
+    H0_tfce_file = fullfile(LIMO.dir,['H0'   filesep fname '_desc-tfceH0']);
+    H0filename   = fullfile(LIMO.dir,['H0'   filesep fname '_desc-H0.mat']);
+end
 
 if strcmpi(checkfile,'yes')
     if exist(tfce_file,'file')
@@ -101,7 +111,6 @@ if ~isfield(LIMO.data,'neighbouring_matrix')
     end
 end
 
-
 % create tfce folder
 if ~exist(fullfile(LIMO.dir,'tfce'),'dir')
     mkdir(fullfile(LIMO.dir,'tfce'))
@@ -112,23 +121,25 @@ fprintf('Thresholding %s using TFCE \n',filename);
 if contains(filename,'R2') || ...
         contains(filename,'semi_partial') % these files last dimension is R2, F, p
     % ----------------------------------------------------------------------------
-    R2 = load(fullfile(LIMO.dir,'R2.mat'));
-    R2 = R2.(cell2mat(fieldnames(R2)));
-    if size(R2,1) == 1
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2, squeeze(R2(:,:,:,2)),[]); % no neighbouring, time-freq cluster
+    if ~isfile(tfce_file)
+        R2 = load(filename);
+        R2 = R2.(cell2mat(fieldnames(R2)));
+        if size(R2,1) == 1
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2, squeeze(R2(:,:,:,2)),[]); % no neighbouring, time-freq cluster
+            else
+                [tfce_score(1,:),thresholded_maps]   = limo_tfce(1, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
+            end
         else
-            [tfce_score(1,:),thresholded_maps]   = limo_tfce(1, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score,thresholded_maps] = limo_tfce(3, squeeze(R2(:,:,:,2)),LIMO.data.neighbouring_matrix);
+            else
+                [tfce_score,thresholded_maps] = limo_tfce(2, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
+            end
         end
-    else
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score,thresholded_maps] = limo_tfce(3, squeeze(R2(:,:,:,2)),LIMO.data.neighbouring_matrix);
-        else
-            [tfce_score,thresholded_maps] = limo_tfce(2, squeeze(R2(:,:,2)),LIMO.data.neighbouring_matrix);
-        end
+        save(tfce_file,'tfce_score','-v7.3'); clear R2 ;
     end
-    save(tfce_file,'tfce_score','-v7.3'); clear R2 ;
-    
+
     if exist(H0filename,'file')
         fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_R2 = load(H0filename);
@@ -142,21 +153,24 @@ if contains(filename,'R2') || ...
                     [tfce_H0_score(1,:,:,b),tfce_H0_thmaps] = limo_tfce(2,squeeze(H0_R2(:,:,:,2,b)),[],0);
                 end
             else
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score  = NaN(1,size(H0_R2,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,b),tfce_H0_thmaps] = limo_tfce(1,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(1,:,b),tfce_H0_thmaps] = limo_tfce(1,squeeze(H0_R2(:,:,2,b)),neighbouring_matrix,0); %#ok<*PFTUSW,*PFOUS>
                 end
             end
         else
             if strcmpi(LIMO.Analysis,'Time-Frequency')
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score  = NaN(size(H0_R2,1),size(H0_R2,2),size(H0_R2,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps] = limo_tfce(3,squeeze(H0_R2(:,:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps] = limo_tfce(3,squeeze(H0_R2(:,:,:,2,b)),neighbouring_matrix,0);
                 end
             else
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score  = NaN(size(H0_R2,1),size(H0_R2,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,b),tfce_H0_thmaps] = limo_tfce(2,squeeze(H0_R2(:,:,2,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,b),tfce_H0_thmaps] = limo_tfce(2,squeeze(H0_R2(:,:,2,b)),neighbouring_matrix,0);
                 end
             end
         end
@@ -172,23 +186,25 @@ elseif contains(filename,'con') || ...
         contains(LIMO.design.name,'Two samples','IgnoreCase',true) || ...
         contains(LIMO.design.name,'Paired','IgnoreCase',true)  % these file last dimension is mean, se, df, t and p
     % --------------------------------------------------------------------------------------------------------------
-    tval = load(filename);
-    tval = tval.(cell2mat(fieldnames(tval)));
-    if size(tval,1) == 1
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2, squeeze(tval(:,:,:,end-1)),[]); % no neighbouring, time-freq cluster
+    if ~isfile(tfce_file)
+        tval = load(filename);
+        tval = tval.(cell2mat(fieldnames(tval)));
+        if size(tval,1) == 1
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2, squeeze(tval(:,:,:,end-1)),[]); % no neighbouring, time-freq cluster
+            else
+                [tfce_score(1,:),thresholded_maps]   = limo_tfce(1, squeeze(tval(:,:,end-1)),LIMO.data.neighbouring_matrix);
+            end
         else
-            [tfce_score(1,:),thresholded_maps]   = limo_tfce(1, squeeze(tval(:,:,end-1)),LIMO.data.neighbouring_matrix);
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score,thresholded_maps] = limo_tfce(3, squeeze(tval(:,:,:,end-1)),LIMO.data.neighbouring_matrix);
+            else
+                [tfce_score,thresholded_maps] = limo_tfce(2, squeeze(tval(:,:,4)),LIMO.data.neighbouring_matrix);
+            end
         end
-    else
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score,thresholded_maps] = limo_tfce(3, squeeze(tval(:,:,:,end-1)),LIMO.data.neighbouring_matrix);
-        else
-            [tfce_score,thresholded_maps] = limo_tfce(2, squeeze(tval(:,:,4)),LIMO.data.neighbouring_matrix);
-        end
+        save(tfce_file,'tfce_score','-v7.3'); clear tval ;
     end
-    save(tfce_file,'tfce_score','-v7.3'); clear tval ;
-    
+
     if exist(H0filename,'file')
         fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_tval = load(H0filename);
@@ -198,25 +214,32 @@ elseif contains(filename,'con') || ...
         if size(H0_tval,1) == 1
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 tfce_H0_score  = NaN(1,size(H0_tval,2),size(H0_tval,3),nboot);
+                H0_tval        = squeeze(H0_tval(:,:,:,end-1,:));
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_tval(:,:,:,end-1,b)),[],0);
+                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,H0_tval(:,:,:,b),[],0);
                 end
             else
-                tfce_H0_score  = NaN(1,size(H0_tval,2),nboot);
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
+                H0_tval             = squeeze(H0_tval(:,:,end-1,:));
+                tfce_H0_score       = NaN(1,size(H0_tval,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_tval(:,:,end-1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(1,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,H0_tval(:,:,b),neighbouring_matrix,0);
                 end
             end
         else
             if strcmpi(LIMO.Analysis,'Time-Frequency')
-                tfce_H0_score  = NaN(size(H0_tval,1),size(H0_tval,2),size(H0_tval,3),nboot);
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
+                H0_tval             = squeeze(H0_tval(:,:,:,end-1,:));
+                tfce_H0_score       = NaN(size(H0_tval,1),size(H0_tval,2),size(H0_tval,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(3,squeeze(H0_tval(:,:,:,end-1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(3,H0_tval(:,:,:,b),neighbouring_matrix,0);
                 end
             else
-                tfce_H0_score  = NaN(size(H0_tval,1),size(H0_tval,2),nboot);
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
+                H0_tval             = squeeze(H0_tval(:,:,end-1,:));
+                tfce_H0_score       = NaN(size(H0_tval,1),size(H0_tval,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_tval(:,:,end-1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,H0_tval(:,:,b),neighbouring_matrix,0);
                 end
             end
         end
@@ -229,27 +252,29 @@ elseif contains(filename,'con') || ...
     % ------------------------------------------
 else % anything else last dimension is F and p
     % ------------------------------------------
-    Fval = load(filename);
-    Fval = Fval.(cell2mat(fieldnames(Fval)));
-    if contains(filename,'ess')
-        Fval = Fval(:,:,end-1:end);
+    if ~isfile(tfce_file)
+        Fval = load(filename);
+        Fval = Fval.(cell2mat(fieldnames(Fval)));
+        if contains(filename,'ess')
+            Fval = Fval(:,:,end-1:end);
+        end
+
+        if size(Fval,1) == 1
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2,squeeze(Fval(:,:,:,1)),[]);
+            else
+                [tfce_score(1,:),thresholded_maps] = limo_tfce(1,squeeze(Fval(:,:,1)),LIMO.data.neighbouring_matrix);
+            end
+        else
+            if strcmpi(LIMO.Analysis,'Time-Frequency')
+                [tfce_score,thresholded_maps] =  limo_tfce(3,squeeze(Fval(:,:,:,1)),LIMO.data.neighbouring_matrix);
+            else
+                [tfce_score,thresholded_maps] =  limo_tfce(2,squeeze(Fval(:,:,1)),LIMO.data.neighbouring_matrix);
+            end
+        end
+        save(tfce_file,'tfce_score','-v7.3'); clear Fval;
     end
 
-    if size(Fval,1) == 1
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score(1,:,:),thresholded_maps] = limo_tfce(2,squeeze(Fval(:,:,:,1)),[]);
-        else
-            [tfce_score(1,:),thresholded_maps] = limo_tfce(1,squeeze(Fval(:,:,1)),LIMO.data.neighbouring_matrix);
-        end
-    else
-        if strcmpi(LIMO.Analysis,'Time-Frequency')
-            [tfce_score,thresholded_maps] =  limo_tfce(3,squeeze(Fval(:,:,:,1)),LIMO.data.neighbouring_matrix);
-        else
-            [tfce_score,thresholded_maps] =  limo_tfce(2,squeeze(Fval(:,:,1)),LIMO.data.neighbouring_matrix);
-        end
-    end
-    save(tfce_file,'tfce_score','-v7.3'); clear Fval;
-    
     if exist(H0filename,'file')
         fprintf('Applying TFCE to null data (this may take a while)... \n')
         H0_Fval = load(H0filename);
@@ -258,26 +283,30 @@ else % anything else last dimension is F and p
         tfce_H0_thmaps = cell(1,nboot);
         if size(H0_Fval,1) == 1
             if strcmpi(LIMO.Analysis,'Time-Frequency')
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(1,size(H0_Fval,2),size(H0_Fval,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_Fval(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
                 end
             else
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(1,size(H0_Fval,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_Fval(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(1,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_Fval(:,:,1,b)),neighbouring_matrix,0);
                 end
             end
         else
             if strcmpi(LIMO.Analysis,'Time-Frequency')
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(size(H0_Fval,1),size(H0_Fval,2),size(H0_Fval,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
                 end
             else
+                neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(size(H0_Fval,1),size(H0_Fval,2),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,1,b)),LIMO.data.neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,1,b)),neighbouring_matrix,0);
                 end
             end
         end

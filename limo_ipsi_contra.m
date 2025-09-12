@@ -45,7 +45,8 @@ if nargin == 8 % con files
             LIMO_errordlg('expecting text as 3rd and 5th input given the number of arguments in')
         end
     end
-    LIMO.design.parameters = [1 2];
+    LIMO.design.parameters = [cell2mat(extractBetween(Names{1}(1),'con_','.mat')) ...
+        '_' cell2mat(extractBetween(Names{2}(1),'con_','.mat'))];
 
 elseif nargin == 9 % beta files
     [~,Paths,Files] = limo_get_files([],[],[],varargin{1});
@@ -61,6 +62,9 @@ elseif nargin == 9 % beta files
             LIMO_errordlg('expecting text as 2nd, 4th and 6th nputs given the number of arguments in')
         end
     end
+else
+    limo_errordlg('wrong number of arguments in')
+    help limo_ipsi_contra
 end
 
 nboot = varargin{end-1};
@@ -73,7 +77,7 @@ tfce  = varargin{end};
 if exist('Files','var') % betas
     LIMO.data.data     = Files;
     LIMO.data.data_dir = Paths;
-    error('not implemented for Betas yet')
+    limo_errordlg('not implemented for Betas yet')
 
 else % con
     [first_frame,last_frame,subj_chanlocs,LIMO] = limo_match_frames(Paths{1},LIMO);

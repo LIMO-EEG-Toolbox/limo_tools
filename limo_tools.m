@@ -37,14 +37,17 @@ end
 % --------------------------------------------------
 %   Executes just before the menu is made visible
 % --------------------------------------------------
-function limo_tools_OpeningFcn(hObject, eventdata, handles, varargin)
+function limo_tools_OpeningFcn(hObject, ~, handles, varargin)
 handles.output = hObject;
-guidata(hObject, handles);
 
 % define handles used for the save callback
 handles.b = 1000;
 handles.chan_file = [];
 guidata(hObject, handles);
+set(handles.figure1,'Visible','on');
+set(hObject,'WindowStyle','normal', ...          % open in its own window
+                'DockControls','off');               % remove "dock" button
+
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.

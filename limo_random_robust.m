@@ -168,7 +168,7 @@ switch type
         % ------------------------------------------------
         % make a one_sample file per parameter (channels, frames, [mean value, se, df, t, p])
         one_sample = NaN(size(data,1), size(data,2), 5);
-        name       = sprintf('one_sample_ttest_parameter_%g',parameter);
+        name       = sprintf('One_Sample_Ttest_parameter_%g',parameter);
         
         for channel = 1:size(data,1) % run per channel because we have to remove NaNs
             fprintf('analyse parameter %g channel %g \n',parameter, channel);
@@ -207,7 +207,7 @@ switch type
         if LIMO.design.bootstrap > 0
             limo_check_ppool
             bootex = 1;
-            boot_name = sprintf('H0_one_sample_ttest_parameter_%g',parameter);
+            boot_name = sprintf('One_Sample_Ttest_parameter_%g_desc-H0',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if ~strcmp(answer,'Yes')
@@ -342,7 +342,7 @@ switch type
        % ------------------------------------------------
         % make a two_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         two_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('two_samples_ttest_parameter_%g_%g',parameter);
+        name = sprintf('Two_Samples_Ttest_parameter_%g_%g',parameter);
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
@@ -373,7 +373,7 @@ switch type
         if LIMO.design.bootstrap > 0
             limo_check_ppool
             bootex = 1;
-            boot_name = sprintf('H0_two_samples_ttest_parameter_%g_%g',parameter);
+            boot_name = sprintf('Two_Samples_Ttest_parameter_%g_%g_desc-H0',parameter);
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if ~strcmp(answer,'Yes')
@@ -511,7 +511,7 @@ switch type
         % ------------------------------------------------
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
-        name = sprintf('paired_samples_ttest_parameter_%d_%d',parameter(1), parameter(end));
+        name = sprintf('Paired_Samples_Ttest_parameter_%d_%d',parameter(1), parameter(end));
         
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
@@ -553,7 +553,7 @@ switch type
         if LIMO.design.bootstrap > 0
             limo_check_ppool
             bootex = 1;
-            boot_name = sprintf('H0_paired_samples_ttest_parameter_%d_%d',parameter(1),parameter(end));
+            boot_name = sprintf('Paired_Samples_Ttest_parameter_%d_%d_desc-H0',parameter(1),parameter(end));
             if exist(['H0', filesep, boot_name, '.mat'], 'file') && usejava('desktop')
                 answer = questdlg('a boostrap file already exist - overwrite?','data check','Yes','No','Yes');
                 if ~strcmp(answer,'Yes')
@@ -713,7 +713,7 @@ switch type
         if strcmpi(go,'no')
             go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
         end
-        close('LIMO design');        
+        close(findobj('Name','LIMO design'));
 
         if strcmpi(go,'Yes')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
@@ -800,7 +800,7 @@ switch type
                 go = questdlg('run the analysis?','Start GLM analysis','Yes','No','Yes');
             end
         end
-        close('LIMO design');
+        close(findobj('Name','LIMO design'));
         
         if strcmpi(go,'Yes')
             if LIMO.design.fullfactorial == 0 && LIMO.design.nb_continuous == 0
@@ -883,7 +883,7 @@ switch type
             if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
                 H0_Condition_effect = limo_tf_5d_reshape(H0_Condition_effect);
             end
-            save(['H0' filesep 'H0_Condition_effect_1'],'H0_Condition_effect', '-v7.3');
+            save(['H0' filesep 'Condition_effect_1_desc-H0'],'H0_Condition_effect', '-v7.3');
             save(['H0' filesep 'boot_table'],'boot_table', '-v7.3');
             clear data H0_Condition_effect ;
         end
@@ -1080,12 +1080,13 @@ switch type
             % check the design with user
             % --------------------------
             if ~strcmpi(go,'Yes')
-                figure('Name','LIMO design'); set(gcf,'Color','w');
+                hfig = figure('Name','LIMO design');
+                set(hfig,'Color','w');
                 imagesc(LIMO.design.X); colormap('gray');
                 title('ANOVA model','FontSize',16);xlabel('regressors');
                 ylabel('subjects'); drawnow;
                 go = limo_questdlg('Are your ready to start the analysis?','Start GLM analysis','No','Yes','Yes');
-                close('LIMO design')
+                close(hfig)
                 if ~strcmpi(go,'Yes')
                     return
                 end
@@ -1180,14 +1181,14 @@ switch type
             for i=1:nb_effects
                 if contains(LIMO.design.effects{i},'Main effect')
                     if isfield(LIMO.design,'factor_names')
-                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g_%s.mat',i,LIMO.design.factor_names{i});
+                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g_%s',i,LIMO.design.factor_names{i});
                     else
-                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g.mat',i);
+                        Rep_filenames{i} = sprintf('Rep_ANOVA_Main_effect_%g',i);
                     end
                 elseif contains(LIMO.design.effects{i},'Interaction')
                     Interaction = LIMO.design.effects{i}(length('Interaction')+1:end);
                     Interaction(isspace(Interaction)) = [];
-                    Rep_filenames{i} = sprintf('Rep_ANOVA_Interaction_Factors_%s.mat',Interaction);
+                    Rep_filenames{i} = sprintf('Rep_ANOVA_Interaction_Factors_%s',Interaction);
                 end
                 
                 % save each factor effect as F/p values
@@ -1206,14 +1207,14 @@ switch type
                 for i=1:size(tmp_Rep_ANOVA_Interaction_with_gp,3)
                     if contains(LIMO.design.effects{i},'Main effect')
                         if isfield(LIMO.design,'factor_names')
-                            IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factor_%g_%s.mat',i,LIMO.design.factor_names{i});
+                            IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factor_%g_%s',i,LIMO.design.factor_names{i});
                         else
-                            IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factor_%g.mat',i);
+                            IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factor_%g',i);
                         end
                     else
                         Interaction = LIMO.design.effects{i}(length('Interaction')+1:end);
                         Interaction(isspace(Interaction)) = [];
-                        IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factors_%s.mat',Interaction);
+                        IRep_filenames{i} = sprintf('Rep_ANOVA_Interaction_gp_Factors_%s',Interaction);
                     end
                     
                     % save each interaction effect as F/p values
@@ -1422,7 +1423,7 @@ switch type
             
             % save          
             for i=1:size(tmp_boot_H0_Rep_ANOVA,3)
-                name = sprintf('H0_%s',Rep_filenames{i});
+                name = sprintf('%s_desc-H0',Rep_filenames{i});
                 H0_Rep_ANOVA = NaN(size(tmp_boot_H0_Rep_ANOVA,1), size(tmp_boot_H0_Rep_ANOVA, 2), size(tmp_boot_H0_Rep_ANOVA, 4), size(tmp_boot_H0_Rep_ANOVA, 5));
                 H0_Rep_ANOVA(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA(:,:,i,:,:)); % save each factor effect as F/p/LIMO.design.bootstrap values
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -1433,7 +1434,7 @@ switch type
             
             if type == 3 || type ==4
                 for i=1:size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,3)
-                    name = sprintf('H0_%s',IRep_filenames{i});
+                    name = sprintf('%s_desc-H0',IRep_filenames{i});
                     H0_Rep_ANOVA_Interaction_with_gp = NaN(size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp,1), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 2), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 4), size(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp, 5));
                     H0_Rep_ANOVA_Interaction_with_gp(:,:,:,:) = squeeze(tmp_boot_H0_Rep_ANOVA_Interaction_with_gp(:,:,i,:,:)); % save each interaction effect as F/p values
                     if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
@@ -1445,7 +1446,7 @@ switch type
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
                     H0_Rep_ANOVA_Gp_effect = limo_tf_5d_reshape(H0_Rep_ANOVA_Gp_effect);
                 end
-                save(['H0', filesep, 'H0_Rep_ANOVA_Gp_effect'], 'H0_Rep_ANOVA_Gp_effect', '-v7.3');
+                save(['H0', filesep, 'Rep_ANOVA_Gp_effect_desc-H0'], 'H0_Rep_ANOVA_Gp_effect', '-v7.3');
             end
         end
         LIMO.design.bootstrap = LIMO.design.bootstrap;

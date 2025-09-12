@@ -25,14 +25,26 @@ function limo_display_image(LIMO,toplot,mask,mytitle,dynamic)
 % ----------------------------------
 %  Copyright (C) LIMO Team 2019
 
-if nargin == 4
+if nargin <= 4
     dynamic = 1;
+end
+
+if ~exist('mytitle',"var")
+    if isfield(LIMO.design,'name')
+        mytitle = LIMO.design.name;
+    else
+        mytitle = ' ';
+    end
 end
 
 %% get some informations for the plots
 
 if sum(toplot(:)) == 0
     error('the image to plot is empty')
+end
+
+if isempty(mask)
+    mask = ones(size(toplot));
 end
 
 % what do we plot?  the data (toplot) masked (tpically of significance)
@@ -54,24 +66,25 @@ cluster_end   = NaN(1,n_cluster); % end of each cluster
 cluster_maxv  = NaN(1,n_cluster); % max value for each cluster
 cluster_maxe  = NaN(1,n_cluster); % channel location of the max value of each cluster
 cluster_maxf  = NaN(1,n_cluster); % frame location of the max value of each cluster
-
+warning off
 for c=1:n_cluster
     tmp                               = toplot.*(mask==c);
     tmp(tmp==Inf)                     = NaN;
     tmp(tmp==-Inf)                    = NaN;
     sigframes                         = sum(tmp,1);
-    cluster_start(c)                  = find(sigframes,1,'first');
-    cluster_end(c)                    = find(sigframes,1,'last');
+    cluster_start(n_cluster+1-c)      = find(sigframes,1,'first');
+    cluster_end(n_cluster+1-c)        = find(sigframes,1,'last');
     [V,type]                          = max([abs(min(tmp(:))) max(tmp(:))]);
     if type == 2
-        cluster_maxv(c)               = V(1);
+        cluster_maxv(n_cluster+1-c)   = V(1);
     else
         V = -V;
-        cluster_maxv(c)               = V(1);
+        cluster_maxv(n_cluster+1-c)   = V(1);
     end
-    [cluster_maxe(c),cluster_maxf(c)] = ind2sub(size(tmp),find(tmp==V(1)));
+    [cluster_maxe(n_cluster+1-c),cluster_maxf(n_cluster+1-c)] = ...
+        ind2sub(size(tmp),find(tmp==V(1)));
 end
-
+warning on
 
 %% get frame information 
 if strcmpi(LIMO.Analysis,'Time')
@@ -165,20 +178,13 @@ else
     error('LIMO.Analysis unspecfied')
 end
 
-if isempty(mytitle)
-    if isfield(LIMO.design,'name')
-        mytitle = LIMO.design.name;
-    else
-        mytitle = ' ';
-    end
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% make the main figure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure; set(gcf,'Color','w','InvertHardCopy','off');
+hfig = figure;
+set(hfig,'Color','w','InvertHardCopy','off');
 
-% course plot at best electrode
+% course plot at best channel
 ax(3) = subplot(3,3,9);
 if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
     LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
@@ -241,8 +247,17 @@ if size(toplot,1) ~= 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency')
     
     if isfield(LIMO,'Type')
         if strcmpi(LIMO.Type,'Components')
-            opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', limo_color_images(toplot)};
-            topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
+            % fetch topomap
+            subname = limo_get_subname(LIMO.data.data_dir);
+            map = dir(fullfile(LIMO.data.data_dir,[subname '*.icatopo']));
+            if isempty(map)
+                limo_errordlg('compute IC scalpmap to plotting results')
+            else
+                map = load(fullfile(map.folder,map.name),'-mat');
+            end
+            [xi,yi] = meshgrid(map.comp1_x,map.comp1_y);
+            compname = ['comp' num2str(e) '_grid'];
+            toporeplot(map.(compname), 'style', 'both', 'plotrad',0.5,'intrad',0.5, 'verbose', 'off','xsurface', xi, 'ysurface', yi );
         else
             topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         end
@@ -308,7 +323,7 @@ if contains(mytitle,'cluster')
             fprintf('cluster %g at %gms %gHz, ends at %gms %gHz, max %g @ %gms %gHz \n', c, ...
                 timevect(cluster_start(c)),freqvect(find(f1==max(f1))), ...
                 timevect(cluster_end(c)), freqvect(find(f2==max(f2))), ...
-                cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3))));
+                cluster_maxv(c), timevect(cluster_maxf(c)), freqvect(find(f3==max(f3)))); %#ok<*FNDSB>
         end
     end
 else % no clusters (we have make one )
@@ -383,8 +398,13 @@ if dynamic == 1
                             topoplot(toplot(:,1),LIMO.data.chanlocs,opt{:});
                             title('topoplot','FontSize',12)
                         else
-                            topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
-                            title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                            if strcmpi(LIMO.Type,'Components')
+                                compname = ['comp' num2str(y) '_grid'];
+                                toporeplot(map.(compname), 'style', 'both', 'plotrad',0.5,'intrad',0.5, 'verbose', 'off','xsurface', xi, 'ysurface', yi );
+                            else
+                                topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
+                                title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                            end
                         end
                     end
                     
@@ -466,13 +486,13 @@ if dynamic == 1
         end
     end
 end
-res = true;
+limo_results
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%
 %% set axes and labels 
-% -------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%
 function set_imgaxes(LIMO,scale)
-
 img_prop = get(gca);
 set(gca,'LineWidth',2)
 
@@ -518,19 +538,20 @@ else
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
 % ----- Colormap --------
+%%%%%%%%%%%%%%%%%%%%%%%%%
 try
     maxval = max(abs(max(scale(:))),abs(min(scale(:))));
     if max(scale(:)) < 0
-        caxis([-maxval 0])
+        clim([-maxval 0])
     elseif min(scale(:)) > 0 
-        caxis([0 maxval])
+        clim([0 maxval])
     else
-        caxis([-maxval maxval])
+        clim([-maxval maxval])
     end
 catch caxiserror
     fprintf('axis issue: %s\n',caxiserror.message)
 end
 
 end
-

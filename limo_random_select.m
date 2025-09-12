@@ -58,6 +58,10 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %     {'F:\WakemanHenson_Faces\eeg\derivatives\LIMO_Face_detection\Beta_files_FaceRepAll_GLM_Channels_Time_WLS.txt'},...
 %     'analysis type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
 %     'factor names',{'face','repetition'},'type','Channels','nboot',0,'tfce',0);
+%
+% as explained above, parameters use cell nesting, for instance a 2 x 2 x 2
+% design would use for instance 'parameters',{{[1 2],[3 4]},{[5 6],[7 8]}}
+%
 % - t-test with command line using con files
 %     for N=length(STUDY.subject):-1:1
 %         data{1,N} = con1_files{N}(1);
@@ -138,7 +142,7 @@ warning on
 for in = 1:2:(nargin-2)
     if strcmpi(varargin{in},'LIMOfiles')
         if ~iscell(varargin{in+1})
-            LIMO.data.data = {varargin{in+1}}; %#ok<CCAT1>
+            LIMO.data.data = {varargin{in+1}}; %#ok<*CCAT1>
         else
             LIMO.data.data = varargin{in+1};
         end
@@ -160,7 +164,7 @@ for in = 1:2:(nargin-2)
         if iscell(varargin{in+1})
             LIMO.design.parameters = varargin{in+1};
         else
-            LIMO.design.parameters = {varargin{in+1}};
+            LIMO.design.parameters = {varargin{in+1}}; 
         end
     elseif contains(varargin{in},'factor')
         LIMO.design.factor_names = varargin{in+1};
@@ -200,7 +204,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     if isempty(LIMO.data.data)
         [Names,Paths,LIMO.data.data] = limo_get_files;
     else
-        if ischar(LIMO.data.data{1}) && length(LIMO.data.data) == 1 % Case for path to the files
+        if ischar(LIMO.data.data{1}) && length(LIMO.data.data) == 1 %#ok<*ISCL> % Case for path to the files
             [Names,Paths,LIMO.data.data] = limo_get_files([],[],[],LIMO.data.data{1});
         else % Case when all paths are provided
             if size(LIMO.data.data,1) == 1
@@ -263,7 +267,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                                { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
                                { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
                                { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
-                    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse');
+                    res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse'); %#ok<*NBRAK2>
                     if isempty(res)
                         [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
                     else
@@ -712,8 +716,10 @@ elseif strcmpi(stattest,'paired t-test')
                     parameters = 1;
                 end
             end
-            con_parameters    = [str2double(unique(cellfun(@(x) x(5:end-4),Names{1}))) ...
-                str2double(unique(cellfun(@(x) x(5:end-4),Names{2})))];
+
+            con_1          = cell2mat(unique(cellfun(@(x) extractAfter(x,'con_'),Names{1},'UniformOutput',false)));
+            con_2          = cell2mat(unique(cellfun(@(x) extractAfter(x,'con_'),Names{2},'UniformOutput',false)));
+            con_parameters = [str2double(con_1(1:end-4)) str2double(con_2(1:end-4))];
             if all(isnan(con_parameters))
                 clear con_parameters % was betas from command line
             end
@@ -1179,12 +1185,16 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % Ask for Gp
     % ----------
-    gp_nb = [];
+    % gp_nb = [];
     if ~isempty(LIMO.data.data)
         gp_nb = size(LIMO.data.data,1);
     else
-        if exist('STUDY','var')
-            gp_val = length(STUDY.group);
+        if exist('STUDY','var') 
+            if isfield(STUDY,'group')
+                gp_val = length(STUDY.group);
+            else
+                gp_val = 1;
+            end
         else
             gp_val = 1;
         end
@@ -1297,7 +1307,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % beta files
     if strcmp(a,'beta')
-        for i=1:gp_nb
+        for i=gp_nb:-1:1
             if length(LIMO.data.data) < i
                 [Names{i},Paths{i},LIMO.data.data{i}] = limo_get_files([' beta file gp ',num2str(i)]);
             else
@@ -1350,7 +1360,9 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             LIMOtmp = load('-mat', fullfile(Paths{1}{1}, 'LIMO.mat'));
             if isfield(LIMOtmp.LIMO.design, 'labels')
                 paramLinear = parameters(i,:);
-                if iscell(paramLinear) paramLinear = [ paramLinear{:} ]; end
+                if iscell(paramLinear) 
+                    paramLinear = [ paramLinear{:} ]; 
+                end
                 LIMO.design.labels = LIMOtmp.LIMO.design.labels(paramLinear);
             end
         end
@@ -1361,7 +1373,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         LIMO.data.data_dir = Paths';
 
     else  % multiple con files
-        for i=1:gp_nb
+        for i=gp_nb:-1:1
             if isempty(LIMO.data.data) % GUI
                 for j=1:length(factor_nb)
                     for k=1:factor_nb(j)
@@ -1417,9 +1429,9 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % -----------------------------
     subject_index = 1;
     matrix_index  = 1;
-    for h = 1:gp_nb % each group
+    for h = gp_nb:-1:1 % each group
         nb_subjects(h) = 0;
-        for i=1:size(Paths{h},2)
+        for i=size(Paths{h},2):-1:1
             if all(contains(LIMO.data.data{h},'Betas')) % set of beta files
                 tmp = load(cell2mat(LIMO.data.data{h}(i)));
                 tmp = tmp.(cell2mat(fieldnames(tmp)));
@@ -1529,11 +1541,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % last re-check dimensions
     if sum(single(isnan(data(:)))) == numel(data)
-        if exist('errordlg2','file')
-            errordlg2('the data matrix is empty! either betas.mat/con.mat files are empty or there is a bug'); return
-        else
-            errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
-        end
+        limo_errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
     end
     
     if gp_nb ==1 && size(data,numel(size(data))-1) <= 2
@@ -1635,7 +1643,10 @@ end % closes the function
 %                                   ROUTINES
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% fileparts for multiple cell entries in row (ie per group)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [Names,Paths,Files] = breaklimofiles(cellfiles)
 for ifiles = length(cellfiles):-1:1
     if ~isempty(cellfiles{ifiles})
@@ -1646,7 +1657,9 @@ for ifiles = length(cellfiles):-1:1
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% frame matching
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [first_frame,last_frame,subj_chanlocs,channeighbstructmat,LIMO] = match_frames(Paths,LIMO)
 
 % once we have all the files, we need to collect information to match the frames across subjects
@@ -1665,7 +1678,7 @@ if iscell(Paths{1})
     tmp = Paths; clear Paths
     index = 1;
     for gp=1:size(tmp,2)
-        for s=1:size(tmp{gp},2)
+        for s=size(tmp{gp},2):-1:1
             Paths{index} = tmp{gp}(s);
             index = index + 1;
         end
@@ -1835,7 +1848,9 @@ end
 cd(LIMO.dir)
 end
 
-%% match channels and update LIMO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% channels matching and update LIMO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function LIMO = match_channels(stattest,analysis_type,LIMO)
 
 % note channel can be a singleton or a vector (channel/component optimized analysis)
@@ -1897,7 +1912,7 @@ if strcmpi(analysis_type,'1 channel/component only')
             end
         end
 
-    elseif numel(str2num(channel{1})) || ...
+    elseif numel(str2double(channel{1})) || ...
             max(size(cell2mat(channel))) == numel(LIMO.data.data) || ...
             max(size(cell2mat(channel))) == sum(cellfun(@numel,LIMO.data.data))
 
@@ -1916,7 +1931,7 @@ if strcmpi(analysis_type,'1 channel/component only')
         end
 
         if strcmp(LIMO.Type,'Channels')
-            LIMO.design.electrode       = str2num(cell2mat(channel));
+            LIMO.design.electrode       = str2double(cell2mat(channel));
             LIMO.data.chanlocs          = LIMO.data.expected_chanlocs;
             LIMO.data.expected_chanlocs = LIMO.data.expected_chanlocs(LIMO.design.electrode);
         else
@@ -1957,10 +1972,12 @@ else % Full scalp
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% assemble the data matrix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,subj_chanlocs,LIMO)
 
-data = [];
+data    = [];
 removed = [];
 disp('gathering data ...');
 if stattest == 1 % one sample
@@ -1969,7 +1986,7 @@ if stattest == 1 % one sample
         LIMO.data.data = LIMO.data.data{1};
     end
 
-    for i=1:size(LIMO.data.data,2) % for each subject
+    for i=size(LIMO.data.data,2):-1:1 % for each subject
         tmp = load(LIMO.data.data{i});
 
         % get indices to trim data
@@ -2102,7 +2119,7 @@ if stattest == 1 % one sample
 
 elseif stattest == 2 % several samples
     subject_nb = 1;
-    for igp = 1:length(LIMO.data.data)
+    for igp = length(LIMO.data.data):-1:1
         index = 1;
         for i=1:size(LIMO.data.data{igp},2) % for each subject per group
             tmp = load(cell2mat(LIMO.data.data{igp}(i)));
@@ -2228,7 +2245,9 @@ elseif stattest == 2 % several samples
 end
 end
 
-%% repeated measure levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% get repeated measure levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function levels = getlevels(params)
 % drill-down the cell array of repeated measures parameters
 if ~iscell(params)
@@ -2241,21 +2260,22 @@ else
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get beta indices from study
-% ---------------------------
-function [param,betas] = get_beta_indices(selectmode, betaFile,factorname,factorn)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [param,betas] = get_beta_indices(selectmode, betaFile,factorname,factorn) %#ok<INUSD>
 
 param = [];
 betas = {};
-if nargin < 3
-    factorname = {};
-end
+% if nargin < 3
+%     factorname = {};
+% end
 
 if nargin > 1
     try
-        limoFile = strrep(betaFile, 'Betas.mat', 'LIMO.mat');
-        LIMO = load('-mat', limoFile);
-        betas = { LIMO.LIMO.design.labels.description };
+        limoFile = fullfile(fileparts(betaFile),'LIMO.mat');
+        LIMO     = load('-mat', limoFile);
+        betas    = { LIMO.LIMO.design.labels.description };
     catch
         disp('Warning: could not find associated LIMO file');
     end
@@ -2263,7 +2283,7 @@ end
 
 if ~isempty(betas)
     % simple selection
-    for iBeta = 1:length(betas)
+    for iBeta = length(betas):-1:1
         betas{iBeta} = [ int2str(iBeta) ' - ' betas{iBeta}];
     end
     if strcmpi(selectmode, 'selectone')
@@ -2295,14 +2315,16 @@ else
 end
 end
 
-%% reorder parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% reorder parameters from repreated measures ANOVA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function parameters = reorganize_params(parameters, betas, factorname, factorn)
 
 % simple selection
 str = ['Reorganize values as needed: ' factorname{1} '=rows and ' factorname{2} '=columns'];
 uiList = { {'style' 'text' 'string' str 'fontweight' 'bold'} };
 uiGeom = { [1] };
-uiVert = 1;
+% uiVert = 1;
 for iRow = 1:length(parameters)
     uiList = [ uiList(:)' ...
         {{ 'style' 'popupmenu' 'string' betas(parameters) 'value' iRow }} ];
@@ -2316,7 +2338,9 @@ if isempty(res), parameters = []; return; end
 parameters = parameters(cell2mat(res));
 end
 
-%% file checking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% file checking all betas or all con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [parameters,betas] = check_files(Paths,Names,gp,parameters,selectmode)
 % after selecting file, check they are all the same type (betas or con)
 % return parameters that match with files (eg 1 for con, or whatever value 
@@ -2331,7 +2355,7 @@ if nargin < 5 || isempty(selectmode)
 end
 if nargin < 6
     factorname = '';
-    factorn    = [];
+    % factorn    = [];
 end
 
 if gp == 1
@@ -2344,21 +2368,20 @@ if gp == 1
     % ---------------
     is_beta = []; is_con = [];
     for i=size(Names,2):-1:1
-        if strfind(Names{i},'Betas')
+        if contains(Names{i},'Betas')
             is_beta(i) = 1;
-        elseif strfind(Names{i},'con')
+        elseif contains(Names{i},'con_')
             is_con(i) = 1;
         end
     end
 
     if (isempty(is_beta)) == 0 && sum(is_beta) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(is_con) ~= size(Names,2)
-        errordlg2('file selection failed, only Beta or Con files are supported'); return
+        error('file selection failed, only Beta or Con files are supported'); 
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
             if isempty(factorname) || length(factorname) > 2
                 [parameters,betas] = get_beta_indices(selectmode, fullfile(Paths{1}, Names{1}));
             end
-            %parameters = { [1 2 3] [4 5 6] [7 8 9] };
             if isempty(parameters)
                 return
             end
@@ -2376,7 +2399,7 @@ elseif gp > 1
         for i=1:size(Names{g},2)
             if contains(Names{g}(i),'Betas')
                 is_beta(i) = 1;
-            elseif strfind(Names{g}{i},'con')
+            elseif strfind(Names{g}{i},'con_')
                 is_con(i) = 1;
             end
         end
@@ -2394,11 +2417,11 @@ elseif gp > 1
         if isempty(parameters)
             parameters = eval(cell2mat(limo_inputdlg('which parameter(s) to test e.g 1','parameters option')));
         elseif ~isempty(parameters) && size(parameters,2) ~=1 && size(parameters,2) ~=gp
-            warndlg2('A valid parameter value must be provided - selection aborded');
+            limo_warndlg('A valid parameter value must be provided - selection aborded');
             return
         end
         if isempty(parameters) || size(parameters,2) ~=1 && size(parameters,2) ~=gp
-            warndlg2('A valid parameter value must be provided - selection aborded');
+            limo_warndlg('A valid parameter value must be provided - selection aborded');
             return
         end
     elseif ~isempty(is_con) && sum(cell2mat(test)) == length(Names)

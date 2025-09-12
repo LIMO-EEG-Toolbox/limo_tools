@@ -11,6 +11,7 @@ function varargout = limo_results(varargin)
 % Begin initialization code
 % -------------------------
 warning off
+set(groot,'DefaultUicontrolFontSize',8);   % tweak the font size, fix 2025a bug
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name','limo_results', ...
@@ -36,7 +37,7 @@ end
 % --------------------------------------------------
 %   Executes just before the menu is made visible
 % --------------------------------------------------
-function limo_results_OpeningFcn(hObject, eventdata, handles, varargin)
+function limo_results_OpeningFcn(hObject, ~, handles, varargin)
 handles.output = hObject;
 guidata(hObject, handles);
 
@@ -83,15 +84,12 @@ if FilterIndex ~= 0
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
     handles      = check_boot_and_tfce(handles,fullfile(PathName,FileName));
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(1,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
-
-% reset selection - but annoying behaviour really
-% uiresume
-% guidata(hObject, handles);
-% delete(handles.figure1)
-% limo_results
+limo_results
 
 % Topoplot
 % ---------------------------------------------------------------
@@ -111,9 +109,12 @@ if FilterIndex == 1
     tmp          = load([PathName filesep 'LIMO.mat']);
     handles.LIMO = tmp.LIMO; clear tmp
     check_boot_and_tfce(handles,fullfile(PathName,FileName))
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(2,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
+limo_results
 
 % course plots
 % ---------------------------------------------------------------
@@ -138,9 +139,12 @@ if FilterIndex == 1
         handles.LIMO = tmp.LIMO; clear tmp
     end
     check_boot_and_tfce(handles,fullfile(PathName,FileName));
+    uiresume
+    guidata(hObject, handles);
+    delete(handles.figure1)
     limo_display_results(3,FileName,PathName,handles.p,handles.MCC,handles.LIMO);
 end
-guidata(hObject, handles);
+limo_results
 
 % Review Design
 % --------------
@@ -283,13 +287,11 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
 
     % deal with bootstrap
     if handles.bootstrap ~= 0
-        if ~exist([filepath filesep 'H0' filesep 'H0_' filename ext],'file')
+        if ~exist([filepath filesep 'H0' filesep filename '_desc-H0' ext],'file')
             if handles.LIMO.Level == 1
-                if strncmp(filename,'con',3) || strncmp(filename,'ess',3)
+                if contains(filename,'con_') || contains(filename,'ess_')
                     if exist('warndlg2','file')
-                        warndlg2(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
-                    else
-                        warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
+                        limo_warndlg(sprintf('This contrast cannot be bootstrapped now, \nbootstrap the model and recompute the contrast'))
                     end
                 else
                     if strcmp(questdlg('Level 1: are you sure to compute all bootstraps for that subject?','bootstrap turned on','Yes','No','No'),'Yes')
@@ -303,36 +305,36 @@ if handles.bootstrap ~= 0 && handles.MCC ~= 1 || ...
                     end
                 end
             else % handles.LIMO.Level == 2
-                if contains(filename,'one_sample')
+                if contains(filename,'one_sample','IgnoreCase',true)
                         limo_random_robust(1,fullfile(handles.LIMO.dir,'Yr.mat'),...
-                            str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
-                elseif contains(filename,'two_samples')
+                            str2double(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
+                elseif contains(filename,'two_samples','IgnoreCase',true)
                         limo_random_robust(2,fullfile(handles.LIMO.dir,'Yr1.mat'),...
                             fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
-                elseif contains(filename,'paired_samples')
+                elseif contains(filename,'paired_samples','IgnoreCase',true)
                         limo_random_robust(3,fullfile(handles.LIMO.dir,'Yr1.mat'),...
                             fullfile(handles.LIMO.dir,'Yr1.mat'), str2num(filename(max(strfind(filename,'_'))+1:end)),handles.LIMO);
-                elseif contains(filename,'Covariate_effect') && contains(handles.LIMO.design.name,'Regression') 
+                elseif contains(filename,'Covariate_effect','IgnoreCase',true) && contains(handles.LIMO.design.name,'Regression','IgnoreCase',true) 
                     LIMO = handles.LIMO; LIMO.design.bootstrap = 1000;
                     save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO'); 
                     handles.LIMO = LIMO; limo_eeg(4,handles.LIMO.dir); clear LIMO
-                elseif contains(filename,'ANOVA') && ~strncmpi(filename,'Rep_ANOVA',9)
+                elseif contains(filename,'ANOVA','IgnoreCase',true) && ~strncmpi(filename,'Rep_ANOVA',9)
                         limo_random_robust(5,fullfile(handles.LIMO.dir,'Yr.mat'),...
                             handles.LIMO.data.Cat,handles.LIMO.data.Cont,handles.LIMO,'go','yes');
-                elseif contains(filename,'Rep_ANOVA')
-                    if strncmp(filename,'con',3)
+                elseif contains(filename,'Rep_ANOVA','IgnoreCase',true)
+                    if contains(filename,'con_')
                         if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
                             limo_contrast([filepath filesep 'Yr.mat'], ...
                                 [filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], handles.LIMO, 0,3);
                         else
-                            errordlg2('there is no GLM bootstrap file for this contrast file')
+                            limo_errordlg('there is no GLM bootstrap file for this contrast file')
                         end
-                    elseif strncmp(filename,'ess',3)
+                    elseif contains(filename,'ess_')
                         if exist([filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'],'file')
                             limo_contrast([filepath filesep 'Yr.mat'], ...
                                 [filepath filesep 'H0' filesep 'H0_' filesep 'H0_Betas.mat'], handles.LIMO, 1,3);
                         else
-                            errordlg2('there is no bootstrap file for this contrast file')
+                            limo_errordlg('there is no bootstrap file for this contrast file')
                         end
                     else
                         disp('Bootstraping Repeated Measure ANOVA')

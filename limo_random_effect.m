@@ -37,6 +37,7 @@ end
 %   Executes just before the menu is made visible
 % --------------------------------------------------
 function limo_random_effect_OpeningFcn(hObject, ~, handles, varargin)
+set(hObject, 'DockControls', 'off', 'WindowStyle', 'normal');
 handles.output = hObject;
 guidata(hObject, handles);
 
@@ -46,7 +47,7 @@ handles.tfce      = 0;
 handles.type      = 'Channels';
 handles.dir       = [];
 handles.chan_file = [];
-handles         = get_chan_loc(handles);
+handles           = get_chan_loc(handles);
 guidata(hObject, handles);
 % uiwait(handles.figure1);
 
@@ -74,8 +75,11 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
-        limo_central_tendency_and_ci(handles.chan_file);
+        uiresume
         guidata(hObject, handles);
+        delete(handles.figure1)
+        limo_central_tendency_and_ci(handles.chan_file);
+
     end
 else
     disp('Currently only supporting channel anaysis type')
@@ -95,10 +99,14 @@ if strcmpi(handles.type,'Channels')
                 return
             end
         end
-        limo_central_tendency_and_ci(handles.chan_file);
+        uiresume
         guidata(hObject, handles);
+        delete(handles.figure1)
+        limo_central_tendency_and_ci(handles.chan_file);
     end
+    set(hObject, 'Visible', 'off'); 
     limo_plot_difference;
+    set(hObject, 'Visible', 'on'); 
     guidata(hObject, handles);
 else
     disp('Currently only supporting channel anaysis type')
@@ -180,11 +188,15 @@ guidata(hObject, handles);
 function One_Sample_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
-go = update_dir(handles,'one_sample_ttest');
+go = update_dir(handles,'One_Sample_Ttest');
 if go == 0
     return
 else
@@ -206,11 +218,15 @@ end
 function Two_Samples_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
-go = update_dir(handles,'two_samples_ttest');
+go = update_dir(handles,'Two_Samples_Ttest');
 if go == 0
     return
 else
@@ -231,11 +247,15 @@ end
 function Paired_t_test_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
-go = update_dir(handles,'paired_ttest');
+go = update_dir(handles,'Paired_Samples_Ttest');
 if go == 0
     return
 else
@@ -255,23 +275,30 @@ end
 function Regression_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
-go = update_dir(handles,'regression');
+go = update_dir(handles,'Regression');
 if go == 0
     return
 else
     if strcmpi(handles.type,'Channels')
         go = test_chan_loc(handles);
         if go
+            uiresume
             limo_random_select('regression',handles.chan_file,'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
         end
     else
+        uiresume
         limo_random_select('regression',[],'nboot',handles.b,'tfce',handles.tfce,'type',handles.type);
     end
 end
+
 
 % ANOVA/ANCOVA
 % ---------------------------------------------------------------
@@ -280,8 +307,12 @@ end
 function ANOVA_Callback(~, ~, handles)
 
 limo_settings_script; % set STUDY and limo_settings
-if ~isempty(limo_settings.workdir)
-    cd(limo_settings.workdir);
+if  ~isempty(handles.dir)
+    cd(handles.dir)
+else
+    if ~isempty(limo_settings.workdir)
+        cd(limo_settings.workdir);
+    end
 end
 
 answer = limo_questdlg('Which of the following ANOVA models following do you want to apply to the data (bold value is the default)?', 'Model selection', ...
@@ -412,12 +443,11 @@ if strcmpi(handles.type,'channels')
     if ~isempty(STUDY) && isfield(STUDY, 'limo') && isfield(STUDY.limo, 'chanloc')
         if ~isempty(STUDY.limo.chanloc)
             handles.chan_file = STUDY.limo.chanloc;
+            warning('using study channel location from STUDY');
         end
     end
 end
-if ~isempty(handles.chan_file)
-    fprintf('using study channel location file \n%s\n',handles.chan_file);
-end
+
 
 % -----------------------------------------------------------------------
 % subfunction called before calling the others to test chanlocs is loaded

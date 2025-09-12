@@ -229,7 +229,7 @@ if ~isempty(Cat)
     end
     
     % sort Cat column wise - apply to Cont and Y
-    [Cat,index] = sortrows(Cat,[1:size(Cat,2)]);
+    [Cat,index] = sortrows(Cat,1:size(Cat,2));
     
     if add_cont == 1
         for i=1:size(Cont,2)
@@ -255,7 +255,7 @@ if ~isempty(Cat)
         for i=min(column):max(column)
             tmp = find(column==i);
             if ~isempty(tmp) % use this trick so that any number can be used as event marker
-                nb_conditions(index_nb_conditions) = condition_count+1;
+                nb_conditions(index_nb_conditions) = condition_count+1; %#ok<*AGROW>
                 condition_count = condition_count+1;
                 indices_conditions{index_indices_conditions}=tmp;
                 index_indices_conditions = index_indices_conditions+1;
@@ -295,7 +295,7 @@ if ~isempty(Cat)
         if size(higher_interaction,2) ~= prod(nb_conditions)
             errordlg(sprintf('the design is too unbalanced to be corrected \n can''t run full factorial'))
             nb_interactions = 0; X = [full_design ones(size(Yr,3),1)];
-            full_factorial = 0; LIMO.design.fullfactorial = 0;
+            LIMO.design.fullfactorial = 0;
             save('LIMO.mat','LIMO',"-v7.3")
         else
             nb_trials = sum(higher_interaction);
@@ -356,28 +356,32 @@ try
     Betas = NaN(size(Yr,1),size(Yr,2),size(X,2));
     
     % only for univariate analyses
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];    
+    end      
     if strcmp(type_of_analysis,'Mass-univariate')
         R2 = NaN(size(Yr,1),size(Yr,2),3);
-        save('R2.mat','R2',"-v7.3")
+        save([subname 'R2.mat'],'R2',"-v7.3")
     end
     
     % these ones will be created in limo_eeg
-    if nb_conditions ~=0
-        tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(nb_conditions),2);
-    end
+    % if nb_conditions ~=0
+    %     tmp_Condition_effect = NaN(size(Yr,1),size(Yr,2),length(nb_conditions),2);
+    % end
+    % 
+    % if nb_interactions ~=0
+    %     tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(nb_interactions),2);
+    % end
+    % 
+    % if nb_continuous ~=0
+    %     tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
+    % end
     
-    if nb_interactions ~=0
-        tmp_Interaction_effect = NaN(size(Yr,1),size(Yr,2),length(nb_interactions),2);
-    end
-    
-    if nb_continuous ~=0
-        tmp_Covariate_effect = NaN(size(Yr,1),size(Yr,2),nb_continuous,2);
-    end
-    
-    save('Yhat.mat','Yhat',"-v7.3");   clear Yhat
-    save('Betas.mat','Betas',"-v7.3"); clear Betas
-    save('Res.mat','Res',"-v7.3");     clear Res
-    save('Yr.mat','Yr',"-v7.3");      clear Yr R2
+    save([subname 'Yhat.mat'],'Yhat',"-v7.3");   clear Yhat
+    save([subname 'Betas.mat'],'Betas',"-v7.3"); clear Betas
+    save([subname 'Res.mat'],'Res',"-v7.3");     clear Res
+    save([subname 'Yr.mat'],'Yr',"-v7.3");       clear Yr R2
     
     if nb_conditions ~=0; clear tmp_Condition_effect; end
     if nb_interactions ~=0; clear tmp_Interaction_effect; end

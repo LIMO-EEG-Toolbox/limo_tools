@@ -84,11 +84,16 @@ if LIMO.Level == 1 || ...
             if ~exist(LIMO.dir,'dir')
                 LIMO.dir = pwd;
             end
-            limo_contrast(fullfile(LIMO.dir,'Yr.mat'), fullfile(LIMO.dir,'Betas.mat'), LIMO, handles.F,1);
+            Yfile = dir(fullfile(LIMO.dir,'*Yr.mat'));
+            Bfile = dir(fullfile(LIMO.dir,'*Betas.mat'));
+            limo_contrast(fullfile(LIMO.dir,Yfile.name), fullfile(LIMO.dir,Bfile.name), LIMO, handles.F,1);
 
             if LIMO.design.bootstrap ~= 0 && strcmpi(choice,'compute bootstrap contrast')
-                Yr = load(fullfile(LIMO.dir,'Yr.mat')); Yr = Yr.Yr;
-                H0_Betas = load(fullfile(LIMO.dir,['H0' filesep 'H0_Betas.mat'])); H0_Betas = H0_Betas.H0_Betas;
+                Yr       = load(fullfile(LIMO.dir,Yfile.name)); 
+                Yr       = Yr.Yr;
+                H0Bfile  = dir(fullfile(LIMO.dir,['H0' filesep '*BetasH0.mat']));
+                H0_Betas = load(fullfile(H0Bfile.folder,H0Bfile.name)); 
+                H0_Betas = H0_Betas.H0_Betas;
                 if strcmp(LIMO.Analysis ,'Time-Frequency')
                     disp('preparing Time-Frequency H0 data matrix');
                     tmp = zeros(size(H0_Betas,1), size(H0_Betas,2)*size(H0_Betas,3), size(H0_Betas,4), size(H0_Betas,5));

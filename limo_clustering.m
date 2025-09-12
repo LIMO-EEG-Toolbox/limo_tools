@@ -99,10 +99,12 @@ end
 if MCC == 2 && size(bootM,1)==1 || MCC == 3
     % 1st get the distribution of maxima under H0
     [th,boot_maxclustersum]           = limo_ecluster_make(squeeze(bootM),squeeze(bootP),p);   
-    max_th                            = th.elec;
+    max_th                            = max(th.elec);
     % 2nd threshold observed data
     [sigcluster, cluster_pval,maxval] = limo_ecluster_test(squeeze(M),squeeze(P),th,p, boot_maxclustersum);
     mask                              = sigcluster.elec_mask; 
+    boot_maxclustersum                = max(boot_maxclustersum,[],1);
+    maxval                            = max(maxval);
 end
 
 %% plot

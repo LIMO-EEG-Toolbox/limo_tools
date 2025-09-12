@@ -9,7 +9,8 @@ function [M, mask, mytitle] = limo_stat_values(varargin)
 %         p        = p value for thresholding
 %         MCC      = multiple comparisons option
 %                    1 none
-%                    2 clustering
+%                    2 clustering (spatial-temporal, unless one
+%                    channel/IC/source) ; HACK for temporal only line 61
 %                    3 TFCE
 %                    4 Max
 %         LIMO     = LIMO.mat structure
@@ -37,11 +38,11 @@ if onPath == 0
     addpath([root filesep 'help'])
 end
 
-FileName  = varargin{1}; % Name of the file selected
-p         = varargin{2}; % p value
-MCC       = varargin{3}; % multiple comparison option
-LIMO      = varargin{4}; % LIMO.mat
-plotFlag  = true;        % always display if clustering fails
+FileName   = varargin{1}; % Name of the file selected
+p          = varargin{2}; % p value
+MCC        = varargin{3}; % multiple comparison option
+LIMO       = varargin{4}; % LIMO.mat
+plotFlag   = true;        % always display if clustering fails
 
 % check the appropriate method is used
 % -----------------------------------
@@ -53,17 +54,32 @@ if isfield(LIMO,'Type')
 end
 
 % check that a neighbouring matrix is there for clustering
+% set the default clustering method
 % -------------------------------------------------------
 if MCC == 2
     limo_check_neighbourghs(LIMO)
+    clustering_method = 2; % statio-temporal clustering by default, change to 3 for temporal
+end
+
+%% Deal with each case of FileName
+[~,FileName,ext] = fileparts(FileName);
+if LIMO.Level == 1
+    subname = limo_get_subname(LIMO.dir);
+    if ~isempty(subname)
+        subname = [subname '_desc-'];
+    end
+else
+    subname = [];
 end
 
 % load data and set outputs to empty
 % ----------------------------------
-if exist(FileName,'file')
+if exist([FileName ext],'file')
     matfile = load(FileName);
-else
+elseif exist(fullfile(LIMO.dir,[FileName ext]),'file')
     matfile = load(fullfile(LIMO.dir,FileName));
+else
+    matfile = load(fullfile(LIMO.dir,[subname FileName ext]));
 end
 M       = []; 
 mask    = []; 
@@ -98,114 +114,167 @@ if MCC ~= 1
     fprintf('computing corrected statistics at %s...\n',datetime('now','Format','hh:mm:ss'));
 end
 
-
-%% Deal with each case of FileName
-
 % -------------------------------
-%% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA
-% ------------------------------------------------------------------------
+%% GLM (from 1st or 2nd level) also robust regresion, robust ANOVA, any contrasts
+% ------------------------------------------------------------------------------
 if strcmpi(LIMO.Analysis,'Time-Frequency')
-    if strcmp(FileName,'R2.mat')
+    if contains(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,:,2)); % F values
         Pval      = squeeze(matfile.R2(:,:,:,3)); % P values
-        MCC_data  = 'H0_R2.mat';
+        if LIMO.Level == 1
+            MCC_data  = [subname 'desc-R2H0.mat'];
+        else
+            MCC_data  = 'R2_desc-H0.mat';
+        end
         titlename = 'R^2 Coef';
-    elseif strncmp(FileName,'Condition_effect',16)
-        effect_nb = eval(FileName(18:end-4));
+    elseif contains(FileName,'Condition_effect')
+        effect_nb = extractAfter(FileName,'Condition_effect_');
         M         = squeeze(matfile.Condition_effect(:,:,:,1));
         Pval      = squeeze(matfile.Condition_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
-        titlename = sprintf('Condition effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'Covariate_effect',16)
-        effect_nb = eval(FileName(18:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sCondition_effectH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Condition_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Condition effect %s  F values',effect_nb);
+    elseif contains(FileName,'Covariate_effect')
+        effect_nb = extractAfter(FileName,'Covariate_effect_');
         M         = squeeze(matfile.Covariate_effect(:,:,:,1));
         Pval      = squeeze(matfile.Covariate_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
-        titlename = sprintf('Covariate effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'Interaction_effect',18)
-        effect_nb = eval(FileName(20:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sCovariate_effectH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Covariate_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Covariate effect %s  F values',effect_nb);
+    elseif contains(FileName,'Interaction_effect')
+        effect_nb = extractAfter(FileName,'Interaction_effect_');
         M         = squeeze(matfile.Interaction_effect(:,:,:,1));
         Pval      = squeeze(matfile.Interaction_effect(:,:,:,2));
-        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
-        titlename = sprintf('Interaction effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'semi_partial_coef',17)
-        effect_nb = eval(FileName(19:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sInteraction_effectH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Interaction_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Interaction effect %s  F values',effect_nb);
+    elseif contains(FileName,'semi_partial_coef')
+        effect_nb = extractAfter(FileName,'semi_partial_coef_');
         M         = squeeze(matfile.semi_partial_coef(:,:,:,2));
         Pval      = squeeze(matfile.semi_partial_coef(:,:,:,3));
-        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%ssemi_partial_coefH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('semi_partial_coef_%s_desc-H0.mat',effect_nb);
+        end
         titlename = sprintf('Semi Partial Coef %g',effect_nb);
-    elseif strncmp(FileName,'con_',4)
-        effect_nb = eval(FileName(5:end-4));
+    elseif contains(FileName,'con_')
+        effect_nb = extractAfter(FileName,'con_');
         M         = squeeze(matfile.con(:,:,:,4));
         Pval      = squeeze(matfile.con(:,:,:,5));
-        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sconH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('con_%s_desc-H0.mat',effect_nb);
+        end
         titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
+    elseif contains(FileName,'Ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
-        MCC_data  = sprintf('H0_%s', FileName);
+        MCC_data  = sprintf('%s_desc-H0.mat',FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
-    elseif strncmp(FileName,'ess_',4)
-        effect_nb = eval(FileName(5:end-4));
+    elseif contains(FileName,'ess_')
+        effect_nb = extractAfter(FileName,'ess_');
         M         = squeeze(matfile.ess(:,:,:,end-1));
         Pval      = squeeze(matfile.ess(:,:,:,end));
-        MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sessH0_%s.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('ess_%s_desc-H0.mat',effect_nb);
+        end
         titlename = sprintf('Contrast %g F values',effect_nb);
     end
     
 else  % same with one less dimention
-    if strcmp(FileName,'R2.mat')
+    if contains(FileName,'R2.mat')
         M         = squeeze(matfile.R2(:,:,2)); % F values
         Pval      = squeeze(matfile.R2(:,:,3)); % P values
-        MCC_data  = 'H0_R2.mat';
+        if LIMO.Level == 1
+            MCC_data  = [subname 'desc-R2H0.mat'];
+        else
+            MCC_data  = 'R2_desc-H0.mat';
+        end
         titlename = 'R^2 Coef';
-    elseif strncmp(FileName,'Condition_effect',16)
-        effect_nb = eval(FileName(18:end-4));
+    elseif contains(FileName,'Condition_effect')
+        effect_nb = extractAfter(FileName,'Condition_effect_');
         M         = squeeze(matfile.Condition_effect(:,:,1));
         Pval      = squeeze(matfile.Condition_effect(:,:,2));
-        MCC_data  = sprintf('H0_Condition_effect_%g.mat',effect_nb);
-        titlename = sprintf('Condition effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'Covariate_effect',16)
-        effect_nb = eval(FileName(18:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sCondition_effect_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Condition_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Condition effect %s  F values',effect_nb);
+    elseif contains(FileName,'Covariate_effect')
+        effect_nb = extractAfter(FileName,'Covariate_effect_');
         M         = squeeze(matfile.Covariate_effect(:,:,1));
         Pval      = squeeze(matfile.Covariate_effect(:,:,2));
-        MCC_data  = sprintf('H0_Covariate_effect_%g.mat',effect_nb);
-        titlename = sprintf('Covariate effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'Interaction_effect',18)
-        effect_nb = eval(FileName(20:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sCovariate_effect_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Covariate_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Covariate effect %s  F values',effect_nb);
+    elseif contains(FileName,'Interaction_effect')
+        effect_nb = extractAfter(FileName,'Interaction_effect_');
         M         = squeeze(matfile.Interaction_effect(:,:,1));
         Pval      = squeeze(matfile.Interaction_effect(:,:,2));
-        MCC_data  = sprintf('H0_Interaction_effect_%g.mat',effect_nb);
-        titlename = sprintf('Interaction effect %g  F values',effect_nb);
-    elseif strncmp(FileName,'semi_partial_coef',17)
-        effect_nb = eval(FileName(19:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sInteraction_effect_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('Interaction_effect_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Interaction effect %s  F values',effect_nb);
+    elseif contains(FileName,'semi_partial_coef')
+        effect_nb = extractAfter(FileName,'semi_partial_coef_');
         M         = squeeze(matfile.semi_partial_coef(:,:,2));
         Pval      = squeeze(matfile.semi_partial_coef(:,:,3));
-        MCC_data  = sprintf('H0_semi_partial_coef_%g.mat',effect_nb);
-        titlename = sprintf('Semi Partial Coef %g',effect_nb);
-    elseif strncmp(FileName,'con_',4)
-        effect_nb = eval(FileName(5:end-4));
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%ssemi_partial_coef_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('semi_partial_coef_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Semi Partial Coef %s',effect_nb);
+    elseif contains(FileName,'con_')
+        effect_nb = extractAfter(FileName,'con_');
         M         = squeeze(matfile.con(:,:,4));
         Pval      = squeeze(matfile.con(:,:,5));
-        MCC_data  = sprintf('H0_con_%g.mat',effect_nb);
-        titlename = sprintf('Contrast %g T values',effect_nb);
-    elseif contains(FileName,'ttest') || contains(FileName,'LI_Map')
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%scon_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('con_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Contrast %s T values',effect_nb);
+    elseif contains(FileName,'Ttest') || contains(FileName,'LI_Map')
         matfile   = matfile.(cell2mat(fieldnames(matfile)));
         M         = matfile(:,:,4); % T values
         Pval      = matfile(:,:,5);
-        MCC_data  = sprintf('H0_%s', FileName);
+        MCC_data  = sprintf('%s_desc-H0.mat',FileName);
         name      = FileName(1:strfind(FileName,'ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s T values',name);
-    elseif strncmp(FileName,'ess_',4)
-        effect_nb = eval(FileName(max(strfind(FileName,'_'))+1:end-4));
+    elseif contains(FileName,'ess_')
+        effect_nb = extractAfter(FileName,'ess_');
         M         = squeeze(matfile.ess(:,:,end-1));
         Pval      = squeeze(matfile.ess(:,:,end));
-        MCC_data  = sprintf('H0_ess_%g.mat',effect_nb);
-        titlename = sprintf('Contrast %g F values',effect_nb);
+        if LIMO.Level == 1
+            MCC_data  = sprintf('%sess_%sH0.mat',subname,effect_nb);
+        else
+            MCC_data  = sprintf('ess_%s_desc-H0.mat',effect_nb);
+        end
+        titlename = sprintf('Contrast %s F values',effect_nb);
     end
 end
 
@@ -257,9 +326,9 @@ elseif ~isempty(M) && MCC == 2
             
             % finally get cluster mask and corrected p-values
             if contains(FileName,'ttest') || contains(FileName,'LI_Map')
-                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
+                [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
             else
-                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,MCC,p,plotFlag); % mask and cluster p values
+                [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
             end
                 
             Nclust   = unique(mask); 
@@ -313,14 +382,27 @@ elseif ~isempty(M) && MCC == 4 % Stat max
     % correction using TFCE
     % --------------------------
 elseif ~isempty(M) && MCC == 3 % Stat max
-    if exist(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]),'file')
+    [~,Tmp] = fileparts(FileName);
+    if contains(Tmp,'sub-')
+        FileNameTmp   = [Tmp,'tfce'];
+        H0FileNameTmp = [Tmp,'tfceH0'];
+    else
+        FileNameTmp   = [Tmp,'_desc-tfce'];
+        H0FileNameTmp = [Tmp,'_desc-tfceH0'];
+    end
+    if exist(fullfile(LIMO.dir,['tfce' filesep FileNameTmp ext]),'file')
         try
-            score    = load(fullfile(LIMO.dir,['tfce' filesep 'tfce_' FileName]));
+            score    = load(fullfile(LIMO.dir,['tfce' filesep FileNameTmp ext]));
             score    = score.(cell2mat(fieldnames(score)));
-            H0_score = load(fullfile(LIMO.dir,['H0' filesep 'tfce_H0_' FileName]));
-            H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
-            [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
-            mytitle  = sprintf('%s\ncorrection using TFCE',titlename);
+            if isfile(fullfile(LIMO.dir,['H0' filesep H0FileNameTmp ext]))
+                H0_score = load(fullfile(LIMO.dir,['H0' filesep H0FileNameTmp ext]));
+                H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
+                [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
+                mytitle  = sprintf('%s\ncorrection using TFCE',titlename);
+            else
+                limo_errordlg(['H0' filesep H0FileNameTmp ext ' not found'],'tfce correction failure')
+                return
+            end
         catch ME
             limo_errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
             return
@@ -335,7 +417,7 @@ end
 % ------------------------
 
 if contains(FileName,'Rep_ANOVA')
-    
+
     % all files have dim electrode x [freq/time] frames x F/p
     if strcmp(LIMO.Analysis,'Time-Frequency') || strcmp(LIMO.Analysis,'ITC')
         M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,:,1);
@@ -344,7 +426,7 @@ if contains(FileName,'Rep_ANOVA')
         M    = matfile.(cell2mat(fieldnames(matfile)))(:,:,1);
         PVAL = matfile.(cell2mat(fieldnames(matfile)))(:,:,2);
     end
-    MCC_data = fullfile(LIMO.dir,['H0' filesep 'H0_' FileName]);
+    MCC_data = fullfile(LIMO.dir,['H0' filesep FileName '_desc-H0.mat']);
     
     % no correction for multiple testing
     % -----------------------------------
@@ -387,11 +469,7 @@ if contains(FileName,'Rep_ANOVA')
                     end
                 end
                 
-                if size(M,1) == 1
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,3,p,plotFlag); % temporal clustering
-                else
-                    [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,2,p,plotFlag); % spatial-temporal clustering
-                end
+                [mask,M] = limo_clustering(M,PVAL,bootT,bootP,LIMO,clustering_method,p,plotFlag); % spatial-temporal clustering
                 Nclust = unique(mask); Nclust = length(Nclust)-1; % mask = mask>0;
                 if Nclust <= 1; Mclust = 'cluster'; else ; Mclust = 'clusters'; end
                 if contains(FileName,'Rep_ANOVA_Interaction')
@@ -460,8 +538,8 @@ if contains(FileName,'Rep_ANOVA')
         % Correction using TFCE
         % -------------------------------------
     elseif MCC == 3 % Stat tfce
-        tfce_data    = sprintf('tfce%stfce_%s',filesep, FileName);
-        H0_tfce_data = sprintf('H0%stfce_H0_%s', filesep, FileName);
+        tfce_data    = sprintf('tfce%s%s_desc-tfce.mat',filesep, FileName);
+        H0_tfce_data = sprintf('H0%s%s_desc-tfceH0.mat', filesep, FileName);
         if exist(tfce_data,'file') && exist(H0_tfce_data,'file')
             try
                 tfce_data    = load(tfce_data);     

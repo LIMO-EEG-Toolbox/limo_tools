@@ -37,6 +37,9 @@ handles.output     = hObject;
 handles.LIMO       = varargin{1};
 handles.data3d     = varargin{2};
 handles.mask       = varargin{3};
+if isempty(handles.mask)
+    handles.mask   = ones(size(varargin{2}));
+end
 scale              = handles.data3d.*single(handles.mask>0);
 scale(scale==0)    = NaN;
 handles.cc         = limo_color_images(scale);
@@ -416,8 +419,8 @@ function gifbutton_Callback(hObject, eventdata, handles)
 
 vidObj = VideoWriter(handles.title);
 open(vidObj);
-h=figure('Name',handles.title);
-set(gcf,'Color','w','InvertHardCopy','off', 'units','normalized', 'outerposition',[0 0 1 1]);
+h = figure('Name',handles.title);
+set(h,'Color','w','InvertHardCopy','off', 'units','normalized', 'outerposition',[0 0 1 1]);
 popup_sel_index = get(handles.pop_up_dimensions, 'Value');
 if popup_sel_index == 1  % if showing elec x freq
     for t=1:size(handles.scale,3)

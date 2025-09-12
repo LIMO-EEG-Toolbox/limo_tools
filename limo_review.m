@@ -29,8 +29,8 @@ else
 end
 
 %% Display
-figure('Name','Review Design')
-set(gcf,'Color','w');
+hfig = figure('Name','Review Design');
+set(hfig,'Color','w');
 
 if size(LIMO.design.X,2) == 1
     imagesc(LIMO.design.X/2); colormap(gca, gray);

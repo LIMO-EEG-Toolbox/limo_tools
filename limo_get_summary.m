@@ -6,7 +6,10 @@ function [clusters,madeupclusters] = limo_get_summary(file,mask)
 %
 % INPUTS file is a result file like a t-test or ANOVA
 %        mask is a N-ary matrix of clusters, if binary it will try to make
-%        up clusters
+%        up clusters (the mask is generated and available in the workspace
+%        each time you visualize results, or you can get it direclty
+%        calling limo_stat_values - if in the worksapce, it is loaded 
+%        automtically)
 %
 % OUTPUTS clusters, a structure with summary statistics per cluster
 %               - eigenmode is the 'direction' of the effect size (usually,
@@ -15,10 +18,12 @@ function [clusters,madeupclusters] = limo_get_summary(file,mask)
 %               - median provided as a comparison point to eigen mode
 %               - mean provided as a comparison point to eigen mode
 %               - min and max for completeness
+%          madeupclusters is a cluster mask made when an uncorrected stat 
+%          map mask was used 
 %
-% Cyril Pernet 2022
+% Cyril Pernet 2025
 % ------------------------------
-%  Copyright (C) LIMO Team 2022
+%  Copyright (C) LIMO Team 2025
 
 clusters = [];
 

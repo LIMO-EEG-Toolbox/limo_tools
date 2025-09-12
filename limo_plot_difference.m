@@ -458,7 +458,8 @@ if strcmp(figure_flag,'on') || figure_flag == 1
     end
     
     % figure
-    figure;set(gcf,'Color','w'); 
+    hfig = figure;
+    set(hfig,'Color','w');
     subplot(3,2,[1 2 3 4]); 
     if ndims(Diff) == 4
         if strcmpi(restrict ,'time')

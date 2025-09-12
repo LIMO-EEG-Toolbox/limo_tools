@@ -12,6 +12,9 @@ cd(LIMO.dir)
 
 %% 1st check the contrasts 
 disp('contrast checking ..')
+if isstruct(C)
+    C = C.C;
+end
 for j=1:size(C,1)
     out(j,:) = limo_contrast_checking(LIMO.dir, LIMO.design.X, C(j,:));
     go = limo_contrast_checking(out(j,:),LIMO.design.X);
@@ -24,8 +27,11 @@ end
 
 fprintf('loading data - and computing contrast(s) in %s \n',pwd)
 
-Yr    = load('Yr');    Yr    = Yr.(cell2mat(fieldnames(Yr)));
-Betas = load('Betas'); Betas = Betas.(cell2mat(fieldnames(Betas)));
+name  = limo_get_subname(fileparts(limo_file));
+Yr    = load(fullfile(fileparts(limo_file),[name '_desc-Yr.mat']));    
+Yr    = Yr.(cell2mat(fieldnames(Yr)));
+Betas = load(fullfile(fileparts(limo_file),[name '_desc-Betas.mat']));    
+Betas = Betas.(cell2mat(fieldnames(Betas)));
 if isfield(LIMO,'contrast')
     previous_con = size(LIMO.contrast,2);
 else
