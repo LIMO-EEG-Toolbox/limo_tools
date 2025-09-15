@@ -410,9 +410,11 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                         regexprep(filepath, 'con_[^/]*\.mat$', 'Betas.mat');
                     Beta_files = cellfun(changeToBetas, LIMO.data.data, 'UniformOutput', false);
                 end
+                % note the data are already the correct size, so for frames
+                % we pass 1st frame = 1 and last frame the full size
                 [LIMO.design.weight.global,LIMO.design.weight.local] = ...
                     limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
-                    first_frame,last_frame ,LIMO.data.neighbouring_matrix);
+                    1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix);
             else
                 LIMO.design.method = 'Mean';
             end

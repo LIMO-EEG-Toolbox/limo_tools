@@ -57,7 +57,7 @@ for subject = 1:max(size(Beta_files))
     tmp = load(fullfile(fileparts(Beta_files{subject}),'LIMO.mat')); S.LIMO = tmp.LIMO;
     % load LIMO.mat of the subject use LIMO.data.chanloc
     out = limo_match_elec(S.LIMO.data.chanlocs, ...
-        expected_chanlocs,framestart,frameend,S.Betas);
+        expected_chanlocs,max(framestart),min(frameend),S.Betas);
     for nb = size(out,3):-1:1
         data(nb,:,:,subject) = squeeze(out(:,:,nb))';
     end
