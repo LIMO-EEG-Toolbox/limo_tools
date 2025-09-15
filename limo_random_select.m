@@ -251,6 +251,9 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     if isempty(data)
         limo_errordlg('no data were retreived - check inputs and data files','limo_random_select');
         return
+    else
+        LIMO.data.data(find(removed)) = [];
+        LIMO.data.data_dir(find(removed)) = [];
     end
 
     % if regression get regressor(s)
@@ -402,8 +405,14 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 LIMO.design.method = 'Trimmed mean';
             elseif strcmpi(LIMO.design.method,'weighted')
                 LIMO.design.method = 'Weighted mean';
+                if ~exist('Beta_files',"var")
+                    changeToBetas = @(filepath) ...
+                        regexprep(filepath, 'con_[^/]*\.mat$', 'Betas.mat');
+                    Beta_files = cellfun(changeToBetas, LIMO.data.data, 'UniformOutput', false);
+                end
                 [LIMO.design.weight.global,LIMO.design.weight.local] = ...
-                    limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs,LIMO.design.X);
+                    limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
+                    first_frame,last_frame ,LIMO.data.neighbouring_matrix);
             else
                 LIMO.design.method = 'Mean';
             end
