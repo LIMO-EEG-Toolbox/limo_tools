@@ -73,7 +73,7 @@ if type == 1 || type == 2
         Betas = Betas.(cell2mat(fieldnames(Betas)));
         if type == 2 && size(Betas,numel(size(Betas))) < 101
             warning('input Betas file is not a H0 one, checking for a H0 boostraps file')
-            H0_file = dir(fullfile(fileparts(varargin{2}),'*H0_Betas.mat'));
+            H0_file = dir(fullfile(fileparts(varargin{2}),['H0' filesep '*Betas_desc-H0.mat']));
             if exist(fullfile(H0_file.folder,H0_file.name),'file')
                 Betas = load(fullfile(H0_file.folder,H0_file.name));
                 Betas = Betas.(cell2mat(fieldnames(Betas)));    
