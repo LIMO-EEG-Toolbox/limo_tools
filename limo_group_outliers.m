@@ -1,6 +1,6 @@
 function [all_weights, channel_weights, all_errors, channel_errors,  ...
     recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
-         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix,savemodel)
+         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix)
 
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
@@ -64,10 +64,6 @@ for subject = 1:max(size(Beta_files))
     clear tmp S out
 end
 
-%Test - save data and adjacency_matrix
-% save(fullfile('E:\MThesis\GAE_python','N170_paired t-test_data.mat'), 'data');
-% save(fullfile('E:\MThesis\GAE_python','adjacency_matrix'), 'adjacency_matrix');
-
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
@@ -106,18 +102,7 @@ recon_betas_channel_weighted = zeros(size(recon_betas));
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
     fprintf('computing errors and weights subject %d\n',iSubj)
-    % Test - find the Yhat file
-    %Yhat     = load(fullfile(fileparts(Beta_files{iSubj}),'Yhat.mat'));
-    subjFolder = fileparts(Beta_files{iSubj});
-    exactFile  = fullfile(subjFolder, 'Yhat.mat');
-    if exist(exactFile, 'file')
-        Yhat = load(exactFile);
-    else
-        names = {dir(subjFolder).name};
-        tf = endsWith(names, 'Yhat.mat');
-        match = names(tf);
-        Yhat = load(fullfile(subjFolder, match{1}));
-    end
+    Yhat     = load(fullfile(fileparts(Beta_files{iSubj}),'Yhat.mat')); 
     Yhat     = Yhat.Yhat;
     tmp      = load(fullfile(fileparts(Beta_files{iSubj}),'LIMO.mat')); 
     X_matrix = tmp.LIMO.design.X;
@@ -128,8 +113,7 @@ for iSubj = 1:nSubj
     %    shape: (nBeta, nChan, nTime)
     % -------------------------------------
     recon_subj = recon_betas(:,:,:,iSubj);
-
-    for channel = size(recon_subj,2):-1:1
+     for channel = size(recon_subj,2):-1:1
         Yhat_recon(channel,:,:) =  (X_matrix*squeeze(recon_subj(:,channel,:)))';
     end
     deltaYhat  = Yhat - Yhat_recon; 

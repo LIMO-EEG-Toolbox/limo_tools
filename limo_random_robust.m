@@ -184,9 +184,7 @@ switch type
                 elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
                     if strcmpi(LIMO.design.method,{'Weighted mean'})
                         W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
-                        % Test - change the mul operation
-                        % Y = Y.*repmat(size(Y,1),W); % weights are subjects repeat over time
-                        Y = Y.* reshape(W, [1 1 numel(W)]);
+                        Y = Y.*repmat(size(Y,1),W); % weights are subjects repeat over time
                     end
                     [one_sample(channel,:,1),one_sample(channel,:,3),~,sd,n, ...
                         one_sample(channel,:,4),one_sample(channel,:,5)] = limo_ttest(1,Y,0,5/100);
@@ -227,9 +225,7 @@ switch type
                 elseif any(strcmpi(LIMO.design.method,{'Weighted mean','Mean'}))
                     if strcmpi(LIMO.design.method,{'Weighted mean'})
                         W = LIMO.design.weight.local;
-                        % data = data.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
-                        % Test - change the mul operation
-                        data = data .* reshape(W, [size(data,1) 1 size(data,3)]);
+                        data = data.*repmat(size(data,2),W); % weights are channel*subjects repeat over time
                     end
                     centered_data = data - repmat(nanmean(data,3),[1 1 size(data,3)]);
                 end
@@ -576,11 +572,8 @@ switch type
                 else 
                     if strcmpi(LIMO.design.method,{'Weighted mean'})
                         W = LIMO.design.weight.local;
-                        % data1 = data1.*repmat(size(data1,2),W); % weights are channel*subjects repeat over time
-                        % data2 = data2.*repmat(size(data2,2),W); % weights are channel*subjects repeat over time
-                        % Test - change the mul operation
-                        data1 = data1 .* reshape(W, [size(data1,1) 1 size(data1,3)]);
-                        data2 = data2 .* reshape(W, [size(data2,1) 1 size(data2,3)]);
+                        data1 = data1.*repmat(size(data1,2),W); % weights are channel*subjects repeat over time
+                        data2 = data2.*repmat(size(data2,2),W); % weights are channel*subjects repeat over time
                     end
                     data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
