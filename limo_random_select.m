@@ -1947,9 +1947,10 @@ if stattest == 1 % one sample
     index = 1;
     if all(size(LIMO.data.data)==[1 1]) % cell of cell
         LIMO.data.data = LIMO.data.data{1};
-        if size(LIMO.data.data,1) == 1
-            LIMO.data.data = LIMO.data.data';
-        end
+    end
+    
+    if size(LIMO.data.data,1) == 1
+        LIMO.data.data = LIMO.data.data';
     end
 
     for i=size(LIMO.data.data,1):-1:1 % for each subject
