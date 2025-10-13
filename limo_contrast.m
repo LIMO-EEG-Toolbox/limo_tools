@@ -73,7 +73,7 @@ if type == 1 || type == 2
         Betas = Betas.(cell2mat(fieldnames(Betas)));
         if type == 2 && size(Betas,numel(size(Betas))) < 101
             warning('input Betas file is not a H0 one, checking for a H0 boostraps file')
-            H0_file = dir(fullfile(fileparts(varargin{2}),'*H0_Betas.mat'));
+            H0_file = dir(fullfile(fileparts(varargin{2}),['H0' filesep '*Betas_desc-H0.mat']));
             if exist(fullfile(H0_file.folder,H0_file.name),'file')
                 Betas = load(fullfile(H0_file.folder,H0_file.name));
                 Betas = Betas.(cell2mat(fieldnames(Betas)));    
@@ -507,10 +507,10 @@ switch type
         % ----------------
         if Test == 0
             H0_con   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = t/p
-            filename = [subname sprintf('con_%gH0.mat',size(LIMO.contrast,2))];
+            filename = [subname sprintf('con_%g_desc-H0.mat',size(LIMO.contrast,2))];
         else
             H0_ess   = NaN(size(Y,1),size(Y,2),2,nboot); % dim 3 = F/p
-            filename = [subname sprintf('ess_%gH0.mat',size(LIMO.contrast,2))];
+            filename = [subname sprintf('ess_%g_desc-H0.mat',size(LIMO.contrast,2))];
         end
         
         
@@ -668,7 +668,7 @@ switch type
         end
         
         if LIMO.design.tfce == 1
-            limo_tfce_handling(fullfile(LIMO.dir,[filename(1:end-6) '.mat']),'checkfile','no');
+            limo_tfce_handling(fullfile(LIMO.dir,[filename(1:end-12) '.mat']),'checkfile','no');
         end
             
         % ----------------------------------------
@@ -1006,7 +1006,7 @@ switch type
                 else
                     H0_ess = H0_ess2;
                 end
-                filename2 = fullfile(LIMO.dir,['H0' filesep 'H0_ess_gp_interaction_' num2str(index) '.mat']);
+                filename2 = fullfile(LIMO.dir,['H0' filesep 'ess_gp_interaction_' num2str(index) '_desc-H0.mat']);
                 save(filename2, 'H0_ess', '-v7.3');
             end
         end
