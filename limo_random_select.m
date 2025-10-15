@@ -32,14 +32,21 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                            e.g. {[1 3],[2 4]} or {[1 3],[2 4];[1 3],[2 4]} in case of 2 groups.
 %                            use ones for con files, e.g. {[1 1],[1 1]}
 %                            Add nested cells for more repetition levels.
-%       --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
-%                (at the expection of paired t-test where group applies ie use rows)
-%                'regressor_file' a file or matrix of data to regress when stattest = 4
-%                'analysis_type' is 'Full scalp analysis' or '1 channel/component only'
-%                'channel' Index of the electrode(s) to use if '1 channel/component only'
-%                            is selected in analysis_type
-%                'type' is 'Channels' or 'Component'
-%                'method': 'robust','weighted','mean'; 
+%                 
+%                --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
+%                (at the execption of paired t-test where group applies ie use rows)
+%                
+%                'type' is 'Channels' (default), 'Component' or 'Source' (not yet supported)
+%                'analysis_type' is 'Full space analysis' or '1 channel/component/roi only'
+%                'channel' Index of channel/component/roi to use if '1 channel/component/roi only'
+%                          is selected in analysis_type
+%                'method': 'robust' (default),'weighted','mean'; 
+%                'saveGAE': 'no' (default) or 'yes' so save the GAE model
+%                            when the method is 'weighted' - this allows
+%                            xAI (weigths are always avaialble in
+%                            LIMO.design.W)
+%                'regressor_file' a file or matrix of data to regress when
+%                                 stattest = 4/regression'
 %                'nboot' is the number of bootstrap to do (default = 1000)
 %                'tfce' 0/1 indicates to computes tfce or not (default = 0)
 %                'zscore' for regression design, default [] will ask user
@@ -56,7 +63,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 % - repeated measure ANOVA with command line using Betas
 % LIMOPath = limo_random_select('Repeated Measures ANOVA',chanlocs,'LIMOfiles',...
 %     {'F:\WakemanHenson_Faces\eeg\derivatives\LIMO_Face_detection\Beta_files_FaceRepAll_GLM_Channels_Time_WLS.txt'},...
-%     'analysis type','Full scalp analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
+%     'analysis type','Full space analysis','parameters',{[1 2 3],[4 5 6],[7 8 9]},...
 %     'factor names',{'face','repetition'},'type','Channels','nboot',0,'tfce',0);
 %
 % as explained above, parameters use cell nesting, for instance a 2 x 2 x 2
@@ -68,7 +75,8 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %         data{2,N} = con2_files{N}(2); 
 %     end
 %     LIMOPath = limo_random_select('paired t-test',STUDY.limo.chanloc,...
-%         'LIMOfiles',data,'analysis_type','Full scalp analysis', 'type','Channels','nboot',101,'tfce',1);
+%         'LIMOfiles',data,'analysis_type','Full space analysis', 'type',...
+%         'Channels','method', 'weighted', 'saveGAE', 'yes','nboot',101,'tfce',1);
 %
 % Cyril Pernet, Ramon Martinez-Cancino, Arnaud Delorme
 %
@@ -132,11 +140,11 @@ LIMO.design.tfce       = 0;
 LIMO.design.electrode  = [];
 LIMO.design.component  = [];
 LIMO.design.parameters = [];
-LIMO.design.method     = [];
+LIMO.design.method     = 'robust';
 regressor_file         = [];
 analysis_type          = [];
 zopt                   = [];
-skip_design_check      = 'No';
+skip_design_check      = 'no';
 warning on
 
 for in = 1:2:(nargin-2)
@@ -147,7 +155,7 @@ for in = 1:2:(nargin-2)
             LIMO.data.data = varargin{in+1};
         end
     elseif strcmpi(varargin{in},'analysis type') || strcmpi(varargin{in},'analysis_type')
-        if any(strcmpi(varargin{in+1},{'Full scalp analysis','1 channel/component only'}))
+        if any(contains(varargin{in+1},{'Full analysis','1 only'}))
             analysis_type = varargin{in+1};
         else
             error('analysis type argument unrecognized')
@@ -174,6 +182,12 @@ for in = 1:2:(nargin-2)
         else
             error('unrecognized method selected')
         end
+    elseif strcmpi(varargin{in},'saveGAE')
+        if strcmpi(LIMO.design.method,'weighted')
+            LIMO.design.saveGAE  = varargin{in+1};
+        else
+            limo_warndlg(sprintf('saveGAE argument ignored as the method is %s\n',LIMO.design.method))
+        end
     elseif strcmpi(varargin{in},'type')
         LIMO.Type = varargin{in+1};
     elseif strcmpi(varargin{in},'nboot')
@@ -183,8 +197,24 @@ for in = 1:2:(nargin-2)
     end
 end
 
+if strcmpi(LIMO.design.method,'weighted')
+    info = limo_checkPytorchCUDA();
+    if isfield(info, "error")
+        error("Could not query PyTorch/CUDA: %s\n", info.error);
+    end
+    if info.isAvailable
+        fprintf("CUDA is available. %d GPU(s) detected.\n", info.deviceCount);
+        for i = 1:numel(info.deviceNames)
+            fprintf(" GPU %d name: %s\n", i-1, info.deviceNames{i});
+        end
+    else
+        error("CUDA is *not* available. PyTorch cannot use GPU.\n");
+    end
+end
+
 if isempty(analysis_type)
-    analysis_type = limo_questdlg('Do you want to run a full analysis or a single channel/component analysis?','type of analysis?','1 channel/component only','Full scalp analysis','Full scalp analysis');
+    analysis_type = limo_questdlg('Do you want to run the analysis for the full space or a single channel/component/roi?',...
+        'type of analysis','1 channel/component/roi only','Full space analysis','Full space analysis');
     if isempty(analysis_type)
         return
     end
@@ -994,7 +1024,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
     nb_subjects    = cellfun(@(x) size(x,ndims(x)), data);
 
     % get some nice comment in LIMO.mat
-    if strcmpi(analysis_type,'Full scalp analysis')
+    if strcmpi(analysis_type,'Full space analysis')
         if strcmpi(LIMO.Type,'Components')
             if contains(stattest,'N-Ways','IgnoreCase',true)
                 LIMO.design.name = 'N-ways ANOVA all components';
@@ -1180,7 +1210,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     % ---------------------------------------------------------------------
 
     % get some comment in LIMO.mat
-    if strcmp(analysis_type,'Full scalp analysis')
+    if strcmp(analysis_type,'Full space analysis')
         if strcmp(LIMO.Type,'Components')
             LIMO.design.name = 'Repeated measures ANOVA all components';
         else
@@ -1469,7 +1499,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             end
 
             % data are of dim size(expected_chanlocs,2), latter start/earlier stop across subjects, parameters, nb of subjects
-            if strcmp(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
+            if strcmp(analysis_type,'Full space analysis') %&& size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
 
                 if strcmpi(LIMO.Type,'Channels') && size(subj_chanlocs(subject_index).chanlocs,1) == size(tmp,1) || ...
                         strcmpi(LIMO.Type,'Channels') && size(subj_chanlocs(subject_index).chanlocs,2) == size(tmp,1)
@@ -2025,7 +2055,7 @@ if stattest == 1 % one sample
             LIMO.Type = limo_questdlg('Is the analysis on','Type is empty','Channels','Components','Channels');
         end
 
-        if strcmp(analysis_type,'Full scalp analysis')
+        if strcmp(analysis_type,'Full space analysis')
             if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(i).chanlocs) == size(tmp,1)
                 if strcmp(LIMO.Analysis,'Time-Frequency')
                     data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(i).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);
@@ -2155,7 +2185,7 @@ elseif stattest == 2 % several samples
                 ends_at = size(tmp,2) - (last_frame(subject_nb) - min(last_frame));
             end
 
-            if strcmpi(analysis_type,'Full scalp analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
+            if strcmpi(analysis_type,'Full space analysis') %&& size(subj_chanlocs(subject_nb).chanlocs,2) == size(tmp,1)
                 if strcmpi(LIMO.Type,'Channels') && length(subj_chanlocs(subject_nb).chanlocs) == size(tmp,1)
                     if strcmp(LIMO.Analysis,'Time-Frequency')
                         tmp_data(:,:,:,:,index) = limo_match_elec(subj_chanlocs(subject_nb).chanlocs,LIMO.data.expected_chanlocs,begins_at,ends_at,tmp);

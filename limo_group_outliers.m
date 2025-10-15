@@ -1,6 +1,7 @@
 function [all_weights, channel_weights, all_errors, channel_errors,  ...
     recon_betas, recon_betas_all_weighted, recon_betas_channel_weighted] = ...
-         limo_group_outliers(Beta_files, expected_chanlocs,framestart,frameend,adjacency_matrix)
+         limo_group_outliers(Beta_files, expected_chanlocs,framestart,...
+         frameend,adjacency_matrix,saveGAE)
 
 % -------------------------------------------------------------------------
 % LIMO_GROUP_OUTLIERS
@@ -25,6 +26,7 @@ function [all_weights, channel_weights, all_errors, channel_errors,  ...
 %       framestart        - 1st frame in time or freq, or [freq time]
 %       frameend          - last frame in time or freq, or [freq time]
 %       adjacency_matrix  - binary neighbouring matrix fo the graph
+%       saveGAE           - 'no' (default) or 'yes'
 %
 %   OUTPUTS:
 %       all_weights                  : 1 x nSubj array containing the global
@@ -67,8 +69,10 @@ end
 %% 1) Autoencoder -- arguments in: matrix of beta values, neighbourgh_matrix
 %             -- argument out: learned matrix of beta values
 % needed beta_values shape: [nBeta, nTime, nChan, nSubject], neighbourgh_matrix shape:[nChan,nChan] 
+% use pyenv('Version',"your python path") to change matlab calls
+PYTHONENVIRONMENT = pyenv;
+warning('MATLAB is now calling python %s\n',PYTHONENVIRONMENT.Library)
 warning('be patient - running the GAE ... ')
-% pyenv('Version',"your python path")
 
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
     datain = data, binatry_matrix = adjacency_matrix);
