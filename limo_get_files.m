@@ -81,7 +81,7 @@ while go == 1
                 end
                 uiList = { {'style' 'text' 'string' 'Pick a 1st level analysis file (beta or contrast)' } ...
                            { 'style' 'popupmenu' 'string' {fileList.name} } };
-                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }); % , 'cancel', 'Browse');
+                res = inputgui('uilist', uiList, 'geometry', { [1] [1] }); %#ok<NBRAK2> % , 'cancel', 'Browse');
                 if ~isempty(res)
                     name = fileList(res{1}).name;
                     path = fileList(res{1}).folder;
@@ -95,7 +95,7 @@ while go == 1
         txtFile = fullfile(path, name);
     else
         if exist(path2file,'file') 
-            [path,filename,filext] = fileparts(path2file);
+            [path,filename,filext] = fileparts(char(path2file));
             name = [filename filext]; clear filename filext;
         else
             limo_errordlg(sprintf('A valid path to the file must be provided \n %s not found',path2file));
@@ -112,7 +112,7 @@ while go == 1
         cd(path); cd ..
         index = index + 1;
     elseif strcmp(name(end-4:end),'study')  % select study file
-        load('-mat', name);       
+        load('-mat', name);       %#ok<LOAD>
         for f=1:size(STUDY.datasetinfo,2)
             Names{f} = STUDY.datasetinfo(f).filename;
             Paths{f} = STUDY.datasetinfo(f).filepath;
@@ -120,7 +120,7 @@ while go == 1
         end
         index = f; go = 0;
     elseif strcmp(name(end-2:end),'txt')
-        group_files = textread(fullfile(path,name),'%s','delimiter','');  % select a txt file listing all files
+        group_files = textread(fullfile(path,name),'%s','delimiter','');  %#ok<DTXTRD> % select a txt file listing all files
         for f=1:size(group_files,1)
             Files{f}            = group_files{f};
             [Paths{f},NAME,EXT] = fileparts(group_files{f});
@@ -128,7 +128,7 @@ while go == 1
         end
         index = f; go = 0;
     else
-        limo_errordlg('format not supported'); go = 0; 
+        limo_errordlg('format not supported');  
         return
     end
 
