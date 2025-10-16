@@ -141,6 +141,7 @@ LIMO.design.electrode  = [];
 LIMO.design.component  = [];
 LIMO.design.parameters = [];
 LIMO.design.method     = 'robust';
+LIMO.design.saveGAE    = [];
 regressor_file         = [];
 analysis_type          = [];
 zopt                   = [];
@@ -155,8 +156,13 @@ for in = 1:2:(nargin-2)
             LIMO.data.data = varargin{in+1};
         end
     elseif strcmpi(varargin{in},'analysis type') || strcmpi(varargin{in},'analysis_type')
-        if any(contains(varargin{in+1},{'Full analysis','1 only'}))
-            analysis_type = varargin{in+1};
+        str = char(varargin{in+1});
+        matchFullAnalysis = ~isempty(regexp(str, '(?i)\<Full\>.*\<analysis\>', 'once'));
+        match1Only = ~isempty(regexp(str, '(?i)\<1\>.*\<only\>', 'once'));
+        if matchFullAnalysis 
+            analysis_type = "Full space analysis";
+        elseif match1Only 
+            analysis_type = "1 channel/component/roi only";
         else
             error('analysis type argument unrecognized')
         end
@@ -197,20 +203,21 @@ for in = 1:2:(nargin-2)
     end
 end
 
-if strcmpi(LIMO.design.method,'weighted')
-    info = limo_checkPytorchCUDA();
-    if isfield(info, "error")
-        error("Could not query PyTorch/CUDA: %s\n", info.error);
-    end
-    if info.isAvailable
-        fprintf("CUDA is available. %d GPU(s) detected.\n", info.deviceCount);
-        for i = 1:numel(info.deviceNames)
-            fprintf(" GPU %d name: %s\n", i-1, info.deviceNames{i});
-        end
-    else
-        error("CUDA is *not* available. PyTorch cannot use GPU.\n");
-    end
-end
+% if strcmpi(LIMO.design.method,'weighted')
+%     warning('Graph-Based AutoEncoder weighting method selected, checking PyTorch and GPU')
+%     info = limo_checkPytorchCUDA();
+%     if isfield(info, "error")
+%         error("Could not query PyTorch/CUDA: %s\n", info.error);
+%     end
+%     if info.isAvailable
+%         fprintf("CUDA is available. %d GPU(s) detected.\n", info.deviceCount);
+%         for i = 1:numel(info.deviceNames)
+%             fprintf(" GPU %d name: %s\n", i-1, info.deviceNames{i});
+%         end
+%     else
+%         error("CUDA is *not* available. PyTorch cannot use GPU");
+%     end
+% end
 
 if isempty(analysis_type)
     analysis_type = limo_questdlg('Do you want to run the analysis for the full space or a single channel/component/roi?',...
@@ -444,7 +451,8 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 % we pass 1st frame = 1 and last frame the full size
                 [LIMO.design.weight.global,LIMO.design.weight.local] = ...
                     limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
-                    1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix);
+                    1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix,...
+                    LIMO.design.saveGAE);
             else
                 LIMO.design.method = 'Mean';
             end
@@ -686,7 +694,7 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         % now read
-        if list == 1 && ischar(LIMO.data.data{1}) % Case for path to the files
+        if list == 1 && isstring(LIMO.data.data{1}) % Case for path to the files
             [Names{1},Paths{1},LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
             LIMO.data.data_dir{1}                 = Paths{1};
         else % Case when all paths are provided
@@ -763,6 +771,10 @@ elseif strcmpi(stattest,'paired t-test')
             con_parameters = [str2double(con_1(1:end-4)) str2double(con_2(1:end-4))];
             if all(isnan(con_parameters))
                 clear con_parameters % was betas from command line
+            else
+                changeToBetas = @(filepath) ...
+                    regexprep(filepath, 'con_[^/]*\.mat$', 'Betas.mat');
+                Beta_files = cellfun(changeToBetas, LIMO.data.data{1}, 'UniformOutput', false);
             end
         end
 
@@ -781,6 +793,7 @@ elseif strcmpi(stattest,'paired t-test')
                 return
             end
         end
+        Beta_files = LIMO.data.data{1};
         cd(LIMO.dir);
     end
 
@@ -869,8 +882,9 @@ elseif strcmpi(stattest,'paired t-test')
     elseif strcmpi(LIMO.design.method,'weighted')
         LIMO.design.method = 'Weighted mean';
         [LIMO.design.weight.global,LIMO.design.weight.local] = ...
-            limo_group_outliers(LIMO.data.data{1},LIMO.data.expected_chanlocs,...
-            first_frame,last_frame,LIMO.data.neighbouring_matrix);
+                    limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
+                    1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix,...
+                    LIMO.design.saveGAE);
     else
         LIMO.design.method = 'Mean';
     end
@@ -2021,13 +2035,17 @@ function [data,removed] = getdata(stattest,analysis_type,first_frame,last_frame,
 data    = [];
 removed = [];
 disp('gathering data ...');
-if stattest == 1 % one sample
+if stattest == 1 % one sample/paired sample (same thing)
     index = 1;
     if all(size(LIMO.data.data)==[1 1]) % cell of cell
         LIMO.data.data = LIMO.data.data{1};
     end
 
-    for i=size(LIMO.data.data,2):-1:1 % for each subject
+    if size(LIMO.data.data,1) == 1
+        LIMO.data.data = LIMO.data.data';
+    end
+
+    for i=size(LIMO.data.data,1):-1:1 % for each subject
         tmp = load(LIMO.data.data{i});
 
         % get indices to trim data
@@ -2283,6 +2301,11 @@ elseif stattest == 2 % several samples
         data{igp} = tmp_data;
         clear tmp tmp_data
     end
+end
+
+if all(removed)
+    limo_errordlg('empty data -- all subjects were removed, something is horribly wrong')
+    return
 end
 end
 

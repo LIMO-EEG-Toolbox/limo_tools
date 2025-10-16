@@ -19,7 +19,6 @@ function [all_weights, channel_weights, all_errors, channel_errors,  ...
 %   INPUTS:
 %       Beta_files        - A string or structure pointing to the 
 %                          location(s) of .mat or .txt with Beta data.
-%                          (Currently placeholder in this code.)
 %       expected_chanlocs - A file name or struct with expected channel
 %                          locations -- allows having same channels for all
 %                          subhects
@@ -73,7 +72,9 @@ end
 PYTHONENVIRONMENT = pyenv;
 warning('MATLAB is now calling python %s\n',PYTHONENVIRONMENT.Library)
 warning('be patient - running the GAE ... ')
-
+if isempty(saveGAE)
+    saveGAE = 'no';
+end
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
     datain = data, binatry_matrix = adjacency_matrix);
 learned_betas = struct(learned_betas);
@@ -94,8 +95,6 @@ end
 recon_betas = double(recon_all);
 recon_betas = permute(recon_betas, [1 3 4 2]);  % now shape = (nBeta, nChan, nTime, nSubj)
 [~, nChan, ~, nSubj] = size(recon_betas);
-% save allinfo
-
 
 %% 3) Initialize error containers
 all_errors                   = zeros(1, nSubj);          % per-subject global error
@@ -152,5 +151,12 @@ channel_weights = exp(-channel_errors_normalized);    % size = (nChan, nSubj)
 
 % reformat for output
 recon_betas = permute(recon_betas,[1 3 2 4]);
+
+if strcmpi(saveGAE,'yes')
+    newdir ='Group_outlier_parametrization';
+    mkdir(newdir); cd(newdir);
+    save('reconstructed_betas',"recon_betas")
+    cd ..
+end
 
 end
