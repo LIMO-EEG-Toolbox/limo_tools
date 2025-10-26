@@ -11,18 +11,24 @@ from torch_geometric.loader import DataLoader as GeometricDataLoader
 from torch_geometric.data import Data
 from torch_geometric.utils import dense_to_sparse
 import torch_geometric.nn as pyg_nn
+import os
 
 # ===========================================
 # 1) Retrieve inputs from MATLAB
 # ===========================================
 #  MATLAB calls:
 #    learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas",
-#                              datain=beta_values, binatry_matrix=neighbourgh_matrix);
+#                              datain=beta_values, binatry_matrix=neighbourgh_matrix, saveGAE = saveGAE);
 #
 
 # ===========================================
 datain = np.array(datain)          # shape: [nBeta, nTime, nChan, nSubject] (adjust as needed)
 binatry_matrix = np.array(binatry_matrix)
+
+# Create folder to save models weights
+if saveGAE == "yes":
+    saveGAE_dir = os.path.join(os.getcwd(), "model weights")
+    os.makedirs(saveGAE_dir, exist_ok=True)
 
 # Parse shapes
 nBeta     = datain.shape[0]
@@ -191,6 +197,11 @@ for iBeta in range(nBeta):
     model_i = GraphAutoencoder(num_features=num_features, embedding_dim=32)
     model_i = train_model_all(model_i, full_loader_i, device, num_epochs=num_epochs)
     models.append(model_i)
+    if saveGAE == "yes":
+        model_path = os.path.join(saveGAE_dir, f"GAE_Weights_Beta_{iBeta+1}.pt")
+        torch.save(model_i.state_dict(), model_path) # Save trained model
+        print(f"Model weights for Beta {iBeta+1} are saved.")
+
 
     # Reconstruct data for all subjects
     # each subject is an item in full_dataset_i

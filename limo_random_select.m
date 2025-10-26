@@ -694,7 +694,7 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         % now read
-        if list == 1 && isstring(LIMO.data.data{1}) % Case for path to the files
+        if list == 1 && ischar(LIMO.data.data{1}) % Case for path to the files
             [Names{1},Paths{1},LIMO.data.data{1}] = limo_get_files([],[],[],LIMO.data.data{1});
             LIMO.data.data_dir{1}                 = Paths{1};
         else % Case when all paths are provided

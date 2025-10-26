@@ -74,9 +74,12 @@ warning('MATLAB is now calling python %s\n',PYTHONENVIRONMENT.Library)
 warning('be patient - running the GAE ... ')
 if isempty(saveGAE)
     saveGAE = 'no';
+else
+    saveGAE = lower(saveGAE);
 end
+
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
-    datain = data, binatry_matrix = adjacency_matrix);
+    datain = data, binatry_matrix = adjacency_matrix, saveGAE = saveGAE);
 learned_betas = struct(learned_betas);
 
 %% 2) Extract or reorder 'learned_betas' from the Python struct
@@ -105,7 +108,14 @@ recon_betas_channel_weighted = zeros(size(recon_betas));
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
     fprintf('computing errors and weights subject %d\n',iSubj)
-    Yhat     = load(fullfile(fileparts(Beta_files{iSubj}),'Yhat.mat')); 
+    if exist(exactFile, 'file')
+        Yhat = load(exactFile);
+    else
+        names = {dir(subjFolder).name};
+        tf = endsWith(names, 'Yhat.mat');
+        match = names(tf);
+        Yhat = load(fullfile(subjFolder, match{1}));
+    end
     Yhat     = Yhat.Yhat;
     tmp      = load(fullfile(fileparts(Beta_files{iSubj}),'LIMO.mat')); 
     X_matrix = tmp.LIMO.design.X;
