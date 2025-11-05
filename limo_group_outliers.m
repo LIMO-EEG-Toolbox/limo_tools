@@ -108,16 +108,11 @@ save dump
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
     fprintf('computing errors and weights subject %d\n',iSubj)
-    if exist(exactFile, 'file')
-        Yhat = load(exactFile);
-    else
-        names = {dir(subjFolder).name};
-        tf = endsWith(names, 'Yhat.mat');
-        match = names(tf);
-        Yhat = load(fullfile(subjFolder, match{1}));
-    end
+    fpath    = fileparts(Beta_files{iSubj});
+    name     = limo_get_subname(Beta_files{iSubj});
+    Yhat     = load(fullfile(fpath,[name '_desc-Yhat.mat']));
     Yhat     = Yhat.Yhat;
-    tmp      = load(fullfile(fileparts(Beta_files{iSubj}),'LIMO.mat')); 
+    tmp      = load(fullfile(fpath,'LIMO.mat')); 
     X_matrix = tmp.LIMO.design.X;
 
     % -------------------------------------
