@@ -104,7 +104,7 @@ all_errors                   = zeros(1, nSubj);          % per-subject global er
 channel_errors               = zeros(nChan, nSubj);      % per-channel, per-subject error
 recon_betas_all_weighted     = zeros(size(recon_betas)); % Weighted versions:
 recon_betas_channel_weighted = zeros(size(recon_betas));
-save dump 
+
 %% 4) Loop over subjects to compute errors
 for iSubj = 1:nSubj
     fprintf('computing errors and weights subject %d\n',iSubj)
