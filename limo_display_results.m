@@ -69,6 +69,7 @@ try g.sumstats;  catch, g.sumstats  = [];  end % No default values
 try g.restrict;  catch, g.restrict  = [];  end % No default values
 try g.dimvalue;  catch, g.dimvalue  = [];  end % No default values
 try g.fig;       catch, g.fig       = [];  end % Existing figure
+try g.errormode; catch, g.errormode = 'non-modal';  end % Existing figure
 
 if isequal(g.regressor, 0); g.regressor = []; end
 if ~isempty(g.plot3type)
@@ -231,7 +232,7 @@ if LIMO.Level == 1
                             if isempty(mask)
                                 data_cached = 0;
                             elseif sum(mask(:)) == 0
-                                limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                                limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
                                 return
                             else
                                 M           = LIMO.cache.fig.pval;
@@ -258,7 +259,7 @@ if LIMO.Level == 1
                     if isempty(mask)
                         disp('no values computed'); return
                     elseif sum(mask(:)) == 0
-                        limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                        limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
                         LIMO.cache.fig.name       = FileName;
                         LIMO.cache.fig.MCC        = MCC;
                         LIMO.cache.fig.stats      = [];
@@ -386,7 +387,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                            limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
                             return
                         else
                             toplot = squeeze(toplot(:,1)); % plot R2 values instead of F
@@ -425,7 +426,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                            limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
                             return
                         else
                             if strcmpi(choice,'Roy')
@@ -1185,7 +1186,7 @@ elseif LIMO.Level == 2
                 if isempty(mask)
                     data_cached = 0;
                 elseif sum(mask(:)) == 0
-                    limo_errordlg('  no values under threshold  ','no significant effect','modal');
+                    limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
                     return
                 else
                     toplot      = LIMO.cache.fig.stats;
@@ -1221,7 +1222,7 @@ elseif LIMO.Level == 2
         if isempty(mask) || sum(mask(:)) == 0
             p = 1; mask = zeros(size(M));
             assignin('base','p_values',squeeze(M))
-            limo_warndlg('  no values under threshold  ','no significant effect','modal');
+            limo_warndlg('  no values under threshold  ','no significant effect', g.errormode);
             return
         else
             assignin('base','p_values',squeeze(M))
@@ -2292,7 +2293,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % imagesc of the results
         %--------------------------
         if sum(mask(:)) == 0
-            limo_errordlg('no values under threshold parameter','no significant effect');
+            limo_errordlg('no values under threshold parameter','no significant effect', g.errormode);
         else
             scale = M.*mask;
             if min(scale(:))<0
@@ -2316,7 +2317,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % topoplot
         %--------------------------
         if sum(mask(:)) == 0
-            warndlg('no values under threshold','no significant effect');
+            warndlg('no values under threshold','no significant effect', g.errormode);
         else
             EEG.data = M.*mask;
             EEG.setname = 'Lateralization Map';
