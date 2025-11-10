@@ -48,6 +48,9 @@ if nargin == 1 || nargin == 3
         X = varargin{:,2};
         C = varargin{:,3};
     end
+    if isstruct(C)
+        C = C.C;
+    end
         
     [l,w]=size(C);
     if w ~= size(X,2)

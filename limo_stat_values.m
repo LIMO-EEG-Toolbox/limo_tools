@@ -396,10 +396,13 @@ elseif ~isempty(M) && MCC == 3 % Stat max
             score    = score.(cell2mat(fieldnames(score)));
             if isfile(fullfile(LIMO.dir,['H0' filesep H0FileNameTmp ext]))
                 H0_score = load(fullfile(LIMO.dir,['H0' filesep H0FileNameTmp ext]));
+                H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
+                [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
+                mytitle  = sprintf('%s\ncorrection using TFCE',titlename);
+            else
+                limo_errordlg(['H0' filesep H0FileNameTmp ext ' not found'],'tfce correction failure')
+                return
             end
-            H0_score = H0_score.(cell2mat(fieldnames(H0_score)));
-            [mask,M] = limo_max_correction(score,H0_score,p,plotFlag);
-            mytitle  = sprintf('%s\ncorrection using TFCE',titlename);
         catch ME
             limo_errordlg(sprintf('error log: %s \n',ME.message),'tfce correction failure')
             return

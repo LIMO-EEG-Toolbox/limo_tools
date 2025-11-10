@@ -37,7 +37,9 @@ There is also an older dataset that can be downloaded here: http://datashare.is.
 
 # LIMO versions
 
-4.1 - Updated data workflow and BIDS compliance
+4.1 / 4.1.0 - Updated data workflow and BIDS compliance
+
+4.1.1 - Updated GUI issue for contrast, 2025 figure compatibility
 
 ## Contribute
 

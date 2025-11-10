@@ -184,7 +184,7 @@ end
 hfig = figure;
 set(hfig,'Color','w','InvertHardCopy','off');
 
-% course plot at best electrode
+% course plot at best channel
 ax(3) = subplot(3,3,9);
 if ~isfield(LIMO.data, 'chanlocs') || isfield(LIMO.data,'expected_chanlocs')
     LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
@@ -247,8 +247,17 @@ if size(toplot,1) ~= 1 && ~strcmpi(LIMO.Analysis,'Time-Frequency')
     
     if isfield(LIMO,'Type')
         if strcmpi(LIMO.Type,'Components')
-            opt = {'maplimits','absmax','electrodes','off','verbose','off','colormap', limo_color_images(toplot)};
-            topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
+            % fetch topomap
+            subname = limo_get_subname(LIMO.data.data_dir);
+            map = dir(fullfile(LIMO.data.data_dir,[subname '*.icatopo']));
+            if isempty(map)
+                limo_errordlg('compute IC scalpmap to plotting results')
+            else
+                map = load(fullfile(map.folder,map.name),'-mat');
+            end
+            [xi,yi] = meshgrid(map.comp1_x,map.comp1_y);
+            compname = ['comp' num2str(e) '_grid'];
+            toporeplot(map.(compname), 'style', 'both', 'plotrad',0.5,'intrad',0.5, 'verbose', 'off','xsurface', xi, 'ysurface', yi );
         else
             topoplot(toplot(:,f),LIMO.data.chanlocs,opt{:});
         end
@@ -389,8 +398,13 @@ if dynamic == 1
                             topoplot(toplot(:,1),LIMO.data.chanlocs,opt{:});
                             title('topoplot','FontSize',12)
                         else
-                            topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
-                            title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                            if strcmpi(LIMO.Type,'Components')
+                                compname = ['comp' num2str(y) '_grid'];
+                                toporeplot(map.(compname), 'style', 'both', 'plotrad',0.5,'intrad',0.5, 'verbose', 'off','xsurface', xi, 'ysurface', yi );
+                            else
+                                topoplot(toplot(:,frame),LIMO.data.chanlocs,opt{:});
+                                title(['topoplot @ ' num2str(round(x)) 'ms'],'FontSize',12)
+                            end
                         end
                     end
                     
@@ -472,6 +486,7 @@ if dynamic == 1
         end
     end
 end
+limo_results
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
