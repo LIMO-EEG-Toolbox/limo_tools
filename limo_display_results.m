@@ -147,13 +147,13 @@ if MCC == 2 || MCC == 4 % cluster and MAX correction
                 str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
         elseif contains(FileNameTmp,'two_samples','IgnoreCase',true)
             limo_random_robust(2,fullfile(LIMO.dir,'Y1r.mat'),...
-                fullfile(LIMO.dir,'Y1r.mat'), str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
+                fullfile(LIMO.dir,'Y2r.mat'), str2double(FileNameTmp(max(strfind(FileNameTmp,'_'))+1:end)),LIMO);
         elseif contains(FileNameTmp,'paired_samples','IgnoreCase',true)
             underScoresPos = strfind(FileNameTmp,'_');
             param1         = str2double(FileNameTmp(underScoresPos(end-1)+1:underScoresPos(end)-1));
             param2         = str2double(FileNameTmp(underScoresPos(end)+1:end));
             limo_random_robust(3,fullfile(LIMO.dir,'Y1r.mat'),...
-                fullfile(LIMO.dir,'Y1r.mat'), [param1 param2],LIMO);
+                fullfile(LIMO.dir,'Y2r.mat'), [param1 param2],LIMO);
         elseif contains(FileNameTmp,'Covariate_effect','IgnoreCase',true) && contains(LIMO.design.name,'Regression','IgnoreCase',true)
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             limo_eeg(4,LIMO.dir);
