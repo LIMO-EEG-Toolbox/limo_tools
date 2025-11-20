@@ -171,6 +171,8 @@ if strcmpi(saveGAE,'yes')
     newdir ='Group_outlier_parametrization';
     mkdir(newdir); cd(newdir);
     save('reconstructed_betas',"recon_betas")
+    save('original_betas', "data")
+    save("adjacency matrix", "adjacency_matrix")
     cd ..
 end
 

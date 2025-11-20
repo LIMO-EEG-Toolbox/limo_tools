@@ -610,7 +610,7 @@ else % parallel call to the pipeline , the usual way
         poolobj = gcp('nocreate'); 
         delete(poolobj); % close parallel pool;
     catch closepool
-        disp('no parpool to close %s\n',closepool.message)
+        fprintf('no parpool to close %s\n',closepool.message)
     end
 end
 
