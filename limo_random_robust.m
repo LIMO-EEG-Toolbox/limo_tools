@@ -512,7 +512,6 @@ switch type
         % make a paired_samples file per parameter (channels, frames, [mean value, se, df, t, p])
         paired_samples = NaN(size(data1,1), size(data1,2),5);
         name = sprintf('Paired_Samples_Ttest_parameter_%d_%d',parameter(1), parameter(end));
-        
         array = intersect(find(~isnan(data1(:,1,1))),find(~isnan(data2(:,1,1))));
         for e = 1:size(array,1)
             channel = array(e);
@@ -521,14 +520,16 @@ switch type
             Y1 = tmp(1,:,find(~isnan(tmp(1,1,:))));
             if strcmpi(LIMO.design.method,'Weighted mean')
                 W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
-                Y1 = squeeze(Y1).*repmat(W',[1 size(Y1,1)])'; % weights are subjects repeat over time
+                Y1 = squeeze(Y1).*W; % weights are subjects repeat over time
+                % Y1 = squeeze(Y1).*(W./max(W)); % weights are subjects repeat over time
             end
             clear tmp
             tmp = data2(channel,:,:); 
             Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); 
             if strcmpi(LIMO.design.method,'Weighted mean')
                 W = LIMO.design.weight.local(channel,find(~isnan(tmp(1,1,:))));
-                Y2 = squeeze(Y2).*repmat(W',[1 size(Y2,1)])'; % weights are subjects repeat over time
+                Y2 = squeeze(Y2).*W; % weights are subjects repeat over time
+                % Y2 = squeeze(Y2).*(W./max(W)); % weights are subjects repeat over time
             end
             clear tmp
 
@@ -569,12 +570,11 @@ switch type
                 if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                     data1_centered = data1 - repmat(limo_trimmed_mean(data1),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(limo_trimmed_mean(data2),[1 1 size(data2,3)]);
+                elseif contains(LIMO.design.method,'Weighted Mean','IgnoreCase',true)
+                    W              = reshape(LIMO.design.weight.local, size(data1,1), 1, size(data1,3));
+                    data1_centered = (data1.*W) - repmat(nanmean((data1.*W),3),[1 1 size(data1,3)]);
+                    data2_centered = (data2.*W) - repmat(nanmean((data2.*W),3),[1 1 size(data2,3)]);                    
                 else 
-                    if strcmpi(LIMO.design.method,{'Weighted mean'})
-                        W = LIMO.design.weight.local;
-                        data1 = data1.*repmat(size(data1,2),W); % weights are channel*subjects repeat over time
-                        data2 = data2.*repmat(size(data2,2),W); % weights are channel*subjects repeat over time
-                    end
                     data1_centered = data1 - repmat(nanmean(data1,3),[1 1 size(data1,3)]);
                     data2_centered = data2 - repmat(nanmean(data2,3),[1 1 size(data2,3)]);
                 end
@@ -588,22 +588,24 @@ switch type
                     channel = array(e);
                     fprintf('bootstrapping channel %g/%g parameter %s \n',e,size(array,1),num2str(parameter')');
                     tmp = data1_centered(channel,:,:); Y1 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
-                    tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); clear tmp
+                    tmp = data2_centered(channel,:,:); Y2 = tmp(1,:,find(~isnan(tmp(1,1,:)))); 
                     if contains(LIMO.design.method,'Trimmed Mean','IgnoreCase',true)
                         parfor b=1:LIMO.design.bootstrap
-                            [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)));
+                            [t{b},~,~,~,p{b},~,~]=limo_yuend_ttest(Y1(1,:,boot_table{channel}(:,b)),...
+                                Y2(1,:,boot_table{channel}(:,b)));
                         end
-                    else % if strcmpi(LIMO.design.method,'Mean')
+                    else % 'Weighted Mean' and 'Mean'
                         parfor b=1:LIMO.design.bootstrap
-                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(1,Y1(1,:,boot_table{channel}(:,b)),Y2(1,:,boot_table{channel}(:,b)),.05);
-                        end
+                            [~,~,~,~,~,t{b},p{b}]=limo_ttest(1,Y1(1,:,boot_table{channel}(:,b)),...
+                                Y2(1,:,boot_table{channel}(:,b)),.05);
+                        end                    
                     end
                     
                     for b=1:LIMO.design.bootstrap
                         H0_paired_samples(channel,:,1,b) = t{b};
                         H0_paired_samples(channel,:,2,b) = p{b};
                     end
-                    clear t p Y1 Y2
+                    clear tmp t p Y1 Y2
                 end
                 
                 if strcmp(LIMO.Analysis,'Time-Frequency') ||  strcmp(LIMO.Analysis,'ITC')
