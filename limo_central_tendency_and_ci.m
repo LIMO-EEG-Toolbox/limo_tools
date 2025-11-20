@@ -304,6 +304,9 @@ elseif nargin == 6 || nargin == 7
         fprintf('processing subject %g\n',i);
         LIMO         = load(fullfile(Paths{i},'LIMO.mat')); 
         LIMO         = LIMO.LIMO;
+        if isfield(LIMO,'weighting')
+            Subject_weights(:,i) = LIMO.weighting.channels;
+        end
         limo.Type{i} = LIMO.Type;
 
         if all(is_limo)
@@ -931,12 +934,14 @@ if ~isempty(data)
         end
     end
     
-    disp('processing data across subjects ..')
     % --------------------------------------------------------------
+    % --------------------------------------------------------------
+    disp('processing data across subjects ..')
     if nargout == 1 && exist('limo','var')
         result.limo = limo;
     end
         
+    % --------------------------------------------------------------
     if strcmpi(Estimator2,'Mean') || strcmpi(Estimator2,'All')
         disp('Compute the Mean estimator and 95% CI ...')
         index = 1; h = waitbar(0,'computing','name','% done');
@@ -972,6 +977,73 @@ if ~isempty(data)
                     index            = index+1;
                     tmp              = squeeze(data(channel,:,k,:));
                     Y                = tmp(:,~isnan(tmp(1,:)));
+                    [est,ci]         = limo_central_estimator(Y,'mean');
+                    M(channel,:,k,1) = squeeze(ci(1,:));
+                    M(channel,:,k,2) = squeeze(est);
+                    M(channel,:,k,3) = squeeze(ci(2,:));
+                end
+            end
+        end
+        close(h);
+        
+        if nargout ==0
+            if nargin == 3 || nargin == 4
+                newname = sprintf('%s_Mean',name);
+            else
+                newname = sprintf('%s_Mean_of_%s',name,Estimator1);
+            end
+            Data.mean = M;
+            if exist('limo','var')
+                Data.limo = limo;
+            end
+            save (newname,'Data');
+        else
+            result.mean = M;
+        end
+    end
+    
+    % --------------------------------------------------------------
+    if strcmpi(Estimator2,'Weighted Mean') || strcmpi(Estimator2,'All')
+        if ~exist('Subject_weights',"var")
+            limo_errordlg('single subject weighting not found - you need to run at least one 2nd level analysis using weighted means')
+            return
+        end
+        disp('Compute the Weighted Mean estimator and 95% CI ...')
+        index = 1; h = waitbar(0,'computing','name','% done');
+        if strcmpi(limo.Analysis,'Time-Frequency')
+            M = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
+            for k = 1:size(data,4)
+                for channel =1:size(data,1)
+                    waitbar(index/(size(data,4)*size(data,1)));
+                    index              = index+1;
+                    if  strcmpi(Analysis_type,'1 channel only')
+                        for f=size(data,2):-1:1
+                            tmp(1,f,:,:) = data(1,f,:,k,:);
+                        end
+                        tmp            = limo_tf_4d_reshape(tmp,...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    else
+                        tmp            = limo_tf_4d_reshape(squeeze(data(:,:,:,k,:)),...
+                            [size(data,1) size(data,2)*size(data,3) size(data,5)]);
+                    end
+                    tmp                = squeeze(tmp(channel,:,:));
+                    Y                  = tmp(:,~isnan(tmp(1,:)));
+                    Y                  = Y.*Subject_weights(channel,:);
+                    [est,ci]           = limo_central_estimator(Y,'mean');
+                    M(channel,:,:,k,1) = reshape(ci(1,:),size(data,2),size(data,3));
+                    M(channel,:,:,k,2) = reshape(est,size(data,2),size(data,3));
+                    M(channel,:,:,k,3) = reshape(ci(2,:),size(data,2),size(data,3));
+                end
+            end
+        else
+            M = NaN(size(data,1),size(data,2),size(data,3),3);
+            for k = 1:size(data,3)
+                for channel =1:size(data,1)
+                    waitbar(index/(size(data,3)*size(data,1)));
+                    index            = index+1;
+                    tmp              = squeeze(data(channel,:,k,:));
+                    Y                = tmp(:,~isnan(tmp(1,:)));
+                    Y                = Y.*Subject_weights(channel,:);
                     [est,ci]         = limo_central_estimator(Y,'mean');
                     M(channel,:,k,1) = squeeze(ci(1,:));
                     M(channel,:,k,2) = squeeze(est);
