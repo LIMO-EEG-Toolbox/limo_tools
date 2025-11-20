@@ -154,6 +154,16 @@ all_weights = exp(-all_errors_normalized);            % size = (1, nSubj)
 %    channel_weights => exp(-z) for each channel & subject
 channel_weights = exp(-channel_errors_normalized);    % size = (nChan, nSubj)
 
+for iSubj = 1:nSubj
+    fpath                   = fileparts(Beta_files{iSubj});
+    tmp                     = load(fullfile(fpath,'LIMO.mat')); 
+    LIMO                    = tmp.LIMO;    
+    LIMO.weighting.global   = all_weights(iSubj);
+    LIMO.weighting.channels = channel_weights(:,iSubj);
+    save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO',"-v7.3");
+end
+
+
 % reformat for output
 recon_betas = permute(recon_betas,[1 3 2 4]);
 
