@@ -32,15 +32,15 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 %                            e.g. {[1 3],[2 4]} or {[1 3],[2 4];[1 3],[2 4]} in case of 2 groups.
 %                            use ones for con files, e.g. {[1 1],[1 1]}
 %                            Add nested cells for more repetition levels.
-%                 
+%
 %                --> for LIMOfiles and parameters the rule is groups in rows, repeated measures in columns
 %                (at the execption of paired t-test where group applies ie use rows)
-%                
+%
 %                'type' is 'Channels' (default), 'Component' or 'Source' (not yet supported)
 %                'analysis_type' is 'Full space analysis' or '1 channel/component/roi only'
 %                'channel' Index of channel/component/roi to use if '1 channel/component/roi only'
 %                          is selected in analysis_type
-%                'method': 'robust' (default),'weighted','mean'; 
+%                'method': 'robust' (default),'weighted','mean';
 %                'saveGAE': 'no' (default) or 'yes' so save the GAE model
 %                            when the method is 'weighted' - this allows
 %                            xAI (weigths are always avaialble in
@@ -72,7 +72,7 @@ function LIMOPath = limo_random_select(stattest,expected_chanlocs,varargin)
 % - t-test with command line using con files
 %     for N=length(STUDY.subject):-1:1
 %         data{1,N} = con1_files{N}(1);
-%         data{2,N} = con2_files{N}(2); 
+%         data{2,N} = con2_files{N}(2);
 %     end
 %     LIMOPath = limo_random_select('paired t-test',STUDY.limo.chanloc,...
 %         'LIMOfiles',data,'analysis_type','Full space analysis', 'type',...
@@ -104,7 +104,7 @@ try
     if ischar(expected_chanlocs)
         tmp = load(expected_chanlocs);
         FN  = fieldnames(tmp);
-        if length(FN) ==1 
+        if length(FN) ==1
             if ~any(contains(FN{1},{'expected_chanlocs','channeighbstructmat'}))
                 tmp = tmp.(FN{1});
             end
@@ -159,9 +159,9 @@ for in = 1:2:(nargin-2)
         str = char(varargin{in+1});
         matchFullAnalysis = ~isempty(regexp(str, '(?i)\<Full\>.*\<analysis\>', 'once'));
         match1Only = ~isempty(regexp(str, '(?i)\<1\>.*\<only\>', 'once'));
-        if matchFullAnalysis 
+        if matchFullAnalysis
             analysis_type = "Full space analysis";
-        elseif match1Only 
+        elseif match1Only
             analysis_type = "1 channel/component/roi only";
         else
             error('analysis type argument unrecognized')
@@ -178,7 +178,7 @@ for in = 1:2:(nargin-2)
         if iscell(varargin{in+1})
             LIMO.design.parameters = varargin{in+1};
         else
-            LIMO.design.parameters = {varargin{in+1}}; 
+            LIMO.design.parameters = {varargin{in+1}};
         end
     elseif contains(varargin{in},'factor')
         LIMO.design.factor_names = varargin{in+1};
@@ -228,7 +228,7 @@ if isempty(analysis_type)
 end
 
 if evalin( 'base', 'exist(''STUDY'',''var'') == 1' )
-    global STUDY %#ok<*GVMIS,TLEV> 
+    global STUDY %#ok<*GVMIS,TLEV>
 end
 
 % ----------------------------------
@@ -267,7 +267,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
     end
 
     if isempty(parameters)
-        limo_errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error'); 
+        limo_errordlg('file selection failed or canceled, only Beta and Con files are supported','Selection error');
         return
     end
 
@@ -305,9 +305,9 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
                 if ~isempty(indvars)
                     % get variable from study, DOES NOT HANDLE multiple sessions
                     uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
-                               { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
-                               { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
-                               { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                        { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
+                        { 'style' 'text' 'string' 'These variables will be saved in the current folder as "regression_vars.txt"' } ...' ...
+                        { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
                     res = inputgui('uilist', uiList, 'geometry', { [1] [1] [1] [1]}, 'geomvert', [1 3 1 1], 'cancel', 'Browse'); %#ok<*NBRAK2>
                     if isempty(res)
                         [FileName,PathName,FilterIndex]=uigetfile('*.txt;*.mat','select regressor file');
@@ -357,7 +357,7 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
         end
 
         % adjust covariate(s) or data
-        if size(X,1) > N 
+        if size(X,1) > N
             if sum(removed) ~=0
                 try
                     index = 0;
@@ -382,10 +382,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             else
                 fprintf(2, 'loaded regressor(s) include NaN(s) - corresponding subjects are removed\n');
             end
-            
+
             sub_toremove = find(sum(isnan(X),2));
             X(sub_toremove,:) = [];
-            if numel(size(data)) == 5 
+            if numel(size(data)) == 5
                 data(:,:,:,:,sub_toremove) = [];%<--- dim 4 = parameters
             else
                 data(:,:,:,sub_toremove) = []; %<--- dim 3 = parameters
@@ -481,10 +481,10 @@ if strcmpi(stattest,'one sample t-test') || strcmpi(stattest,'regression')
             save(fullfile(LIMO.dir,'LIMO.mat'),'LIMO');
             if isempty(zopt)
                 tmpname = limo_random_robust(4,Yr,X,...
-                parameters(i),LIMO,'go',skip_design_check);
+                    parameters(i),LIMO,'go',skip_design_check);
             else
                 tmpname = limo_random_robust(4,Yr,X,...
-                parameters(i),LIMO,'zscore',zopt,'go',skip_design_check);
+                    parameters(i),LIMO,'zscore',zopt,'go',skip_design_check);
             end
 
             if nargout ~= 0
@@ -574,8 +574,8 @@ elseif strcmpi(stattest,'two-samples t-test')
     end
 
     if isempty(Names{2})
-       limo_warndlg('Could not parse files names - function aborded')
-       return
+        limo_warndlg('Could not parse files names - function aborded')
+        return
     end
 
     % check type of files and returns which beta param to test
@@ -633,7 +633,7 @@ elseif strcmpi(stattest,'two-samples t-test')
         end
 
         if size(tmp_data1,1) ~= size(tmp_data2,1) || size(tmp_data1,2) ~= size(tmp_data2,2) || size(tmp_data1,3) ~= size(tmp_data2,3)
-                limo_errordlg('file selection is corrupted, data sizes don''t match');
+            limo_errordlg('file selection is corrupted, data sizes don''t match');
             return
         end
 
@@ -784,17 +784,17 @@ elseif strcmpi(stattest,'paired t-test')
         end
 
         if size(Names{1},2) ~= size(Names{2},2)
-            limo_errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error'); 
+            limo_errordlg('the nb of files differs between pairs 1 and 2','Paired t-test error');
             return
         end
     elseif size(parameters,2) ~=2 % if it was beta file one needs a pair of parameters
-            limo_errordlg('2 parameters must be selected for beta files','Paired t-test error'); 
-            return
+        limo_errordlg('2 parameters must be selected for beta files','Paired t-test error');
+        return
     else % check Betas match design
         for s = 1:length(Paths{1})
             sub_LIMO = load(fullfile(Paths{1}{s},'LIMO.mat'));
             if max(parameters) > size(sub_LIMO.LIMO.design.X,2)
-                limo_errordlg('invalid parameter(s)','Paired t-test error'); 
+                limo_errordlg('invalid parameter(s)','Paired t-test error');
                 return
             end
         end
@@ -886,10 +886,13 @@ elseif strcmpi(stattest,'paired t-test')
         LIMO.design.method = 'Yuen t-test (Trimmed means)';
     elseif strcmpi(LIMO.design.method,'weighted')
         LIMO.design.method = 'Weighted mean';
-        [LIMO.design.weight.global,LIMO.design.weight.local] = ...
-                    limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
-                    1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix,...
-                    LIMO.design.saveGAE);
+        [LIMO.design.weight.global,LIMO.design.weight.local] = get_existingweights(Beta_files);
+        if any(isnan(LIMO.design.weight.local(:)))
+            [LIMO.design.weight.global,LIMO.design.weight.local] = ...
+                limo_group_outliers(Beta_files,LIMO.data.expected_chanlocs, ...
+                1,(last_frame-first_frame+1),LIMO.data.neighbouring_matrix,...
+                LIMO.design.saveGAE);
+        end
     else
         LIMO.design.method = 'Mean';
     end
@@ -932,7 +935,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         elseif gp_nb == maxsub
             warning('input transposed %g groups',gp_nb)
         elseif gp_nb == 1 && maxsub == 1
-            limo_errordlg('only one group detected - wrong input or test'); 
+            limo_errordlg('only one group detected - wrong input or test');
             return
         end
     else
@@ -996,7 +999,7 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
         end
 
         if contains(stattest,'ANCOVA','IgnoreCase',true) && ...
-            length(parameters) > 1 % this is only group * cov without repeated measures
+                length(parameters) > 1 % this is only group * cov without repeated measures
             limo_errordlg(sprintf('The ANCOVA model doesn''t deal with repeated measures,\n you could use contrasts per subject to create an effect to covary on'))
             return
         end
@@ -1083,12 +1086,12 @@ elseif strcmpi(stattest,'N-Ways ANOVA') || strcmpi(stattest,'ANCOVA')
                 if ~isempty(indvars)
                     % get variable from study, DOES NOT HANDLE multiple sessions
                     uiList = { { 'style' 'text' 'string' 'Select subject specific variable(s) from the EEGLAB study' } ...
-                               { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
-                               { 'style' 'checkbox' 'string' 'Compute interaction with sessions (will show as an additional covariate)' } ...
-                               { 'style' 'checkbox' 'string' 'Compute interaction with groups (will show as an additional covariate)' } ...
-                               { 'style' 'text' 'string' '' } ...
-                               { 'style' 'text' 'string' 'These variables will be saved in the current folder as "covariate_vars.txt"' } ...' ...
-                               { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
+                        { 'style' 'listbox' 'string' { indvars.label } 'max' 2} ...
+                        { 'style' 'checkbox' 'string' 'Compute interaction with sessions (will show as an additional covariate)' } ...
+                        { 'style' 'checkbox' 'string' 'Compute interaction with groups (will show as an additional covariate)' } ...
+                        { 'style' 'text' 'string' '' } ...
+                        { 'style' 'text' 'string' 'These variables will be saved in the current folder as "covariate_vars.txt"' } ...' ...
+                        { 'style' 'text' 'string' 'Alternatively, press browse to load a text file with values to regress on'} };
                     if length(STUDY.group)   < 2, uiList(4) = []; end
                     if length(STUDY.session) < 2, uiList(3) = []; end
                     res = inputgui('uilist', uiList, 'geometry', mattocell(ones(1,length(uiList))), 'geomvert', [1 3 ones(1,length(uiList)-2)], 'cancel', 'Browse');
@@ -1250,7 +1253,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if ~isempty(LIMO.data.data)
         gp_nb = size(LIMO.data.data,1);
     else
-        if exist('STUDY','var') 
+        if exist('STUDY','var')
             if isfield(STUDY,'group')
                 gp_val = length(STUDY.group);
             else
@@ -1295,25 +1298,25 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
         end
     else
         uiList = { { 'style' 'text' 'string' 'Enter repeated factors level' 'fontweight' 'bold'} ...
-                     { 'style' 'text' 'string' '(for more than 3 factors use command line, see help limo_random_select)' } ...
-                 { 'style' 'text' 'string' '' } ...
-                   { 'style' 'text' 'string' 'Name' } ...
-                   { 'style' 'text' 'string' 'Number of measures' } ...
-                   { 'style' 'text' 'string' 'Factor 1' } ...
-                   { 'style' 'edit' 'string' 'Factor 1' } ...
-                   {} { 'style' 'edit' 'string' '3' } {} ...
-                   { 'style' 'text' 'string' 'Factor 2 (if any)' } ...
-                   { 'style' 'edit' 'string' '' } ...
-                   {} { 'style' 'edit' 'string' '' } {}...
-                   { 'style' 'text' 'string' 'Factor 3 (if any)' } ...
-                   { 'style' 'edit' 'string' '' } ...
-                   {} { 'style' 'edit' 'string' '' } {} };
+            { 'style' 'text' 'string' '(for more than 3 factors use command line, see help limo_random_select)' } ...
+            { 'style' 'text' 'string' '' } ...
+            { 'style' 'text' 'string' 'Name' } ...
+            { 'style' 'text' 'string' 'Number of measures' } ...
+            { 'style' 'text' 'string' 'Factor 1' } ...
+            { 'style' 'edit' 'string' 'Factor 1' } ...
+            {} { 'style' 'edit' 'string' '3' } {} ...
+            { 'style' 'text' 'string' 'Factor 2 (if any)' } ...
+            { 'style' 'edit' 'string' '' } ...
+            {} { 'style' 'edit' 'string' '' } {}...
+            { 'style' 'text' 'string' 'Factor 3 (if any)' } ...
+            { 'style' 'edit' 'string' '' } ...
+            {} { 'style' 'edit' 'string' '' } {} };
         uiGeom = { [1] [1] [1 1 1] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] [1 1 0.3 0.3 0.3] };
         res = inputgui('uilist', uiList, 'geometry', uiGeom);
         if isempty(res)
             return;
         end
-        
+
         factor_nb = [ res{2} ' ' res{4} ' ' res{6} ];
         factor_names = { res{1} res{3} res{5} };
     end
@@ -1383,7 +1386,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             if isempty(Names{i})
                 warndlg2('files names not loaded'); return
             end
-        
+
             if isfield(LIMO.design,'parameters') && ~isempty(LIMO.design.parameters)
                 if length(factor_nb) <=2
                     parameters(i,:) = check_files(Paths{i}, Names{i},1,cell2mat(LIMO.design.parameters(i,:)));
@@ -1422,8 +1425,8 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
             LIMOtmp = load('-mat', fullfile(Paths{1}{1}, 'LIMO.mat'));
             if isfield(LIMOtmp.LIMO.design, 'labels')
                 paramLinear = parameters(i,:);
-                if iscell(paramLinear) 
-                    paramLinear = [ paramLinear{:} ]; 
+                if iscell(paramLinear)
+                    paramLinear = [ paramLinear{:} ];
                 end
                 LIMO.design.labels = LIMOtmp.LIMO.design.labels(paramLinear);
             end
@@ -1502,7 +1505,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
                     con = load(cell2mat(LIMO.data.data{h,c}(i)));
                     con = con.(cell2mat(fieldnames(con)));
                     if strcmp(LIMO.Analysis,'Time-Frequency')
-                         tmp(:,:,:,c) = con(:,:,:,1);
+                        tmp(:,:,:,c) = con(:,:,:,1);
                     else
                         tmp(:,:,c) = con(:,:,1);
                     end
@@ -1605,7 +1608,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
     if sum(single(isnan(data(:)))) == numel(data)
         limo_errordlg('the data matrix is empty! either betas.mat files are empty or there is a bug'); return
     end
-    
+
     if gp_nb ==1 && size(data,numel(size(data))-1) <= 2
         warning('the concatenated data have %g repeated measures, consider using a t-test',size(data,numel(size(data))-1))
         return
@@ -1627,7 +1630,7 @@ elseif strcmpi(stattest,'Repeated measures ANOVA')
 
     % final check
     if sum(nb_subjects) < prod(factor_nb)
-       error('there are more variables than observations, some factors can''t be estimated')
+        error('there are more variables than observations, some factors can''t be estimated')
     end
 
     % data dim [channel * frames * all param * subjects]
@@ -2405,8 +2408,11 @@ for iRow = 1:length(parameters)
 end
 res = inputgui('uilist', uiList, 'geometry', uiGeom, 'minwidth', 800);
 
-if isempty(res), parameters = []; return; end
-parameters = parameters(cell2mat(res));
+if isempty(res)
+    parameters = []; return
+else
+    parameters = parameters(cell2mat(res));
+end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2414,7 +2420,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [parameters,betas] = check_files(Paths,Names,gp,parameters,selectmode)
 % after selecting file, check they are all the same type (betas or con)
-% return parameters that match with files (eg 1 for con, or whatever value 
+% return parameters that match with files (eg 1 for con, or whatever value
 % for the beta file)
 
 betas = {};
@@ -2447,7 +2453,7 @@ if gp == 1
     end
 
     if (isempty(is_beta)) == 0 && sum(is_beta) ~= size(Names,2) || (isempty(is_con)) == 0 && sum(is_con) ~= size(Names,2)
-        error('file selection failed, only Beta or Con files are supported'); 
+        error('file selection failed, only Beta or Con files are supported');
     elseif (isempty(is_beta)) == 0 && sum(is_beta) == size(Names,2) && nargout ~= 0
         if isempty(parameters)
             if isempty(factorname) || length(factorname) > 2
@@ -2507,5 +2513,32 @@ end
 if isempty(betas) && isempty(parameters)
     error('LIMO could not match betas across subjects, the array is empty')
 end
+end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% load LIMO files and get existing subject weighting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [globalweight,localweight] = get_existingweights(filesin)
+% filesin must be a cell array of names for any files in the subject
+% folder from which to read LIMO.mat
+
+if iscell(filesin)
+    n=size(filesin,1);
+    if n==1
+        filesin = filesin';
+    end
+else
+    error('cell array in expected to load associated LIMO.mat files')
+end
+
+for f = 1:size(filesin,1)
+    sublimo = load(fullfile(fileparts(filesin{f}),'LIMO.mat'));
+    if isfield(sublimo.LIMO, 'weighting')
+        globalweight(f)  = sublimo.LIMO.weighting.global;
+        localweight(:,f) = sublimo.LIMO.weighting.channels;
+    else
+        globalweight(f)  = NaN;
+        localweight(:,f) = NaN;
+    end
+end
 end
