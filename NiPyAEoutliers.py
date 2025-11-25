@@ -27,7 +27,9 @@ binatry_matrix = np.array(binatry_matrix)
 
 # Create folder to save models weights
 if saveGAE == "yes":
-    saveGAE_dir = os.path.join(os.getcwd(), "model weights")
+    newdir = os.path.join(os.getcwd(), "Group_outlier_parametrization")
+    os.makedirs(newdir, exist_ok=True)
+    saveGAE_dir = os.path.join(newdir, "model weights")
     os.makedirs(saveGAE_dir, exist_ok=True)
 
 # Parse shapes
