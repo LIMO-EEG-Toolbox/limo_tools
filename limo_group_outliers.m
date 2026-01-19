@@ -25,7 +25,9 @@ function [all_weights, channel_weights, all_errors, channel_errors,  ...
 %       framestart        - 1st frame in time or freq, or [freq time]
 %       frameend          - last frame in time or freq, or [freq time]
 %       adjacency_matrix  - binary neighbouring matrix fo the graph
-%       saveGAE           - 'no' (default) or 'yes'
+%       saveGAE           - 'no' (default) or 'yes' or 'xai' -- 'yes' only 
+%                           stores basic data, 'xai' performs explainable AI 
+%                           operations, which is more time-consuming.
 %
 %   OUTPUTS:
 %       all_weights                  : 1 x nSubj array containing the global
@@ -72,10 +74,18 @@ end
 PYTHONENVIRONMENT = pyenv;
 warning('MATLAB is now calling python %s\n',PYTHONENVIRONMENT.Library)
 warning('be patient - running the GAE ... ')
+
+% Processing saveGAE parameter
 if isempty(saveGAE)
     saveGAE = 'no';
 else
     saveGAE = lower(saveGAE);
+    % Add python file path to python sys.path
+    thisFile = mfilename('fullpath');
+    thisDir  = fileparts(thisFile);
+    if count(py.sys.path, thisDir) == 0
+        insert(py.sys.path, int32(0), thisDir);
+    end
 end
 
 learned_betas = pyrunfile("NiPyAEoutliers.py", "learned_betas", ...
@@ -125,13 +135,13 @@ for iSubj = 1:nSubj
         Yhat_recon(channel,:,:) =  (X_matrix*squeeze(recon_subj(:,channel,:)))';
     end
     deltaYhat  = Yhat - Yhat_recon; 
-    
+
     % absolute value
     deltaYhat = abs(deltaYhat);              % shape (betas, nChan, nTime)
 
     % b) "Compute mean errors"
     all_errors(iSubj) = mean(deltaYhat(:));  % global average
-        
+
     % c) "sub_error_per_channel" = average over frames (time) and someDim
     tmp_mean                 = mean(deltaYhat, 3);   % average over trials
     channel_errors(:, iSubj) = mean(tmp_mean, 2);    % mean over time dimension => (nChan,1)
@@ -167,13 +177,89 @@ end
 % reformat for output
 recon_betas = permute(recon_betas,[1 3 2 4]);
 
-if strcmpi(saveGAE,'yes')
-    newdir ='Group_outlier_parametrization';
-    mkdir(newdir); cd(newdir);
-    save('reconstructed_betas',"recon_betas")
-    save('original_betas', "data")
-    save("adjacency matrix", "adjacency_matrix")
+% save all_weights and channel_weights
+if strcmpi(saveGAE,'yes') || strcmpi(saveGAE,'xai')
+    newdir = 'Group_outlier_parametrization';
+    if ~exist(newdir,'dir')
+        mkdir(newdir);
+    end
+    cd(newdir)
+    save('GAE-based_all_weights',"all_weights");
+    save('GAE-based_channel_weights',"channel_weights");
     cd ..
+end
+
+% plot channel and region masking and channel ablation results on scalp
+if strcmpi(saveGAE, 'xai')
+   thisDir = pwd();
+   cd('Group_outlier_parametrization'); cd('masking')
+   imp_data = load("imp_chan_all.mat").imp_chan_all(1:end-1, :, :); % remove the last beta
+   plot_importance_on_scalp(imp_data, expected_chanlocs, 'Channel Masking')
+   imp_data = load("imp_region_all.mat").imp_region_all(1:end-1, :, :);
+   plot_importance_on_scalp(imp_data, expected_chanlocs, 'Region Masking')
+
+   cd ..; cd('ablation')
+   imp_data = load("imp_chan_drop_all.mat").imp_chan_drop_all(1:end-1, :, :);
+   plot_importance_on_scalp(imp_data, expected_chanlocs, 'Channel Ablation')
+
+   cd(thisDir)
+end   
+
+function plot_importance_on_scalp(imp_data, expected_chanlocs, type)
+    plotSaveFolder = [type ' Scalp Plots'];
+    if ~exist(plotSaveFolder, 'dir')
+        mkdir(plotSaveFolder);
+    end
+
+    [nBeta, ~, ~] = size(imp_data);
+    chan_mean_norm = zeros(size(imp_data));
+    eps_val = 1e-12;
+
+    % Normalize per beta
+    for iBeta = 1:nBeta
+        X = squeeze(imp_data(iBeta,:,:));
+        denom = max(X(:));
+        denom = max(denom, eps_val);
+        chan_mean_norm(iBeta,:,:) = X ./ denom;
+    end
+
+    % mean across subjects
+    beta_chan_mean = squeeze(mean(chan_mean_norm, 2)); % [nBeta, nChan]
+    % aggregated across betas
+    final_chan_imp = mean(beta_chan_mean, 1)'; % [nChan,1]
+
+    % helper function - plot one scalp
+    function plot_one(val, title_str, filename)
+        val_centered = val - mean(val);
+        c = max(abs(val_centered));
+        figure('Color','w','NumberTitle','off','Name','limo_best_electrodes.m');
+        val_plot = val;
+        cmax = max(val_plot);
+        opt = {'electrodes','on', ...
+           'maplimits',[0 cmax], ...
+           'verbose','off', ...
+           'colormap', limo_color_images(val_plot)};
+        
+        topoplot(val_centered, expected_chanlocs, opt{:});
+        title(title_str);
+        exportgraphics(gcf, fullfile(plotSaveFolder, filename));
+        close(gcf);
+        fprintf('Saved scalp plot: %s\n', fullfile(plotSaveFolder, filename));
+    end
+
+    % plot aggregated scalp
+    filenameAgg  = 'Aggregated_Imp_scalp.png';
+    titleAgg     = 'Aggregated Importance';
+    plot_one(final_chan_imp, titleAgg, filenameAgg);
+
+    % plot each beta scalp
+    for iBeta = 1:nBeta
+        vals_beta = beta_chan_mean(iBeta, :)';  % [nChan,1]
+        filenameB = sprintf('Beta_%d_Imp_scalp.png', iBeta);
+        titleB    = sprintf('Beta %d Importance',iBeta);
+        plot_one(vals_beta, titleB, filenameB);
+    end
+
 end
 
 end
