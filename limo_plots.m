@@ -30,7 +30,7 @@ end
 % --------------------------------------------------
 is_Betas = [];
 for i=1:size(Names,2)
-    if strcmp(Names{i},'Betas.mat')
+    if contains(Names{i},'Betas.mat')
         is_Betas(i) = 1;
     end
 end
