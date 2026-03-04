@@ -36,11 +36,15 @@ elseif isfile(stringin)
     [fpath,fname] = fileparts(stringin);
     if contains(fname,'sub-')
         subname = extractAfter(fname,'sub-');
-        subname = ['sub-' subname(1:min(strfind(subname,'_'))-1)];   
+        subname = ['sub-' subname(1:min(strfind(subname,'_'))-1)]; 
+    else
+        limo_errordlg(['could not find any name in ' fname],'limo_get_subname error');
+        return
     end
+
     if ~isempty(fpath)
         subname_from_path = limo_get_subname(fpath);
-        if isempty(subname)
+        if isempty(subname_from_path)
             invalid = 1;
         else
             invalid = strcmp(subname_from_path,subname);
@@ -49,8 +53,6 @@ elseif isfile(stringin)
             limo_errordlg('conflict in sub- name between path and file')
             error('%s',subname)
         end
-    else
-        
     end        
 else
      limo_errordlg('the string passed in is not valid')

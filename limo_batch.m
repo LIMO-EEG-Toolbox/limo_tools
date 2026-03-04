@@ -320,8 +320,8 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         % build LIMO.mat files from import
         command = 'limo_batch_import_data(files_in,opt.cat,opt.cont,opt.defaults)';
-        pipeline(subject).import.command = command; %#ok<*AGROW>
-        pipeline(subject).import.files_in = model.set_files{subject};
+        pipeline(subject).import.command      = command; %#ok<*AGROW>
+        pipeline(subject).import.files_in     = model.set_files{subject};
         pipeline(subject).import.opt.defaults = model.defaults;
         
         if isfield(model.defaults,'type')
@@ -360,7 +360,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                         reuse = dir(fullfile(root,['ses-*' STUDY.datasetinfo(subject).session]));
                         if ~isempty(reuse)
                             index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
-                            root = fullfile(reuse(index).folder,reuse(index).name);
+                            root  = fullfile(reuse(index).folder,reuse(index).name);
                         else
                             root  = fullfile(root,['ses-' STUDY.datasetinfo(subject).session]);
                         end
@@ -368,9 +368,9 @@ if strcmp(option,'model specification') || strcmp(option,'both')
                         reuse = dir(fullfile(root,['ses-*' num2str(STUDY.datasetinfo(subject).session)]));
                         if ~isempty(reuse)
                             index = find(arrayfun(@(x) STUDY.datasetinfo(subject).session == eval(x.name(5:end)), reuse));
-                            root = fullfile(reuse(index).folder,reuse(index).name);
+                            root  = fullfile(reuse(index).folder,reuse(index).name);
                         else
-                            root = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
+                            root  = fullfile(root,['ses-' num2str(STUDY.datasetinfo(subject).session)]);
                         end
                     end
                 end
@@ -386,10 +386,10 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             end
             design_name = STUDY.design(STUDY.currentdesign).name;
             design_name(isspace(design_name)) = [];
-            if strfind(design_name,'STUDY.') %#ok<STRIFCND>
-                design_name = design_name(7:end);
+            if contains(design_name,'STUDY.') 
+                design_name = extractAfter(design_name,'STUDY.');
             end
-            glm_name = [STUDY.filename(1:end-6) '_' design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
+            glm_name = [extractBefore(STUDY.filename,'.study') '_' design_name '_GLM_' model.defaults.type '_' model.defaults.analysis '_' model.defaults.method];
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
             % pipeline(subject).import.opt.defaults.studyinfo = STUDY.design_info;
         else
@@ -397,18 +397,14 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             for l=min(length(LIMO_files.LIMO),length(root)):-1:1
                 common(l) = root(l) == LIMO_files.LIMO(l);
             end
-            root = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); 
+            root     = fullfile(LIMO_files.LIMO,root(min(find(diff(common))):end)); 
             glm_name = ['GLM_' model.defaults.method '_' model.defaults.analysis '_' model.defaults.type];
         end
         pipeline(subject).import.files_out = [root filesep glm_name filesep 'LIMO.mat'];
-        subname = limo_get_subname(pipeline(subject).import.files_in);
-        if ~isempty(subname)
-            subname = [subname '_desc-'];
-        end
 
         if strcmp(option,'both') && ~isfield(batch_contrast,'LIMO_files')
             batch_contrast.LIMO_files{subject} = [root filesep glm_name filesep 'LIMO.mat'];
-            batch_contrast.LIMO_files = batch_contrast.LIMO_files';
+            batch_contrast.LIMO_files          = batch_contrast.LIMO_files';
         end
         
         if ~isempty(model.cat_files)
@@ -422,19 +418,30 @@ if strcmp(option,'model specification') || strcmp(option,'both')
             pipeline(subject).import.opt.cont = [];
         end
         pipeline(subject).import.opt.defaults.name = fileparts(pipeline(subject).import.files_out);
+
+        
+        % get subject name
+        if contains(root,'sub-') % could be STUDY not BIDS but derivatives from study use sub-
+            subname = ['sub-' extractAfter(root,'sub-') '_desc-'];
+        else % not from STUDY but still sub-
+            subname = limo_get_subname(pipeline(subject).import.files_in);
+            if ~isempty(subname) % no sub- would be empty and just plain files without prefixes will be saved
+                subname = [subname '_desc-'];
+            end
+        end
         LIMO_files.mat{subject}  = [root filesep glm_name filesep 'LIMO.mat'];
         LIMO_files.Beta{subject} = [root filesep glm_name filesep subname 'Betas.mat'];
         
         % make design and evaluate
         command = 'limo_batch_design_matrix(files_in)';
-        pipeline(subject).design.command = command;
-        pipeline(subject).design.files_in = pipeline(subject).import.files_out;
-        pipeline(subject).design.files_out = [root filesep glm_name filesep subname 'Yr.mat'];
+        pipeline(subject).design.command   = command;
+        pipeline(subject).design.files_in  = pipeline(subject).import.files_out;
+        pipeline(subject).design.files_out = [extractBefore(pipeline(subject).design.files_in,'LIMO.mat') subname 'Yr.mat'];
         
         % run GLM
         command = 'limo_eeg(4,files_in)';
-        pipeline(subject).glm.command = command;
-        pipeline(subject).glm.files_in = pipeline(subject).import.files_out;
+        pipeline(subject).glm.command   = command;
+        pipeline(subject).glm.files_in  = pipeline(subject).import.files_out;
         pipeline(subject).glm.files_out = [root filesep glm_name filesep subname 'Betas.mat'];
     end
     
@@ -695,10 +702,18 @@ else
     if sum(failed) == N % all subjects
         if strcmpi(model.defaults.verbose,'noGUI')
             warning('LIMO batch done but all subjects failed.')
-            warning('This is typically due to low number of trials, setting estimation to OLS solves this.')
-            warning('It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
+            if strcmpi(model.defaults.method,'OLS')
+                warning('This can be related to a matrix rank issue (more varables than trials)')
+            else
+                warning('This is typically due to low number of trials, using smaller windows or setting estimation to OLS often solves this.')
+            end
+            % warning('It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
         else
-            limo_warndlg(sprintf('LIMO batch done but all subjects failed.\n\n- This is typically due to low number of trials, setting estimation to OLS solves this.\n- It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m'))
+            if strcmpi(model.defaults.method,'OLS')
+                limo_warndlg(sprintf('LIMO batch done but all subjects failed.\n\n This can be related to a matrix rank issue (more varables than trials)'))
+            else
+                limo_warndlg(sprintf('LIMO batch done but all subjects failed.\n\n This is typically due to low number of trials, using smaller windows or setting estimation to OLS often solves this.'))
+            end
         end
     else
         failed = find(failed);
