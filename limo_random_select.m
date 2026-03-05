@@ -2379,7 +2379,7 @@ elseif gp > 1
     end
 
     if sum(cell2mat(test)) ~= length(Names)
-        error('file selection failed, only sets of Beta or sets of Con files are supported');
+        error('file selection failed, mismatch between the number of groups and Beta/Con FILES or lists (.txt)');
     elseif ~isempty(is_beta) && sum(cell2mat(test)) == length(Names) && nargout ~= 0
         if isempty(parameters)
             parameters = eval(cell2mat(limo_inputdlg('which parameter(s) to test e.g 1','parameters option')));
