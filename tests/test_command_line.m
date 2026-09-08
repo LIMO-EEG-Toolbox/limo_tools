@@ -9,6 +9,8 @@ testCase.applyFixture(matlab.unittest.fixtures.PathFixture(root));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'external')));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'external', 'psom')));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'limo_cluster_functions')));
+testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'help')));
+testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'deprecated')));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'tests', 'fixtures', 'serial_batch')));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root, 'tests', 'fixtures', 'no_dialogs')));
 % Use a session override, never change the user's parallel preferences.
@@ -543,6 +545,61 @@ for subject = 1:18
     expected(:,:,subject,:) = loaded.Betas(selected,:,1:3);
 end
 verifyEqual(testCase, actual.Yr, expected, 'AbsTol', 1e-12);
+end
+
+function testNoSignificanceIsConsoleWarning(testCase)
+LIMO = makePrintingResult(testCase, false);
+figuresBefore = findall(groot, 'Type', 'figure');
+verifyWarning(testCase, @() limo_display_results(1, 'Condition_effect_1.mat', ...
+    pwd, 0.05, 1, LIMO, 0), 'LIMO:NoSignificantEffect');
+verifyEqual(testCase, findall(groot, 'Type', 'figure'), figuresBefore);
+end
+
+function testNoSignificancePrintingPreservesExistingFigure(testCase)
+makePrintingResult(testCase, false);
+existing = figure('Visible', 'off', 'UserData', 'unrelated result');
+verifyWarning(testCase, @() limo_eeg(5), 'LIMO:NoSignificantEffect');
+verifyTrue(testCase, isgraphics(existing));
+verifyEqual(testCase, get(existing, 'UserData'), 'unrelated result');
+verifyFalse(testCase, isfile('Condition_effect_1.fig'));
+end
+
+function testSignificantPrintingExportsOnlyNewFigure(testCase)
+makePrintingResult(testCase, true);
+existing = figure('Visible', 'off', 'UserData', 'unrelated result');
+limo_eeg(5);
+verifyTrue(testCase, isgraphics(existing));
+verifyEqual(testCase, get(existing, 'UserData'), 'unrelated result');
+verifyTrue(testCase, isfile('Condition_effect_1.fig'));
+verifyEqual(testCase, findall(groot, 'Type', 'figure'), ...
+    [existing; testCase.TestData.figures(:)]);
+end
+
+function LIMO = makePrintingResult(testCase, significant)
+loaded = load(fullfile(fileparts(testCase.TestData.betas{1}), 'LIMO.mat'));
+LIMO = loaded.LIMO;
+LIMO.Level = 2;
+LIMO.dir = pwd;
+LIMO.design.name = 'ANOVA';
+LIMO.design.nb_conditions = 3;
+LIMO.design.nb_interactions = 0;
+LIMO.design.nb_continuous = 0;
+LIMO.design.fullfactorial = 0;
+LIMO.design.bootstrap = 0;
+LIMO.design.tfce = 0;
+LIMO.design.electrode = [];
+locations = struct('labels', {'C1', 'C2', 'C3', 'C4'}, ...
+    'theta', {0, 90, 180, -90}, 'radius', {0.45, 0.45, 0.45, 0.45});
+LIMO.data.expected_chanlocs = convertlocs(locations, 'topo2all');
+LIMO.data.chanlocs = LIMO.data.expected_chanlocs;
+Condition_effect = zeros(4, 5, 2);
+Condition_effect(:,:,2) = 1;
+if significant
+    Condition_effect(:,:,1) = reshape(1:20, 4, 5);
+    Condition_effect(:,:,2) = 0.001;
+end
+save('LIMO.mat', 'LIMO');
+save('Condition_effect_1.mat', 'Condition_effect');
 end
 
 function folder = runAnalysis(testCase, kind, files, varargin)

@@ -20,3 +20,5 @@ The small suite does not replace integration testing with real EEG data. The com
 Additional summary statistics tests block both progress windows and the LIMO GUI launcher. They check returned and saved means for time and time frequency inputs. The one argument interactive entry point retains its GUI behavior.
 
 Plotting tests verify that supplied file lists terminate without requesting another file, that the variable option preserves the file list, and that selecting a subject uses the correct saved subject axis. The plotted numerical line data are checked, not only the absence of dialogs.
+
+Result printing tests check both significant and nonsignificant effects. With the noninteractive flag, an absence of significant values produces a console warning rather than a dialog. Printing exports only a newly created result figure and preserves unrelated open figures.
