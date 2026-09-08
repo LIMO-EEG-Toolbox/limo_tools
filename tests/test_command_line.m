@@ -372,6 +372,51 @@ root = fileparts(fileparts(mfilename('fullpath')));
 testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root,'tests','fixtures','no_summary_gui')));
 end
 
+function testPlotSuppliedFilesReturnsWithoutChooser(testCase)
+checkPlotSelection(testCase, 'mean', 1);
+end
+
+function testPlotSuppliedVariableDoesNotReplaceFiles(testCase)
+checkPlotSelection(testCase, 'mean', 2);
+end
+
+function testPlotSuppliedSubjectSelectsSubjectAxis(testCase)
+checkPlotSelection(testCase, 'data', 3);
+end
+
+function checkPlotSelection(testCase, field, variable)
+root = fileparts(fileparts(mfilename('fullpath')));
+testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root,'tests','fixtures','no_summary_gui')));
+LIMO = struct('Analysis','Time','data',struct('start',0,'end',40,'sampling_rate',100));
+files = cell(1,2);
+expected = zeros(2,5);
+for index = 1:2
+    Data.limo = LIMO;
+    if strcmp(field,'mean')
+        Data.mean = zeros(2,5,4,3);
+        for condition = 1:4
+            center = (1:5) + index + condition*10;
+            Data.mean(2,:,condition,1) = center - 1;
+            Data.mean(2,:,condition,2) = center;
+            Data.mean(2,:,condition,3) = center + 1;
+        end
+        expected(index,:) = Data.mean(2,:,variable,2);
+    else
+        Data.data = reshape(1:40,2,5,1,4) + index;
+        expected(index,:) = Data.data(2,:,1,variable);
+    end
+    files{index} = fullfile(pwd,sprintf('summary_%d.mat',index));
+    save(files{index},'Data');
+end
+limo_add_plots(files,LIMO,'channel',2,'variable',variable);
+figures = setdiff(findall(groot,'Type','figure'),testCase.TestData.figures);
+verifyNumElements(testCase,figures,1);
+lines = findall(figures,'Type','line');
+verifyNumElements(testCase,lines,2);
+actual = get(lines,'YData');
+verifyEqual(testCase,sortrows(vertcat(actual{:})),sortrows(expected),'AbsTol',1e-12);
+end
+
 function testSingleChannelTimeFrequencyTfceBootstrap(testCase)
 verifySingleChannelTfce(testCase, true);
 end

@@ -18,3 +18,5 @@ Test fixtures replace input dialogs with functions that throw an error. An unexp
 The small suite does not replace integration testing with real EEG data. The complementary `sccn/eeglab_tests` LIMO workflows exercise the Wakeman and Henson dataset, OLS and WLS first level models, contrasts, all seven second level analysis groups, bootstrap calculations and TFCE.
 
 Additional summary statistics tests block both progress windows and the LIMO GUI launcher. They check returned and saved means for time and time frequency inputs. The one argument interactive entry point retains its GUI behavior.
+
+Plotting tests verify that supplied file lists terminate without requesting another file, that the variable option preserves the file list, and that selecting a subject uses the correct saved subject axis. The plotted numerical line data are checked, not only the absence of dialogs.
