@@ -239,7 +239,7 @@ elseif nargin > 1
         end
 
         if ~isfield(batch_contrast,'mat')
-            errordlg('the field batch_contrast.mat is missing'); return
+            error('LIMO:InvalidContrast', 'The field batch_contrast.mat is required for a command line contrast.');
         end
     end
 end
@@ -255,7 +255,7 @@ if ~exist('STUDY','var') && evalin('base', 'exist(''STUDY'',''var'')')
     if ~isstruct(STUDY); clear STUDY; end
 end
 
-if isempty(STUDY)
+if exist('STUDY','var') && (~isstruct(STUDY) || isempty(STUDY))
     clear STUDY
 end
 
@@ -422,7 +422,7 @@ if strcmp(option,'model specification') || strcmp(option,'both')
         
         % get subject name
         if contains(root,'sub-') % could be STUDY not BIDS but derivatives from study use sub-
-            subname = ['sub-' extractAfter(root,'sub-') '_desc-'];
+            subname = [limo_get_subname(root) '_desc-'];
         else % not from STUDY but still sub-
             subname = limo_get_subname(pipeline(subject).import.files_in);
             if ~isempty(subname) % no sub- would be empty and just plain files without prefixes will be saved
@@ -475,9 +475,12 @@ if strcmp(option,'contrast only') || strcmp(option,'both')
             start = 0;
         end
         
-        subname = STUDY.datasetinfo(subject).subject;
+        subname = limo_get_subname(fileparts(batch_contrast.LIMO_files{subject}));
+        if ~isempty(subname)
+            subname = [subname '_desc-'];
+        end
         for c=1:size(batch_contrast.mat,1)
-            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname '_desc-con_' num2str(c+start) '.mat'];
+            name{c} = [fileparts(batch_contrast.LIMO_files{subject}) filesep subname 'con_' num2str(c+start) '.mat'];
         end
         pipeline(subject).n_contrast.files_out = name; % name{1};
         LIMO_files.con{subject} = name;
@@ -623,7 +626,10 @@ end
 
 %% Save txt files and warn users
 if ~isfield(model.defaults,'verbose')
-    model.defaults.verbose = ''; % if not specified, assume GUI feedback
+    model.defaults.verbose = '';
+    if nargin > 1
+        model.defaults.verbose = 'noGUI'; % Fully specified calls must not wait on a dialog.
+    end
 end
 cd(LIMO_files.LIMO)
 
@@ -702,10 +708,12 @@ else
     if sum(failed) == N % all subjects
         if strcmpi(model.defaults.verbose,'noGUI')
             warning('LIMO batch done but all subjects failed.')
-            if strcmpi(model.defaults.method,'OLS')
-                warning('This can be related to a matrix rank issue (more varables than trials)')
-            else
-                warning('This is typically due to low number of trials, using smaller windows or setting estimation to OLS often solves this.')
+            if isfield(model.defaults,'method')
+                if strcmpi(model.defaults.method,'OLS')
+                    warning('This can be related to a matrix rank issue (more varables than trials)')
+                else
+                    warning('This is typically due to low number of trials, using smaller windows or setting estimation to OLS often solves this.')
+                end
             end
             % warning('It can also be a psom/disk access issue, try setting psom to false in limo_settings_script.m')
         else
