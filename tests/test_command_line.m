@@ -342,6 +342,36 @@ function testSingleChannelTimeTfceBootstrap(testCase)
 verifySingleChannelTfce(testCase, false);
 end
 
+function testCentralSummaryReturnsWithoutPopups(testCase)
+blockSummaryGui(testCase);
+data = randn(2,5,18);
+result = limo_central_tendency_and_ci(data, 'Mean', []);
+verifyEqual(testCase, result.mean(:,:,1,2), mean(data,3), 'AbsTol', 1e-12);
+verifyEqual(testCase, findall(groot, 'Type', 'figure'), testCase.TestData.figures);
+end
+
+function testCentralSummarySavesWithoutPopups(testCase)
+blockSummaryGui(testCase);
+data = randn(2,5,18);
+limo_central_tendency_and_ci(data, 'Mean', [], 'summary');
+loaded = load('summary_Mean.mat');
+verifyEqual(testCase, loaded.Data.mean(:,:,1,2), mean(data,3), 'AbsTol', 1e-12);
+verifyEqual(testCase, findall(groot, 'Type', 'figure'), testCase.TestData.figures);
+end
+
+function testCentralSummaryTimeFrequencyWithoutPopups(testCase)
+blockSummaryGui(testCase);
+data = randn(2,3,5,18);
+result = limo_central_tendency_and_ci(data, 'Mean', []);
+verifyEqual(testCase, result.mean(:,:,:,1,2), mean(data,4), 'AbsTol', 1e-12);
+verifyEqual(testCase, findall(groot, 'Type', 'figure'), testCase.TestData.figures);
+end
+
+function blockSummaryGui(testCase)
+root = fileparts(fileparts(mfilename('fullpath')));
+testCase.applyFixture(matlab.unittest.fixtures.PathFixture(fullfile(root,'tests','fixtures','no_summary_gui')));
+end
+
 function testSingleChannelTimeFrequencyTfceBootstrap(testCase)
 verifySingleChannelTfce(testCase, true);
 end

@@ -16,3 +16,5 @@ The suite creates deterministic synthetic data for 18 subjects in temporary dire
 Test fixtures replace input dialogs with functions that throw an error. An unexpected dialog is a failure, not an automatically accepted answer. These fixtures are installed only by the test suite. **Do not add `tests/fixtures` recursively to a production MATLAB path.** Tests restore their temporary path fixtures, working directory, random state, warnings, figure visibility and base STUDY binding.
 
 The small suite does not replace integration testing with real EEG data. The complementary `sccn/eeglab_tests` LIMO workflows exercise the Wakeman and Henson dataset, OLS and WLS first level models, contrasts, all seven second level analysis groups, bootstrap calculations and TFCE.
+
+Additional summary statistics tests block both progress windows and the LIMO GUI launcher. They check returned and saved means for time and time frequency inputs. The one argument interactive entry point retains its GUI behavior.
