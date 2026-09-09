@@ -232,7 +232,7 @@ if LIMO.Level == 1
                             if isempty(mask)
                                 data_cached = 0;
                             elseif sum(mask(:)) == 0
-                                limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
+                                notify_no_significance(flag, @limo_errordlg, g.errormode);
                                 return
                             else
                                 M           = LIMO.cache.fig.pval;
@@ -259,7 +259,7 @@ if LIMO.Level == 1
                     if isempty(mask)
                         disp('no values computed'); return
                     elseif sum(mask(:)) == 0
-                        limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
+                        notify_no_significance(flag, @limo_errordlg, g.errormode);
                         LIMO.cache.fig.name       = FileName;
                         LIMO.cache.fig.MCC        = MCC;
                         LIMO.cache.fig.stats      = [];
@@ -387,7 +387,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
+                            notify_no_significance(flag, @limo_errordlg, g.errormode);
                             return
                         else
                             toplot = squeeze(toplot(:,1)); % plot R2 values instead of F
@@ -426,7 +426,7 @@ if LIMO.Level == 1
                         if isempty(mask)
                             return
                         elseif sum(mask(:)) == 0
-                            limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
+                            notify_no_significance(flag, @limo_errordlg, g.errormode);
                             return
                         else
                             if strcmpi(choice,'Roy')
@@ -1186,7 +1186,7 @@ elseif LIMO.Level == 2
                 if isempty(mask)
                     data_cached = 0;
                 elseif sum(mask(:)) == 0
-                    limo_errordlg('  no values under threshold  ','no significant effect', g.errormode);
+                    notify_no_significance(flag, @limo_errordlg, g.errormode);
                     return
                 else
                     toplot      = LIMO.cache.fig.stats;
@@ -1222,7 +1222,7 @@ elseif LIMO.Level == 2
         if isempty(mask) || sum(mask(:)) == 0
             p = 1; mask = zeros(size(M));
             assignin('base','p_values',squeeze(M))
-            limo_warndlg('  no values under threshold  ','no significant effect', g.errormode);
+            notify_no_significance(flag, @limo_warndlg, g.errormode);
             return
         else
             assignin('base','p_values',squeeze(M))
@@ -2293,7 +2293,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % imagesc of the results
         %--------------------------
         if sum(mask(:)) == 0
-            limo_errordlg('no values under threshold parameter','no significant effect', g.errormode);
+            notify_no_significance(flag, @limo_errordlg, g.errormode);
         else
             scale = M.*mask;
             if min(scale(:))<0
@@ -2317,7 +2317,7 @@ elseif strcmpi(LIMO.Level,'LI')
         % topoplot
         %--------------------------
         if sum(mask(:)) == 0
-            warndlg('no values under threshold','no significant effect', g.errormode);
+            notify_no_significance(flag, @warndlg, g.errormode);
         else
             EEG.data = M.*mask;
             EEG.setname = 'Lateralization Map';
@@ -2347,6 +2347,15 @@ end % closes the function
 %% color map
 % -------------------------------------------------------------------------
 % -------------------------------------------------------------------------
+function notify_no_significance(flag, dialog, errormode)
+% Absence of a significant effect is a valid command line result.
+if flag == 0
+    warning('LIMO:NoSignificantEffect', 'No values under threshold.');
+else
+    dialog('no values under threshold', 'no significant effect', errormode);
+end
+end
+
 function color_images_(scale,LIMO)
 
 scale(scale==0) = NaN;
@@ -2438,4 +2447,3 @@ else % freq
     end
 end
 end
-

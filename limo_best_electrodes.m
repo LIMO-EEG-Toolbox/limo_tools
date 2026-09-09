@@ -76,7 +76,11 @@ urchan_vector  = NaN(Ns,1);
 for i=Ns:-1:1
     tmp = load(name{i});
     if isfield(tmp,'LIMO')
-        tmp = load(fullfile(tmp.LIMO.dir,'R2.mat'));
+        resultfile = fullfile(tmp.LIMO.dir, [limo_get_subname(tmp.LIMO.dir) '_desc-R2.mat']);
+        if ~exist(resultfile,'file')
+            resultfile = fullfile(tmp.LIMO.dir,'R2.mat'); % legacy and second level outputs
+        end
+        tmp = load(resultfile);
     end
     tmp = tmp.(cell2mat(fieldnames(tmp)));
     
@@ -95,7 +99,7 @@ for i=Ns:-1:1
         end
         
         LIMO = load([fileparts(name{i}) filesep 'LIMO.mat']); LIMO = LIMO.LIMO;
-        if ~isempty(LIMO.data.chanlocs(channel_vector(i)).urchan)
+        if isfield(LIMO.data.chanlocs,'urchan') && ~isempty(LIMO.data.chanlocs(channel_vector(i)).urchan)
             urchan_vector(i) = LIMO.data.chanlocs(channel_vector(i)).urchan;
         end
         fprintf('subject %g analysed \n',i);
@@ -170,5 +174,4 @@ if sum(isnan(channel_vector)) == 0 && nargin ==0 || ...
         cd(current_dir)
     end
 end
-
 
