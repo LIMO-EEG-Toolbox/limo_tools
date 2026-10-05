@@ -429,6 +429,15 @@ if LIMO.design.bootstrap ~=0
                 end
             end
             
+            if ~strcmpi(LIMO.Analysis,'Time-Frequency')
+                % --- non time-frequency: channel-streamed, resumable and
+                %     memory-bounded (the full [chan x ... x nboot] H0 arrays
+                %     are never held in RAM; one limo_glm_boot call per channel
+                %     reproduces the non-chunked behaviour) ---
+                warning off
+                limo_glm_bootstrap_chunked(LIMO, Yr, LIMO.design.X, array, boot_table, nboot, subname);
+                warning on
+            else
             % make file of the right size to avoid reshaping 5D files
             if strcmpi(LIMO.Analysis,'Time-Frequency')
                 H0_R2    = NaN(size(Yr,1), size(Yr,2), size(Yr,3), 3, nboot); % stores R, F and p values for each boot
@@ -743,7 +752,8 @@ if LIMO.design.bootstrap ~=0
                 end
                 clear tmp_H0_Covariates
             end
-            
+            end % non-time-frequency (chunked) vs time-frequency (original)
+
             clear channel model H0_R2;
             cd(LIMO.dir); disp(' ');
             
