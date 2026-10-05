@@ -642,6 +642,7 @@ switch varargin{1}
         % R2
         % ---
         if exist('R2.mat','file')
+            figuresBefore = findall(groot, 'Type', 'figure');
             if LIMO.design.bootstrap ~=0
                 if LIMO.design.tfce == 1
                     limo_display_results(1,'R2.mat',pwd,0.05,3,LIMO,0);
@@ -651,7 +652,7 @@ switch varargin{1}
             else
                 limo_display_results(1,'R2.mat',pwd,0.05,1,LIMO,0);
             end
-            saveas(gcf, 'R2.fig','fig'); close(gcf)
+            save_new_result_figure(figuresBefore, 'R2.fig');
             clear R2.mat
         end
         
@@ -661,6 +662,7 @@ switch varargin{1}
             if prod(LIMO.design.nb_conditions) ~=0
                 for i=1:length(LIMO.design.nb_conditions)
                     name = sprintf('Condition_effect_%g.mat',i);
+                    figuresBefore = findall(groot, 'Type', 'figure');
                     if LIMO.design.bootstrap ~=0
                         if LIMO.design.tfce == 1
                             limo_display_results(1,name,pwd,0.05,3,LIMO,0);
@@ -671,7 +673,7 @@ switch varargin{1}
                         limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
                     savename = sprintf('Condition_effect_%g.fig',i);
-                    saveas(gcf, savename,'fig'); close(gcf)
+                    save_new_result_figure(figuresBefore, savename);
                 end
             end
         end
@@ -682,6 +684,7 @@ switch varargin{1}
             if LIMO.design.fullfactorial == 1
                 for i=1:length(LIMO.design.nb_interactions)
                     name = sprintf('Interaction_effect_%g.mat',i);
+                    figuresBefore = findall(groot, 'Type', 'figure');
                     if LIMO.design.bootstrap ~=0
                         if LIMO.design.tfce == 1
                             limo_display_results(1,name,pwd,0.05,3,LIMO,0);
@@ -692,7 +695,7 @@ switch varargin{1}
                         limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
                     savename = sprintf('Interaction_effect_%g.fig',i);
-                    saveas(gcf, savename,'fig'); close(gcf)
+                    save_new_result_figure(figuresBefore, savename);
                 end
             end
         end
@@ -702,6 +705,7 @@ switch varargin{1}
             if LIMO.design.nb_continuous ~=0
                 for i=1:LIMO.design.nb_continuous
                     name = sprintf('Covariate_effect_%g.mat',i);
+                    figuresBefore = findall(groot, 'Type', 'figure');
                     if LIMO.design.bootstrap ~=0
                         if LIMO.design.tfce == 1
                             limo_display_results(1,name,pwd,0.05,3,LIMO,0);
@@ -712,7 +716,7 @@ switch varargin{1}
                         limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                     end
                     savename = sprintf('Covariate_effect_%g.fig',i);
-                    saveas(gcf, savename,'fig'); close(gcf)
+                    save_new_result_figure(figuresBefore, savename);
                 end
             end
         end
@@ -721,6 +725,7 @@ switch varargin{1}
         if ~isempty(check_semi)
             for i=1:size(check_semi,2)
                 name = sprintf('semi_partial_coef_%g.mat',i);
+                figuresBefore = findall(groot, 'Type', 'figure');
                 if LIMO.design.bootstrap ~=0
                     if LIMO.design.tfce == 1
                         limo_display_results(1,name,pwd,0.05,3,LIMO,0);
@@ -731,7 +736,7 @@ switch varargin{1}
                     limo_display_results(1,name,pwd,0.05,1,LIMO,0);
                 end
                 savename = sprintf('semi_partial_coef_%g.fig',i);
-                saveas(gcf, savename,'fig'); close(gcf)
+                save_new_result_figure(figuresBefore, savename);
             end
         end
         
@@ -741,6 +746,7 @@ switch varargin{1}
             if ~isempty(check_test)
                 for file = 1:size(check_test,1)
                     name = check_test(file).name;
+                    figuresBefore = findall(groot, 'Type', 'figure');
                     if LIMO.design.bootstrap ~=0
                         if LIMO.design.tfce == 1
                             limo_display_results(1,name,pwd,0.05,3,LIMO,0);
@@ -753,7 +759,7 @@ switch varargin{1}
                     
                     if ~strcmpi(LIMO.Analysis,'Time-Frequency')
                         savename = sprintf('%s.fig',name(1:end-4));
-                        saveas(gcf, savename,'fig'); close(gcf)
+                        save_new_result_figure(figuresBefore, savename);
                     end
                 end
             end
@@ -846,4 +852,14 @@ switch varargin{1}
 
         limo_random_effect
 end
+end
 
+function save_new_result_figure(figuresBefore, filename)
+% A nonsignificant result may not create a figure. Do not save or close an
+% unrelated figure, and do not use gcf, which would create an empty one.
+resultFigure = get(groot, 'CurrentFigure');
+if ~isempty(resultFigure) && ~any(resultFigure == figuresBefore)
+    saveas(resultFigure, filename, 'fig');
+    close(resultFigure);
+end
+end
