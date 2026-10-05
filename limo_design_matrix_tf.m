@@ -362,7 +362,7 @@ try
     Betas = zeros(size4D(1),size4D(2),size4D(3),size(X,2));
     
     % only for univariate analyses
-    subname = limo_get_subname(LIMO.dir);
+    subname = limo_get_subname(directory);
     if ~isempty(subname)
         subname = [subname '_desc-'];    
     end    

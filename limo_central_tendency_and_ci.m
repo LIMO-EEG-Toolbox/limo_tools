@@ -93,6 +93,7 @@ function result=limo_central_tendency_and_ci(varargin)
 %% file selection and checkings
 % -----------------------------
 current_dir = pwd; warning off
+interactive = nargin == 1; % The one argument form is the GUI entry point.
 result = []; % the output if requested
 data   = []; % the matrix of data to compute summary stats on
 
@@ -939,12 +940,13 @@ if ~isempty(data)
         
     if strcmpi(Estimator2,'Mean') || strcmpi(Estimator2,'All')
         disp('Compute the Mean estimator and 95% CI ...')
-        index = 1; h = waitbar(0,'computing','name','% done');
+        index = 1; h = [];
+        if interactive, h = waitbar(0,'computing','name','% done'); end
         if strcmpi(limo.Analysis,'Time-Frequency')
             M = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,4)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,4)*size(data,1)), h); end
                     index              = index+1;
                     if  strcmpi(Analysis_type,'1 channel only')
                         for f=size(data,2):-1:1
@@ -968,7 +970,7 @@ if ~isempty(data)
             M = NaN(size(data,1),size(data,2),size(data,3),3);
             for k = 1:size(data,3)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,3)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,3)*size(data,1)), h); end
                     index            = index+1;
                     tmp              = squeeze(data(channel,:,k,:));
                     Y                = tmp(:,~isnan(tmp(1,:)));
@@ -979,7 +981,7 @@ if ~isempty(data)
                 end
             end
         end
-        close(h);
+        if interactive, close(h); end
         
         if nargout ==0
             if nargin == 3 || nargin == 4
@@ -1000,12 +1002,13 @@ if ~isempty(data)
     % --------------------------------------------------------------
     if strcmpi(Estimator2,'Trimmed mean') || strcmpi(Estimator2,'All')
         disp('Compute 20% Trimmed Mean estimator and 95% CI ...')
-        index = 1; h = waitbar(0,'computing','name','% done');
+        index = 1; h = [];
+        if interactive, h = waitbar(0,'computing','name','% done'); end
         if strcmpi(limo.Analysis,'Time-Frequency')
             TM = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,4)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,4)*size(data,1)), h); end
                     index              = index+1;
                     if  strcmpi(Analysis_type,'1 channel only')
                         for f=size(data,2):-1:1
@@ -1029,7 +1032,7 @@ if ~isempty(data)
             TM = NaN(size(data,1),size(data,2),size(data,3),3);
             for k=1:size(data,3) % for each parameter
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,3)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,3)*size(data,1)), h); end
                     index = index+1;
                     tmp               = squeeze(data(channel,:,k,:));
                     Y                 = tmp(:,~isnan(tmp(1,:)));
@@ -1040,7 +1043,7 @@ if ~isempty(data)
                 end
             end
         end
-        close(h);
+        if interactive, close(h); end
         
         if nargout ==0
             if nargin == 3 || nargin == 4
@@ -1062,11 +1065,13 @@ if ~isempty(data)
     % -----------------------------------------------------
     if strcmpi(Estimator2,'HD') || strcmpi(Estimator2,'All')
         disp('Compute Harrell-Davis estimator and 95% CI ...')
+        index = 1; h = [];
+        if interactive, h = waitbar(0,'computing','name','% done'); end
         if strcmpi(limo.Analysis,'Time-Frequency')
             HD = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,4)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,4)*size(data,1)), h); end
                     index              = index+1;
                     if  strcmpi(Analysis_type,'1 channel only')
                         for f=size(data,2):-1:1
@@ -1088,10 +1093,9 @@ if ~isempty(data)
             end
         else
             HD = NaN(size(data,1),size(data,2),size(data,3),3);
-            index = 1; h = waitbar(0,'computing','name','% done');
             for k=1:size(data,3)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,3)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,3)*size(data,1)), h); end
                     index             = index+1;
                     tmp               = squeeze(data(channel,:,k,:));
                     Y                 = tmp(:,~isnan(tmp(1,:)));
@@ -1102,7 +1106,7 @@ if ~isempty(data)
                 end
             end
         end
-        close(h);
+        if interactive, close(h); end
         
         if nargout ==0
             if nargin == 3 || nargin == 4
@@ -1123,12 +1127,13 @@ if ~isempty(data)
     % -------------------------------------------------
     if strcmpi(Estimator2,'Median') || strcmpi(Estimator2,'All')
         disp('Compute Median estimator and 95% CI ...')
-        index = 1; h = waitbar(0,'computing','name','% done');
+        index = 1; h = [];
+        if interactive, h = waitbar(0,'computing','name','% done'); end
         if strcmpi(limo.Analysis,'Time-Frequency')
             Med = NaN(size(data,1),size(data,2),size(data,3),size(data,4),3);
             for k = 1:size(data,4)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,4)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,4)*size(data,1)), h); end
                     index              = index+1;
                     if  strcmpi(Analysis_type,'1 channel only')
                         for f=size(data,2):-1:1
@@ -1152,7 +1157,7 @@ if ~isempty(data)
             Med = NaN(size(data,1),size(data,2),size(data,3),3);
             for k=1:size(data,3)
                 for channel =1:size(data,1)
-                    waitbar(index/(size(data,3)*size(data,1)));
+                    if interactive, waitbar(index/(size(data,3)*size(data,1)), h); end
                     index = index+1;
                     tmp                = squeeze(data(channel,:,k,:));
                     Y                  = tmp(:,~isnan(tmp(1,:)));
@@ -1163,7 +1168,7 @@ if ~isempty(data)
                 end
             end
         end
-        close(h);
+        if interactive, close(h); end
         
         if nargout ==0
             if nargin == 3 || nargin == 4
@@ -1191,4 +1196,4 @@ if isempty(result)
 else
     disp('computation done');
 end
-limo_random_effect
+if interactive, limo_random_effect; end

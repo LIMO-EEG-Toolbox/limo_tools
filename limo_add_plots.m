@@ -47,7 +47,7 @@ if ~isempty(varargin)
             elseif strcmpi(varargin{i},'dimvalue') % for Time-Frequency
                 dimvalue  =  varargin{i+1};
             elseif strcmpi(varargin{i},'variable') % for arrays of many variables
-                infile  = {varargin{i+1}};
+                v = varargin{i+1};
             elseif strcmpi(varargin{i},'figure') % for arrays of many variables
                 fig  = varargin{i+1};
             elseif contains(varargin{i},'LIMO.mat')
@@ -60,6 +60,8 @@ if ~isempty(varargin)
         end
     end
 end
+
+interactive = isempty(infile);
 
 % ERSP hack
 if length(infile) == 1 && ...
@@ -212,6 +214,10 @@ while out == 0
     end
 
     % store each iteration into Data
+    % Single condition subject summaries store subjects on the fourth axis.
+    if subjects_plot && ndims(tmp) == 4 && size(tmp,3) == 1
+        tmp = reshape(tmp,size(tmp,1),size(tmp,2),size(tmp,4));
+    end
     if strcmpi('diff',datatype)
         if size(tmp,1) == 1
             if ndims(tmp) == 4
@@ -231,7 +237,7 @@ while out == 0
             Data(1,:,:) = D; clear D;
         elseif size(tmp,1) > 1 && size(tmp,3) == 1 && subjects_plot==0 % only 1 variable not squeezed yet
             Data        = squeeze(tmp(:,:,1,:));
-        elseif size(tmp,1) > 1 && size(tmp,3) == 3
+        elseif size(tmp,1) > 1 && size(tmp,3) == 3 && subjects_plot == 0
             Data        = tmp;
         else % many subjects for instance
             if ~exist('v','var')
@@ -426,7 +432,11 @@ while out == 0
     % updates
     turn = turn+1;
     if length(infile) < turn
-        infile{turn} = '';
+        if interactive
+            infile{turn} = '';
+        else
+            out = 1; % The supplied list is complete. Do not ask for another file.
+        end
     end
 
     if colorindex <7
@@ -435,6 +445,6 @@ while out == 0
         colorindex = 1;
     end
     clear data tmp
-    pause(1);
+    if interactive, pause(1); end
 end
-limo_results
+if interactive, limo_results; end
