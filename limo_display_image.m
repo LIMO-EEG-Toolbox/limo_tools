@@ -486,7 +486,6 @@ if dynamic == 1
         end
     end
 end
-limo_results
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%

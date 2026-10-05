@@ -22,7 +22,14 @@ end
 % ---------------------------------------------------
 if isequal(limo_settings.workdir, 'derivatives')
     try
-        STUDY=evalin('base','STUDY');
+        % A caller-supplied STUDY takes precedence over the GUI workspace.
+        if ~exist('STUDY','var') || isempty(STUDY)
+            settings_study = evalin('base','STUDY');
+            if ~isstruct(settings_study) || isempty(settings_study)
+                error('LIMO:MissingStudy', 'No valid STUDY available for the default output directory.');
+            end
+            STUDY = settings_study;
+        end
         default_folder = [STUDY.filepath filesep 'derivatives'];
         if exist(fullfile(default_folder,['LIMO_' extractBefore(STUDY.filename,'.study')]),"dir")
             limo_settings.workdir = fullfile(default_folder,['LIMO_' extractBefore(STUDY.filename,'.study')]);
@@ -32,10 +39,6 @@ if isequal(limo_settings.workdir, 'derivatives')
     catch
         disp('Failed to find STUDY variable');
         limo_settings.workdir = '';
-        if ~exist('STUDY', 'var')
-            STUDY = [];
-        end
     end
-else
-    STUDY = [];
 end
+clear settings_study
