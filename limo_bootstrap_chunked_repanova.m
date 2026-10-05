@@ -35,8 +35,14 @@ if ~exist(opts.chunk_dir,'dir'), mkdir(opts.chunk_dir); end
 starts   = 1:opts.chunk_size:nboot;
 ranges   = arrayfun(@(s) s:min(s+opts.chunk_size-1,nboot), starts, 'UniformOutput', false);
 n_chunks = numel(ranges);
-done     = false(1,n_chunks);
-for c = 1:n_chunks, if exist(local_cpath(opts.chunk_dir,c),'file'), done(c) = true; end, end
+done = false(1,n_chunks);
+for c = 1:n_chunks
+    chunk_path = local_cpath(opts.chunk_dir,c);
+    if exist(chunk_path,'file')
+        checkpoint = load(chunk_path,'br');
+        done(c) = isequal(checkpoint.br,ranges{c});
+    end
+end
 if any(done), fprintf('  resuming rep-ANOVA bootstrap: %d/%d chunks on disk\n', nnz(done), n_chunks); end
 
 % --- compute the missing chunks ---
