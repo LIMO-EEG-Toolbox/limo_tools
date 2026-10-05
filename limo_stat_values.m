@@ -182,7 +182,7 @@ if strcmpi(LIMO.Analysis,'Time-Frequency')
         M         = matfile(:,:,:,4); % T values
         Pval      = matfile(:,:,:,5);
         MCC_data  = sprintf('%s_desc-H0.mat',FileName);
-        name      = FileName(1:strfind(FileName,'ttest')+4);
+        name      = FileName(1:strfind(FileName,'Ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s t-test T values',name);
     elseif contains(FileName,'ess_')
@@ -262,7 +262,7 @@ else  % same with one less dimention
         M         = matfile(:,:,4); % T values
         Pval      = matfile(:,:,5);
         MCC_data  = sprintf('%s_desc-H0.mat',FileName);
-        name      = FileName(1:strfind(FileName,'ttest')+4);
+        name      = FileName(1:strfind(FileName,'Ttest')+4);
         name(strfind(name,'_')) = ' ';
         titlename = sprintf('%s T values',name);
     elseif contains(FileName,'ess_')
@@ -325,7 +325,7 @@ elseif ~isempty(M) && MCC == 2
             end
             
             % finally get cluster mask and corrected p-values
-            if contains(FileName,'ttest') || contains(FileName,'LI_Map')
+            if contains(FileName,'Ttest') || contains(FileName,'LI_Map')
                 [mask,M] = limo_clustering(M.^2,Pval,bootM.^2,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
             else
                 [mask,M] = limo_clustering(M,Pval,bootM,bootP,LIMO,clustering_method,p,plotFlag); % mask and cluster p values
