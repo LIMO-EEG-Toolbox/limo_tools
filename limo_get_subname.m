@@ -38,7 +38,10 @@ elseif isfile(stringin)
         subname = extractAfter(fname,'sub-');
         subname = ['sub-' subname(1:min(strfind(subname,'_'))-1)]; 
     else
-        limo_errordlg(['could not find any name in ' fname],'limo_get_subname error');
+        if ~isempty(fpath)
+            subname = limo_get_subname(fpath, mode);
+        end
+        valid = ~isempty(subname);
         return
     end
 
