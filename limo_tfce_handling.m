@@ -286,7 +286,7 @@ else % anything else last dimension is F and p
                 neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(1,size(H0_Fval,2),size(H0_Fval,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(1,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
+                    [tfce_H0_score(1,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
                 end
             else
                 neighbouring_matrix = LIMO.data.neighbouring_matrix;
@@ -300,7 +300,7 @@ else % anything else last dimension is F and p
                 neighbouring_matrix = LIMO.data.neighbouring_matrix;
                 tfce_H0_score = NaN(size(H0_Fval,1),size(H0_Fval,2),size(H0_Fval,3),nboot);
                 parfor b=1:nboot
-                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(2,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
+                    [tfce_H0_score(:,:,:,b),tfce_H0_thmaps{b}] = limo_tfce(3,squeeze(H0_Fval(:,:,:,1,b)),neighbouring_matrix,0);
                 end
             else
                 neighbouring_matrix = LIMO.data.neighbouring_matrix;
