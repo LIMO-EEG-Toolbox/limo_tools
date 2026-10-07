@@ -1,0 +1,37 @@
+name: Python backend
+
+on:
+  push:
+    branches: [python, python-backend-repair]
+  pull_request:
+    branches: [python]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.10'
+          - os: ubuntu-latest
+            python: '3.12'
+          - os: ubuntu-latest
+            python: '3.14'
+          - os: windows-latest
+            python: '3.12'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install ".[test]"
+      - run: python -m pytest -q
+      - run: python -m build
+      - name: Check installed package outside checkout
+        working-directory: ${{ runner.temp }}
+        run: python -c "from limo.limo_glm import limo_glm; import limo; print(limo.__version__, limo.__file__)"

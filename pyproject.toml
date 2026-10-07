@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "limo-eeg"
+version = "0.1.0"
+description = "Experimental Python statistical backend for LIMO EEG"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["license_limo_meeg.txt"]
+authors = [{name = "LIMO Team"}]
+dependencies = ["numpy>=1.24", "scipy>=1.10", "h5py>=3.8"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "build>=1"]
+mne = ["mne>=1.5"]
+plot = ["matplotlib>=3.6"]
+
+[project.urls]
+Repository = "https://github.com/LIMO-EEG-Toolbox/limo_tools"
+Documentation = "https://github.com/LIMO-EEG-Toolbox/limo_tools/wiki"
+
+[project.scripts]
+limo-import = "limo.eeglab_import:main"
+limo-design = "limo.limo_design:main"
+limo-glm = "limo.limo_glm:main"
+limo-contrast = "limo.limo_contrast:main"
+limo-tfce = "limo.limo_tfce:main"
+limo-inspect-set = "limo.read_setfile:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
