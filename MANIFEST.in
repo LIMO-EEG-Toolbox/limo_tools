@@ -1,0 +1,4 @@
+include license_limo_meeg.txt
+include _limo_compat.py
+include eeglab_import.py read_setfile.py limo_*.py
+recursive-include tests *.py
