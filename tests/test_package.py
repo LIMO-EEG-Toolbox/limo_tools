@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import sys
 import os
+import sysconfig
 
 import pytest
 
@@ -25,7 +26,7 @@ def test_module_and_legacy_cli_help(module):
         "limo_glm": "limo-glm", "limo_contrast": "limo-contrast",
         "limo_tfce": "limo-tfce", "read_setfile": "limo-inspect-set",
     }
-    executable = Path(sys.executable).parent / (commands[module] + (".exe" if os.name == "nt" else ""))
+    executable = Path(sysconfig.get_path("scripts")) / (commands[module] + (".exe" if os.name == "nt" else ""))
     for args in [[sys.executable, "-m", f"limo.{module}", "--help"],
                  [sys.executable, str(repo / f"{module}.py"), "--help"],
                  [str(executable), "--help"]]:
