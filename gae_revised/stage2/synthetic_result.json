@@ -1,0 +1,69 @@
+{
+  "input_shape": [
+    2,
+    12,
+    4,
+    6
+  ],
+  "output_shape": [
+    2,
+    12,
+    4,
+    6
+  ],
+  "finite": true,
+  "mean_absolute_error": 0.535516451273887,
+  "folds": [
+    {
+      "fold": 0,
+      "train": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "test": [
+        0,
+        3
+      ],
+      "first_loss": 0.2723865509033203,
+      "last_loss": 0.2220647931098938
+    },
+    {
+      "fold": 1,
+      "train": [
+        0,
+        2,
+        3,
+        5
+      ],
+      "test": [
+        1,
+        4
+      ],
+      "first_loss": 0.2551827132701874,
+      "last_loss": 0.22607667744159698
+    },
+    {
+      "fold": 2,
+      "train": [
+        0,
+        1,
+        3,
+        4
+      ],
+      "test": [
+        2,
+        5
+      ],
+      "first_loss": 0.2201271951198578,
+      "last_loss": 0.1758548468351364
+    }
+  ],
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "torch": "2.14.1+cpu",
+    "torch_geometric": "2.8.1"
+  }
+}
